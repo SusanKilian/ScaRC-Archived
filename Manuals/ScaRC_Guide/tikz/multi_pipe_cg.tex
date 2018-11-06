@@ -7,10 +7,11 @@ Obstruction/.style={rectangle,draw=black!70,fill=black!40, very thick, minimum s
 GlobalBorder/.style={-.,draw=black!100,  thin},
 Finegrid/.style={step=0.5cm,gray,very thin},
 Thickline/.style={-,draw=black!100,fill=black!02, very thick},
+ThickDashedline/.style={-,draw=black!100,fill=black!02, very thick, dashed},
 Thinline/.style={draw=black!100,fill=black!02, very thin},
 Ball/.style={circle, draw=black!40, fill=red!20, thin, minimum size=3.5mm},
 Circle/.style={circle,draw=black!40,fill=black!06,thin,minimum size=35.5mm},
-Rectangle/.style={rectangle,draw=black!10,fill=white,inner xsep=0pt, inner ysep=0pt,},
+Rectangle/.style={rectangle,draw=black!0,fill=white,inner xsep=0pt, inner ysep=0pt,},
 Box/.style= {very thin, rectangle, inner xsep=10pt, inner ysep=10pt,},
 DotBox/.style= {very thick, rectangle, inner xsep=0pt, inner ysep=8pt, dotted, fill=white, draw=black!70,},
 ComRedArrow/.style= {very thick, draw=red!70,},
@@ -43,9 +44,9 @@ DotLine/.style= {very thick, dotted, draw=black!70,},
 \draw[Thickline] (  8,0)--(  8,4);
 \draw[Thickline] (12,4)--(12,8);
 
-\draw[Thickline] (4,0)--(4,4);
-\draw[Thickline] (4,4)--(8,4);
-\draw[Thickline] (8,4)--(8,8);
+\draw[ThickDashedline] (4,0)--(4,4);
+\draw[ThickDashedline] (4,4)--(8,4);
+\draw[ThickDashedline] (8,4)--(8,8);
 
 \node[Rectangle] at (  2,2.0) {\Large \begin{tabular}{c} Local \\ Precon\end{tabular}};
 \node[Rectangle] at (  6,2.0) {\Large \begin{tabular}{c} Local \\ Precon\end{tabular}};
