@@ -3,3 +3,7 @@ tt
 *.aux
 *.log
 *sync*
+*.bbl
+*.blg
+*.brf
+
