@@ -21,6 +21,8 @@ tt
 *.end
 *.smv
 *.sq
+*.sinfo
+*.binfo
 ss
 tt
 rr
