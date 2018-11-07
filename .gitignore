@@ -6,4 +6,22 @@ tt
 *.bbl
 *.blg
 *.brf
+*.sf
+*.bf
+*.s3d
+*.s3d.sz
+*.q
+*.bf
+*.csv
+*.png
+*.txt
+*.out
+*.end
+*.smv
+*.sq
+ss
+tt
+rr
+do_*
+.scarc???
 
