@@ -68,14 +68,14 @@ the accuracy requirements for the local solutions can be varied.
 
 To give a formal algorithmic description of the different variants, some notations related to the local fine grid preconditioners and the global coarse grid preconditioner are still introduced below.
 In each cycle $k$ of the global basic iteration (\ref{EQ_SCARC_global_basiciteration}) 
-the solution of the local basic iterations (\ref{EQ_SCARC_local_basiciteration}) requires the following steps: 
+the solution of the local basic iterations (\ref{EQ_SCARC_local_basiciteration}) makes use of the definitions below. 
 
 First, the global defect, $d = b - Ax^{k-1}$, is restricted to the single subdomains, $d_i=R_i d$, then the corresponding local Poisson problems are solved, $v_i=A_i^{-1}d_i$, finally the local results are  prolonged back and summed up to a global solution, $v=\sum_{i=1}^M R_i^T v_i$. 
 For each mesh the sequence of these steps can be summarized using the {\it local fine grid preconditioner} $B_i$ defined as follows
 \[ B_i := R_i^T A_i^{-1}\,R_i\,,\qquad i=1,\ldots, M\,. \]
 
-
-The algebraic formulation of an additional coarse grid problem requires a coarse Poisson matrix $A_C$ and corresponding operators for prolongation, $R_C^T$, and restriction, $R_C$, which ensure the transfer between the fine and coarse level in a similar way.
+Second, if an additional coarse grid problem is used, then also a coarse Poisson matrix $A_C$ is required along with corresponding operators for prolongation, $R_C^T$, and restriction, $R_C$, 
+which ensure the transfer between the fine and coarse level in a similar way.
 Based on the same sequence of steps as for the $B_i$ above, the resulting {\it global coarse grid preconditioner} $b_C$ is then defined as
 \[ b_C = R_C^T \,A_C^{-1}  R_C\,.\] 
 Typically, the coarse grid consists of a finite difference discretization of the domain decomposition itself, i.e.\ $A_C \in {\bf R}^{M \times M}$, but it can also refer to a (still very) coarse refinement of it. 
@@ -141,6 +141,10 @@ It can be shown that the addition of a coarser grid level significantly reduces 
 \subsubsection{Discussion of algorithmic and performance-oriented aspects}
 \label{SEC_SCARC_discussion}
 
+\paragraph{Treatment of mesh interfaces:}
+Since \scarc{} is based on a global discretization, there is no need to impose artificial boundary conditions along inner mesh boundaries or 
+to use an additional pressure iteration to correct the velocity field there because internal boundary cells are treated as usual internal cells with respect to the virtual global matrix which is only handled in a distributed way. With a view to FDS, this has the advantage that the final global solution has consistent values along mesh interfaces by design, i.e.\ the normals of the single velocity components automatically match up to machine precision.
+
 \paragraph{Accuracy of local solutions:}
 Numerical experience has shown that block-wise schemes like the ones described before often perform well as long as complex parts 
 are locally hidden and the local problems are solved with sufficient precision. In this light the quality of the local subdomain problems plays a major role. 
@@ -160,11 +164,6 @@ The single sub-problems are in turn only thought as corrections to a global solu
 A major advantage of the underlying methodology is that the local preconditioners can be defined completely independently of each other. The additive \ols{} preconditioner doesn't care how the local problems were solved, it just couples them together.
 If particularly complex conditions exist in a certain subdomain, an optimized local multigrid method with a powerful recursive smoother could be used there, while in another subdomain only one SSOR-cycle might be enough to achieve the same local accuracy. This certainly leads to the fact that the arithmetic load on the individual subdomains can be very different depending on the local levels of difficulty such that a proper balance between numerical and computational efficiency must always be kept in mind.
 
-
-\paragraph{Treatment of mesh interfaces:}
-Since \scarc{} is based on a global discretization, there is no need to impose artificial boundary conditions along inner mesh boundaries or 
-to use an additional pressure iteration to correct the velocity field there because internal boundary cells are treated as usual internal cells with respect to the virtual global matrix which is only handled in a distributed way. With a view to FDS, this has the advantage that the final global solution has consistent values along mesh interfaces by design, i.e.\ the normals of the single velocity components automatically match up to machine precision.
-
 \paragraph{Computational and communication effort:}
 The overall communication effort of the different variants strongly depends on the choice of the global preconditioner $B_S$. As far as there is no coarse grid problem involved, 
 the parallel efficiency is rather high because the preconditioning only needs local communication for the matrix-vector products in the defect computations. Apart from the coarse grid problem, which will be discussed immediately below, global communication is only needed for the computation of global defect norms to check the termination criterion of the global basic iteration.
@@ -177,14 +176,47 @@ On the other hand, the 2-level variants are also associated with a considerable 
 
 For decompositions with many subdomains, or in case that the coarse grid consists of a slightly refined version of the underlying domain decomposition, the coarse grid problem itself may be so large that it is no longer suitable for a direct solution. In this case the above 2-level concept can be applied recursively by solving the coarse grid problem again by a 2-level Schwarz method which leads to a full {\it multilevel Schwarz method}.
 
-\paragraph{Possible enhancements for multi-core architectures:}
-If, as is possible in FDS, several meshes are mapped to one processor, the associated local mesh calculations are performed one after the other there. But instead of additively coupling these calculations as usual, a multiplicative coupling could now be considered within the scope of the processor, which might result in a further increase of the numerical efficiency in case of a clever clustering of the meshes. Furthermore, for the related meshes one common (unstructured) Poisson matrix could be assembled on the processor instead of the usual collection of locally structured matrices with corresponding overall solution of the locally clustered system. This strategy is only rudimentarily programmed so far and will be available in the medium term.
-
 
 \paragraph{Adjusting algorithmic parameters:} 
 A typical feature of iterative methods is that various parameters must be optimally adjusted which turns out to be a disadvantage of this concept. In particular, this applies to the global and local relaxation parameters which have a large influence on the convergence speed of the whole method up to divergence in the worst case. Their optimal choice depends on the problem characteristics and may be difficult to determine a-priori. However, appropriate sensitivity studies have already been capable of identifying related ranges which generally provide reasonable results.
 
-\paragraph{Acronym and application:}
+\paragraph{Possible enhancements for multi-core architectures:}
+If, as is possible in FDS, several meshes are mapped to one processor, the associated local mesh calculations are performed one after the other there. But instead of additively coupling these calculations as usual, a multiplicative coupling could now be considered within the scope of the processor, which might result in a further increase of the numerical efficiency in case of a clever clustering of the meshes. Furthermore, for the related meshes one common (unstructured) Poisson matrix could be assembled on the processor instead of the usual collection of locally structured matrices with corresponding overall solution of the locally clustered system. This strategy is only rudimentarily programmed so far and will be available in the medium term.
+
+
+
+\subsubsection{Generalizations of the basic \scarc{} iteration}
+
+As already discussed in section (\ref{SEC_SCARC_basic_iteration}) the convergence properties of the pure basic iteration are not satisfactory for complex situations. 
+Thus, the efficiency of the global and local basic iterations can be significantly improved by incorporating Krylov and/or multigrid techniques on the global and/or the local layer as summarized in section (\ref{SEC_SCARC_generalizations}).
+
+\paragraph{Generalizations of the global basic iteration:}
+In the default version of \scarc{} currently available in FDS the outer basic iteration is simply replaced by a data-parallel global CG-method. 
+Another powerful generalization is to use a data-parallel global MG-method with mesh-wise smoothing instead.
+%
+For the preconditioning/smoothing of both the global CG- and MG-methods  simply some steps of the local basic iterations can be performed, 
+e.g.\ based on the SSOR-preconditioner leading to either a global CG-method with mesh-wise SSOR preconditioning or a global MG-method with mesh-wise SSOR smoothing.
+%
+As expected, the global CG-variants which only use a \ols{} preconditioner have a much better parallel efficiency than the global MG-variants because only a fine grid level with high computational complexity is used. But it should not be forgotten that the numerical efficiency of the CG-method may deteriorate significantly when the number of subdomains is increased 
+which again is based on the lack of global data transfer for \ols{} preconditioners. The use of a suitable \tls{} preconditioner is able to remedy the situation, but associated with increased computational costs again.
+
+In contrast, the global MG-variants show by far the better convergence behavior. This is mainly based on the stronger global coupling
+which is achieved by the interlocking of levels with different resolutions and the addition of a coarse grid problem. 
+Due to the restriction to local tensor product meshes, very sophisticated smoothers can be used which are capable of fully exploiting modern processor capabilities.
+On the other hand, the coarse grid problem represents the already described bottleneck in terms of parallel efficiency. Furthermore, with every change to the next coarser grid level, the amount of local computational work decreases. Thus, during the changes to increasingly coarser grid levels, the related matrix vector products are associated with a decreasing ratio of local arithmetic work to communication work. These losses of parallel efficiency have to be taken into account when evaluating the overall efficiency and must clearly be compensated by the convergence acceleration induced by the use of different levels and the coarse grid solution.
+
+A very special variant of \scarc{} is the combination of a global MG-method with optimized local MG-methods of Schwarz type. 
+%In spite of the usual MG-features with a low degree of parallelizm, this double MG-structure leads to a very strong global coupling associated with a high numerical efficiency. 
+Moreover, a further increase of efficiency may be achieved if the global MG-method is not used as standalone solver but in turn only as preconditioner inside a global CG-method, which provides an additional global coupling especially in case of big anisotropies on coarse grid level.
+Again, the gain of numerical efficiency induced by these sophisticated combinations of different solution techniques must be set in relation to the associated increased effort.
+
+\paragraph{Generalizations of the local basic iterations:}
+There are numerous possibilities to also replace the local basic iterations with more efficient strategies. 
+As those computations are performed completely locally, an obvious idea is to use the already described power of serial direct methods there. 
+Thus, a favorite approach is to apply local FFT-methods or LU-decompositions. Alternatively, the local basic iterations can be replaced by local MG-methods with specially optimized local smoothers which are best possibly adapted to the underlying problem.
+
+
+\paragraph{Important representatives and conclusion:}
 In the light of the above discussions, the acronym \scarc{} can be explained now. It stands for:
 \begin{itemize}
 \item {\it Scalable}, with respect to the number of global (`k') and local solution steps (`m'),
@@ -192,19 +224,8 @@ In the light of the above discussions, the acronym \scarc{} can be explained now
 \item {\it Clustering}, since neighboring meshes can be merged into larger clusters with special treatment.
 \end{itemize}
 
-In conclusion, it becomes clear that \scarc{} is not a pure black-box solver and its application requires a careful assessment of the current circumstances. However, its major advantage is that it allows a very diverse combination of different components with regard to the selection of the global solvers (CG, MG or combinations of both), the local solvers (from simple Jacobi to highly optimized MG) and the local accuracy requirements (from gaining only one digit up to machine precision) such that any available information about the underlying problem can be exploited.
-
-
-
-\subsubsection{Generalizations of the basic \scarc{} iteration}
-
-As already discussed in section (\ref{SEC_SCARC_basic_iteration}) the convergence properties of the pure basic iteration are not satisfactory for complex situations. Thus, the efficiency of the ScaRC solvers can be significantly improved by incorporating Krylov and/or multigrid techniques on the global and/or the local layer as summarized in section (\ref{SEC_SCARC_generalizations}).
-In the default version of \scarc{} currently available in FDS the outer basic iteration is simply replaced by a data-parallel global CG-method. Another powerful generalization is to use a data-parallel global MG-method with mesh-wise smoothing instead.
-
-For the preconditioning/smoothing of both the global CG- and MG-methods  simply some steps of the local basic iterations can be performed, e.g.\ based on the SSOR-preconditioner leading to either a global CG-method with mesh-wise SSOR preconditioning or a global MG-method with mesh-wise SSOR smoothing.
-However, there are numerous possibilities to also replace the local basic iterations with more efficient strategies. As those computations are performed completely locally, an obvious idea is to use the already described power of serial direct methods there. Thus, a favorite approach is to apply local FFT-methods or LU-decompositions. Alternatively, the local basic iterations can be replaced by local MG-methods with specially optimized local smoothers which are best possibly adapted to the underlying problem.
-
-All in all, \scarc{} represents a large class of techniques, which contains a wide spectrum of the known Krylov, multigrid and domain decomposition approaches for the solution of discretized PDE's. The most important representatives are:
+All in all, \scarc{} represents a large class of techniques, which contains a wide spectrum of the known Krylov, multigrid and domain decomposition approaches for the solution of discretized PDE's. 
+The most important representatives are:
 \vspace{-0.1cm}
 \begin{enumerate}
 \item set $k=1$ (globally), solve exactly (locally)      \\
@@ -214,20 +235,11 @@ All in all, \scarc{} represents a large class of techniques, which contains a wi
 \item set $m > 1$ (locally) and $C_i=part(A_i)$ and solve approximately (locally) via MG\\
   $\longrightarrow$ \,  { full \scarc{}}
 \end{enumerate}
-The first two variants are used in the course of the subsequent test calculations, see the subsequent definitions in Section \ref{SEC_SCARC_discretization_types}. The last variant is still under development, but will also be available shortly.
+The first two variants are used in the course of the subsequent test calculations, see the definitions in Section \ref{SEC_SCARC_discretization_types}. 
+The last variant is still under development, but will also be available shortly.
 
-As expected, the global CG-variants which only use a \ols{} preconditioner have a much better parallel efficiency than the global MG-variants because only a fine grid level with high computational complexity is used. But it should not be forgotten that the numerical efficiency 
-of the CG-method may deteriorate significantly when the number of subdomains is increased 
-which again is based on the lack of global data transfer for \ols{} preconditioners. The use of a suitable \tls{} preconditioner is able to remedy the situation, but associated with increased computational costs again.
+It becomes clear that \scarc{} is not a pure black-box solver and its application requires a careful assessment of the current circumstances. However, its major advantage is that it allows a very diverse combination of different components with regard to the selection of the global solvers (CG, MG or combinations of both), the local solvers (from simple Jacobi to highly optimized MG) and the local accuracy requirements (from gaining only one digit up to machine precision) such that any available information about the underlying problem can be exploited.
 
-In contrast, the global MG-variants show by far the better convergence behavior. This is mainly based on the stronger global coupling
-which is achieved by the interlocking of levels with different resolutions and the addition of a coarse grid problem. 
-Due to the restriction to local tensor product meshes, very sophisticated smoothers can be used which are capable of fully exploiting modern processor capabilities.
-On the other hand, the coarse grid problem represents the already described bottleneck in terms of parallel efficiency. Furthermore, with every change to the next coarser grid level, the amount of local computational work decreases. Thus, during the changes to increasingly coarser grid levels, the related matrix vector products are associated with a decreasing ratio of local arithmetic work to communication work. These losses of parallel efficiency have to be taken into account when evaluating the overall efficiency and must clearly be compensated by the convergence acceleration induced by the use of different levels and the coarse grid solution.
-
-A very special variant of \scarc{} is the combination of a global MG-method with optimized local MG-methods of Schwarz type. In spite of the usual MG-features with a low degree of parallelizm, this double MG-structure leads to a very strong global coupling associated with a high numerical efficiency. 
-Moreover, a further increase of efficiency may be achieved if the global MG-method is not used as standalone solver but in turn only as preconditioner inside a global CG-method, which provides an additional global coupling especially in case of big anisotropies on coarse grid level.
-Again, the gain of numerical efficiency induced by these sophisticated combinations of different solution techniques must be set in relation to the associated increased effort.
 
 
 \subsubsection{Discretization types and application notes}
@@ -239,7 +251,7 @@ It must be emphasized that \scarc{} is still in a beta development state and the
 
 In the recent past, many different cases from the verification and validation directory of FDS have been recalculated with \scarc{}.
 Thereby, it has been proven repeatedly that the results obtained are algorithmically correct and that high accuracy can be achieved with completely correct transitions of the velocity field along inner mesh boundaries.
-
+\newpage
 However, particularly in case of longer lasting validation cases, it has also been observed that the previous runtimes are not yet optimal. This remaining weakness is mainly based on the fact that the focus of the development so far has been on the fundamental algorithmic correctness of the individual solution components. Nevertheless, there is still a great potential for runtime improvements and appropriate improvements will be done in the immediate future as well.
 
 So far, there has been no discussion about what kind of discretization \scarc{} is working on. 

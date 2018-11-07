@@ -625,7 +625,7 @@ Figure \ref{FIG_scarc_ns_analytical_solution_rate} for both the inviscid and the
       \scalebox{1.0}{ \includegraphics[height=2.2in]{\figPath/ns2d_4mesh/ns2d_4mesh_32_scarc_nupt1} } &
       \scalebox{1.0}{ \includegraphics[height=2.2in]{\figPath/ns2d_4mesh/ns2d_4mesh_64_scarc_nupt1} }
    \end{tabular*}
-   \caption[Velocity time history, qualitative convergence for a 4-mesh \scarc{}]{Time history of the $u$-component of velocity with
+   \caption[Velocity time history, qualitative convergence for a 4-mesh \scarc{}]{Time history of the $u$-component of velocity for the {\ct NS\_Analytical\_Solution} case with
 $\delta x = L/N$ where $L = 2\pi$ m and $N = \{8,16,32,64\}$ for a 4-mesh \scarc{} computation, showing that the second-order convergence for the single-mesh case is preserved by 4-mesh \scarc{}.}
    \label{FIG_scarc_ns_analytical_solution_time}
 \end{figure}
@@ -637,10 +637,10 @@ $\delta x = L/N$ where $L = 2\pi$ m and $N = \{8,16,32,64\}$ for a 4-mesh \scarc
       \scalebox{1}{ \includegraphics[height=2.2in]{\figPath/ns2d_4mesh/ns2d_4mesh_scarc_nupt1_error} }
    \end{tabular*}
    \caption[Navier-Stokes convergence study for 4-mesh \scarc{}]
-   {Convergence rate for the $u$-component of velocity for a 4-mesh \scarc{} computation with  $\nu = 0$ (Left) and  
-   $\nu=0.1$ (Right).
-   The dashed and solid lines serves as references for first- and second-order accuracy, respectively.
-   The second order accuracy in the approximation of the advective terms of the original single-mesh case is preserved by 4-mesh \scarc{}.}
+   {Convergence rate for the $u$-component of velocity  for a 4-mesh \scarc{} computation with  $\nu = 0$ (Left) and  
+   $\nu=0.1$ (Right) for the {\ct NS\_Analytical\_Solution} case.
+   The dashed and solid lines serves as references for first- and second-order accuracy.
+   The second order accuracy for the advective terms of the original single-mesh case is preserved by 4-mesh \scarc{}.}
 \label{FIG_scarc_ns_analytical_solution_rate}
 \end{figure}
 
@@ -773,7 +773,7 @@ Obviously, the periodicity of the analytical solutions is completely preserved a
 \end{axis}
 \end{tikzpicture}
 
-\caption[Evolution of the variable-density manufactured solution for a 16-mesh \scarc{} computation]{Evolution of the variable-density manufactured solution for a 16-mesh \scarc{} computation.  From top to bottom, the images show density, $\rho$, mixture fraction, $Z$, and the $u$-velocity component from the $256^2$ simulation at the specified times. The parallel computation by \scarc{} clearly preserves the periodicity of the analytical solution.}
+\caption[Evolution of the variable-density manufactured solution for a 16-mesh \scarc{} computation]{Evolution of the variable-density manufactured solution for a 16-mesh \scarc{} computation for the {\ct shunn3} case.  From top to bottom, the images show density, $\rho$, mixture fraction, $Z$, and the $u$-velocity component from the $256^2$ simulation at the specified times. The parallel computation by \scarc{} clearly preserves the periodicity of the analytical solution.}
 \label{FIG_scarc_shunn3}
 \end{figure}
 
@@ -797,10 +797,10 @@ In the previous two cases, periodic boundary conditions were applied to the enti
 As long as there are no additional Dirichlet components on the boundary, the condensed system must be used again
 in order to avoid that the matrix becomes indefinite. 
 
-Figure \ref{FIG_scarc_ribbed_channel} gives an example of such a case where periodic boundary conditions are used at
+Figure \ref{FIG_scarc_ribbed_channel} gives an example where periodic boundary conditions are used at
 {\ct XMIN} and {\ct XMAX} while Neumann boundary conditions are used elsewhere.
-More details can be found in the FDS Verification Guide \cite{McGrattan:2018:VG} again.
-Due to the large internal obstruction the unstructured \uscarc{} solver based on a 4-mesh subdivision was used. As can be seen the original flow pattern is matched again. 
+More details can be found in the FDS Verification Guide \cite{McGrattan:2018:VG}.
+Due to the large internal obstruction the unstructured \uscarc{} solver based on a 4-mesh subdivision was used. Evidently, the original flow pattern is matched again. 
 
 \begin{figure}[ht]
 \centering
@@ -810,14 +810,14 @@ Due to the large internal obstruction the unstructured \uscarc{} solver based on
       \includegraphics[height=2.2in]{\figPath/ribbed_channel/ribbed_channel_urms_strm_uscarc} &
       \includegraphics[height=2.2in]{\figPath/ribbed_channel/ribbed_channel_urms_prof_uscarc} \\
    \end{tabular*}
-   \caption[Mean and RMS velocity profiles for ribbed square duct flow in case of a 4-mesh \uscarc{} computation]{\label{fig_ribbed_channel} Mean and RMS velocity profiles for ribbed square duct flow in case of a 4-mesh \uscarc{} computation.}
+   \caption[Mean and RMS velocity profiles for ribbed square duct flow in case of a 4-mesh \uscarc{} computation]{\label{fig_ribbed_channel} Mean and RMS velocity profiles for ribbed square duct flow in case of a 4-mesh \uscarc{} computation for the {\ct ribbed\_channel} case.}
 \label{FIG_scarc_ribbed_channel_devices}
 \end{figure}
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=.8\textwidth]{\figPath/ribbed_channel/ribbed_channel_flow.png}
-\caption[4-mesh \scarc{} computation for the {\ct ribbed\_channel} test case]{Mean velocity vectors colored by velocity magnitude (red is 2 m/s) for the ribbed square duct case with $h/\delta x = 8$ for a 4-mesh \uscarc{} computation.}
+\caption[4-mesh \scarc{} computation for the {\ct ribbed\_channel} test case]{Mean velocity vectors colored by velocity magnitude (red is 2 m/s) for the ribbed square duct case with $h/\delta x = 8$ for a 4-mesh \uscarc{} computation for the {\ct ribbed\_channel} case.}
 \label{FIG_scarc_ribbed_channel}
 \end{figure}
 
