@@ -16,7 +16,7 @@ However, iterative methods may depend on special properties of the underlying pr
 % ------------------------------------------------------------------------------------------------------------------------------------------
 % Basic iteration
 % ------------------------------------------------------------------------------------------------------------------------------------------
-\subsection{The basic iteration}
+\subsection{The Basic Iteration}
 \label{SEC_SCARC_basic_iteration}
 Based on Equation (\ref{EQ_SCARC_single_system}) the following simple relation applies
 $ %\be 
@@ -364,7 +364,7 @@ The solution of the coarse grid problem takes a special position here: It is a v
 Its global computation implies a logarithmical growth of the communication costs if the number of subdomains is increased. This can be remedied by completely solving the coarse grid problem on a single processor, what in turn is associated with corresponding data transfers and waiting times on the other processors. Nevertheless, by using adequate domain decomposition strategies based on strong smoothers high numerical efficiencies can be achieved, such that usually only a few MG-iterations must be performed and the disadvantages mentioned do not matter that much.
 
 
-\subsubsection{Summary for generalizations:}  
+\subsubsection{Summary for generalizations}  
 All in all it can be stated that both, CG- and MG-methods, are able to reasonably improve the convergence speed of the basic iteration returning the exact solution in a small up to a moderate number of iterations depending on the underlying problem. 
 
 Apart from using the aforementioned globally defined matrix-vector products, these methods incorporate even more globally acting features such as global scalar-products in case of CG or an additional coarse grid problem in case of MG which furthermore contribute to a stronger global coupling. Certainly, the acceleration of convergence speed achieved by these features must be set in relation to the increased computational overhead associated with them.

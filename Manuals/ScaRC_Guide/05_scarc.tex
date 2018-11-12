@@ -1,7 +1,7 @@
 % ------------------------------------------------------------------------------------------------------------------------------------------
 % ScaRC
 % ------------------------------------------------------------------------------------------------------------------------------------------
-\subsection{\scarc{} - Scalable Recursive Clustering} 
+\subsection{Scalable Recursive Clustering - \scarc{}} 
 \label{SEC_SCARC_scarc}
   
 With the aim to combine the advantages of the above Poisson solvers and to best possibly avoid their disadvantages the solution concept \scarc{} was developed. It can be understood as a combination of parallel Krylov and/or multigrid methods with techniques from multilevel domain decomposition to finally yield a robust, computationally and numerically efficient parallel solution for scalar elliptic equations. 
@@ -14,7 +14,7 @@ The following sections are concerned with describing the underlying algorithmic 
 %More detailed information can be found in \cite{Kilian2001, Kilian:1998, Goeddeke:2010, Wobker:2010}.
 
 
-\subsubsection{Basic \scarc{} iteration}
+\subsubsection{Core algorithm}
 \scarc{} is mainly defined as a symbiosis of global and local iterative techniques with the optional use of direct techniques locally. 
 %As a fundamentally iterative method, \scarc{} is also based on defect correction techniques. 
 The domain decomposition does not serve as a stand-alone solver, but rather to define suitable sub-problems that are only used to correct the globally defined solution.
@@ -59,7 +59,7 @@ A detailed description of the algorithmic concept and all related topics can be 
 
 
 
-\subsubsection{Generalized Schwarz preconditioners}
+\subsubsection{Multilevel Schwarz preconditioners}
 For the preconditioning matrix $B_S$ %, for example, 
 numerous variants with different degree of complexity can be applied.
 All these variants have in common that they essentially rely on the solution of the local subdomain problems which are defined with respect to the original fine grid resolution. 
@@ -141,7 +141,7 @@ Despite the increased arithmetic and communication effort caused by the addition
 The relation of additive to multiplicative Schwarz methods is similar to that of Jacobi and Gauss-Seidel methods.
 It can be shown that the addition of a coarser grid level significantly reduces the dependence on the number of meshes.
 
-\subsubsection{Discussion of algorithmic and performance-oriented aspects}
+\subsubsection{Algorithmic and performance-oriented aspects}
 \label{SEC_SCARC_discussion}
 
 \paragraph{Treatment of mesh interfaces:}
@@ -188,7 +188,7 @@ If, as is possible in FDS, several meshes are mapped to one processor, the assoc
 
 
 
-\subsubsection{Generalizations of the basic \scarc{} iteration}
+\subsubsection{Generalizations of the core algorithm}
 
 As already discussed in section (\ref{SEC_SCARC_basic_iteration}) the convergence properties of the pure basic iteration are not satisfactory for complex situations. 
 Thus, the efficiency of the global and local basic iterations can be significantly improved by incorporating Krylov and/or multigrid techniques on the global and/or the local layer as summarized in section (\ref{SEC_SCARC_generalizations}).
