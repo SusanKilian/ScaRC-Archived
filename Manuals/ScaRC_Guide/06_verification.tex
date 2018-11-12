@@ -7,12 +7,15 @@
 In the following, \scarc{} is subjected to a series of test calculations to demonstrate its suitability as an alternative pressure solver in FDS.  To check whether \scarc{} fundamentally delivers correct results, 
 the first step focuses on the analysis of its approximation quality with special view on the handling of multi-mesh decompositions and internal obstructions.
 %
-For this purpose, a new \scarc{} specific test case ``poisson2d'' will be presented, which analyzes its various features and variants.
+For this purpose, a new \scarc{} specific test case {\ct poisson2d} will be presented, which analyzes its various features and variants.
 Additionally, \scarc{} is applied to a number of existing verification test cases from FDS.
-In order to evaluate the results in a meaningful way, all \scarc{} computations are compared with the respective computations of the other available pressure solvers based on FFT or global $LU$-decomposition. Thereby, both structured and unstructured discretizations are taken into account. 
+In order to evaluate the results in a meaningful way, all \scarc{} computations are compared with the respective computations of the other available pressure solvers based on FFT or global $LU$-decomposition. Subsequently, both structured and unstructured discretizations are taken into account and the respective solvers including their short names are summarized below.
 
+\subsection{Summary of solvers applied}
+
+%It has already been explained that only special combinations of discretization types and solvers can be applied. The variants used in the test calculations, including their short names, are listed below.
 %
-\paragraph{Structured discretizations:} \mbox{} \\[1ex]
+\paragraph{Structured discretizations:} 
 In case of a structured discretization, different variants of FFT and structured \scarc{} will be considered.
 Due to their structured nature, FFT and \scarc{} are not able to incorporate the right boundary conditions along internal obstructions 
 as explained in Section (\ref{SEC_SCARC_discretization_types}). 
@@ -72,7 +75,7 @@ Discretization & Solver class       &\multicolumn{1}{|c|}{Name}             &   
 % ======================================================================================
 % Poisson2D cases
 % ======================================================================================
-\subsection{Basic Poisson test for the comparison of the different pressure solvers}
+\subsection{Basic Poisson test case}
 \label{SEC_SCARC_poisson_case}
 
 To algorithmically describe the different Poisson solvers available in FDS, a simple demonstration case was used throughout the entire documentation which will be denoted as {\ct poisson2d} case subsequently. As illustrated again in Figure \ref{FIG_scarc_poisson_geometry}, it consists of a small angled pipe in 2D with a small inflow on the left and an open outflow on the whole right hand side. The length of the left and right face amounts to 40~cm each, the side length of the small internal obstruction to 10~cm.
@@ -97,7 +100,7 @@ To this end, two different variants for this case will be analyzed subsequently 
 % -------------------------------------------------------------------------------------------------------------------------------
 % Pressure_Solver/poisson2d_4mesh
 % -------------------------------------------------------------------------------------------------------------------------------
-\subsubsection{Poisson test case with 4 meshes}
+\subsubsection{Subdivision into 4 meshes ({\ct poisson2d\_4mesh})}
 \label{SEC_SCARC_poisson_four}
 
 In this case the pipe geometry from Figure \ref{FIG_scarc_poisson_geometry} is subdivided into 4 meshes with a side length of 40~cm  each. The single meshes are refined into $16^2$ cells corresponding to a grid resolution of 2.5~cm. The resulting flow field at time $t=0.31$ is illustrated in Figure \ref{FIG_scarc_poisson_four_flowfield}.
@@ -188,7 +191,7 @@ produce machine precision accuracy and both need exactly one pressure iteration.
 % -------------------------------------------------------------------------------------------------------------------------------
 % Pressure_Solver/poisson2d_16mesh
 % -------------------------------------------------------------------------------------------------------------------------------
-\subsubsection{Poisson test case with 16 meshes}
+\subsubsection{Subdivision into 16 meshes ({\ct poisson2d\_16mesh})}
 \label{SEC_SCARC_poisson_sixteen}
 
 To analyze the scalability towards higher mesh numbers the pipe geometry of Figure \ref{FIG_scarc_poisson_geometry} is now subdivided into 16 meshes with a side length of 20~cm  each. Furthermore, a finer grid resolution for the single meshes into $32^2$ cells is used which corresponds to a grid resolution of 0.625~cm. The respective default velocity tolerance for the structured solvers FFT and \scarc{} amounts to 0.3125~cm, while the fine velocity tolerance of 0.00001 $m/s$ is used again.
@@ -249,7 +252,7 @@ However, these observations do not represent a general rule. That the situation 
 % ---------------------------------------------------------------------------------
 % Generalized \scarc{} solvers for the poisson2d case
 % ---------------------------------------------------------------------------------
-\subsubsection{Application of generalized \scarc{} solvers for the Poisson test case}
+\subsubsection{Application of generalized \scarc{} solvers}
 \label{SEC_SCARC_poisson_generalizations}
 
 As explained in detail in Section (\ref{SEC_SCARC_generalizations}) there are multiple possibilities to generalize the \scarc{} solver. 
@@ -323,7 +326,7 @@ Apparently, each additional smoothing step leads to a clear reduction of the ach
 Note, that during the smoothing global matrix-vector products (including local communication) are needed. Thus, the use of additional smoothing cycles leads to a corresponding increase of work. But at the same time, the number of coarse grid solutions (including global communication) is comprehensively reduced 
 which in turn represents a major saving and usually makes up for the extra cost.
 
-\subsubsection{Preliminary evaluation of the Poisson test cases}
+\subsubsection{Preliminary conclusions}
 \label{SEC_SCARC_poisson_evaluation}
 The cases just presented have shown that there is a wide range of \scarc{} variants that can be used to solve the Poisson equation. These differ significantly in the type of the underlying discretization, the preconditioning mechanisms used, and whether they work only at the fine grid level or at additional coarser grid levels. The biggest difference to the current FFT solver consists in the fact that \scarc{} has no more errors along inner mesh boundaries. Thus, for the structured \scarc{} variants often much less pressure iterations are needed than for the default FFT solver, because it only has to take care of the reduction of the penetration error towards inner obstructions. For the unstructured variant \uscarc{}, no pressure iteration at all is needed anymore.
 
@@ -339,9 +342,10 @@ there is still a need for further optimisation with regard to the required runni
 % ======================================================================================
 % dancing_eddies case
 % ======================================================================================
-\subsubsection{Pressure\_Solver/dancing\_eddies}
+\subsection{Karman vortex street}
 \label{SEC_SCARC_dancing_eddies}
 
+\subsubsection{Subdivision into 4 meshes ({\ct dancing\_eddies})}
 The following computations refer to the {\ct dancing\_eddies} case from the Pressure\_Solver verification directory. It concerns a 30~cm long, two-dimensional channel with a grid resolution of 0.1~cm which is subdivided into 4 meshes. Air is pushed into the channel at 0.5~m/s. A flat obstruction in the left third of the channel causes the formation of a Karman vortex street. Figure \ref{FIG_scarc_dancing_eddies_four} displays a contour plot of the pressure at the final simulation time t=2~s.
 \begin{figure}[ht]
 \begin{center}
@@ -387,7 +391,7 @@ to fulfil the finer tolerance.
 By construction, \uglmat{} (blue) and \uscarc{} (green) are finished within exactly 1 iteration.
 Please note again that the maximum and mean statistics were only performed after a certain initialization time of 0.1 s in order to exclude the large fluctuations at the beginning seen for the tight variants.
 
-
+\subsubsection{Subdivision into 10 meshes ({\ct dancing\_eddies\_10mesh})}
 To analyze the scalability of the various solvers, a subdivision into 10 instead of the previous 4 meshes is considered as well, see Figure \ref{FIG_scarc_dancing_eddies_ten}. Now, the same analysis is performed again.
 
 \begin{figure}[ht]
@@ -464,13 +468,13 @@ But this must not be understood as a general rule. As the {\ct duct\_flow} case 
 % ======================================================================================
 % duct_flow case
 % ======================================================================================
-\subsubsection{Example Case: Pressure\_Solver/duct\_flow}
+\subsection{Flow through a duct ({\ct duct\_flow})}
 \label{SEC_SCARC_duct_flow}
 
 The next section follows the {\ct duct\_flow} case from the Pressure\_Solver verification directory which is defined on a cubic domain of side length 6.4~m. A subdivision into 8 meshes and a grid resolution of 0.2~m are used. 
 With a speed of 1~m/s, air is pushed into a multi-angled duct of size 1 m$^2$ which meanders through the domain, as
 illustrated in Figure \ref{FIG_scarc_duct_flow_flowfield}. 
-Since there is no thermal expansion, the volume flow at the inlet and the outlet of the duct must be the same which provides a good basis test for the approximation quality of the different solvers. More information can be found in the FDS User's Guide\cite{McGrattan:2018:UG}.
+Since there is no thermal expansion, the volume flow at the inlet and the outlet of the duct must be the same which provides a good basis test for the approximation quality of the different solvers. More information can be found in the FDS User's Guide\cite{McGrattan:2018:UG}.r
 
 
 \begin{figure}[ht]
@@ -553,7 +557,7 @@ But as already mentioned, for performance reasons, alternatives for the local $L
 % ======================================================================================
 % Periodic boundary conditions
 % ======================================================================================
-\subsection{Special Case: True Periodic Boundaries}
+\subsection{Periodic Boundaries}
 \label{SEC_SCARC_periodic_boundaries}
 
 A number of test cases which are based on periodic boundaries can be found in the FDS Verification Guide~\cite{McGrattan:2018:VG}. Periodic boundary conditions are often used to evaluate the quality of a `pure' solver without the disturbing influence of boundary effects. Alternatively, they are also used to reduce the size of a computational domain for a problem with recurring patterns.
@@ -567,9 +571,9 @@ To prevent the system from becoming indefinite, a corresponding {\it condensed s
 To check the basic correctness of this procedure, some of the available periodic test cases in FDS were also performed with different \scarc{} variants und will be briefly summarized below.
 
 
-\subsubsection{Pressure\_Solver/NS\_Analytical\_Solution}
+\subsubsection{Analytical Solution to the Navier-Stokes Equation {\ct ns2d}}
 
-This series of test cases is concerned with the approximation of a given analytical solution for the 2D incompressible Navier-Stokes equations. 
+This series of test cases, from Verification/NS\_Analytical\_Solution, is concerned with the approximation of a given analytical solution for the 2D incompressible Navier-Stokes equations. 
 %\begin{equation}
 %\label{eqn_NS}
 %\frac{\partial \mathbf{u}}{\partial t} + \mathbf{u} \cdot \nabla \mathbf{u} = - \nabla{p} + \nu \nabla^2 \mathbf{u} \,\mbox{,}
@@ -668,9 +672,9 @@ $\delta x = L/N$ where $L = 2\pi$ m and $N = \{8,16,32,64\}$ for a 4-mesh \scarc
 %\label{FIG_scarc_ns_analytical_solution}
 %\end{figure}
 
-\subsubsection{Scalar\_Analytical\_Solution/Shunn3}
+\subsubsection{Variable-Density Manufactures Solution ({\ct shunn3})}
 
-The {\ct shunn3} test case is intended to prove the second order accuracy of the FDS time-stepping scheme. It is based on a manufactured sinusoidal solution which diagonally translates across a square-shaped domain of side length 2. The solution is spatially periodic in this domain and has a time period of 1~s. 
+The {\ct shunn3} test case from Verification/Scalar\_Analytical\_Solution is intended to prove the second order accuracy of the FDS time-stepping scheme. It is based on a manufactured sinusoidal solution which diagonally translates across a square-shaped domain of side length 2. The solution is spatially periodic in this domain and has a time period of 1~s. 
 Different grid resolutions of  $N = \{32, 64, 128, 256, 512\}$ cells per direction were considered there. 
 The settings for this case are very complex and can be read in more detail in the FDS Verification Guide~\cite{McGrattan:2018:VG}.
 
@@ -789,7 +793,7 @@ Obviously, the periodicity of the analytical solutions is completely preserved a
 %\end{figure}
 
 
-\subsubsection{Turbulence/ribbed\_channel}
+\subsubsection{Ribbed Square Duct Flow ({\ct ribbed\_channel})}
 
 In the previous two cases, periodic boundary conditions were applied to the entire boundary of the computational domain. The situation is different, however, if there is a mixture of Neumann and periodic boundary conditions, since here only the periodic boundary values have to be communicated between the corresponding partners, while those for the Neumann components are set according to the boundary specifications of the case.
 
@@ -798,7 +802,8 @@ As long as there are no additional Dirichlet components on the boundary, the con
 in order to avoid that the matrix becomes indefinite. 
 
 Figure \ref{FIG_scarc_ribbed_channel} gives an example where periodic boundary conditions are used at
-{\ct XMIN} and {\ct XMAX} while Neumann boundary conditions are used elsewhere.
+{\ct XMIN} and {\ct XMAX} while Neumann boundary conditions are used elsewhere which is related to the
+Turbulence/ribbed\_channel test case.
 More details can be found in the FDS Verification Guide \cite{McGrattan:2018:VG}.
 Due to the large internal obstruction the unstructured \uscarc{} solver based on a 4-mesh subdivision was used. Evidently, the original flow pattern is matched again. 
 

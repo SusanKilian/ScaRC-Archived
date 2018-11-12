@@ -7,8 +7,7 @@
 \def\bibPath{../../../fds/Manuals/Bibliography}
 
 \input{\bibPath/commoncommands}
-\input{scarc_declarations}
-
+\input{declarations}
 % --------- Packages
 \usepackage{ulem}
 \usepackage{float}
@@ -37,20 +36,25 @@ alternative FDS pressure solver \\[8mm]
 \date{} 
 \maketitle
 
+\newpage	
+\tableofcontents
+%\listoffigures
+%\listoftables
 
 % ---------  sections
 \include{01_motivation}
 \include{02_poisson}
-\include{03_solver}
-\include{04_scarc}
-\include{05_verification}
+\include{03_direct}
+\include{04_iterative}
+\include{05_scarc}
+\include{06_verification}
 
 
 % ---------  bibliography
 \bibliographystyle{unsrt}
-\bibliography{\bibPath/FDS_general,\bibPath/FDS_refs,\bibPath/FDS_mathcomp,scarc_bibliography}
+\bibliography{\bibPath/FDS_general,\bibPath/FDS_refs,\bibPath/FDS_mathcomp,bibliography}
 
-\addcontentsline{toc}{chapter}{References}
+%\addcontentsline{toc}{chapter}{References}
 
 \end{document}
 
