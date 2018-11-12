@@ -2,6 +2,7 @@
 tt
 *.aux
 *.log
+*.toc
 *.out
 *.csv
 *sync*

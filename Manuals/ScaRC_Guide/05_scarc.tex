@@ -295,7 +295,7 @@ At the moment, the MG variant should only be used for structured discretizations
 An MG variant that basically uses structured grids on coarser levels, even if the fine grid level is unstructured, is in progress. Since the coarser levels only serve to correct the fine global problem, a combination of different discretization techniques is possible.
 The same considerations currently holds true for the usage of the \tls{} preconditioners as they also require a divisibility of the grid size at least by 2.
 
-\subsubsection{Algorithmic description}
+\subsubsection{Description of parameters}
 
 The following listing of \scarc{} related parameters in the {\ct \&PRES} namelist is still incomplete.
 At this stage, it is not yet clear whether most of the \scarc{} parameters should remain hidden and only some basic parameters should be provided for user-defined variation. Once this is determined, a detailed explanation of the remaining parameters will follow.

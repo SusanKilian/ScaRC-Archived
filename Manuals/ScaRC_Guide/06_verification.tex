@@ -543,6 +543,7 @@ Cells         &   $NNZ(A)$     &        $NNZ(L)$ &  $NNZ(L)/NNZ(A)$   \\  \hline
 \end{center}
 \end{table}
 
+
 For the calculations shown above a total grid resolution of $32^3$ cells was considered. In this case
 the ratio of the non-zeros between $L$ and $A$ already amounts to 36. 
 If the grid is further refined, however, it drastically raises up to a ratio of 204 in case of $128^3$ cells. For this finer resolution
@@ -572,7 +573,7 @@ To prevent the system from becoming indefinite, a corresponding {\it condensed s
 To check the basic correctness of this procedure, some of the available periodic test cases in FDS were also performed with different \scarc{} variants und will be briefly summarized below.
 
 
-\subsubsection{Analytical Solution to the Navier-Stokes Equation ({\ct ns2d\_4mesh})}
+\subsubsection{Analytical Solution to Navier-Stokes Equation ({\ct ns2d\_4mesh, ns2d\_16mesh})}
 
 This series of test cases, from Verification/NS\_Analytical\_Solution, is concerned with the approximation of a given analytical solution for the 2D incompressible Navier-Stokes equations. 
 %\begin{equation}
@@ -798,6 +799,7 @@ Obviously, the periodicity of the analytical solutions is completely preserved a
 
 In the previous two cases, periodic boundary conditions were applied to the entire boundary of the computational domain. The situation is different, however, if there is a mixture of Neumann and periodic boundary conditions, since here only the periodic boundary values have to be communicated between the corresponding partners, while those for the Neumann components are set according to the boundary specifications of the case.
 
+\newpage
 \scarc{} is able to handle these components individually. For the Neumann parts of the boundary, corresponding Neumann matrix stencils are integrated into the system with according settings of the right hand side. For the periodic parts the corresponding periodic stencils are used.
 As long as there are no additional Dirichlet components on the boundary, the condensed system must be used again
 in order to avoid that the matrix becomes indefinite. 

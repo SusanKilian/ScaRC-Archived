@@ -47,7 +47,7 @@ The final discretized version of the Poisson equation looks like
 \end{align}
 \normalsize
 The {\it finite difference} approximation (\ref{EQ_SCARC_discrete_poisson})
-of $\hp$ turns out to be of second-order accuracy, that is, the error between the analytical and numerical solution is proportional to the 2th power of the grid width.
+of $\hp$ turns out to be of second-order accuracy, i.e.\ the error between the analytical and numerical solution is proportional to the 2th power of the grid width.
 Note, that different discretizations for the time derivative of the velocity divergence are used in the predictor and corrector parts of the time stepping scheme, see again the FDS Technical Reference Guide\cite{McGrattan:2018:TG} for more details. 
 
 \begin{figure}[htb]
@@ -290,7 +290,7 @@ In case of multi-mesh applications, it may be necessary to also specify Dirichle
 \label{SEC_SCARC_solver}
 
 Commonly used approaches for the solution of the Poisson equation (\ref{EQ_SCARC_pressure}) 
-are either based on direct or iterative solution strategies which will be described in more detail in the next sections of the document. Their efficient parallelization must bridge the gap between the following two very conflicting requirements:
+are either based on direct or iterative solution strategies which will be described in more detail in the next sections. Their efficient parallelization must bridge the gap between the following two very conflicting requirements:
 \begin{itemize}
 \item {\bf Efficient convergence behavior} ('Globality' preferred)\\
 Especially for globally coupled systems such as elliptic equations fast convergence is essentially based on how well an algorithm is able to reproduce global dependencies. Powerful elliptic solvers mainly rest on highly recursive algorithmic structures which strongly couple the overall data of the whole domain. Thus, they have very little inherent parallelism. 
@@ -304,7 +304,7 @@ For multi-mesh applications the first obvious idea consists in the development o
 In order to increase the degree of parallelism the only remedy is to modify existing techniques or to develop completely new strategies, which are better adapted to modern parallel architectures. However, this process is necessarily associated with a loosening of the global coupling.
 New local information can no longer be distributed globally just when it is needed, but only with a time delay or, in order to save computational overhead, only in  reduced or coarser form. Typically, this leads to dependencies on the number of subdomains or the grid resolution associated with losses of numerical efficiency and possible troubles in the correct mapping of actual physical processes. 
 
-These observations can be summarised as follows:
+All in all, these observations can be summarised as follows:
 `Well parallelizable algorithms for elliptic problems are often numerically inefficient, numerically efficient algorithms are hardly parallelizable.' The task in designing a suitable solver is therefore to find a suitable compromise. Usually there is no general rule that applies in all cases. Rather, attention must be paid to the specific characteristics of the underlying problem. The optimal strategy for a problem with only a few sub-meshes can be completely different from that for a massively parallel application. For this reason it is of great importance to understand the advantages and disadvantages of different solution strategies and to make the best possible use of this knowledge.
 
 
