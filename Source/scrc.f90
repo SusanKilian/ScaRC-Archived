@@ -261,17 +261,18 @@ INTEGER, PARAMETER :: NSCARC_VECTOR_ONE_X           =  1, &   !> selection param
                       NSCARC_VECTOR_ONE_Y           =  6, &   !> selection parameter for 1-stage vector Y
                       NSCARC_VECTOR_ONE_Z           =  7, &   !> selection parameter for 1-stage vector Z
                       NSCARC_VECTOR_ONE_E           =  8, &   !> selection parameter for 1-stage vector Z
-                      NSCARC_VECTOR_TWO_X           =  9, &   !> selection parameter for 2-stage vector X
-                      NSCARC_VECTOR_TWO_B           = 10, &   !> selection parameter for 2-stage vector F
-                      NSCARC_VECTOR_TWO_Q           = 11, &   !> selection parameter for 2-stage vector G
-                      NSCARC_VECTOR_TWO_V           = 12, &   !> selection parameter for 2-stage vector D
-                      NSCARC_VECTOR_TWO_W           = 13, &   !> selection parameter for 2-stage vector R
-                      NSCARC_VECTOR_TWO_Y           = 14, &   !> selection parameter for 2-stage vector Y
-                      NSCARC_VECTOR_TWO_Z           = 15, &   !> selection parameter for 2-stage vector Z
-                      NSCARC_VECTOR_TWO_E           = 16, &   !> selection parameter for 2-stage vector Z
-                      NSCARC_VECTOR_H               = 17, &   !> selection parameter for vector H
-                      NSCARC_VECTOR_HS              = 18, &   !> selection parameter for vector HS
-                      NSCARC_VECTOR_MEASURE         = 19      !> selection parameter for vector Z
+                      NSCARC_VECTOR_ONE_R           =  9, &   !> selection parameter for 1-stage vector G
+                      NSCARC_VECTOR_TWO_X           = 10, &   !> selection parameter for 2-stage vector X
+                      NSCARC_VECTOR_TWO_B           = 11, &   !> selection parameter for 2-stage vector F
+                      NSCARC_VECTOR_TWO_Q           = 12, &   !> selection parameter for 2-stage vector G
+                      NSCARC_VECTOR_TWO_V           = 13, &   !> selection parameter for 2-stage vector D
+                      NSCARC_VECTOR_TWO_W           = 14, &   !> selection parameter for 2-stage vector R
+                      NSCARC_VECTOR_TWO_Y           = 15, &   !> selection parameter for 2-stage vector Y
+                      NSCARC_VECTOR_TWO_Z           = 16, &   !> selection parameter for 2-stage vector Z
+                      NSCARC_VECTOR_TWO_E           = 17, &   !> selection parameter for 2-stage vector Z
+                      NSCARC_VECTOR_TWO_R           = 18, &   !> selection parameter for 2-stage vector Z
+                      NSCARC_VECTOR_H               = 19, &   !> selection parameter for vector H
+                      NSCARC_VECTOR_HS              = 20      !> selection parameter for vector HS
 
 INTEGER, PARAMETER :: NSCARC_MATRIX_CSR             =  1, &   !> matrix in CSR storage format
                       NSCARC_MATRIX_BANDED          =  2, &   !> matrix in diagonal storage format
@@ -658,12 +659,15 @@ END TYPE SCARC_MKL_TYPE
 TYPE SCARC_STAGE_TYPE
 REAL (EB), ALLOCATABLE, DIMENSION (:) :: X          !> solution vector double precision
 REAL (EB), ALLOCATABLE, DIMENSION (:) :: B          !> right hand side vector double precision
-REAL (EB), ALLOCATABLE, DIMENSION (:) :: E          !> error vector double precision
 REAL (EB), ALLOCATABLE, DIMENSION (:) :: Q          !> auxiliary vector double precision
 REAL (EB), ALLOCATABLE, DIMENSION (:) :: V          !> auxiliary vector double precision
 REAL (EB), ALLOCATABLE, DIMENSION (:) :: W          !> auxiliary vector double precision
 REAL (EB), ALLOCATABLE, DIMENSION (:) :: Y          !> auxiliary vector double precision
 REAL (EB), ALLOCATABLE, DIMENSION (:) :: Z          !> auxiliary vector double precision
+#ifdef WITH_SCARC_DEBUG
+REAL (EB), ALLOCATABLE, DIMENSION (:) :: E          !> error vector double precision
+REAL (EB), ALLOCATABLE, DIMENSION (:) :: R          !> residual vector double precision
+#endif
 #ifdef WITH_MKL_FB
 REAL (FB), ALLOCATABLE, DIMENSION (:) :: X_FB       !> solution vector vector single precision
 REAL (FB), ALLOCATABLE, DIMENSION (:) :: B_FB       !> right hand side vector single precision
@@ -775,12 +779,15 @@ INTEGER :: TYPE_CYCLING   = NSCARC_UNDEFINED_INT    !> multigrid cycle
 !> References to different vectors which are needed for the current solver
 INTEGER  :: X = NSCARC_UNDEFINED_INT                !> reference to local X-vector, double precision
 INTEGER  :: B = NSCARC_UNDEFINED_INT                !> reference to local B-vector, double precision
-INTEGER  :: E = NSCARC_UNDEFINED_INT                !> reference to local E-vector, double precision
 INTEGER  :: Q = NSCARC_UNDEFINED_INT                !> reference to local G-vector, double precision
 INTEGER  :: V = NSCARC_UNDEFINED_INT                !> reference to local D-vector, double precision
 INTEGER  :: W = NSCARC_UNDEFINED_INT                !> reference to local W-vector, double precision
 INTEGER  :: Y = NSCARC_UNDEFINED_INT                !> reference to local Y-vector, double precision
 INTEGER  :: Z = NSCARC_UNDEFINED_INT                !> reference to local Z-vector, double precision
+#ifdef WITH_SCARC_DEBUG
+INTEGER  :: E = NSCARC_UNDEFINED_INT                !> reference to local E-vector, double precision
+INTEGER  :: R = NSCARC_UNDEFINED_INT                !> reference to local E-vector, double precision
+#endif
 #ifdef WITH_MKL_FB
 INTEGER  :: X_FB = NSCARC_UNDEFINED_INT             !> reference to local X-vector, single precision
 INTEGER  :: B_FB = NSCARC_UNDEFINED_INT             !> reference to local B-vector, single precision
@@ -837,7 +844,10 @@ END TYPE SCARC_TYPE
 !> -----------------------------------------------------------------------------------------------
 !> Iteration parameters vectors and iteration parameters
 !> -----------------------------------------------------------------------------------------------
-INTEGER   :: X, B, Q, V, W, Y, Z, E
+INTEGER   :: X, B, Q, V, W, Y, Z
+#ifdef WITH_SCARC_DEBUG
+INTEGER   :: E, R
+#endif
 INTEGER   :: NIT, ITE
 REAL (EB) :: EPS, RES, RESIN, OMEGA, CAPPA, ERR
 INTEGER   :: ITE_PRES=0, ITE_TOTAL=0, ITE_CG=0, ITE_MG=0, ITE_LU=0, ITE_SMOOTH=0, ITE_COARSE=0
@@ -5467,8 +5477,8 @@ END SUBROUTINE SCARC_SETUP_METHODS
 !> ----------------------------------------------------------------------------------------------------
 !> Set description pointers to solution vectors related to used scope (main/relax)
 !> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_POINTERS(BX, BF, BD, BG, BW, BY, BZ, BE, NSTACK)
-LOGICAL, INTENT(IN) :: BX, BF, BD, BG, BW, BY, BZ, BE
+SUBROUTINE SCARC_SETUP_POINTERS(BX, BF, BD, BG, BW, BY, BZ, NSTACK)
+LOGICAL, INTENT(IN) :: BX, BF, BD, BG, BW, BY, BZ
 INTEGER, INTENT(IN) :: NSTACK
 TYPE(SCARC_SOLVER_TYPE), POINTER :: SV=>NULL()
 
@@ -5477,22 +5487,28 @@ SV  => STACK(NSTACK)%SOLVER
 SELECT CASE (SV%TYPE_STAGE)
    CASE (NSCARC_STAGE_ONE)
       IF (BF) SV%B = NSCARC_VECTOR_ONE_B
-      IF (BE) SV%E = NSCARC_VECTOR_ONE_E
       IF (BG) SV%Q = NSCARC_VECTOR_ONE_Q
       IF (BD) SV%V = NSCARC_VECTOR_ONE_V
       IF (BW) SV%W = NSCARC_VECTOR_ONE_W
       IF (BX) SV%X = NSCARC_VECTOR_ONE_X
       IF (BY) SV%Y = NSCARC_VECTOR_ONE_Y
       IF (BZ) SV%Z = NSCARC_VECTOR_ONE_Z
+#ifdef WITH_SCARC_DEBUG
+      SV%E = NSCARC_VECTOR_ONE_E
+      SV%R = NSCARC_VECTOR_ONE_R
+#endif
    CASE (NSCARC_STAGE_TWO)
       IF (BF) SV%B = NSCARC_VECTOR_TWO_B
-      IF (BE) SV%E = NSCARC_VECTOR_TWO_E
       IF (BD) SV%V = NSCARC_VECTOR_TWO_V
       IF (BW) SV%W = NSCARC_VECTOR_TWO_W
       IF (BG) SV%Q = NSCARC_VECTOR_TWO_Q
       IF (BX) SV%X = NSCARC_VECTOR_TWO_X
       IF (BY) SV%Y = NSCARC_VECTOR_TWO_Y
       IF (BZ) SV%Z = NSCARC_VECTOR_TWO_Z
+#ifdef WITH_SCARC_DEBUG
+      SV%E = NSCARC_VECTOR_TWO_E
+      SV%R = NSCARC_VECTOR_TWO_R
+#endif
 END SELECT
 
 END SUBROUTINE SCARC_SETUP_POINTERS
@@ -5588,7 +5604,7 @@ SELECT CASE(NSOLVER)
 END SELECT
 
 !> Point to solution vectors (in corresponding scope)
-CALL SCARC_SETUP_POINTERS(.TRUE.,.TRUE.,.TRUE.,.TRUE.,.TRUE.,.TRUE.,.TRUE.,.TRUE., NSTACK)
+CALL SCARC_SETUP_POINTERS(.TRUE.,.TRUE.,.TRUE.,.TRUE.,.TRUE.,.TRUE.,.TRUE., NSTACK)
 END SUBROUTINE SCARC_SETUP_KRYLOV
 
 !> ----------------------------------------------------------------------------------------------------
@@ -5633,7 +5649,7 @@ SV%EPS = SCARC_MULTIGRID_ACCURACY
 SV%NIT = SCARC_MULTIGRID_ITERATIONS
 
 !> Point to solution vectors (in corresponding scope)
-CALL SCARC_SETUP_POINTERS(.TRUE.,.TRUE.,.TRUE.,.TRUE.,.FALSE.,.FALSE.,.TRUE.,.TRUE., NSTACK)
+CALL SCARC_SETUP_POINTERS(.TRUE.,.TRUE.,.TRUE.,.TRUE.,.FALSE.,.FALSE.,.TRUE., NSTACK)
 END SUBROUTINE SCARC_SETUP_MULTIGRID
 
 !> ----------------------------------------------------------------------------------------------------
@@ -5710,7 +5726,7 @@ SV%TYPE_NLMAX     = NLMAX
 SV%TYPE_PRECISION = TYPE_PRECISION
 
 !> Point to solution vectors (in corresponding scope)
-CALL SCARC_SETUP_POINTERS(.TRUE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.,.TRUE., NSTACK)
+CALL SCARC_SETUP_POINTERS(.TRUE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE., NSTACK)
 
 END SUBROUTINE SCARC_SETUP_LU
 #endif
@@ -5781,13 +5797,17 @@ SV%TYPE_PRECISION = SVP%TYPE_PRECISION
 
 !> Preset pointers for preconditioner (use same as for alling solver)
 SV%B = SVP%B                             
-SV%E = SVP%E
 SV%Q = SVP%Q
 SV%V = SVP%V
 SV%W = SVP%W
 SV%X = SVP%X                                    
 SV%Y = SVP%Y
 SV%Z = SVP%Z
+
+#ifdef WITH_SCARC_DEBUG
+SV%E = SVP%E
+SV%R = SVP%R
+#endif
 
 #ifdef WITH_MKL_FB
 SV%B_FB = SVP%B_FB
@@ -5849,13 +5869,17 @@ SV%TYPE_PRECISION = SVP%TYPE_PRECISION
 
 !> Preset references for preconditioner (use same pointers as calling solver)
 SV%B = SVP%B
-SV%E = SVP%E
 SV%Q = SVP%Q
 SV%V = SVP%V
 SV%W = SVP%W
 SV%X = SVP%X                          
 SV%Y = SVP%Y
 SV%Z = SVP%Z
+
+#ifdef WITH_SCARC_DEBUG
+SV%E = SVP%E
+SV%R = SVP%R
+#endif
 
 #ifdef WITH_MKL_FB
 SV%B_FB = SVP%B_FB
@@ -7708,6 +7732,15 @@ CALL SCARC_SETUP_SOLVER(NS, NP)
 CALL SCARC_SETUP_WORKSPACE(NS, NL)
 
 #ifdef WITH_SCARC_DEBUG
+
+!> BEGIN: CAUTION CAUTION CAUTION - ONLY TEMPORARILY
+!CALL SCARC_PRESET_RHS(F, NL)
+!CALL SCARC_DUMP_QUANTITY(F, 'RHS', 0, NS, NL)
+!CALL SCARC_PRESET_EXACT(E, NL)
+!CALL SCARC_DUMP_QUANTITY(E, 'EXACT', 0, NS, NL)
+!CALL SCARC_PRESET_EXACT(X, NL)
+!> END: CAUTION CAUTION CAUTION - ONLY TEMPORARILY
+
 CALL SCARC_DEBUG_LEVEL (X, 'X INIT0', NL)
 CALL SCARC_DEBUG_LEVEL (B, 'B INIT0', NL)
 #endif
@@ -7749,6 +7782,10 @@ MULTIGRID_LOOP: DO ITE = 1, NIT
       !>
       PRESMOOTHING_LOOP: DO WHILE (NL < NLEVEL_MAX)
          CALL SCARC_SMOOTHER (NSCARC_CYCLING_PRESMOOTH, NS+1, NS, NL)         !> D_fine   := smooth(defect)
+
+#ifdef WITH_SCARC_DEBUG
+!CALL SCARC_PRESET_VECTOR(D, NL)
+#endif
          CALL SCARC_RESTRICTION (V, B, NL, NL+1)                              !> F_coarse := rest(D_fine)
          CALL SCARC_VECTOR_CLEAR (X, NL+1)                                    !> X_coarse := 0.0
          NL = NL + 1                                                          !> set coarser level
@@ -7761,6 +7798,11 @@ MULTIGRID_LOOP: DO ITE = 1, NIT
       CALL SCARC_METHOD_COARSE(NS+2, NS, NLEVEL_MAX)                          !> X_coarse := exact_sol(.)
       TSTEP(MYID+1)%COARSE=MAX(TSTEP(MYID+1)%COARSE,CURRENT_TIME()-TNOW_COARSE)
       TSUM(MYID+1)%COARSE =TSUM(MYID+1)%COARSE+CURRENT_TIME()-TNOW_COARSE
+
+#ifdef WITH_SCARC_DEBUG
+!CALL SCARC_VECTOR_CLEAR (X, NLEVEL_MAX)                                    !> X_coarse := 0.0
+!CALL SCARC_PRESET_VECTOR(X, NLEVEL_MAX)
+#endif
 
       !>
       !> Postsmoothing (smoothing/restriction till finest level is reached again)
@@ -7819,6 +7861,10 @@ SELECT CASE (TYPE_STAGE)
 END SELECT
 
 CALL SCARC_RELEASE_SOLVER(NS, NP)
+
+#ifdef WITH_SCARC_DEBUG
+!IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) STOP
+#endif
 
 #ifdef WITH_SCARC_VERBOSE
 WRITE(MSG%LU_VERBOSE,*) '==================== Leaving Multigrid method on level ', NLEVEL
@@ -8017,7 +8063,7 @@ TYPE_PARENT   = NP
 TYPE_METHOD   = SV%TYPE_METHOD
 TYPE_SOLVER   = SV%TYPE_SOLVER
 TYPE_STAGE    = SV%TYPE_STAGE
-TYPE_DEFCOR    = SV%TYPE_DEFCOR
+TYPE_DEFCOR   = SV%TYPE_DEFCOR
 TYPE_INTERPOL = SV%TYPE_INTERPOL
 TYPE_TWOLEVEL = SV%TYPE_TWOLEVEL
 TYPE_CYCLING  = SV%TYPE_CYCLING
@@ -8030,7 +8076,11 @@ V = SV%V
 W = SV%W
 Y = SV%Y
 Z = SV%Z
+
+#ifdef WITH_SCARC_DEBUG
 E = SV%E
+R = SV%R
+#endif
 
 IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) ITE_TOTAL = 0
 
@@ -8333,6 +8383,26 @@ INTEGER, INTENT(IN) :: NL, NS, ISM
 INTEGER :: NSTATE
 
 NSTATE = NSCARC_STATE_PROCEED
+
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_PRESET_EXACT(E, NL)
+
+call SCARC_DEBUG_LEVEL (R, 'RESIDUAL', NL)
+call SCARC_DEBUG_LEVEL (E, 'EXACT'   , NL)
+call SCARC_DEBUG_LEVEL (X, 'DISCRET' , NL)
+
+CALL SCARC_DUMP_QUANTITY(R, 'RESIDUAL', ISM, NS, NL)
+CALL SCARC_DUMP_QUANTITY(X, 'DISCRET' , ISM, NS, NL)
+
+CALL SCARC_VECTOR_SUM(X, E, 1.0_EB, -1.0_EB, NL)
+ERR = SCARC_L2NORM (E, NL)
+
+call SCARC_DEBUG_LEVEL (E, 'ERROR', NL)
+CALL SCARC_DUMP_QUANTITY(E, 'ERROR', ISM, NS, NL)
+
+CALL SCARC_DUMP_STATISTICS(ISM, NL)
+#endif
+
 
 SELECT CASE (TYPE_ACCURACY)
    CASE (NSCARC_ACCURACY_RELATIVE)
@@ -9871,22 +9941,30 @@ TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 
 L => SCARC(NM)%LEVEL(NL)
 SELECT CASE (NV)
+   !>
+   !> Stage one vectors
+   !>
    CASE (NSCARC_VECTOR_ONE_X)
       POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%X
    CASE (NSCARC_VECTOR_ONE_B)
       POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%B
    CASE (NSCARC_VECTOR_ONE_V)
       POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%V
-   CASE (NSCARC_VECTOR_ONE_Q)
-      POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%Q
    CASE (NSCARC_VECTOR_ONE_W)
       POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%W
    CASE (NSCARC_VECTOR_ONE_Y)
       POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%Y
    CASE (NSCARC_VECTOR_ONE_Z)
       POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%Z
+#ifdef WITH_SCARC_DEBUG
    CASE (NSCARC_VECTOR_ONE_E)
       POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%E
+   CASE (NSCARC_VECTOR_ONE_R)
+      POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%R
+#endif
+   !>
+   !> Stage two vectors
+   !>
    CASE (NSCARC_VECTOR_TWO_X)
       POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_TWO)%X
    CASE (NSCARC_VECTOR_TWO_B)
@@ -9901,8 +9979,12 @@ SELECT CASE (NV)
       POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_TWO)%Y
    CASE (NSCARC_VECTOR_TWO_Z)
       POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_TWO)%Z
+#ifdef WITH_SCARC_DEBUG
    CASE (NSCARC_VECTOR_TWO_E)
       POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_TWO)%E
+   CASE (NSCARC_VECTOR_TWO_R)
+      POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_TWO)%R
+#endif
 END SELECT
 
 END FUNCTION POINT_TO_VECTOR
@@ -10336,12 +10418,214 @@ ENDIF
 
 END SUBROUTINE SCARC_TIMEOUT
 
+!> ----------------------------------------------------------------------------------------------------
+!> Dump residual information
+!> ----------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DUMP_STATISTICS(ISM, NL)
+INTEGER, INTENT(IN) :: ISM, NL
+INTEGER :: NM
+DO NM = 1, NMESHES
+   IF (ITE_TOTAL == 0) THEN
+      WRITE(MSG%LU_CSV,1000) ITE_TOTAL, ITE, ITE_CG, ITE_MG, ITE_SMOOTH, ISM, NL, TYPE_METHOD, TYPE_SOLVER, RESIN, ERR
+   ELSE
+      WRITE(MSG%LU_CSV,1000) ITE_TOTAL, ITE, ITE_CG, ITE_MG, ITE_SMOOTH, ISM, NL, TYPE_METHOD, TYPE_SOLVER, RES, ERR
+   ENDIF
+ENDDO
+1000 FORMAT(I10,',',i4,',',i7,',',i7,',',i7,',',i4,',',i3,',',i7,',',i7,',',E20.12,',',E20.12)
+2000 FORMAT(I6,',',i3,',',i3,',',E20.12,',',E20.12)
+END SUBROUTINE SCARC_DUMP_STATISTICS
 
+
+
+
+!> ================================================================================================
+!> START DEBUGGING PART  
+!> Collection of routines which print out different quantities or allow to preset them
+!> Only enabled if directive SCARC_DEBUG is set
+!> ================================================================================================
 #ifdef WITH_SCARC_DEBUG
 
-!> ================================================================================================
-!> START DEBUGGING PART  -  only enabled if directive SCARC_DEBUG is set
-!> ================================================================================================
+!> ------------------------------------------------------------------------------------------------
+!> Preset right hand side in such a way that exact solution is known
+!> ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PRESET_EXACT (NE, NL)
+INTEGER, INTENT(IN):: NE, NL
+REAL (EB), POINTER, DIMENSION(:) :: VE
+INTEGER :: IC, NM, I, K
+REAL(EB), DIMENSION(:), POINTER :: XMID, ZMID
+TYPE (MESH_TYPE), POINTER :: M=>NULL()
+TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
+
+IF (ITE_TOTAL == 0) WRITE(*,*) 'CAUTION: PRESET_EXACT is active !!!'
+
+DO NM = 1, NMESHES
+   M => MESHES(NM)
+   L => SCARC(NM)%LEVEL(NL)
+   VE => POINT_TO_VECTOR (NM, NL, NE)
+   DO K = 1, L%NZ
+      DO I = 1, L%NX
+         IF (.NOT.PRES_ON_WHOLE_DOMAIN.AND.L%CELL_STATE(I,1,K) /= NSCARC_CELL_GASPHASE) CYCLE
+         IC = L%CELL_NUMBER(I,1,K)
+         IF (NL == NLEVEL_MIN) THEN
+            XMID => M%XC
+            ZMID => M%ZC
+         ELSE
+            XMID => L%XMID
+            ZMID => L%ZMID
+         ENDIF
+         VE(IC) = EXACT(XMID(I),ZMID(K))
+         WRITE(MSG%LU_DEBUG,'(A,i3,a,e10.2,a,e10.2,a,e12.4)') 'IC=',IC,':X=',XMID(i),':Z=',ZMID(k),': RHS=',VE(IC)
+      ENDDO
+   ENDDO
+ENDDO
+
+END SUBROUTINE SCARC_PRESET_EXACT
+
+!> ------------------------------------------------------------------------------------------------
+!> Preset vector 
+!> ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PRESET_VECTOR (NV, NL)
+INTEGER, INTENT(IN):: NV, NL
+REAL (EB), POINTER, DIMENSION(:) :: VEC
+INTEGER :: IC, NM, I, K
+REAL(EB), DIMENSION(:), POINTER :: XMID, ZMID
+TYPE (MESH_TYPE), POINTER :: M=>NULL()
+TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
+
+DO NM = 1, NMESHES
+   M => MESHES(NM)
+   L => SCARC(NM)%LEVEL(NL)
+   VEC => POINT_TO_VECTOR (NM, NL, NV)
+   DO K = 1, L%NZ
+      DO I = 1, L%NX
+         IF (.NOT.PRES_ON_WHOLE_DOMAIN.AND.L%CELL_STATE(I,1,K) /= NSCARC_CELL_GASPHASE) CYCLE
+         IC = L%CELL_NUMBER(I,1,K)
+         IF (NL == NLEVEL_MIN) THEN
+            XMID => M%XC
+            ZMID => M%ZC
+         ELSE
+            XMID => L%XMID
+            ZMID => L%ZMID
+         ENDIF
+         VEC(IC) = XMID(I)
+         WRITE(MSG%LU_DEBUG,'(A,i3,a,e10.2,a,e10.2,a,e12.4)') 'IC=',IC,':X=',XMID,':Z=',ZMID,': RHS=',VEC(IC)
+      ENDDO
+   ENDDO
+ENDDO
+
+END SUBROUTINE SCARC_PRESET_VECTOR
+
+
+!> ------------------------------------------------------------------------------------------------
+!> Preset right hand side in such a way that exact solution is known
+!> ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PRESET_RHS (NV, NL)
+INTEGER, INTENT(IN):: NV, NL
+REAL (EB), POINTER, DIMENSION(:) :: VC
+INTEGER :: IC, NM, I, K
+REAL (EB) :: X, Z
+TYPE (MESH_TYPE), POINTER :: M=>NULL()
+TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
+
+IF (ITE_TOTAL == 0) WRITE(*,*) 'CAUTION: PRESET_RHS is active !!!'
+IF (NL > NLEVEL_MIN) WRITE(*,*) 'Wrong level for presetting RHS '
+
+DO NM = 1, NMESHES
+   M => MESHES(NM)
+   M%BXS = 0.0_EB
+   M%BXF = 0.0_EB
+   M%BZS = 0.0_EB
+   M%BZF = 0.0_EB
+   L => SCARC(NM)%LEVEL(NL)
+   VC => POINT_TO_VECTOR (NM, NL, NV)
+   DO K = 1, L%NZ
+      DO I = 1, L%NX
+         IF (.NOT.PRES_ON_WHOLE_DOMAIN.AND.L%CELL_STATE(I,1,K) /= NSCARC_CELL_GASPHASE) CYCLE
+         IC = L%CELL_NUMBER(I,1,K)
+         X  = M%XC(I)
+         Z  = M%ZC(K)
+         WRITE(MSG%LU_DEBUG,'(A,i3,a,e10.2,a,e10.2,a,e12.4)') 'IC=',IC,':X=',X,':Z=',Z,': RHS=',VC(IC)
+         VC(IC) = RHS(X,Z)
+      ENDDO
+   ENDDO
+ENDDO
+
+END SUBROUTINE SCARC_PRESET_RHS
+
+!> ------------------------------------------------------------------------------------------------
+!> Set exact solution 
+!> ------------------------------------------------------------------------------------------------
+DOUBLE PRECISION FUNCTION EXACT(X,Z)
+REAL (EB), INTENT(IN) :: X, Z
+!EXACT = (X**2 - X**4) * (Z**4 - Z**2)                                    !> FUNCTION 1
+!EXACT = (X**2 - 1) * (Z**2 - 1)                                         !> FUNCTION 2
+!EXACT =  625.0_EB/16.0_EB * X * (0.8_EB - X) * Z * (0.8_EB - Z)        !> FUNCTION 3
+EXACT = - X * (0.8_EB - X) * Z * (0.8_EB - Z)        !> FUNCTION 3
+END FUNCTION EXACT
+
+
+!> ------------------------------------------------------------------------------------------------
+!> Set right hand side
+!> ------------------------------------------------------------------------------------------------
+DOUBLE PRECISION FUNCTION RHS(X,Z)
+REAL (EB), INTENT(IN) :: X, Z
+!RHS = 2.0_EB*((1.0_EB - 6.0_EB*X**2)*Z**2*(1.0_EB-Z**2)+(1.0_EB-6.0_EB*Z**2)*X**2*(1.0_EB-X**2))
+!RHS = -X**2 - Z**2 +2
+!RHS = 625.0_EB/8.0_EB * (X * (0.8_EB - X) + Z * (0.8_EB - Z))
+RHS = 2.0_EB * (X * (0.8_EB - X) + Z * (0.8_EB - Z))
+END FUNCTION RHS
+
+!> ------------------------------------------------------------------------------------------------
+!> Save dump of vector in dump-directory
+!> ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DUMP_QUANTITY (NV, CNAME, ISM, NS, NL)
+INTEGER, INTENT(IN):: NV, NS, NL, ISM
+CHARACTER(*), INTENT(IN):: CNAME
+REAL (EB), POINTER, DIMENSION(:)     :: VEC
+CHARACTER(80) :: FN_DUMP, CDIR
+INTEGER :: LU_DUMP, IC, NM
+TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
+
+IF (TRIM(CNAME) == 'RESIDUAL') THEN
+   CDIR = 'res'
+ELSE IF (TRIM(CNAME) == 'ERROR') THEN
+   CDIR = 'err'
+ELSE IF (TRIM(CNAME) == 'RHS') THEN
+   CDIR = 'rhs'
+ELSE IF (TRIM(CNAME) == 'EXACT') THEN
+   CDIR = 'exa'
+ELSE IF (TRIM(CNAME) == 'DISCRET') THEN
+   CDIR = 'dis'
+ENDIF
+DO NM = 1, NMESHES
+   VEC => POINT_TO_VECTOR (NM, NL, NV)
+   L => SCARC(NM)%LEVEL(NL)
+   if (ISM == 0) THEN
+      WRITE (FN_DUMP, '(A,A3,A,i3.3,A,I3.3,A,I3.3,A,I3.3,A,I1,A,A)') &
+      'dump/',CDIR,'_t',ITE_TOTAL,'_ALL',ITE_SMOOTH,'_mg',ITE_MG,'_cg',ITE_CG,'_level',NL,'_',&
+      TRIM(STACK(NS)%SOLVER%CNAME)
+   else if (ISM == NSCARC_CYCLING_PRESMOOTH) THEN
+      WRITE (FN_DUMP, '(A,A3,A,i3.3,A,I3.3,A,I3.3,A,I3.3,A,I1,A,A)') &
+      'dump/',CDIR,'_t',ITE_TOTAL,'_PRE',ITE_SMOOTH,'_mg',ITE_MG,'_cg',ITE_CG,'_level',NL,'_',&
+      TRIM(STACK(NS)%SOLVER%CNAME)
+   ELSE IF (ISM == NSCARC_CYCLING_POSTSMOOTH) THEN
+      WRITE (FN_DUMP, '(A,A3,A,i3.3,A,I3.3,A,I3.3,A,I3.3,A,I1,A,A)') &
+      'dump/',CDIR,'_t',ITE_TOTAL,'_POST',ITE_SMOOTH,'_mg',ITE_MG,'_cg',ITE_CG,'_level',NL,'_',&
+      TRIM(STACK(NS)%SOLVER%CNAME)
+   ENDIF
+   LU_DUMP = GET_FILE_NUMBER()
+   OPEN (LU_DUMP, FILE=FN_DUMP)
+   DO IC = 1, L%NC
+      !WRITE(LU_DUMP,'(F25.16)') VEC(IC)
+      WRITE(LU_DUMP,*) VEC(IC)
+   ENDDO
+   CLOSE(LU_DUMP)
+ENDDO
+
+FN_DUMP = CNAME
+END SUBROUTINE SCARC_DUMP_QUANTITY
+
+
 !> ------------------------------------------------------------------------------------------------
 !> Print out vector information on level NL
 !> ------------------------------------------------------------------------------------------------
@@ -10972,7 +11256,6 @@ ENDDO
 WRITE(MMATRIX, *) ' ]'
 CLOSE(MMATRIX)
  
-!1104 FORMAT(i4,' :', 4(f6.2))
 END SUBROUTINE SCARC_MATLAB_MATRIX
 
 #endif
