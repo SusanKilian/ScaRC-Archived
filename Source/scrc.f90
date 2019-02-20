@@ -48,7 +48,7 @@ PUBLIC SCARC_CAPPA                             !> Convergence rate
 PUBLIC SCARC_ACCURACY                          !> Chosen accuracy type (relative/absolute)
 PUBLIC SCARC_PRECISION                         !> Single/double precision for preconditioning or LU-decomposition
 PUBLIC SCARC_TWOLEVEL                          !> Type of Twolevel-CG-method
-PUBLIC SCARC_CSV                               !> Level for plotting csv information
+PUBLIC SCARC_STATISTICS                        !> Plot ScarC statistics into chid_scarc.csv
 
 PUBLIC SCARC_KRYLOV                            !> Type of Krylov method
 PUBLIC SCARC_KRYLOV_ITERATIONS                 !> Maximum number of iterations for Krylov method
@@ -85,10 +85,10 @@ PUBLIC SCARC_COARSE_LEVEL                      !> Coarse grid level
 !> Miscellaneous declarations
 !> ------------------------------------------------------------------------------------------------
 !> General definitions
-CHARACTER(40) :: SCARC_METHOD   = 'NONE'                    !> Requested solver method (KRYLOV/MULTIGRID)
-CHARACTER(40) :: SCARC_TWOLEVEL = 'NONE'                    !> Type of two-level method (NONE/ADDITIVE/MULTIPLICATIVE)
-CHARACTER(40) :: SCARC_MATRIX_FORMAT  = 'CSR'               !> Type of matrix storage (CSR/DIAGONAL)
-CHARACTER(40) :: SCARC_DISCRETIZATION = 'STRUCTURED'        !> Type of discretization (STRUCTURED/UNSTRUCTURED)
+CHARACTER(40) :: SCARC_METHOD               = 'NONE'        !> Requested solver method (KRYLOV/MULTIGRID)
+CHARACTER(40) :: SCARC_TWOLEVEL             = 'NONE'        !> Type of two-level method (NONE/ADDITIVE/MULTIPLICATIVE)
+CHARACTER(40) :: SCARC_MATRIX_FORMAT        = 'CSR'         !> Type of matrix storage (CSR/DIAGONAL)
+CHARACTER(40) :: SCARC_DISCRETIZATION       = 'STRUCTURED'  !> Type of discretization (STRUCTURED/UNSTRUCTURED)
 
 !> General iteration parameters
 INTEGER       :: SCARC_ITERATIONS           =  0            !> Number of iterations of selected ScaRC solver
@@ -140,7 +140,7 @@ CHARACTER(40) :: SCARC_MKL_MTYPE = 'SYMMETRIC'              !> Type of MKL matri
 #endif
 
 !> Debugging parameters
-CHARACTER(40) :: SCARC_CSV        = 'NONE'                  !> CSV writing level (NONE/MAIN/MEDIUM/FULL)
+CHARACTER(40) :: SCARC_STATISTICS = '.FALSE.'               !> Print ScaRC statistics into chid_scarc.csv (TRUE/FALSE)
 
 INTEGER :: IERROR = 0
 
@@ -385,7 +385,7 @@ LOGICAL :: BGMG        = .FALSE.                           ! Geometric Multigrid
 LOGICAL :: BTWOLEVEL   = .FALSE.                           ! Method with two grid levels used?
 LOGICAL :: BMULTILEVEL = .FALSE.                           ! Method with multiple grid levels used?
 LOGICAL :: BSTRUCTURED = .TRUE.                            ! Structured/Unstructured discretization used?
-LOGICAL :: BCSV        = .FALSE.                           ! store iteration statistics in CSV-file
+LOGICAL :: BSTATISTICS = .FALSE.                           ! store iteration statistics in CSV-file
 LOGICAL :: BFFT        = .FALSE.                           ! FFT-method used?
 LOGICAL :: BMKL        = .FALSE.                           ! MKL-method used?
 LOGICAL :: BMKL_LEVEL(NSCARC_LEVEL_MAX)  = .FALSE.         ! level-dependent MKL method used ?
@@ -483,7 +483,7 @@ END TYPE SCARC_TIME_TYPE
 TYPE SCARC_MESSAGE_TYPE
 CHARACTER(100):: TEXT
 CHARACTER(60) :: FILE_DEBUG, FILE_CSV, FILE_DUMP, FILE_VERBOSE
-INTEGER :: LU_DEBUG = 0, LU_CSV = 0, LU_DUMP = 0, LU_VERBOSE = 0
+INTEGER :: LU_DEBUG = 0, LU_STAT = 0, LU_DUMP = 0, LU_VERBOSE = 0
 END TYPE SCARC_MESSAGE_TYPE
 
 !> ------------------------------------------------------------------------------------------------
@@ -956,15 +956,15 @@ SUBROUTINE SCARC_SETUP_MESSAGING
 INTEGER:: NM, LASTID
 #endif
 
-IF (TRIM(SCARC_CSV) == '.TRUE.') BCSV = .TRUE.
+IF (TRIM(SCARC_STATISTICS) == '.TRUE.') BSTATISTICS = .TRUE.
 
 !> If requested, open file for CSV-information about convergence of different solvers
-IF (BCSV) THEN
+IF (BSTATISTICS) THEN
    IF (MYID == 0) THEN
       WRITE (MSG%FILE_CSV, '(A,A)') TRIM(CHID),'_scarc.csv'
-      MSG%LU_CSV = GET_FILE_NUMBER()
-      OPEN (MSG%LU_CSV, FILE=MSG%FILE_CSV)
-      WRITE(MSG%LU_CSV,*) 'ITE_PRES, ITE_TOTAL, ITE_CG, ITE_MG, ITE_LU, ITE_COARSE, ITE_SMOOTH, TSMOOTH, LEVEL, SOLVER, RES'
+      MSG%LU_STAT = GET_FILE_NUMBER()
+      OPEN (MSG%LU_STAT, FILE=MSG%FILE_CSV)
+      WRITE(MSG%LU_STAT,*) 'ite_pres, ite_total, ite_cg, ite_mg, ite_lu, ite_coarse, ite_smooth, smoothing type, level, solver, res'
    ENDIF
 ENDIF
 
@@ -7268,10 +7268,6 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 ENDDO MESHES_LOOP
 
-!CALL SCARC_VECTOR_SUM(X, E, 1.0_EB, -1.0_EB, NLEVEL)
-!ERR = SCARC_L2NORM (E, NLEVEL)
-!CALL SCARC_DUMP_RESIDUAL(0, NLEVEL)
-
 IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) THEN
    CALL SCARC_UPDATE_PRESSURE_MAINCELLS (NLEVEL_MIN)
    CALL SCARC_UPDATE_PRESSURE_GHOSTCELLS(NLEVEL_MIN)
@@ -8159,34 +8155,6 @@ ENDIF
 END SUBROUTINE SCARC_RELEASE_SOLVER
 
 !> ----------------------------------------------------------------------------------------------------
-!> Dump residual information
-!> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DUMP_RESIDUAL(ISM, NL)
-INTEGER, INTENT(IN) :: ISM, NL
-IF (.NOT.BCSV) RETURN
-IF (MYID == 0) THEN
-   IF (ITE_TOTAL == 0) THEN
-      WRITE(MSG%LU_CSV,1000) ITE_PRES, ITE_TOTAL, ITE_CG, ITE_MG, ITE_LU, ITE_COARSE, ITE_SMOOTH, &
-                             ISM, NL, TYPE_SOLVER, RESIN
-   ELSE
-      WRITE(MSG%LU_CSV,1000) ITE_PRES, ITE_TOTAL, ITE_CG, ITE_MG, ITE_LU, ITE_COARSE, ITE_SMOOTH, &
-                             ISM, NL, TYPE_SOLVER, RES
-   ENDIF
-ENDIF
-!1000 FORMAT(I10,',',i4,',',i7,',',i7,',',i7,',',i4,',',i3,',',i7,',',i7,',',E20.12,',',E20.12)
-1000 FORMAT(I8,',',I8,',',I8,',',I8,',',I8,',',I8,',',I4,',',I4,',',I4,',',I4,',',E20.12)
-END SUBROUTINE SCARC_DUMP_RESIDUAL
-
-!> ----------------------------------------------------------------------------------------------------
-!> Dump residual information
-!> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DUMP_CAPPA
-IF (.NOT.BCSV) RETURN
-IF (MYID == 0) WRITE(MSG%LU_CSV,1000) -1, ITE_TOTAL, -1, -1, -1, -1, -1, -1, -1, -1, CAPPA
-1000 FORMAT(I8,',',I8,',',I8,',',I8,',',I8,',',I8,',',I4,',',I4,',',I4,',',I4,',',E20.12)
-END SUBROUTINE SCARC_DUMP_CAPPA
-
-!> ----------------------------------------------------------------------------------------------------
 !> Set initial solution corresponding to boundary data in BXS, BXF, ...
 !> ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_WORKSPACE(NS, NL)
@@ -8384,6 +8352,10 @@ INTEGER :: NSTATE
 
 NSTATE = NSCARC_STATE_PROCEED
 
+!>
+!> ONLY TEMPORARILY - START
+!> Dump residual, exact and approximate solution
+!>
 #ifdef WITH_SCARC_DEBUG
 CALL SCARC_PRESET_EXACT(E, NL)
 
@@ -8400,9 +8372,11 @@ ERR = SCARC_L2NORM (E, NL)
 call SCARC_DEBUG_LEVEL (E, 'ERROR', NL)
 CALL SCARC_DUMP_QUANTITY(E, 'ERROR', ISM, NS, NL)
 
-CALL SCARC_DUMP_STATISTICS(ISM, NL)
 #endif
-
+!>
+!> ONLY TEMPORARILY - END
+!>
+IF (BSTATISTICS) CALL SCARC_DUMP_STATISTICS(ISM, NL)
 
 SELECT CASE (TYPE_ACCURACY)
    CASE (NSCARC_ACCURACY_RELATIVE)
@@ -8421,6 +8395,7 @@ END SELECT
 IF (RES > NSCARC_THRESHOLD_DIVGERGENCE) NSTATE = NSCARC_STATE_DIVG
 
 SCARC_CONVERGENCE_STATE = NSTATE
+IF (BSTATISTICS) CALL SCARC_DUMP_STATISTICS(ISM, NL)
 
 #ifdef WITH_SCARC_VERBOSE
 !IF (MYID == 0) WRITE(LU_OUTPUT,1000) TRIM(CNAME), NL, ITE, RES
@@ -8428,7 +8403,6 @@ WRITE(MSG%LU_VERBOSE,1000) STACK(NS)%SOLVER%CNAME, NL, ITE, RES
 #endif
 
 #ifdef WITH_SCARC_DEBUG
-CALL SCARC_DUMP_RESIDUAL(ISM, NL)
 WRITE(MSG%LU_DEBUG, 1000) STACK(NS)%SOLVER%CNAME, NL, ITE, RES
 #endif
 
@@ -10424,18 +10398,26 @@ END SUBROUTINE SCARC_TIMEOUT
 SUBROUTINE SCARC_DUMP_STATISTICS(ISM, NL)
 INTEGER, INTENT(IN) :: ISM, NL
 INTEGER :: NM
+IF (.NOT.BSTATISTICS) RETURN
 DO NM = 1, NMESHES
    IF (ITE_TOTAL == 0) THEN
-      WRITE(MSG%LU_CSV,1000) ITE_TOTAL, ITE, ITE_CG, ITE_MG, ITE_SMOOTH, ISM, NL, TYPE_METHOD, TYPE_SOLVER, RESIN, ERR
+      WRITE(MSG%LU_STAT,1000) ITE_TOTAL, ITE, ITE_CG, ITE_MG, ITE_SMOOTH, ISM, NL, TYPE_METHOD, TYPE_SOLVER, RESIN, ERR
    ELSE
-      WRITE(MSG%LU_CSV,1000) ITE_TOTAL, ITE, ITE_CG, ITE_MG, ITE_SMOOTH, ISM, NL, TYPE_METHOD, TYPE_SOLVER, RES, ERR
+      WRITE(MSG%LU_STAT,1000) ITE_TOTAL, ITE, ITE_CG, ITE_MG, ITE_SMOOTH, ISM, NL, TYPE_METHOD, TYPE_SOLVER, RES, ERR
    ENDIF
 ENDDO
 1000 FORMAT(I10,',',i4,',',i7,',',i7,',',i7,',',i4,',',i3,',',i7,',',i7,',',E20.12,',',E20.12)
 2000 FORMAT(I6,',',i3,',',i3,',',E20.12,',',E20.12)
 END SUBROUTINE SCARC_DUMP_STATISTICS
 
-
+!> ----------------------------------------------------------------------------------------------------
+!> Dump only convergence rate informtion
+!> ----------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DUMP_CAPPA
+IF (.NOT.BSTATISTICS) RETURN
+IF (MYID == 0) WRITE(MSG%LU_STAT,1000) -1, ITE_TOTAL, -1, -1, -1, -1, -1, -1, -1, -1, CAPPA
+1000 FORMAT(I8,',',I8,',',I8,',',I8,',',I8,',',I8,',',I4,',',I4,',',I4,',',I4,',',E20.12)
+END SUBROUTINE SCARC_DUMP_CAPPA
 
 
 !> ================================================================================================
