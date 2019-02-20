@@ -2,7 +2,6 @@ Bundle
 README.md
 Scripts
 build_fds.html
-makefile
 mpi_gnu_osx_64
 mpi_gnu_osx_64_db
 mpi_intel_osx_64
