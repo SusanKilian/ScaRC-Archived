@@ -216,8 +216,7 @@ USE MEMORY_FUNCTIONS, ONLY: ChkMemErr
 #endif /* WITH_MKL */
 
 IMPLICIT NONE
-REAL(EB), PARAMETER :: DEG2RAD=4.0_EB*ATAN(1.0_EB)/180.0_EB
-
+CHARACTER(MESSAGE_LENGTH) :: MESSAGE
 
 !! ---------------------------------------------------------------------------------
 ! Start Variable declaration for CC_IBM:
@@ -738,7 +737,7 @@ DO ICF=1,N_CFACE_CELLS
    TVEC1=(/ 0._EB,0._EB,0._EB/)
    TVEC2=(/ 0._EB,0._EB,0._EB/)
    ! velocity vector of the surface
-   VEL_WALL = -ONE_D%UW*NVEC + SF%VEL_T(1)*TVEC1 + SF%VEL_T(2)*TVEC2
+   VEL_WALL = -ONE_D%U_NORMAL*NVEC + SF%VEL_T(1)*TVEC1 + SF%VEL_T(2)*TVEC2
 
    ! find cut-cell adjacent to CFACE
    IND1 = CFA%CUT_FACE_IND1
@@ -894,7 +893,7 @@ PREDICT_NORMALS: IF (PREDICTOR) THEN
 
          CASE (NULL_BOUNDARY)
 
-            CFA%ONE_D%UWS = 0._EB
+            CFA%ONE_D%U_NORMAL_S = 0._EB
 
          CASE (SOLID_BOUNDARY)
 
@@ -909,7 +908,7 @@ PREDICT_NORMALS: IF (PREDICTOR) THEN
             ELSE
                TSI = T + DT - CFA%ONE_D%T_IGN
                IF (TSI<0._EB) THEN
-                  CFA%ONE_D%UWS = 0._EB
+                  CFA%ONE_D%U_NORMAL_S = 0._EB
                   CYCLE CFACE_LOOP
                ENDIF
             ENDIF
@@ -920,13 +919,14 @@ PREDICT_NORMALS: IF (PREDICTOR) THEN
 
             VEL_INTO_BOD0    =-(CFA%NVEC(IAXIS)*U0 + CFA%NVEC(JAXIS)*V0 + CFA%NVEC(KAXIS)*W0)
 
-            CFA%ONE_D%UWS    = VEL_INTO_BOD0 + TIME_RAMP_FACTOR*(CFA%UW0-VEL_INTO_BOD0)
+            CFA%ONE_D%U_NORMAL_S    = VEL_INTO_BOD0 + TIME_RAMP_FACTOR*(CFA%ONE_D%U_NORMAL_0-VEL_INTO_BOD0)
 
             ! Special Cases
             ! NEUMANN_IF: IF (SF%SPECIFIED_NORMAL_GRADIENT) THEN
             ! TO DO, following PREDICT_NORMAL_VELOCITY.
 
-            IF (ABS(SURFACE(CFA%SURF_INDEX)%MASS_FLUX_TOTAL)>=TWO_EPSILON_EB) CFA%ONE_D%UWS = CFA%ONE_D%UWS*RHOA/CFA%ONE_D%RHO_F
+            IF (ABS(SURFACE(CFA%SURF_INDEX)%MASS_FLUX_TOTAL)>=TWO_EPSILON_EB) CFA%ONE_D%U_NORMAL_S = &
+                                                                              CFA%ONE_D%U_NORMAL_S*RHOA/CFA%ONE_D%RHO_F
 
             ! VENT_IF: IF (WC%VENT_INDEX>0) THEN
             ! TO DO, following PREDICT_NORMAL_VELOCITY.
@@ -937,8 +937,8 @@ PREDICT_NORMALS: IF (PREDICTOR) THEN
 
 ELSE PREDICT_NORMALS
 
-   ! In the CORRECTOR step, the normal component of velocity, UW, is the same as the predicted value, UWS.
-   ! However, for species mass fluxes and HVAC, UW is computed elsewhere (wall.f90).
+   ! In the CORRECTOR step, the normal component of velocity, U_NORMAL, is the same as the predicted value, U_NORMAL_S.
+   ! However, for species mass fluxes and HVAC, U_NORMAL is computed elsewhere (wall.f90).
 
    CFACE_LOOPC: DO ICF=1,N_CFACE_CELLS
       CFA => CFACE(ICF)
@@ -947,7 +947,7 @@ ELSE PREDICT_NORMALS
          IF (SF%SPECIES_BC_INDEX==SPECIFIED_MASS_FLUX .OR. &
              ANY(SF%LEAK_PATH>0)) CYCLE
       ENDIF
-      CFA%ONE_D%UW = CFA%ONE_D%UWS
+      CFA%ONE_D%U_NORMAL = CFA%ONE_D%U_NORMAL_S
    ENDDO CFACE_LOOPC
 
 ENDIF PREDICT_NORMALS
@@ -4717,7 +4717,7 @@ AVERAGE_LINKDIV_IF: IF (AVERAGE_LINKDIV) THEN
          IF(ICF>0) THEN
             DO JCF=1,CUT_FACE(ICF)%NFACE ! Loop all cut-faces inside cell I,J,K
                ICFACE    = CUT_FACE(ICF)%CFACE_INDEX(JCF)  ! Find corresponding CFACE index for this boundary cut-face.
-               DIVVOL_BC = DIVVOL_BC - CFACE(ICFACE)%ONE_D%UWS * CFACE(ICFACE)%AREA ! Add flux to BC divergence.
+               DIVVOL_BC = DIVVOL_BC - CFACE(ICFACE)%ONE_D%U_NORMAL_S * CFACE(ICFACE)%AREA ! Add flux to BC divergence.
             ENDDO
          ENDIF
          CUT_CELL(ICC)%DIVVOL_BC = DIVVOL_BC
@@ -4745,7 +4745,7 @@ AVERAGE_LINKDIV_IF: IF (AVERAGE_LINKDIV) THEN
          IF(ICF>0) THEN
             DO JCF=1,CUT_FACE(ICF)%NFACE
                ICFACE    = CUT_FACE(ICF)%CFACE_INDEX(JCF)
-               DIVVOL_BC = DIVVOL_BC - CFACE(ICFACE)%ONE_D%UW * CFACE(ICFACE)%AREA
+               DIVVOL_BC = DIVVOL_BC - CFACE(ICFACE)%ONE_D%U_NORMAL * CFACE(ICFACE)%AREA
             ENDDO
          ENDIF
          CUT_CELL(ICC)%DIVVOL_BC = DIVVOL_BC
@@ -4975,7 +4975,7 @@ SUBROUTINE CCSPECIES_ADVECTION
 ! Local Variables:
 REAL(EB) :: RHO_Z_PV(-1:0), VELC, ALPHAP1, AM_P1, AP_P1, FN_ZZ, ZZ_GET_N
 REAL(EB), PARAMETER :: SGNFCT=1._EB
-INTEGER :: IOR
+INTEGER :: IOR, ICFA
 
 
 U_DOT_DEL_RHO_Z=>WORK7
@@ -5271,8 +5271,8 @@ DO IFACE=1,MESHES(NM)%IBM_NBBREGFACE_Z(X1AXIS)
       CASE DEFAULT
          VELC = UU(I,J,K)
       CASE(SOLID_BOUNDARY)
-         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UWS
-         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UW
+         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL_S
+         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL
    END SELECT
    ! Add: -(bar{rho*zz} u dot n - (rho*zz) u dot n) to corresponding cell DP:
    AF = DY(J)*DZ(K)
@@ -5302,8 +5302,8 @@ DO IFACE=1,MESHES(NM)%IBM_NBBREGFACE_Z(X1AXIS)
       CASE DEFAULT
          VELC = VV(I,J,K)
       CASE(SOLID_BOUNDARY)
-         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UWS
-         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UW
+         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL_S
+         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL
    END SELECT
    ! Add: -(bar{rho*zz} u dot n - (rho*zz) u dot n) to corresponding cell DP:
    AF = DX(I)*DZ(K)
@@ -5333,8 +5333,8 @@ DO IFACE=1,MESHES(NM)%IBM_NBBREGFACE_Z(X1AXIS)
       CASE DEFAULT
          VELC = WW(I,J,K)
       CASE(SOLID_BOUNDARY)
-         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UWS
-         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UW
+         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL_S
+         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL
    END SELECT
    ! Add: -(bar{rho*zz} u dot n - (rho*zz) u dot n) to corresponding cell DP:
    AF = DX(I)*DY(J)
@@ -5406,8 +5406,8 @@ DO IFACE=1,MESHES(NM)%IBM_NBBRCFACE_Z
       CASE DEFAULT
          ! Already filled in previous X1AXIS select case.
       CASE(SOLID_BOUNDARY)
-         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UWS
-         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UW
+         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL_S
+         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL
    END SELECT
    SELECT CASE(IBM_RCFACE_Z(IFACE)%CELL_LIST(1,ISIDE+2))
    CASE(IBM_FTYPE_RGGAS)
@@ -5457,9 +5457,32 @@ DO ICF = 1,MESHES(NM)%N_BBCUTFACE_MESH
    ENDDO ! IFACE
 ENDDO ! ICF
 
-! INBOUNDARY cut-faces: The contribution to scalar advection and enthalpy advection for case of non trivial
-! solid boundary conditions should be included here.
+! INBOUNDARY cut-faces:
+! Species advection due to INBOUNDARY cut-faces (CFACE):
+ISIDE=-1
+CFACE_LOOP : DO ICFA=1,N_CFACE_CELLS
+   CFA => CFACE(ICFA)
+   ! Find associated cut-cell:
+   IND1=CFA%CUT_FACE_IND1
+   IND2=CFA%CUT_FACE_IND2
+   ICC = CUT_FACE(IND1)%CELL_LIST(2,LOW_IND,IND2)
+   JCC = CUT_FACE(IND1)%CELL_LIST(3,LOW_IND,IND2)
+   AF = CFA%AREA
+   IF (PREDICTOR) THEN
+      VELC = CFA%ONE_D%U_NORMAL_S
+   ELSE
+      VELC = CFA%ONE_D%U_NORMAL
+   ENDIF
+   ! Takes place of flux limited interpolation:
+   FN_ZZ           = CFA%ONE_D%RHO_F * CFA%ONE_D%ZZ_F(N)
 
+   RHOPV(ISIDE) = PRFCT *CUT_CELL(ICC)%RHO(JCC) + (1._EB-PRFCT) *CUT_CELL(ICC)%RHOS(JCC)
+   ZZ_GET_N     = PRFCT*CUT_CELL(ICC)%ZZ(N,JCC) + (1._EB-PRFCT)*CUT_CELL(ICC)%ZZS(N,JCC)
+   ! Cut-cell value of rho*Z:
+   RHO_Z_PV(ISIDE) = RHOPV(ISIDE)*ZZ_GET_N
+   ! Add to U_DOT_DEL_RHO_Z:                                        ! (\bar{rho*Z}_CFACE - (rho*Z)_CC)*VELOUT*AF
+   CUT_CELL(ICC)%U_DOT_DEL_RHO_Z(N,JCC)=CUT_CELL(ICC)%U_DOT_DEL_RHO_Z(N,JCC) + (FN_ZZ-RHO_Z_PV(ISIDE))*VELC*AF
+ENDDO CFACE_LOOP
 
 ! EXIM faces:
 DO IEXIM=1,MESHES(NM)%IBM_NEXIMFACE_MESH
@@ -5493,8 +5516,8 @@ DO IEXIM=1,MESHES(NM)%IBM_NEXIMFACE_MESH
                 VELC = WW(I,J,K)
              END SELECT
           CASE(SOLID_BOUNDARY)
-             IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UWS
-             IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UW
+             IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL_S
+             IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL
        END SELECT
        SELECT CASE(X1AXIS)
        CASE(IAXIS)
@@ -5577,7 +5600,7 @@ SUBROUTINE CCENTHALPY_ADVECTION
 
 ! Local Variables:
 REAL(EB) :: RHO_H_S_PV(-1:0), VELC, VELC2, ALPHAP1, AM_P1, AP_P1, FN_H_S, TMP_F_GAS
-INTEGER  :: IOR
+INTEGER  :: IOR, ICFA
 
 
 IF (.NOT.ENTHALPY_TRANSPORT) RETURN
@@ -5912,9 +5935,9 @@ DO IFACE=1,MESHES(NM)%IBM_NBBREGFACE_Z(X1AXIS)
    ! Calculate the sensible enthalpy at the boundary. If the boundary is solid
    ! and the gas is flowing out, use the gas temperature for the calculation.
    IF (PREDICTOR) THEN
-      VELC2 = WC%ONE_D%UWS
+      VELC2 = WC%ONE_D%U_NORMAL_S
    ELSE
-      VELC2 = WC%ONE_D%UW
+      VELC2 = WC%ONE_D%U_NORMAL
    ENDIF
    IF (WC%BOUNDARY_TYPE==SOLID_BOUNDARY .AND. VELC2>0._EB) THEN
       TMP_F_GAS = WC%ONE_D%TMP_G
@@ -5927,8 +5950,8 @@ DO IFACE=1,MESHES(NM)%IBM_NBBREGFACE_Z(X1AXIS)
       CASE DEFAULT
          VELC = UU(I,J,K)
       CASE(SOLID_BOUNDARY)
-         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UWS
-         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UW
+         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL_S
+         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL
    END SELECT
    FN_H_S = WC%ONE_D%RHO_F*H_S ! bar{rho*hs}
    ! Add: -(bar{rho*hs} u dot n - (rho*hs) u dot n) to corresponding cell DP:
@@ -5960,9 +5983,9 @@ DO IFACE=1,MESHES(NM)%IBM_NBBREGFACE_Z(X1AXIS)
    ! Calculate the sensible enthalpy at the boundary. If the boundary is solid
    ! and the gas is flowing out, use the gas temperature for the calculation.
    IF (PREDICTOR) THEN
-      VELC2 = WC%ONE_D%UWS
+      VELC2 = WC%ONE_D%U_NORMAL_S
    ELSE
-      VELC2 = WC%ONE_D%UW
+      VELC2 = WC%ONE_D%U_NORMAL
    ENDIF
    IF (WC%BOUNDARY_TYPE==SOLID_BOUNDARY .AND. VELC2>0._EB) THEN
       TMP_F_GAS = WC%ONE_D%TMP_G
@@ -5975,8 +5998,8 @@ DO IFACE=1,MESHES(NM)%IBM_NBBREGFACE_Z(X1AXIS)
       CASE DEFAULT
          VELC = VV(I,J,K)
       CASE(SOLID_BOUNDARY)
-         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UWS
-         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UW
+         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL_S
+         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL
    END SELECT
    FN_H_S = WC%ONE_D%RHO_F*H_S ! bar{rho*hs}
    ! Add: -(bar{rho*hs} u dot n - (rho*hs) u dot n) to corresponding cell DP:
@@ -6008,9 +6031,9 @@ DO IFACE=1,MESHES(NM)%IBM_NBBREGFACE_Z(X1AXIS)
    ! Calculate the sensible enthalpy at the boundary. If the boundary is solid
    ! and the gas is flowing out, use the gas temperature for the calculation.
    IF (PREDICTOR) THEN
-      VELC2 = WC%ONE_D%UWS
+      VELC2 = WC%ONE_D%U_NORMAL_S
    ELSE
-      VELC2 = WC%ONE_D%UW
+      VELC2 = WC%ONE_D%U_NORMAL
    ENDIF
    IF (WC%BOUNDARY_TYPE==SOLID_BOUNDARY .AND. VELC2>0._EB) THEN
       TMP_F_GAS = WC%ONE_D%TMP_G
@@ -6023,8 +6046,8 @@ DO IFACE=1,MESHES(NM)%IBM_NBBREGFACE_Z(X1AXIS)
       CASE DEFAULT
          VELC = WW(I,J,K)
       CASE(SOLID_BOUNDARY)
-         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UWS
-         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UW
+         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL_S
+         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL
    END SELECT
    FN_H_S = WC%ONE_D%RHO_F*H_S ! bar{rho*hs}
    ! Add: -(bar{rho*hs} u dot n - (rho*hs) u dot n) to corresponding cell DP:
@@ -6106,9 +6129,9 @@ DO IFACE=1,MESHES(NM)%IBM_NBBRCFACE_Z
    ! Calculate the sensible enthalpy at the boundary. If the boundary is solid
    ! and the gas is flowing out, use the gas temperature for the calculation.
    IF (PREDICTOR) THEN
-      VELC2 = WC%ONE_D%UWS
+      VELC2 = WC%ONE_D%U_NORMAL_S
    ELSE
-      VELC2 = WC%ONE_D%UW
+      VELC2 = WC%ONE_D%U_NORMAL
    ENDIF
    IF (WC%BOUNDARY_TYPE==SOLID_BOUNDARY .AND. VELC2>0._EB) THEN
       TMP_F_GAS = WC%ONE_D%TMP_G
@@ -6121,8 +6144,8 @@ DO IFACE=1,MESHES(NM)%IBM_NBBRCFACE_Z
       CASE DEFAULT
          ! Already filled in previous X1AXIS select case.
       CASE(SOLID_BOUNDARY)
-         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UWS
-         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UW
+         IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL_S
+         IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL
    END SELECT
    FN_H_S = WC%ONE_D%RHO_F*H_S ! bar{rho*hs}
    ! Finally add to Div:
@@ -6159,9 +6182,9 @@ DO ICF = 1,MESHES(NM)%N_BBCUTFACE_MESH
    ! Flux limited face value bar{rho*hs}_F, the ONE_D variable values fo TMP, RHOP, ZZ and RSUM have been averaged to
    ! the cartesian cell location in CCREGION_DENSITY:
    IF (PREDICTOR) THEN
-      VELC2 = WC%ONE_D%UWS
+      VELC2 = WC%ONE_D%U_NORMAL_S
    ELSE
-      VELC2 = WC%ONE_D%UW
+      VELC2 = WC%ONE_D%U_NORMAL
    ENDIF
    IF (WC%BOUNDARY_TYPE==SOLID_BOUNDARY .AND. VELC2>0._EB) THEN
       TMP_F_GAS = WC%ONE_D%TMP_G
@@ -6199,7 +6222,46 @@ DO ICF = 1,MESHES(NM)%N_BBCUTFACE_MESH
 ENDDO ! ICF
 
 ! Enthalpy advection due to INBOUNDARY cut-faces (CFACE):
-! TO DO.
+ISIDE=-1
+CFACE_LOOP : DO ICFA=1,N_CFACE_CELLS
+   CFA => CFACE(ICFA)
+   ! Find associated cut-cell:
+   IND1=CFA%CUT_FACE_IND1
+   IND2=CFA%CUT_FACE_IND2
+   ICC = CUT_FACE(IND1)%CELL_LIST(2,LOW_IND,IND2)
+   JCC = CUT_FACE(IND1)%CELL_LIST(3,LOW_IND,IND2)
+
+   AF = CFA%AREA
+
+   IF (PREDICTOR) THEN
+      VELC = CFA%ONE_D%U_NORMAL_S
+   ELSE
+      VELC = CFA%ONE_D%U_NORMAL
+   ENDIF
+   IF (VELC>0._EB) THEN
+      TMP_F_GAS = CUT_CELL(ICC)%TMP(JCC)
+   ELSE
+      TMP_F_GAS = CFA%ONE_D%TMP_F
+   ENDIF
+   ZZ_GET(1:N_TRACKED_SPECIES) = CFA%ONE_D%ZZ_F(1:N_TRACKED_SPECIES)
+   CALL GET_SENSIBLE_ENTHALPY(ZZ_GET,H_S,TMP_F_GAS)
+   FN_H_S = CFA%ONE_D%RHO_F*H_S ! bar{rho*hs}
+
+   TMPV(ISIDE)  = CUT_CELL(ICC)%TMP(JCC)
+   RHOPV(ISIDE) = PRFCT *CUT_CELL(ICC)%RHO(JCC) + (1._EB-PRFCT)*CUT_CELL(ICC)%RHOS(JCC)
+   ZZ_GET(1:N_TRACKED_SPECIES) = PRFCT *CUT_CELL(ICC)%ZZ(1:N_TRACKED_SPECIES,JCC) + &
+                          (1._EB-PRFCT)*CUT_CELL(ICC)%ZZS(1:N_TRACKED_SPECIES,JCC)
+   CALL GET_SENSIBLE_ENTHALPY(ZZ_GET,H_S,TMPV(ISIDE))
+   RHO_H_S_PV(ISIDE) = RHOPV(ISIDE)*H_S
+
+   IF (PREDICTOR) THEN
+      CUT_CELL(ICC)%DS(JCC)=CUT_CELL(ICC)%DS(JCC)+(-1._EB)*(FN_H_S-RHO_H_S_PV(ISIDE))*VELC*AF ! +ve or -ve dot
+   ELSE
+      CUT_CELL(ICC)%D(JCC) =CUT_CELL(ICC)%D(JCC) +(-1._EB)*(FN_H_S-RHO_H_S_PV(ISIDE))*VELC*AF ! +ve or -ve dot
+   ENDIF
+ENDDO CFACE_LOOP
+
+
 
 ! EXIM faces:
 DO IEXIM=1,MESHES(NM)%IBM_NEXIMFACE_MESH
@@ -6235,8 +6297,8 @@ DO IEXIM=1,MESHES(NM)%IBM_NEXIMFACE_MESH
                 VELC = WW(I,J,K)
              END SELECT
           CASE(SOLID_BOUNDARY)
-             IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UWS
-             IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UW
+             IF (PREDICTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL_S
+             IF (CORRECTOR) VELC = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL
        END SELECT
        SELECT CASE(X1AXIS)
        CASE(IAXIS)
@@ -6343,7 +6405,7 @@ SUBROUTINE CCREGION_DIFFUSIVE_HEAT_FLUXES
 
 ! Local Variables:
 INTEGER :: IIG, JJG, KKG , IOR, N_ZZ_MAX
-REAL(EB) :: UWP, RHO_D_DZDN
+REAL(EB) :: UN_P, RHO_D_DZDN
 REAL(EB) :: RHO_D_DZDN_GET(1:N_TRACKED_SPECIES)
 TYPE(CFACE_TYPE), POINTER :: CFA=>NULL()
 
@@ -6614,27 +6676,20 @@ CFACE_LOOP : DO ICF=1,N_CFACE_CELLS
    CFA => CFACE(ICF)
    IND1 = CFA%CUT_FACE_IND1;                         IND2 = CFA%CUT_FACE_IND2
    ICC  = CUT_FACE(IND1)%CELL_LIST(2,LOW_IND,IND2);  JCC  = CUT_FACE(IND1)%CELL_LIST(3,LOW_IND,IND2)
-
-   ! Underlying cartesian cell I,J,K indexes:
-   I = CUT_CELL(ICC)%IJK(IAXIS)
-   J = CUT_CELL(ICC)%IJK(JAXIS)
-   K = CUT_CELL(ICC)%IJK(KAXIS)
-
    ! H_RHO_D_DZDN
    IF (PREDICTOR) THEN
-      UWP = CFA%ONE_D%UWS
+      UN_P = CFA%ONE_D%U_NORMAL_S
    ELSE
-      UWP = CFA%ONE_D%UW
+      UN_P = CFA%ONE_D%U_NORMAL
    ENDIF
-   IF (UWP>0._EB) THEN
-      TMP_G = CFA%ONE_D%TMP_G ! This is the same as CUT_CELL(ICC)%TMP(JCC)
+   IF (UN_P>0._EB) THEN
+      TMP_G = CFA%ONE_D%TMP_G ! CUT_CELL(ICC)%TMP(JCC)
    ELSE
       TMP_G = CFA%ONE_D%TMP_F
    ENDIF
    DO N=1,N_TOTAL_SCALARS
       CALL GET_SENSIBLE_ENTHALPY_Z(N,TMP_G,H_S)
-      CUT_FACE(IND1)%H_RHO_D_DZDN(N,IND2) = H_S*CUT_FACE(IND1)%RHO_D_DZDN(N,DIFFHFLX_IND,IND2)
-                                                ! ^ Same as CFA%ONE_D%RHO_D_DZDN_F(N)
+      CUT_FACE(IND1)%H_RHO_D_DZDN(N,IND2) = H_S*CFA%ONE_D%RHO_D_DZDN_F(N)
    ENDDO
    ! Add diffusive mass flux enthalpy contribution to cut-cell thermo divg:
    IF (PREDICTOR) THEN
@@ -6646,7 +6701,7 @@ CFACE_LOOP : DO ICF=1,N_CFACE_CELLS
    ENDIF
    CUT_CELL(ICC)%DEL_RHO_D_DEL_Z(1:N_TOTAL_SCALARS,JCC) = &
    CUT_CELL(ICC)%DEL_RHO_D_DEL_Z(1:N_TOTAL_SCALARS,JCC) - &
-   CUT_FACE(IND1)%RHO_D_DZDN(1:N_TOTAL_SCALARS,JFLX_IND,IND2)*CFA%AREA
+   CFA%ONE_D%RHO_D_DZDN_F(1:N_TOTAL_SCALARS)*CFA%AREA
 
 ENDDO CFACE_LOOP
 
@@ -6666,11 +6721,11 @@ SPECIES_LOOP2: DO N=1,N_TOTAL_SCALARS
       WC => WALL(IW)
       ! H_RHO_D_DZDN
       IF (PREDICTOR) THEN
-         UWP = WC%ONE_D%UWS
+         UN_P = WC%ONE_D%U_NORMAL_S
       ELSE
-         UWP = WC%ONE_D%UW
+         UN_P = WC%ONE_D%U_NORMAL
       ENDIF
-      IF (WC%BOUNDARY_TYPE==SOLID_BOUNDARY .AND. UWP>0._EB) THEN
+      IF (WC%BOUNDARY_TYPE==SOLID_BOUNDARY .AND. UN_P>0._EB) THEN
          TMP_G = WC%ONE_D%TMP_G
       ELSE
          TMP_G = WC%ONE_D%TMP_F
@@ -6706,11 +6761,11 @@ SPECIES_LOOP2: DO N=1,N_TOTAL_SCALARS
       WC => WALL(IW)
       ! H_RHO_D_DZDN
       IF (PREDICTOR) THEN
-         UWP = WC%ONE_D%UWS
+         UN_P = WC%ONE_D%U_NORMAL_S
       ELSE
-         UWP = WC%ONE_D%UW
+         UN_P = WC%ONE_D%U_NORMAL
       ENDIF
-      IF (WC%BOUNDARY_TYPE==SOLID_BOUNDARY .AND. UWP>0._EB) THEN
+      IF (WC%BOUNDARY_TYPE==SOLID_BOUNDARY .AND. UN_P>0._EB) THEN
          TMP_G = WC%ONE_D%TMP_G
       ELSE
          TMP_G = WC%ONE_D%TMP_F
@@ -6746,11 +6801,11 @@ SPECIES_LOOP2: DO N=1,N_TOTAL_SCALARS
       WC => WALL(IW)
       ! H_RHO_D_DZDN
       IF (PREDICTOR) THEN
-         UWP = WC%ONE_D%UWS
+         UN_P = WC%ONE_D%U_NORMAL_S
       ELSE
-         UWP = WC%ONE_D%UW
+         UN_P = WC%ONE_D%U_NORMAL
       ENDIF
-      IF (WC%BOUNDARY_TYPE==SOLID_BOUNDARY .AND. UWP>0._EB) THEN
+      IF (WC%BOUNDARY_TYPE==SOLID_BOUNDARY .AND. UN_P>0._EB) THEN
          TMP_G = WC%ONE_D%TMP_G
       ELSE
          TMP_G = WC%ONE_D%TMP_F
@@ -6875,9 +6930,6 @@ DO ICF = 1,MESHES(NM)%N_BBCUTFACE_MESH
       END SELECT
    ENDDO ! IFACE
 ENDDO ! ICF
-
-! Diffusive heat fluxes due to INBOUNDARY cut-faces (CFACE):
-! TO DO.
 
 ! Diffusive terms at EXIM faces:
 DO IEXIM=1,MESHES(NM)%IBM_NEXIMFACE_MESH
@@ -7314,7 +7366,7 @@ DO IFACE=1,MESHES(NM)%IBM_NBBREGFACE_Z(X1AXIS)
    KKG = WC%ONE_D%KKG
    AF  = DY(JJG)*DZ(KKG)
    ! Q_LEAK accounts for enthalpy moving through leakage paths
-   DP(IIG,JJG,KKG) = DP(IIG,JJG,KKG) - ( WC%ONE_D%QCONF ) * AF  + WC%Q_LEAK * (DX(IIG)*DY(JJG)*DZ(KKG))
+   DP(IIG,JJG,KKG) = DP(IIG,JJG,KKG) - ( WC%ONE_D%Q_CON_F ) * AF  + WC%Q_LEAK * (DX(IIG)*DY(JJG)*DZ(KKG))
 ENDDO
 
 ! JAXIS faces:
@@ -7330,7 +7382,7 @@ DO IFACE=1,MESHES(NM)%IBM_NBBREGFACE_Z(X1AXIS)
    KKG = WC%ONE_D%KKG
    AF  = DX(IIG)*DZ(KKG)
    ! Q_LEAK accounts for enthalpy moving through leakage paths
-   DP(IIG,JJG,KKG) = DP(IIG,JJG,KKG) - ( WC%ONE_D%QCONF ) * AF  + WC%Q_LEAK * (DX(IIG)*DY(JJG)*DZ(KKG))
+   DP(IIG,JJG,KKG) = DP(IIG,JJG,KKG) - ( WC%ONE_D%Q_CON_F ) * AF  + WC%Q_LEAK * (DX(IIG)*DY(JJG)*DZ(KKG))
 ENDDO
 
 ! KAXIS faces:
@@ -7346,7 +7398,7 @@ DO IFACE=1,MESHES(NM)%IBM_NBBREGFACE_Z(X1AXIS)
    KKG = WC%ONE_D%KKG
    AF  = DX(IIG)*DY(JJG)
    ! Q_LEAK accounts for enthalpy moving through leakage paths
-   DP(IIG,JJG,KKG) = DP(IIG,JJG,KKG) - ( WC%ONE_D%QCONF ) * AF  + WC%Q_LEAK * (DX(IIG)*DY(JJG)*DZ(KKG))
+   DP(IIG,JJG,KKG) = DP(IIG,JJG,KKG) - ( WC%ONE_D%Q_CON_F ) * AF  + WC%Q_LEAK * (DX(IIG)*DY(JJG)*DZ(KKG))
 ENDDO
 
 ! Regular faces connecting gasphase - cut-cells:
@@ -7375,18 +7427,18 @@ DO IFACE=1,MESHES(NM)%IBM_NBBRCFACE_Z
    SELECT CASE(IBM_RCFACE_Z(IFACE)%CELL_LIST(1,ISIDE+2))
    CASE(IBM_FTYPE_RGGAS) ! Regular cell.
       ! Q_LEAK accounts for enthalpy moving through leakage paths
-      DP(IIG,JJG,KKG) = DP(IIG,JJG,KKG) - ( WC%ONE_D%QCONF ) * AF  + WC%Q_LEAK * (DX(IIG)*DY(JJG)*DZ(KKG))
+      DP(IIG,JJG,KKG) = DP(IIG,JJG,KKG) - ( WC%ONE_D%Q_CON_F ) * AF  + WC%Q_LEAK * (DX(IIG)*DY(JJG)*DZ(KKG))
    CASE(IBM_FTYPE_CFGAS) ! Cut-cell -> use Temperature value from CUT_CELL data struct:
       ICC = IBM_RCFACE_Z(IFACE)%CELL_LIST(2,ISIDE+2)
       IF (ICC > MESHES(NM)%N_CUTCELL_MESH) CYCLE ! Cut-cell is guard-cell cc.
       JCC = IBM_RCFACE_Z(IFACE)%CELL_LIST(3,ISIDE+2)
       IF (PREDICTOR) THEN
          CUT_CELL(ICC)%DS(JCC) = &
-         CUT_CELL(ICC)%DS(JCC) - ( WC%ONE_D%QCONF ) * AF + WC%Q_LEAK * CUT_CELL(ICC)%VOLUME(JCC) ! Qconf +ve sign is
+         CUT_CELL(ICC)%DS(JCC) - ( WC%ONE_D%Q_CON_F ) * AF + WC%Q_LEAK * CUT_CELL(ICC)%VOLUME(JCC) ! Qconf +ve sign is
                                                                                                  ! outwards of cut-cell.
       ELSE
          CUT_CELL(ICC)%D(JCC) = &
-         CUT_CELL(ICC)%D(JCC) - ( WC%ONE_D%QCONF ) * AF  + WC%Q_LEAK * CUT_CELL(ICC)%VOLUME(JCC)
+         CUT_CELL(ICC)%D(JCC) - ( WC%ONE_D%Q_CON_F ) * AF  + WC%Q_LEAK * CUT_CELL(ICC)%VOLUME(JCC)
       ENDIF
    END SELECT
 ENDDO
@@ -7466,11 +7518,11 @@ DO ICF = 1,MESHES(NM)%N_BBCUTFACE_MESH
             JCC = CUT_FACE(ICF)%CELL_LIST(3,ISIDE+2,IFACE)
             IF (PREDICTOR) THEN
                CUT_CELL(ICC)%DS(JCC) = &
-               CUT_CELL(ICC)%DS(JCC) - ( WC%ONE_D%QCONF ) * AF + WC%Q_LEAK * CUT_CELL(ICC)%VOLUME(JCC) ! Qconf +ve sign
+               CUT_CELL(ICC)%DS(JCC) - ( WC%ONE_D%Q_CON_F ) * AF + WC%Q_LEAK * CUT_CELL(ICC)%VOLUME(JCC) ! Qconf +ve sign
                                                                                               ! is outwards of cut-cell.
             ELSE
                CUT_CELL(ICC)%D(JCC) = &
-               CUT_CELL(ICC)%D(JCC) - ( WC%ONE_D%QCONF ) * AF  + WC%Q_LEAK * CUT_CELL(ICC)%VOLUME(JCC)
+               CUT_CELL(ICC)%D(JCC) - ( WC%ONE_D%Q_CON_F ) * AF  + WC%Q_LEAK * CUT_CELL(ICC)%VOLUME(JCC)
             ENDIF
          END SELECT
       ENDDO
@@ -7483,14 +7535,14 @@ IF (PREDICTOR) THEN
      CFA  => CFACE(ICF)
      IND1 = CFA%CUT_FACE_IND1;                         IND2 = CFA%CUT_FACE_IND2
      ICC  = CUT_FACE(IND1)%CELL_LIST(2,LOW_IND,IND2);  JCC  = CUT_FACE(IND1)%CELL_LIST(3,LOW_IND,IND2)
-     CUT_CELL(ICC)%DS(JCC)=CUT_CELL(ICC)%DS(JCC)-( CFA%ONE_D%QCONF ) * CUT_FACE(IND1)%AREA(IND2) ! QCONF(+) into solid.
+     CUT_CELL(ICC)%DS(JCC)=CUT_CELL(ICC)%DS(JCC)-( CFA%ONE_D%Q_CON_F ) * CUT_FACE(IND1)%AREA(IND2) ! QCONF(+) into solid.
   ENDDO
 ELSE
   DO ICF=1,N_CFACE_CELLS
      CFA  => CFACE(ICF)
      IND1 = CFA%CUT_FACE_IND1;                         IND2 = CFA%CUT_FACE_IND2
      ICC  = CUT_FACE(IND1)%CELL_LIST(2,LOW_IND,IND2);  JCC  = CUT_FACE(IND1)%CELL_LIST(3,LOW_IND,IND2)
-     CUT_CELL(ICC)%D(JCC) = CUT_CELL(ICC)%D(JCC)-( CFA%ONE_D%QCONF ) * CUT_FACE(IND1)%AREA(IND2) ! QCONF(+) into solid.
+     CUT_CELL(ICC)%D(JCC) = CUT_CELL(ICC)%D(JCC)-( CFA%ONE_D%Q_CON_F ) * CUT_FACE(IND1)%AREA(IND2) ! QCONF(+) into solid.
   ENDDO
 ENDIF
 
@@ -7514,7 +7566,7 @@ DO IEXIM=1,MESHES(NM)%IBM_NEXIMFACE_MESH
      JJG = WC%ONE_D%JJG
      KKG = WC%ONE_D%KKG
      ! Q_LEAK accounts for enthalpy moving through leakage paths
-     DP(IIG,JJG,KKG) = DP(IIG,JJG,KKG) - ( WC%ONE_D%QCONF ) * AF  + WC%Q_LEAK * (DX(IIG)*DY(JJG)*DZ(KKG))
+     DP(IIG,JJG,KKG) = DP(IIG,JJG,KKG) - ( WC%ONE_D%Q_CON_F ) * AF  + WC%Q_LEAK * (DX(IIG)*DY(JJG)*DZ(KKG))
   ELSE
 
      SELECT CASE(X1AXIS)
@@ -8100,15 +8152,13 @@ DIFFUSIVE_FLUX_LOOP: DO N=1,N_TOTAL_SCALARS
       IND1 = CFA%CUT_FACE_IND1;                         IND2 = CFA%CUT_FACE_IND2
       ICC  = CUT_FACE(IND1)%CELL_LIST(2,LOW_IND,IND2);  JCC  = CUT_FACE(IND1)%CELL_LIST(3,LOW_IND,IND2)
 
-      ZZPV(ISIDE) =        PRFCT *CUT_CELL(ICC)%ZZ(N,JCC) + &
-                    (1._EB-PRFCT)*CUT_CELL(ICC)%ZZS(N,JCC)
-
+      ! Use external Gas point data for ZZ_G estimation, consistent with CFA%ONE_D%RDN in the finite difference.
+      ZZPV(ISIDE) = CFA%ONE_D%ZZ_G(N)
       ! Flux fixing done here for CFACEs:
       N_ZZ_MAX = MAXLOC(CFA%ONE_D%ZZ_F(1:N_TRACKED_SPECIES),1)
       RHO_D_DZDN = 2._EB*CFA%ONE_D%RHO_D_F(N)*(ZZPV(ISIDE)-CFA%ONE_D%ZZ_F(N))*CFA%ONE_D%RDN
       IF (N==N_ZZ_MAX) THEN
-         ZZ_GET(1:N_TRACKED_SPECIES) =        PRFCT *CUT_CELL(ICC)%ZZ(1:N_TRACKED_SPECIES,JCC) + &
-                                       (1._EB-PRFCT)*CUT_CELL(ICC)%ZZS(1:N_TRACKED_SPECIES,JCC)
+         ZZ_GET(1:N_TRACKED_SPECIES) = CFA%ONE_D%ZZ_G(1:N_TRACKED_SPECIES)
          RHO_D_DZDN_GET(1:N_TRACKED_SPECIES) = &
          2._EB*CFA%ONE_D%RHO_D_F(1:N_TRACKED_SPECIES)*( ZZ_GET(1:N_TRACKED_SPECIES) - &
                                                 CFA%ONE_D%ZZ_F(1:N_TRACKED_SPECIES))*CFA%ONE_D%RDN
@@ -8899,7 +8949,7 @@ MESH_LOOP : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
          SELECT CASE(WC%BOUNDARY_TYPE)
             CASE DEFAULT; CYCLE WALL_LOOP
             ! SOLID_BOUNDARY is not currently functional here, but keep for testing
-            CASE(SOLID_BOUNDARY);        UN = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UW
+            CASE(SOLID_BOUNDARY);        UN = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL
             CASE(INTERPOLATED_BOUNDARY); UN = UVW_SAVE(IW)
          END SELECT
          SELECT CASE(IOR)
@@ -8929,7 +8979,7 @@ MESH_LOOP : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
          SELECT CASE(WC%BOUNDARY_TYPE)
             CASE DEFAULT; CYCLE WALL_LOOP_2
             ! SOLID_BOUNDARY is not currently functional here, but keep for testing
-            CASE(SOLID_BOUNDARY);        UN = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UWS
+            CASE(SOLID_BOUNDARY);        UN = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL_S
             CASE(INTERPOLATED_BOUNDARY); UN = UVW_SAVE(IW)
          END SELECT
          SELECT CASE(IOR)
@@ -11136,9 +11186,9 @@ DO IEXIM=1,MESHES(NM)%IBM_NEXIMFACE_MESH
       WC=>WALL(IW)
       IF (WC%BOUNDARY_TYPE==NULL_BOUNDARY) CYCLE
       IF (PREDICTOR) THEN
-         VELC2 = WC%ONE_D%UWS
+         VELC2 = WC%ONE_D%U_NORMAL_S
       ELSE
-         VELC2 = WC%ONE_D%UW
+         VELC2 = WC%ONE_D%U_NORMAL
       ENDIF
       IF (WC%BOUNDARY_TYPE==SOLID_BOUNDARY .AND. VELC2>0._EB) THEN
          TMP_F_GAS = WC%ONE_D%TMP_G
@@ -11403,7 +11453,7 @@ INTEGER :: NM,I,J,K
 REAL(EB):: PRFCT
 INTEGER :: X1AXIS,IFACE,IND(LOW_IND:HIGH_IND),IND_LOC(LOW_IND:HIGH_IND),ICF,IND1,IND2
 INTEGER :: LOCROW_1,LOCROW_2,ILOC,IROW,ICC,JCC,ISIDE,IW
-REAL(EB):: AF,KFACE(2,2),F_LOC(2),CIJP,CIJM,VELC,ALPHAP1,AM_P1,AP_P1
+REAL(EB):: AF,KFACE(2,2),F_LOC(2),CIJP,CIJM,VELC,ALPHAP1,AM_P1,AP_P1,RHO_Z
 REAL(EB), POINTER, DIMENSION(:,:,:)  :: RHOP=>NULL(),UP=>NULL(),VP=>NULL(),WP=>NULL()
 REAL(EB), POINTER, DIMENSION(:,:,:,:)::  ZZP=>NULL()
 TYPE(WALL_TYPE), POINTER :: WC=>NULL()
@@ -11793,8 +11843,18 @@ MESH_LOOP_DBND : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
       IND1 = CFA%CUT_FACE_IND1;                         IND2 = CFA%CUT_FACE_IND2
       ICC  = CUT_FACE(IND1)%CELL_LIST(2,LOW_IND,IND2);  JCC  = CUT_FACE(IND1)%CELL_LIST(3,LOW_IND,IND2)
       IROW = CUT_CELL(ICC)%UNKZ(JCC) - UNKZ_IND(NM_START)
-      F_Z(IROW) = F_Z(IROW) + CFA%ONE_D%RHO_F*CFA%ONE_D%ZZ_F(N)* &
-      (PRFCT*CFA%ONE_D%UW+ (1._EB-PRFCT)*CFA%ONE_D%UWS) * CUT_FACE(IND1)%AREA(IND2)
+      IF (PREDICTOR) THEN
+         VELC = CFA%ONE_D%U_NORMAL
+      ELSE
+         VELC = CFA%ONE_D%U_NORMAL_S
+      ENDIF
+      IF (VELC>0._EB) THEN
+         RHO_Z = PRFCT *CUT_CELL(ICC)% RHO(JCC)*CUT_CELL(ICC)% ZZ(N,JCC) + &
+          (1._EB-PRFCT)*CUT_CELL(ICC)%RHOS(JCC)*CUT_CELL(ICC)%ZZS(N,JCC)
+      ELSE
+         RHO_Z = CFA%ONE_D%RHO_F*CFA%ONE_D%ZZ_F(N)
+      ENDIF
+      F_Z(IROW) = F_Z(IROW) + RHO_Z*VELC*CFA%AREA
    ENDDO
 
    ! Then add diffusive fluxes through domain boundaries:
@@ -12330,15 +12390,12 @@ REAL(EB):: ZZ_GET(1:N_TRACKED_SPECIES), SLIP_FACTOR, U_TAU, Y_PLUS, SRGH
 INTEGER :: ICC,JCC,ISIDE
 REAL(EB):: DT2
 
-LOGICAL:: MATCH_VEL_DERIV
-INTEGER:: NFACE
-
-
 REAL(EB) :: TNOW
 
 DT2 = 0._EB*DT
 
 IF ( FREEZE_VELOCITY ) RETURN
+IF ( CC_ZEROIBM_VELO ) RETURN
 IF (PERIODIC_TEST == 103 .OR. PERIODIC_TEST == 11 .OR. PERIODIC_TEST==7) RETURN
 TNOW = CURRENT_TIME()
 
@@ -12367,42 +12424,9 @@ STORE_FLG_CND : IF (STORE_FLG) THEN
       J      = CUT_FACE(ICF)%IJK(JAXIS)
       K      = CUT_FACE(ICF)%IJK(KAXIS)
       X1AXIS = CUT_FACE(ICF)%IJK(KAXIS+1)
-
-      NFACE = CUT_FACE(ICF)%NFACE
-
-      ! 1. For the given Cartesian face search for edges shared with faces of type IBM_GASPHASE.
-      ! 2. For these regular edges find which IFACE is next to them.
-      ! 3. Define IFACE centroid distance to the edge.
-      ! 4. Compute U_IBM on underlaying Cartesian face with VEL of cut-face and VEL of bounding IBM_GASPHASE
-      !    regular face, such that DV1/DX2 matches.
-      U_IBM = 0._EB
-      MATCH_VEL_DERIV = .FALSE.
-
-      ! TO DO.
-      ! SELECT CASE(X1AXIS)
-      ! CASE(IAXIS)
-      !    ! Check type of faces in Y, Z directions:
-      !    IF(FCVAR(I,J+1,K,IBM_FGSC,X1AXIS) == IBM_GASPHASE) THEN
-      !       IFACE=MAXLOC(CUT_FACE(ICF)%XYZCEN(JAXIS,1:NFACE))
-      !       VFACE= (1._EB-PRFCT)*CUT_FACE(ICF)%VEL(IFACE)+ PRFCT*CUT_FACE(ICF)%VELS(IFACE)
-      !       COUNT = COUNT + 1
-      !       U_IBM = U_IBM + &
-      !       UU(I,J+1,K) - DYN(J)/(0.5*DYN(J)+ABS(Y(J)-CUT_FACE(ICF)%XYZCEN(JAXIS,IFACE)))*(UU(I,J+1,K)-VFACE)
-      !    ENDIF
-      !
-      !
-      ! CASE(JAXIS)
-      !
-      !
-      ! CASE(KAXIS)
-      !
-      ! END SELECT
-
-
-      MATCH_IF : IF(.NOT.MATCH_VEL_DERIV) THEN
-
       IF(IBM_PLANE_INTERPOLATION) THEN
          ! Interpolate Un approx to cartesian-face centroids:
+         U_IBM    = 0._EB
          VAL(1:5) = 0._EB
          ! Get UBn:
          INBFC_CARTCEN(1:3) = CUT_FACE(ICF)%INBFC_CARTCEN(1:3)
@@ -12433,12 +12457,8 @@ STORE_FLG_CND : IF (STORE_FLG) THEN
                INT_NPE_HI = CUT_FACE(ICF)%INT_NPE(HIGH_IND,VIND,EP,IFACE)
                DO INPE=INT_NPE_LO+1,INT_NPE_LO+INT_NPE_HI
                   ! Value of velocity component VIND, for stencil point INPE of external normal point EP.
-                  DUMEB = DT*(CUT_FACE(ICF)%INT_FVARS(INT_FV_IND,INPE)+CUT_FACE(ICF)%INT_FVARS(INT_DHDX_IND,INPE))
-                  ! Case PREDICTOR => Un+1_aprx = Un - DT*(FVXn + DH/DXn):
-                  IF (PREDICTOR) VAL_EP = CUT_FACE(ICF)%INT_FVARS(INT_VEL_IND,INPE) - DUMEB
-                  ! Case CORRECTOR => Un+1_aprx = 1/2*(Un + Us) - DT/2*(FVXs + DH/DXs):
-                  IF (CORRECTOR) VAL_EP = 0.5_EB*(CUT_FACE(ICF)%INT_FVARS( INT_VEL_IND,INPE)+ &
-                                                  CUT_FACE(ICF)%INT_FVARS(INT_VELS_IND,INPE)) - 0.5_EB*DUMEB
+                  IF (PREDICTOR) VAL_EP = CUT_FACE(ICF)%INT_FVARS(INT_VEL_IND,INPE)
+                  IF (CORRECTOR) VAL_EP = CUT_FACE(ICF)%INT_FVARS(INT_VELS_IND,INPE)
                   ! Interpolation coefficient from INPE to EP.
                   COEF = CUT_FACE(ICF)%INT_COEF(INPE)
                   ! Add to Velocity component VIND of EP:
@@ -12453,12 +12473,17 @@ STORE_FLG_CND : IF (STORE_FLG) THEN
             EP = 1
             U_VELO(IAXIS:KAXIS) = UVW_EP(IAXIS:KAXIS,EP,IFACE)
             VELN = 0._EB
+            SRGH = 0._EB
             IF( CUT_FACE(ICF)%INT_INBFC(1,IFACE)== IBM_FTYPE_CFINB) THEN
                ICF1 = CUT_FACE(ICF)%INT_INBFC(2,IFACE)
                ICF2 = CUT_FACE(ICF)%INT_INBFC(3,IFACE)
                ICFA = CUT_FACE(ICF1)%CFACE_INDEX(ICF2)
-               IF (ICFA>0) VELN = -CFACE(ICFA)%ONE_D%UW
+               IF (ICFA>0) THEN
+                  VELN = -CFACE(ICFA)%ONE_D%U_NORMAL
+                  SRGH = SURFACE(CFACE(ICFA)%SURF_INDEX)%ROUGHNESS
+               ENDIF
             ENDIF
+
             NN(IAXIS:KAXIS)     = CUT_FACE(ICF)%INT_NOUT(IAXIS:KAXIS,IFACE)
             TT=0._EB; SS=0._EB; U_NORM=0._EB; U_ORTH=0._EB; U_STRM=0._EB; U_IBM = 0._EB
             IF (NORM2(NN) > TWO_EPSILON_EB) THEN
@@ -12470,21 +12495,21 @@ STORE_FLG_CND : IF (STORE_FLG) THEN
                ! U_STRM    = U_RELA(X1AXIS)
                ! SS(X1AXIS)= 1._EB ! Make stream the X1AXIS dir.
 
-               ! Apply wall model to define streamwise velocity at interpolation point:
-               DXN_STRM =2._EB*CUT_FACE(ICF)%INT_XN(EP,IFACE) ! EP Position from Boundary in NOUT direction
-               DXN_STRM2=2._EB*CUT_FACE(ICF)%INT_XN(0,IFACE)  ! Interpolation point position from Boundary in NOUT dir.
-                                                        ! Note if this is a -ve number (i.e. case of Cartesian Faces),
-                                                        ! Linear velocity variation should be used be used.
-               ! Linear variation:
-               U_NORM2 = DXN_STRM2/DXN_STRM*U_NORM      ! Assumes relative U_normal decreases linearly to boundry.
+               SLIPVEL_CONDITIONAL : IF(CC_SLIPIBM_VELO) THEN
+                  ! Slip condition: Make FP velocities equal to EP values.
+                  U_STRM2 = U_STRM
+                  U_NORM2 = U_NORM
 
+               ELSE SLIPVEL_CONDITIONAL
 
-               IF(DXN_STRM2 < 0._EB) THEN
+                  ! Apply wall model to define streamwise velocity at interpolation point:
+                  DXN_STRM =2._EB*CUT_FACE(ICF)%INT_XN(EP,IFACE) ! EP Position from Boundary in NOUT direction
+                  DXN_STRM2=2._EB*CUT_FACE(ICF)%INT_XN(0,IFACE)  ! Interpolation point position from Bound in NOUT dir.
+                                                           ! If this is a -ve number (i.e. case of Cartesian Faces),
+                                                           ! Linear velocity variation should be used be used.
                   ! Linear variation:
-                  U_STRM2 = DXN_STRM2/DXN_STRM*U_STRM
-                  ! Velocity U_ORTH is zero by construction. Surface velocity is added to get absolute vel.
-                  U_IBM = U_NORM2*NN(X1AXIS) + U_STRM2*SS(X1AXIS) + U_SURF(X1AXIS)
-               ELSE
+                  U_NORM2 = DXN_STRM2/DXN_STRM*U_NORM      ! Assumes relative U_normal decreases linearly to boundry.
+
                   X1F= MESHES(NM)%CUT_FACE(ICF)%XYZCEN(X1AXIS,1)
                   IDX= 1._EB/ ( MESHES(NM)%CUT_FACE(ICF)%XCENHIGH(X1AXIS,1) - &
                                 MESHES(NM)%CUT_FACE(ICF)%XCENLOW(X1AXIS, 1) )
@@ -12510,46 +12535,21 @@ STORE_FLG_CND : IF (STORE_FLG) THEN
                   MU_FACE = CCM1* MUV(-1) + CCP1* MUV(0)
                   RHO_FACE= CCM1*RHOV(-1) + CCP1*RHOV(0)
                   NU      = MU_FACE/RHO_FACE
-                  CALL WALL_MODEL(SLIP_FACTOR,U_TAU,Y_PLUS,U_STRM,NU,DXN_STRM,SRGH,DXN_STRM2,U_STRM2)
+                  CALL WALL_MODEL(SLIP_FACTOR,U_TAU,Y_PLUS,U_STRM,NU,DXN_STRM,SRGH,ABS(DXN_STRM2),U_STRM2)
 
-                  ! Hardwire tau_wall:
-                  ! Tau(y) = Tau_wall*(1.-Y/delta_channel)
-                  ! TAU_WALL = -0.001512_EB !-RHO_FACE*U_TAU**2._EB
-                  ! SELECT CASE (X1AXIS)
-                  ! CASE(IAXIS)
-                  !    IF(FCVAR(I,J+1,K,IBM_FGSC,IAXIS)==IBM_GASPHASE) THEN
-                  !       MU_T=MAX(MU_FACE,0.25_EB*(MU(I,J,K)+MU(I+1,J,K)+MU(I,J+1,K)+MU(I+1,J+1,K)))
-                  !       TAU_OFF_WALL = TAU_WALL*(1._EB-DY(J)/0.5_EB)  ! 0.5 m half duct width.
-                  !       U_IBM = UVW_EP(X1AXIS,EP,IFACE) - DY(J)*TAU_OFF_WALL/MU_T
-                  !
-                  !    ELSEIF(FCVAR(I,J-1,K,IBM_FGSC,IAXIS)==IBM_GASPHASE) THEN
-                  !       MU_T=MAX(MU_FACE,0.25_EB*(MU(I,J,K)+MU(I+1,J,K)+MU(I,J-1,K)+MU(I+1,J-1,K)))
-                  !       TAU_OFF_WALL = TAU_WALL*(1._EB-DY(J)/0.5_EB)  ! 0.5 m half duct width.
-                  !       U_IBM = UVW_EP(X1AXIS,EP,IFACE) + DY(J)*TAU_OFF_WALL/MU_T
-                  !
-                  !    ELSEIF(FCVAR(I,J,K+1,IBM_FGSC,IAXIS)==IBM_GASPHASE) THEN
-                  !       MU_T=MAX(MU_FACE,0.25_EB*(MU(I,J,K)+MU(I+1,J,K)+MU(I,J,K+1)+MU(I+1,J,K+1)))
-                  !       TAU_OFF_WALL = TAU_WALL*(1._EB-DZ(K)/0.5_EB)  ! 0.5 m half duct width.
-                  !       U_IBM = UVW_EP(X1AXIS,EP,IFACE) - DZ(K)*TAU_OFF_WALL/MU_T
-                  !
-                  !    ELSEIF(FCVAR(I,J,K-1,IBM_FGSC,IAXIS)==IBM_GASPHASE) THEN
-                  !       MU_T=MAX(MU_FACE,0.25_EB*(MU(I,J,K)+MU(I+1,J,K)+MU(I,J,K-1)+MU(I+1,J,K-1)))
-                  !       TAU_OFF_WALL = TAU_WALL*(1._EB-DZ(K)/0.5_EB)  ! 0.5 m half duct width.
-                  !       U_IBM = UVW_EP(X1AXIS,EP,IFACE) + DZ(K)*TAU_OFF_WALL/MU_T
-                  !
-                  !    ENDIF
-                  ! CASE DEFAULT
-                  ! Velocity U_ORTH is zero by construction. Surface velocity is added to get absolute vel.
-                  U_IBM = U_NORM2*NN(X1AXIS) + U_STRM2*SS(X1AXIS) + U_SURF(X1AXIS)
-                  !END SELECT
+                  ! If Cartesian face centroid inside the solid (i.e. acts like ghost cell) recompute U_STRM2
+                  ! using slip factor:
+                  IF(DXN_STRM2 < 0._EB) U_STRM2 = SLIP_FACTOR*ABS(DXN_STRM2)/DXN_STRM*U_STRM
 
-               ENDIF
+               ENDIF SLIPVEL_CONDITIONAL
+
+               ! Velocity U_ORTH is zero by construction. Surface velocity is added to get absolute vel.
+               U_IBM = U_NORM2*NN(X1AXIS) + U_STRM2*SS(X1AXIS) + U_SURF(X1AXIS)
+
             ENDIF
          ENDIF
 
       ENDIF
-
-      ENDIF MATCH_IF
 
       SELECT CASE(X1AXIS)
       CASE(IAXIS)
@@ -12767,7 +12767,7 @@ MESH_LOOP : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
                      ICF2 = CUT_FACE(ICF)%INT_INBFC(3,IFACE)
                      ICFA = CUT_FACE(ICF1)%CFACE_INDEX(ICF2)
                      IF (ICFA>0) THEN
-                        VELN = -CFACE(ICFA)%ONE_D%UW
+                        VELN = -CFACE(ICFA)%ONE_D%U_NORMAL
                         SRGH = SURFACE(CFACE(ICFA)%SURF_INDEX)%ROUGHNESS
                      ENDIF
                   ENDIF
@@ -12777,6 +12777,8 @@ MESH_LOOP : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
                   U_NORM_EP=0._EB
                   U_ORTH_EP=0._EB
                   U_STRM_EP=0._EB
+                  U_NORM_FP=0._EB
+                  U_STRM_FP=0._EB
                   GRAV_COMP=0._EB
                   NN_IF: IF (NORM2(NN) > TWO_EPSILON_EB) THEN
                      U_SURF(IAXIS:KAXIS) = VELN*NN
@@ -12793,7 +12795,11 @@ MESH_LOOP : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
                                                               ! Note if this is a -ve number (i.e. Cartesian Faces),
                                                               ! Linear velocity variation should be used be used.
 
-                     DXN_STRMFP_IF: IF(DXN_STRM_FP < 0._EB) THEN
+                     DXN_STRMFP_IF: IF(CC_SLIPIBM_VELO) THEN
+                        ! Slip condition: Make FP velocities equal to EP values.
+                        U_STRM_FP = U_STRM_EP
+                        U_NORM_FP = U_NORM_EP
+                     ELSEIF(DXN_STRM_FP < 0._EB) THEN
                         ! Linear variation:
                         U_STRM_FP = DXN_STRM_FP/DXN_STRM_EP*U_STRM_EP
                         U_NORM_FP = DXN_STRM_FP/DXN_STRM_EP*U_NORM_EP ! Assume rel U_normal decreases linearly.
@@ -12901,10 +12907,10 @@ MESH_LOOP : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
                         ENDDO
                         TAU_SN_EP = TBAR_IJ(IAXIS,KAXIS)
 
-                        TAU_W = -RHO_FACE*U_TAU**2
-                        GRAV_SS = DOT_PRODUCT(GVEC,SS)*(RHO_FACE-RHO_0(K))
+                        TAU_W   = -RHO_FACE*U_TAU**2
+                        GRAV_SS = -DOT_PRODUCT(GVEC,SS)*(RHO_FACE-RHO_0(K))
 
-                        ! Normal component of velocity at forcing point, U_NORM_FP = UW + DXN_STRM_FP * ( DIV - DUDS )
+                        ! Normal component of velocity at forcing point, U_NORM_FP = U_NORMAL + DXN_STRM_FP * ( DIV - DUDS )
                         U_NORM_FP = VELN + DXN_STRM_FP * (DIV_FACE - DUSTRMDS_FP)
 
                         ! All values evaluated at forcing point
@@ -13065,7 +13071,7 @@ MESH_LOOP : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
                ICF2 = MESHES(NM)%IBM_RCFACE_VEL(ICF)%INT_INBFC(3,IFACE)
                ICFA = CUT_FACE(ICF1)%CFACE_INDEX(ICF2)
                IF (ICFA>0) THEN
-                  VELN = -CFACE(ICFA)%ONE_D%UW
+                  VELN = -CFACE(ICFA)%ONE_D%U_NORMAL
                   SRGH = SURFACE(CFACE(ICFA)%SURF_INDEX)%ROUGHNESS
                ENDIF
             ENDIF
@@ -13987,7 +13993,7 @@ VELX1 = 0._EB
 ! This routine computes boundary velocity of a boundary point on INBFC_CFCEN(1:3) INBOUNDARY cut-face
 ! with coordinates XYZ_PP. Will make use of velocity field defined on GEOMETRY.
 
-! For now Set to CFACEs UW or UWS depending on predictor or corrector:
+! For now Set to CFACEs U_NORMAL or U_NORMAL_S depending on predictor or corrector:
 DUMMY = XYZ_PP(X1AXIS) ! Dummy to avoid compilation warning on currently unused point location within cut-face.
 
 ! Inboundary cut-face indexes:
@@ -14005,9 +14011,9 @@ IF (ICF <=0) RETURN ! This uses VELX1 = 0._EB when the inboundary cut-face used 
 
 ! Velocity into Gas Region, component along X1AXIS:
 IF (PREDICTOR) THEN
-   VELX1 = -CFACE(ICF)%ONE_D%UW * CFACE(ICF)%NVEC(X1AXIS)
+   VELX1 = -CFACE(ICF)%ONE_D%U_NORMAL * CFACE(ICF)%NVEC(X1AXIS)
 ELSE
-   VELX1 = -CFACE(ICF)%ONE_D%UWS* CFACE(ICF)%NVEC(X1AXIS)
+   VELX1 = -CFACE(ICF)%ONE_D%U_NORMAL_S* CFACE(ICF)%NVEC(X1AXIS)
 ENDIF
 
 RETURN
@@ -14229,8 +14235,8 @@ MESHES_LOOP : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
                   ICFA    = CUT_FACE(IFC2)%CFACE_INDEX(IFACE2)
 
                   AF      = CUT_FACE(IFC2)%AREA(IFACE2)
-                  VELN    = FCT*((1._EB-PRFCT)*(CUT_FACE(IFC2)%VEL( IFACE2)+CFACE(ICFA)%ONE_D%UW) + &
-                                        PRFCT *(CUT_FACE(IFC2)%VELS(IFACE2)+CFACE(ICFA)%ONE_D%UWS))
+                  VELN    = FCT*((1._EB-PRFCT)*(CUT_FACE(IFC2)%VEL( IFACE2)+CFACE(ICFA)%ONE_D%U_NORMAL) + &
+                                        PRFCT *(CUT_FACE(IFC2)%VELS(IFACE2)+CFACE(ICFA)%ONE_D%U_NORMAL_S))
 
                END SELECT
 
@@ -14871,7 +14877,7 @@ MESHES_LOOP : DO NM=1,NMESHES
          KKG   = WC%ONE_D%KKG
          IOR   = WC%ONE_D%IOR
 
-         DHDXN = -WC%UW0
+         DHDXN = -WC%ONE_D%U_NORMAL_0
 
          ! Define cell size, normal to WC:
          SELECT CASE (IOR)
@@ -15414,7 +15420,7 @@ MESH_LOOP : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
                       ICF2 = CUT_FACE(ICF)%INT_INBFC(3,IFACE)
                       ICFA = CUT_FACE(ICF1)%CFACE_INDEX(ICF2)
                       IF (ICFA>0) THEN
-                         VELN = -CFACE(ICFA)%ONE_D%UW
+                         VELN = -CFACE(ICFA)%ONE_D%U_NORMAL
                          SRGH = SURFACE(CFACE(ICFA)%SURF_INDEX)%ROUGHNESS
                       ENDIF
                    ENDIF
@@ -15568,7 +15574,7 @@ MESH_LOOP : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
                   ICF2 = MESHES(NM)%IBM_RCFACE_VEL(ICF)%INT_INBFC(3,IFACE)
                   ICFA = CUT_FACE(ICF1)%CFACE_INDEX(ICF2)
                   IF (ICFA>0) THEN
-                     VELN = -CFACE(ICFA)%ONE_D%UW
+                     VELN = -CFACE(ICFA)%ONE_D%U_NORMAL
                      SRGH = SURFACE(CFACE(ICFA)%SURF_INDEX)%ROUGHNESS
                   ENDIF
                ENDIF
@@ -15912,7 +15918,7 @@ IF (FORCE_REGC_FACE_NXT) THEN
    DO_GASNXT_CARTCELL= .TRUE.
 ENDIF
 
-IF(.NOT.IBM_PLANE_INTERPOLATION) FORCE_REGC_FACE = .FALSE. ! 3D Interpolation.
+IF(.NOT.IBM_PLANE_INTERPOLATION .OR. CC_ZEROIBM_VELO .OR. CC_SLIPIBM_VELO) FORCE_REGC_FACE = .FALSE. ! 3D Interpolation.
 
 ! First fill IJK of cut-cells for CUT_FACE and IBM_RCFACE_VEL, in field CELL_LIST:
 ! Meshes Loop:
@@ -18753,6 +18759,9 @@ IF(CFRC_FLG) THEN
          CUT_FACE(ICF)%INT_NOMIND(LOW_IND:HIGH_IND,INPE)
       ENDIF
    ENDDO
+   IF (ABS(PROD_COEF) < TWO_EPSILON_EB) THEN ! Any viable points throught EP_TAG have been discarded by IJKFACE2.
+      INT_IJK=IBM_UNDEFINED; INT_COEF=0._EB; INT_NOMIND=IBM_UNDEFINED; NPE_COUNT=0
+   ENDIF
    CUT_FACE(ICF)%INT_IJK(IAXIS:KAXIS,INT_NPE_LO+1:INT_NPE_LO+INT_NPE_HI) = &
    INT_IJK(IAXIS:KAXIS,INT_NPE_LO+1:INT_NPE_LO+INT_NPE_HI)
    CUT_FACE(ICF)%INT_NOMIND(LOW_IND:HIGH_IND,INT_NPE_LO+1:INT_NPE_LO+INT_NPE_HI) = &
@@ -18775,6 +18784,10 @@ ELSE
          MESHES(NM)%IBM_RCFACE_VEL(ICF)%INT_NOMIND(LOW_IND:HIGH_IND,INPE)
       ENDIF
    ENDDO
+   IF (ABS(PROD_COEF) < TWO_EPSILON_EB) THEN ! Any viable points throught EP_TAG have been discarded by IJKFACE2.
+      INT_IJK=IBM_UNDEFINED; INT_COEF=0._EB; INT_NOMIND=IBM_UNDEFINED; NPE_COUNT=0
+   ENDIF
+
    MESHES(NM)%IBM_RCFACE_VEL(ICF)%INT_IJK(IAXIS:KAXIS,INT_NPE_LO+1:INT_NPE_LO+INT_NPE_HI) = &
    INT_IJK(IAXIS:KAXIS,INT_NPE_LO+1:INT_NPE_LO+INT_NPE_HI)
    MESHES(NM)%IBM_RCFACE_VEL(ICF)%INT_NOMIND(LOW_IND:HIGH_IND,INT_NPE_LO+1:INT_NPE_LO+INT_NPE_HI) = &
@@ -23237,7 +23250,7 @@ MESH_LOOP : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
          SELECT CASE(WC%BOUNDARY_TYPE)
             CASE DEFAULT; CYCLE WALL_LOOP
             ! SOLID_BOUNDARY is not currently functional here, but keep for testing
-            CASE(SOLID_BOUNDARY);        UN = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UW
+            CASE(SOLID_BOUNDARY);        UN = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL
             CASE(INTERPOLATED_BOUNDARY); UN = UVW_SAVE(IW)
          END SELECT
          SELECT CASE(IOR)
@@ -23270,7 +23283,7 @@ MESH_LOOP : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
          SELECT CASE(WC%BOUNDARY_TYPE)
             CASE DEFAULT; CYCLE WALL_LOOP_2
             ! SOLID_BOUNDARY is not currently functional here, but keep for testing
-            CASE(SOLID_BOUNDARY);        UN = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%UWS
+            CASE(SOLID_BOUNDARY);        UN = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL_S
             CASE(INTERPOLATED_BOUNDARY); UN = UVW_SAVE(IW)
          END SELECT
          SELECT CASE(IOR)
@@ -27136,7 +27149,7 @@ ENDDO MAIN_MESH_LOOP
 ! Now link small cells to surrounding cells in the mesh:
 ! NOTE: This linking scheme assumes there are no small cells trapped against a block boundary, i.e. there is a path
 ! within the mesh between them and a large cell.
-! NOTE2: Two remediation methods are used to link small cells trapped acainst a block boundary:
+! NOTE2: Two remediation methods are used to link small cells trapped against a block boundary:
 ! 1. Try linking them to the closest cell regular cell with UNKZ > 0.
 ! 2. Set for Mass matrix entry the cut-cell volume to ~ a cartesian cell and give a UNKZ > 0 to said cut-cell.
 !    This is done setting MESH(NM)%CUT_CELL(ICC)%USE_CC_VOL(JCC) = .FALSE., which will be used when building the
@@ -27314,6 +27327,22 @@ MAIN_MESH_LOOP3 : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
             CUT_CELL(ICC)%UNKZ(JCC) = VAL_UNKZ
          ENDDO
       ENDDO
+
+      ! Then attempt to connect to large cut-cells, or already connected small cells (CUT_CELL(OCC)%UNKZ(JCC) > 0):
+      ! DO ICC=1,MESHES(NM)%N_CUTCELL_MESH
+      !    NCELL = CUT_CELL(ICC)%NCELL
+      !    I = CUT_CELL(ICC)%IJK(IAXIS)
+      !    J = CUT_CELL(ICC)%IJK(JAXIS)
+      !    K = CUT_CELL(ICC)%IJK(KAXIS)
+      !    CCVOL_THRES = CCVOL_LINK*DX(I)*DY(J)*DZ(K)
+      !    ! For cases with more than one cut-cell, define UNKZ of all cells to be the one of first cut-cell
+      !    ! with UNKZ > 0:
+      !    DO JCC=1,NCELL
+      !       IF ( CUT_CELL(ICC)%UNKZ(JCC) > 0 ) EXIT
+      !    ENDDO
+      !    VAL_UNKZ = CUT_CELL(ICC)%UNKZ(JCC)
+      !    IF (JCC <= NCELL) CUT_CELL(ICC)%UNKZ(1:NCELL) = VAL_UNKZ
+      ! ENDDO
 
       IF (QUITLINK_FLG) EXIT LINK_LOOP
 
@@ -29338,14 +29367,20 @@ MESH_LOOP_1 : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
          ! Boundary CFACES processed are defined of type SOLID_BOUNDARY
          MESHES(NM)%CFACE(CFACE_INDEX_LOCAL)%BOUNDARY_TYPE = SOLID_BOUNDARY
 
+         ! Might need to rethink this, but for the time being...
          MESHES(NM)%CFACE(CFACE_INDEX_LOCAL)%ONE_D%II = CUT_FACE(ICF)%IJK(IAXIS)
          MESHES(NM)%CFACE(CFACE_INDEX_LOCAL)%ONE_D%JJ = CUT_FACE(ICF)%IJK(JAXIS)
          MESHES(NM)%CFACE(CFACE_INDEX_LOCAL)%ONE_D%KK = CUT_FACE(ICF)%IJK(KAXIS)
 
+         MESHES(NM)%CFACE(CFACE_INDEX_LOCAL)%ONE_D%IIG = CUT_FACE(ICF)%IJK(IAXIS)
+         MESHES(NM)%CFACE(CFACE_INDEX_LOCAL)%ONE_D%JJG = CUT_FACE(ICF)%IJK(JAXIS)
+         MESHES(NM)%CFACE(CFACE_INDEX_LOCAL)%ONE_D%KKG = CUT_FACE(ICF)%IJK(KAXIS)
+         ! ......................................................
+
          MESHES(NM)%CFACE(CFACE_INDEX_LOCAL)%ONE_D%AREA = CUT_FACE(ICF)%AREA(IFACE) ! Init to CFACE AREA.
 
          ! Assign normal velocity to CFACE from SURF input:
-         MESHES(NM)%CFACE(CFACE_INDEX_LOCAL)%UW0 = SURFACE(SURF_INDEX)%VEL
+         MESHES(NM)%CFACE(CFACE_INDEX_LOCAL)%ONE_D%U_NORMAL_0 = SURFACE(SURF_INDEX)%VEL
 
       ENDDO
    ENDDO
@@ -31522,17 +31557,29 @@ END SUBROUTINE LINE_INTERSECT_COORDPLANE
 SUBROUTINE IBM_INIT_GEOM
 
 ! Local Variables:
-INTEGER :: IG, IWSEL, INOD, IEDGE, NWSEL, NWSEDG, IEDLIST, IX
+INTEGER :: IG, IVERT, IWSEL, INOD, IEDGE, NVERT, NWSEL, NWSEDG, IEDLIST, IX
 INTEGER :: WSELEM(NOD1:NOD3),SEG(NOD1:NOD2)
 REAL(EB):: XYZV(MAX_DIM,NODS_WSEL), V12(MAX_DIM), V23(MAX_DIM), V31(MAX_DIM), WSNORM(MAX_DIM)
 REAL(EB):: X12(MAX_DIM), X23(MAX_DIM), X31(MAX_DIM), SQAREA(MAX_DIM), INT2
 REAL(EB):: MGNRM, XCEN
 REAL(EB):: GEOMEPSSQ ! Local epsilon for GEOM quality check
 LOGICAL :: INLIST
-CHARACTER(MESSAGE_LENGTH) :: MESSAGE
 
-IF(MYID==0 .AND. GET_CUTCELLS_VERBOSE) &
-WRITE(LU_ERR,'(A,I5,A)',advance="no") ' 1. Number of Geometries : ',N_GEOMETRY,', IBM_INIT_GEOM, processed GEOMETRY : '
+INTEGER :: TOT_ELVERT
+LOGICAL :: FLG_LOHI
+INTEGER, ALLOCATABLE, DIMENSION(:)  :: NELVERT,ISTVERT,EDGE_RNK
+INTEGER, ALLOCATABLE, DIMENSION(:,:):: EDGES2,EDGE_FACES2
+
+LOGICAL, PARAMETER :: OPTIMIZE_SEG_DEF = .FALSE.
+
+
+REAL(EB) :: CPUTIME_START, CPUTIME
+
+IF(MYID==0 .AND. GET_CUTCELLS_VERBOSE) THEN
+   CALL CPU_TIME(CPUTIME_START)
+   WRITE(LU_ERR,'(A,I5,A)',advance="no") ' 1. Number of Geometries : ',N_GEOMETRY,&
+   ', IBM_INIT_GEOM, processed GEOMETRY : '
+ENDIF
 
 ! In this subroutine the quality of the GEOM lines is checked
 ! Calc local squared epsilon for GEOM quality check
@@ -31542,6 +31589,7 @@ GEOMEPSSQ = (GEOMEPS * GEOMQUALITYFCT)**2._EB
 GEOMETRY_LOOP : DO IG=1,N_GEOMETRY
 
    NWSEL = GEOMETRY(IG)%N_FACES
+   NVERT = GEOMETRY(IG)%N_VERTS
 
    ! Allocate fields of Geometry used by IBM:
    ! WS Faces normal unit vectors:
@@ -31675,6 +31723,106 @@ GEOMETRY_LOOP : DO IG=1,N_GEOMETRY
    ! While building, check that the triangulated surface is manifold and oriented
 
    NWSEDG = 0
+   OPTIMIZE_SEG_DEF_COND : IF (OPTIMIZE_SEG_DEF) THEN
+
+   ! Populate NELVERT with the number of elements associated per node:
+   ALLOCATE(NELVERT(NVERT));  NELVERT(:) = 0
+   ALLOCATE(ISTVERT(NVERT));  ISTVERT(:) = 0
+   DO IWSEL=1,NWSEL
+      NELVERT(GEOMETRY(IG)%FACES(NODS_WSEL*(IWSEL-1)+1:NODS_WSEL*IWSEL)) = &
+      NELVERT(GEOMETRY(IG)%FACES(NODS_WSEL*(IWSEL-1)+1:NODS_WSEL*IWSEL)) + 2
+      ! +2 to have max number of verts in allocation, even though might mean
+      ! non manifold.
+   ENDDO
+   DO IVERT=2,NVERT
+      ISTVERT(IVERT) = ISTVERT(IVERT-1) + NELVERT(IVERT-1)
+   ENDDO
+
+   ! First pass build unique list of segments per VERTEX where:
+   ! SEG_IJ = [ni nj] with ni < nj
+   TOT_ELVERT = SUM(NELVERT(1:NVERT))
+   ALLOCATE(EDGES2(NOD1:NOD2,TOT_ELVERT)); EDGES2(:,:)      = 0
+   ALLOCATE(EDGE_FACES2(   5,TOT_ELVERT)); EDGE_FACES2(:,:) = 0
+   ALLOCATE(EDGE_RNK(        TOT_ELVERT)); EDGE_RNK(:)      = 0
+   NELVERT(:) = 0 ! Reset NELVERT.
+
+   DO IWSEL=1,NWSEL
+      WSELEM(NOD1:NOD3) = GEOMETRY(IG)%FACES(NODS_WSEL*(IWSEL-1)+1:NODS_WSEL*IWSEL)
+
+      DO IEDGE=EDG1,EDG3
+         SEG(NOD1:NOD2) = (/ MINVAL(WSELEM(NOD1:NOD2)), MAXVAL(WSELEM(NOD1:NOD2)) /)
+         FLG_LOHI = .TRUE.; IF(SEG(NOD2) /= WSELEM(NOD2)) FLG_LOHI = .FALSE.
+
+         IF(NELVERT(SEG(NOD2)) == 0) THEN
+            NELVERT(SEG(NOD2)) = NELVERT(SEG(NOD2)) + 1
+            GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL) = ISTVERT(SEG(NOD2)) + NELVERT(SEG(NOD2))
+            EDGES2(NOD1:NOD2,GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL)) = SEG(NOD1:NOD2)
+            EDGE_FACES2(1,GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL)) = &
+            EDGE_FACES2(1,GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL)) + 1
+            IF(FLG_LOHI) THEN
+                EDGE_FACES2(2,GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL))   = IWSEL
+                EDGE_FACES2(3,GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL))   = IEDGE
+            ELSE
+                EDGE_FACES2(4,GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL))   = IWSEL
+                EDGE_FACES2(5,GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL))   = IEDGE
+            ENDIF
+            WSELEM=CSHIFT(WSELEM,1)
+            CYCLE ! IEDGE
+         ENDIF
+
+         INLIST = .FALSE.
+         DO IEDLIST=ISTVERT(SEG(NOD2))+1,ISTVERT(SEG(NOD2))+NELVERT(SEG(NOD2))
+            ! Here SEG(NOD2) is by construction the same as
+            ! EDGES2(NOD2,IEDLIST), search only NOD1 component.
+            IF(SEG(NOD1) == EDGES2(NOD1,IEDLIST)) THEN
+               INLIST = .TRUE.
+               EXIT ! IEDLIST
+            ENDIF
+         ENDDO
+         IF(INLIST) THEN
+            GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL) = IEDLIST
+         ELSE
+            NELVERT(SEG(NOD2)) = NELVERT(SEG(NOD2)) + 1
+            GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL) = ISTVERT(SEG(NOD2)) + NELVERT(SEG(NOD2))
+            EDGES2(NOD1:NOD2,GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL)) = SEG(NOD1:NOD2)
+         ENDIF
+
+         EDGE_FACES2(1,GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL)) = &
+         EDGE_FACES2(1,GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL)) + 1
+         IF(FLG_LOHI) THEN
+             EDGE_FACES2(2,GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL))   = IWSEL
+             EDGE_FACES2(3,GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL))   = IEDGE
+         ELSE
+             EDGE_FACES2(4,GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL))   = IWSEL
+             EDGE_FACES2(5,GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL))   = IEDGE
+         ENDIF
+
+         WSELEM=CSHIFT(WSELEM,1)
+      ENDDO
+   ENDDO
+
+   ! Second pass get segments ranking:
+   DO IVERT=1,NVERT
+      DO IEDLIST=ISTVERT(IVERT)+1,ISTVERT(IVERT)+NELVERT(IVERT)
+          NWSEDG = NWSEDG + 1
+          EDGE_RNK(IEDLIST) = NWSEDG
+          GEOMETRY(IG)%EDGES(NOD1:NOD2,NWSEDG) = EDGES2(NOD1:NOD2,IEDLIST)
+          GEOMETRY(IG)%EDGE_FACES(1:5,NWSEDG)  = EDGE_FACES2(1:5,IEDLIST)
+      ENDDO
+   ENDDO
+
+   ! Third pass populate FACE_EDGES data:
+   DO IWSEL=1,NWSEL
+      DO IEDGE=EDG1,EDG3
+         IEDLIST = EDGE_RNK(GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL))
+         GEOMETRY(IG)%FACE_EDGES(IEDGE,IWSEL) = IEDLIST
+      ENDDO
+   ENDDO
+
+   DEALLOCATE(NELVERT,ISTVERT,EDGES2,EDGE_FACES2,EDGE_RNK)
+
+   ELSE OPTIMIZE_SEG_DEF_COND
+
    DO IWSEL=1,NWSEL
 
       WSELEM(NOD1:NOD3) = GEOMETRY(IG)%FACES(NODS_WSEL*(IWSEL-1)+1:NODS_WSEL*IWSEL)
@@ -31747,6 +31895,8 @@ GEOMETRY_LOOP : DO IG=1,N_GEOMETRY
       ENDDO
    ENDDO
 
+   ENDIF OPTIMIZE_SEG_DEF_COND
+
    ! Check if the surface is closed
    ! Each halfedge should be coupled with an opposite halfedge
    DO IEDLIST=1,NWSEDG
@@ -31770,7 +31920,9 @@ GEOMETRY_LOOP : DO IG=1,N_GEOMETRY
 
    IF(MYID==0 .AND. GET_CUTCELLS_VERBOSE) THEN
       IF (IG==N_GEOMETRY) THEN
-         WRITE(LU_ERR,'(I4.4,A)') IG,'.. done.'
+         WRITE(LU_ERR,'(I4.4,A)',advance="no") IG,'.. done.'
+         CALL CPU_TIME(CPUTIME)
+         WRITE(LU_ERR  ,'(A,F8.3,A)') ' Time taken : ',CPUTIME-CPUTIME_START,' sec.'
       ELSE
          WRITE(LU_ERR,'(I4.4,A)',advance="no") IG,', '
       ENDIF
@@ -37802,8 +37954,9 @@ SUBROUTINE READ_GEOM
 USE BOXTETRA_ROUTINES, ONLY: TETRAHEDRON_VOLUME, REMOVE_DUPLICATE_VERTS
 USE MATH_FUNCTIONS, ONLY: CROSS_PRODUCT
 
-CHARACTER(LABEL_LENGTH) :: ID,MATL_ID,BNDC_FILENAME,GEOC_FILENAME,TEXTURE_MAPPING,DEVC_ID,PROP_ID,CTRL_ID,SURF_IDS(3),SURF_ID6(6)
-CHARACTER(MESSAGE_LENGTH) :: MESSAGE,BUFFER
+CHARACTER(LABEL_LENGTH) :: ID,MATL_ID,TEXTURE_MAPPING, &
+                           DEVC_ID,PROP_ID,CTRL_ID,SURF_IDS(3),SURF_ID6(6),MOVE_ID
+CHARACTER(MESSAGE_LENGTH) :: BUFFER
 CHARACTER(LABEL_LENGTH),  ALLOCATABLE, DIMENSION(:) :: GEOM_IDS,SURF_ID
 REAL(EB), ALLOCATABLE, DIMENSION(:) :: DAZIM,DELEV,ZVALS,TFACES
 REAL(EB), ALLOCATABLE, TARGET, DIMENSION(:) :: VERTS
@@ -37819,7 +37972,7 @@ REAL(EB) :: AZIM,ELEV,SCALE(3),XYZ0(3),XYZ(3),AZIM_DOT,ELEV_DOT,SCALE_DOT(3),XYZ
             CYLINDER_RADIUS,CYLINDER_LENGTH
 
 INTEGER :: MAX_IDS=0,MAX_SURF_IDS=0,MAX_ZVALS=0,MAX_VERTS=0,MAX_FACES=0,MAX_VOLUS=0,N_VERTS,N_FACES,N_FACES_TEMP,N_VOLUS,&
-           N_ZVALS,N_SURF_ID,MATL_INDEX,IOS,IZERO,N,I,J,K,IJ,NSUB_GEOMS,GEOM_INDEX,FIRST_FACE_INDEX,I1,I2,I3,I4,I5,I6,I7,I8,&
+           N_ZVALS,N_SURF_ID,MATL_INDEX,IOS,IZERO,N,I,J,K,IJ,FIRST_FACE_INDEX,I1,I2,I3,I4,I5,I6,I7,I8,&
            GEOM_TYPE,NXB,IJK(3),N_LEVELS,N_LAT,N_LONG,SPHERE_TYPE,BOXVERTLIST(8),NI,NIJ,IVOL,SORT_FACES,II,II1,II2,II3,&
            WSELEM(NOD1:NOD3),X1AXIS,NNN,CYLINDER_NSEG_THETA,CYLINDER_NSEG_AXIS
 
@@ -37827,18 +37980,15 @@ LOGICAL :: AUTO_TEXTURE,COMPONENT_ONLY,HAVE_SURF,HAVE_MATL,IN_LIST,SURF_INDEX_PE
 REAL(EB), POINTER, DIMENSION(:) :: VNEW,VOLD,V1,V2,V3,V4
 INTEGER, POINTER, DIMENSION(:) :: FACEI,FACEJ,FACE_FROM,FACE_TO,VOL
 TYPE(MESH_TYPE), POINTER :: M=>NULL()
-TYPE(GEOMETRY_TYPE), POINTER :: G=>NULL(),GSUB=>NULL()
+TYPE(GEOMETRY_TYPE), POINTER :: G=>NULL()
 
 INTEGER, PARAMETER :: CAD_GEOM_TYPE=0,BOX_GEOM_TYPE=1,SPHERE_GEOM_TYPE=2,TERRAIN_GEOM_TYPE=3,CYLINDER_GEOM_TYPE=4
 REAL(EB), PARAMETER :: MAX_VAL=1.0E20_EB
 
-NAMELIST /GEOM/ AUTO_TEXTURE,AZIM,AZIM_DOT,BNDC_FILENAME,BNDF_GEOM,COMPONENT_ONLY,CTRL_ID,CUTCELLS,&
-                DAZIM,DELEV,DEVC_ID,DSCALE,DT_BNDC,DT_GEOC,DXYZ0,DXYZ,&
-                ELEV,ELEV_DOT,FACES,GAXIS,GEOC_FILENAME,GEOM_IDS,GROTATE,GROTATE_DOT,ID,IJK,&
-                MATL_ID,N_LAT,N_LEVELS,N_LONG,PROP_ID,SCALE,SCALE_DOT,&
+NAMELIST /GEOM/ AUTO_TEXTURE,BNDF_GEOM,FACES,ID,IJK,MOVE_ID,MATL_ID,N_LAT,N_LEVELS,N_LONG,PROP_ID,&
                 SPHERE_ORIGIN,SPHERE_RADIUS,SPHERE_TYPE,SURF_ID,SURF_IDS,SURF_ID6,&
                 TEXTURE_MAPPING,TEXTURE_ORIGIN,TEXTURE_SCALE,&
-                VERTS,VOLUS,XB,XYZ0,XYZ,XYZ_DOT,ZMIN,ZVALS,CYLINDER_ORIGIN,CYLINDER_AXIS,&
+                VERTS,VOLUS,XB,ZMIN,ZVALS,CYLINDER_ORIGIN,CYLINDER_AXIS,&
                 CYLINDER_RADIUS,CYLINDER_LENGTH,CYLINDER_NSEG_THETA,CYLINDER_NSEG_AXIS
 
 ! first pass - determine max number of ZVALS, VERTS, FACES, VOLUS and IDS over all &GEOMs
@@ -37846,7 +37996,7 @@ NAMELIST /GEOM/ AUTO_TEXTURE,AZIM,AZIM_DOT,BNDC_FILENAME,BNDF_GEOM,COMPONENT_ONL
 N_GEOMETRY=0
 REWIND(LU_INPUT) ; INPUT_FILE_LINE_NUMBER = 0
 COUNT_GEOM_LOOP: DO
-   CALL CHECKREAD('GEOM',LU_INPUT,IOS)
+   CALL CHECKREAD('GEOM',LU_INPUT,IOS)  ; IF (STOP_STATUS==SETUP_STOP) RETURN
    IF (IOS==1) EXIT COUNT_GEOM_LOOP
    READ(LU_INPUT,'(A)')BUFFER
    N_GEOMETRY=N_GEOMETRY+1
@@ -37865,7 +38015,7 @@ N_GEOMETRY=0
 
 REWIND(LU_INPUT) ; INPUT_FILE_LINE_NUMBER = 0
 COUNT_GEOM_LOOP2: DO
-   CALL CHECKREAD('GEOM',LU_INPUT,IOS)
+   CALL CHECKREAD('GEOM',LU_INPUT,IOS)  ; IF (STOP_STATUS==SETUP_STOP) RETURN
    IF (IOS==1) EXIT COUNT_GEOM_LOOP2
    READ(LU_INPUT,NML=GEOM,END=21,ERR=22,IOSTAT=IOS)
    N_GEOMETRY=N_GEOMETRY+1
@@ -37889,42 +38039,40 @@ CALL ChkMemErr('READ_GEOM','DEFAULT_COMPONENT_ONLY',IZERO)
 !       set to .TRUE. (is only drawn as part of a larger group)
 !   if an object is not in any GEOM_IDS list then COMPONENT_ONLY for this object is initially
 !       set to .FALSE. (is drawn by default)
-READ_GEOM_LOOP0: DO N=1,N_GEOMETRY
-   G=>GEOMETRY(N)
-
-   CALL CHECKREAD('GEOM',LU_INPUT,IOS)
-   IF (IOS==1) EXIT READ_GEOM_LOOP0
-
-   ! Set defaults
-
-   GEOM_IDS = ''
-   BNDC_FILENAME = 'null'
-   GEOC_FILENAME = 'null'
-
-   ! Read the GEOM line
-
-   READ(LU_INPUT,GEOM,END=25)
-
-   DEFAULT_COMPONENT_ONLY(N) = .FALSE.
-   DO I = 1, MAX_IDS
-      IF (GEOM_IDS(I)=='') EXIT
-      IF (N>1) THEN
-         GEOM_INDEX = GET_GEOM_ID(GEOM_IDS(I),N-1)
-         IF (GEOM_INDEX>=1 .AND. GEOM_INDEX<=N-1) THEN
-            DEFAULT_COMPONENT_ONLY(GEOM_INDEX) = .TRUE.
-         ENDIF
-      ENDIF
-   ENDDO
-
-ENDDO READ_GEOM_LOOP0
-25 REWIND(LU_INPUT) ; INPUT_FILE_LINE_NUMBER = 0
+! READ_GEOM_LOOP0: DO N=1,N_GEOMETRY
+!    G=>GEOMETRY(N)
+!
+!    CALL CHECKREAD('GEOM',LU_INPUT,IOS)
+!    IF (IOS==1) EXIT READ_GEOM_LOOP0
+!
+!    ! Set defaults
+!
+!    GEOM_IDS = ''
+!
+!    ! Read the GEOM line
+!
+!    READ(LU_INPUT,GEOM,END=25)
+!
+!    DEFAULT_COMPONENT_ONLY(N) = .FALSE.
+!    DO I = 1, MAX_IDS
+!       IF (GEOM_IDS(I)=='') EXIT
+!       IF (N>1) THEN
+!          GEOM_INDEX = GET_GEOM_ID(GEOM_IDS(I),N-1)
+!          IF (GEOM_INDEX>=1 .AND. GEOM_INDEX<=N-1) THEN
+!             DEFAULT_COMPONENT_ONLY(GEOM_INDEX) = .TRUE.
+!          ENDIF
+!       ENDIF
+!    ENDDO
+!
+! ENDDO READ_GEOM_LOOP0
+! 25 REWIND(LU_INPUT) ; INPUT_FILE_LINE_NUMBER = 0
 
 ! fourth pass - read GEOM data
 
 READ_GEOM_LOOP: DO N=1,N_GEOMETRY
    G=>GEOMETRY(N)
 
-   CALL CHECKREAD('GEOM',LU_INPUT,IOS)
+   CALL CHECKREAD('GEOM',LU_INPUT,IOS)  ; IF (STOP_STATUS==SETUP_STOP) RETURN
    IF (IOS==1) EXIT READ_GEOM_LOOP
 
    CALL SET_GEOM_DEFAULTS
@@ -37945,12 +38093,23 @@ READ_GEOM_LOOP: DO N=1,N_GEOMETRY
       IF (ANY(FACES(4*(I-1)+1:4*(I-1)+3)==0)) EXIT
       N_FACES = N_FACES+1
    ENDDO
+   ! Get number of SURF_IDs defined for the GEOM:
+   N_SURF_ID = 0
+   DO I = 1, MAX_SURF_IDS
+      IF( SURF_ID(I)=='null' ) EXIT ! First 'null'
+      N_SURF_ID = N_SURF_ID + 1
+   ENDDO
    ! Now split FACES array into FACES (connectivity), and SURFS, i.e. local surf ID:
    IF(N_FACES > 0) THEN
       IF(ALLOCATED(SURFS)) DEALLOCATE(SURFS); ALLOCATE(SURFS(N_FACES))
       DO I = 1, N_FACES
          FACES(3*(I-1)+1:3*(I-1)+3) = FACES(4*(I-1)+1:4*(I-1)+3)
          SURFS(I)                   = FACES(4*(I-1)+4)
+         IF(SURFS(I) > N_SURF_ID) THEN
+            WRITE(MESSAGE,'(A,A,A,I8,A)') 'ERROR: problem with GEOM ',TRIM(ID),&
+                                        ', local SURF_ID index for FACE ',I,'out of bounds.'
+            CALL SHUTDOWN(MESSAGE); RETURN
+         ENDIF
       ENDDO
    ENDIF
    TFACES(1:6*MAX_FACES) = -1.0_EB
@@ -38234,44 +38393,38 @@ READ_GEOM_LOOP: DO N=1,N_GEOMETRY
    G%IJK = IJK
    G%COMPONENT_ONLY = COMPONENT_ONLY
    G%GEOM_TYPE = GEOM_TYPE
-   G%BNDC_FILENAME = BNDC_FILENAME
-   G%GEOC_FILENAME = GEOC_FILENAME
-
-   IF (GEOC_FILENAME/='null' .AND. N_GEOMETRY > 1 ) THEN
-      CALL SHUTDOWN('ERROR: only one &GEOM line permitted when defining coupled geometries (the GEOC_FILENAME keyword)')
-   ENDIF
 
    !--- setup groups
 
-   NSUB_GEOMS = 0
-   DO I = 1, MAX_IDS
-      IF (GEOM_IDS(I)=='') EXIT
-      NSUB_GEOMS = NSUB_GEOMS+1
-   ENDDO
-   IF (NSUB_GEOMS>0) THEN
-      ALLOCATE(G%SUB_GEOMS(NSUB_GEOMS),STAT=IZERO)
-      CALL ChkMemErr('READ_GEOM','G%SUB_GEOMS',IZERO)
-
-      ALLOCATE(G%DSCALE(3,NSUB_GEOMS),STAT=IZERO)
-      CALL ChkMemErr('READ_GEOM','G%DSCALE',IZERO)
-
-      ALLOCATE(G%DAZIM(NSUB_GEOMS),STAT=IZERO)
-      CALL ChkMemErr('READ_GEOM','G%DAZIM',IZERO)
-
-      ALLOCATE(G%DELEV(NSUB_GEOMS),STAT=IZERO)
-      CALL ChkMemErr('READ_GEOM','G%DELEV',IZERO)
-
-      ALLOCATE(G%DXYZ0(3,NSUB_GEOMS),STAT=IZERO)
-      CALL ChkMemErr('READ_GEOM','G%DXYZ0',IZERO)
-
-      ALLOCATE(G%DXYZ(3,NSUB_GEOMS),STAT=IZERO)
-      CALL ChkMemErr('READ_GEOM','G%DXYZ',IZERO)
-
-      N_FACES = 0 ! ignore vertex and face entries if there are any GEOM_IDS
-      N_VERTS = 0
-      N_VOLUS = 0
-   ENDIF
-   G%NSUB_GEOMS=NSUB_GEOMS
+   ! NSUB_GEOMS = 0
+   ! DO I = 1, MAX_IDS
+   !    IF (GEOM_IDS(I)=='') EXIT
+   !    NSUB_GEOMS = NSUB_GEOMS+1
+   ! ENDDO
+   ! IF (NSUB_GEOMS>0) THEN
+   !    ALLOCATE(G%SUB_GEOMS(NSUB_GEOMS),STAT=IZERO)
+   !    CALL ChkMemErr('READ_GEOM','G%SUB_GEOMS',IZERO)
+   !
+   !    ALLOCATE(G%DSCALE(3,NSUB_GEOMS),STAT=IZERO)
+   !    CALL ChkMemErr('READ_GEOM','G%DSCALE',IZERO)
+   !
+   !    ALLOCATE(G%DAZIM(NSUB_GEOMS),STAT=IZERO)
+   !    CALL ChkMemErr('READ_GEOM','G%DAZIM',IZERO)
+   !
+   !    ALLOCATE(G%DELEV(NSUB_GEOMS),STAT=IZERO)
+   !    CALL ChkMemErr('READ_GEOM','G%DELEV',IZERO)
+   !
+   !    ALLOCATE(G%DXYZ0(3,NSUB_GEOMS),STAT=IZERO)
+   !    CALL ChkMemErr('READ_GEOM','G%DXYZ0',IZERO)
+   !
+   !    ALLOCATE(G%DXYZ(3,NSUB_GEOMS),STAT=IZERO)
+   !    CALL ChkMemErr('READ_GEOM','G%DXYZ',IZERO)
+   !
+   !    N_FACES = 0 ! ignore vertex and face entries if there are any GEOM_IDS
+   !    N_VERTS = 0
+   !    N_VOLUS = 0
+   ! ENDIF
+   ! G%NSUB_GEOMS=NSUB_GEOMS
 
    IF (GEOM_TYPE /= CAD_GEOM_TYPE) THEN
       ! The geometry has been constructed from predefined object : Terrain, cube, sphere, etc.
@@ -38633,39 +38786,41 @@ READ_GEOM_LOOP: DO N=1,N_GEOMETRY
       CALL ChkMemErr('READ_GEOM','G%VERTS',IZERO)
    ENDIF
 
-   DO I = 1, NSUB_GEOMS
-      GEOM_INDEX = GET_GEOM_ID(GEOM_IDS(I),N-1)
-      IF (GEOM_INDEX>=1 .AND. GEOM_INDEX<=N-1) THEN
-         G%SUB_GEOMS(I) = GEOM_INDEX
-      ELSE
-         CALL SHUTDOWN('ERROR: problem with GEOM '//TRIM(G%ID)//' line, '//TRIM(GEOM_IDS(I))//' not yet defined.')
-      ENDIF
-   ENDDO
+   ! DO I = 1, NSUB_GEOMS
+   !    GEOM_INDEX = GET_GEOM_ID(GEOM_IDS(I),N-1)
+   !    IF (GEOM_INDEX>=1 .AND. GEOM_INDEX<=N-1) THEN
+   !       G%SUB_GEOMS(I) = GEOM_INDEX
+   !    ELSE
+   !       CALL SHUTDOWN('ERROR: problem with GEOM '//TRIM(G%ID)//' line, '//TRIM(GEOM_IDS(I))//' not yet defined.')
+   !    ENDIF
+   ! ENDDO
 
    ! use GROTATE/GAXIS or AZIM/ELEV but not both
 
-   IF (ANY(GAXIS(1:3)<MAX_VAL) .OR. GROTATE<MAX_VAL .OR. GROTATE_DOT<MAX_VAL) THEN
-      IF (GAXIS(1)>MAX_VAL) GAXIS(1) = 0.0_EB
-      IF (GAXIS(2)>MAX_VAL) GAXIS(2) = 0.0_EB
-      IF (GAXIS(3)>MAX_VAL) GAXIS(3) = 0.0_EB
-      AZIM = 0.0_EB
-      ELEV = 0.0_EB
-      AZIM_DOT = 0.0_EB
-      ELEV_DOT = 0.0_EB
+   ! IF (ANY(GAXIS(1:3)<MAX_VAL) .OR. GROTATE<MAX_VAL .OR. GROTATE_DOT<MAX_VAL) THEN
+   !    IF (GAXIS(1)>MAX_VAL) GAXIS(1) = 0.0_EB
+   !    IF (GAXIS(2)>MAX_VAL) GAXIS(2) = 0.0_EB
+   !    IF (GAXIS(3)>MAX_VAL) GAXIS(3) = 0.0_EB
+   !    AZIM = 0.0_EB
+   !    ELEV = 0.0_EB
+   !    AZIM_DOT = 0.0_EB
+   !    ELEV_DOT = 0.0_EB
+   !
+   !    IF (GROTATE>MAX_VAL) GROTATE = 0.0_EB
+   !    IF (GROTATE_DOT>MAX_VAL) GROTATE_DOT = 0.0_EB
+   !
+   !    IF (ALL(ABS(GAXIS(1:3))<TWO_EPSILON_EB)) THEN
+   !       GAXIS(1:3) = (/0.0_EB,0.0_EB,1.0_EB/)
+   !    ELSE
+   !       GAXIS = GAXIS/SQRT(DOT_PRODUCT(GAXIS,GAXIS))
+   !    ENDIF
+   ! ELSE
+   !    GAXIS(1:3) = (/0.0_EB,0.0_EB,1.0_EB/)
+   !    GROTATE = 0.0_EB
+   !    GROTATE_DOT = 0.0_EB
+   ! ENDIF
 
-      IF (GROTATE>MAX_VAL) GROTATE = 0.0_EB
-      IF (GROTATE_DOT>MAX_VAL) GROTATE_DOT = 0.0_EB
-
-      IF (ALL(ABS(GAXIS(1:3))<TWO_EPSILON_EB)) THEN
-         GAXIS(1:3) = (/0.0_EB,0.0_EB,1.0_EB/)
-      ELSE
-         GAXIS = GAXIS/SQRT(DOT_PRODUCT(GAXIS,GAXIS))
-      ENDIF
-   ELSE
-      GAXIS(1:3) = (/0.0_EB,0.0_EB,1.0_EB/)
-      GROTATE = 0.0_EB
-      GROTATE_DOT = 0.0_EB
-   ENDIF
+   G%MOVE_ID = MOVE_ID
 
    G%XYZ0(1:3) = XYZ0(1:3)
 
@@ -38685,89 +38840,85 @@ READ_GEOM_LOOP: DO N=1,N_GEOMETRY
 
    G%XYZ_BASE(1:3) = XYZ(1:3)
    G%XYZ_DOT(1:3) = XYZ_DOT(1:3)
-
-   IF (ABS(AZIM_DOT)>TWO_EPSILON_EB .OR. ABS(ELEV_DOT)>TWO_EPSILON_EB .OR. &
-       ANY(ABS(SCALE_DOT(1:3))>TWO_EPSILON_EB) .OR. ANY(ABS(XYZ_DOT(1:3) )>TWO_EPSILON_EB) .OR. GEOC_FILENAME/='null' ) THEN
-      G%IS_DYNAMIC = .TRUE.
-      IS_GEOMETRY_DYNAMIC = .TRUE.
-   ELSE
-      G%IS_DYNAMIC = .FALSE.
-   ENDIF
+   !
+   ! IF (ABS(AZIM_DOT)>TWO_EPSILON_EB .OR. ABS(ELEV_DOT)>TWO_EPSILON_EB .OR. &
+   !     ANY(ABS(SCALE_DOT(1:3))>TWO_EPSILON_EB) .OR. ANY(ABS(XYZ_DOT(1:3) )>TWO_EPSILON_EB)) THEN
+   !    G%IS_DYNAMIC = .TRUE.
+   !    IS_GEOMETRY_DYNAMIC = .TRUE.
+   ! ELSE
+   G%IS_DYNAMIC = .FALSE.
+   ! ENDIF
 
    ! Prevent drawing of boundary info if desired
 
    G%SHOW_BNDF = BNDF_GEOM
 
-   NSUB_GEOMS_IF: IF (NSUB_GEOMS>0) THEN
-
-      ! if any component of a group is time dependent then the whole group is time dependent
-
-      DO I = 1, NSUB_GEOMS
-         GSUB=>GEOMETRY(G%SUB_GEOMS(I))
-
-         IF (GSUB%IS_DYNAMIC) THEN
-            G%IS_DYNAMIC = .TRUE.
-            IS_GEOMETRY_DYNAMIC = .TRUE.
-            EXIT
-         ENDIF
-      ENDDO
-
-      G%DXYZ0(1:3,1:NSUB_GEOMS) = DXYZ0(1:3,1:NSUB_GEOMS)
-
-      G%DAZIM(1:NSUB_GEOMS) = DAZIM(1:NSUB_GEOMS)
-      G%DELEV(1:NSUB_GEOMS) = DELEV(1:NSUB_GEOMS)
-      G%DSCALE(1:3,1:NSUB_GEOMS) = DSCALE(1:3,1:NSUB_GEOMS)
-      G%DXYZ(1:3,1:NSUB_GEOMS) = DXYZ(1:3,1:NSUB_GEOMS)
-
-      ! allocate memory for vertex and face arrays for GEOMs that contain groups (entres in GEOM_IDs )
-
-      DO I = 1, NSUB_GEOMS
-         GSUB=>GEOMETRY(G%SUB_GEOMS(I))
-         G%N_VOLUS_BASE = G%N_VOLUS_BASE + GSUB%N_VOLUS_BASE
-         G%N_FACES_BASE = G%N_FACES_BASE + GSUB%N_FACES_BASE
-         G%N_VERTS_BASE = G%N_VERTS_BASE + GSUB%N_VERTS_BASE
-      ENDDO
-
-      IF (G%N_VOLUS_BASE>0) THEN
-         ALLOCATE(G%VOLUS(4*G%N_VOLUS_BASE),STAT=IZERO)
-         CALL ChkMemErr('READ_GEOM','VOLUS',IZERO)
-
-         ALLOCATE(G%MATLS(G%N_VOLUS_BASE),STAT=IZERO)
-         CALL ChkMemErr('READ_GEOM','G%MATLS',IZERO)
-      ENDIF
-
-      IF (G%N_FACES_BASE>0) THEN
-         ALLOCATE(G%FACES(3*G%N_FACES_BASE),STAT=IZERO)
-         CALL ChkMemErr('READ_GEOM','G%FACES',IZERO)
-
-         ALLOCATE(G%SURFS(G%N_FACES_BASE),STAT=IZERO)
-         CALL ChkMemErr('READ_GEOM','G%SURFS',IZERO)
-
-         ALLOCATE(G%TFACES(6*G%N_FACES_BASE),STAT=IZERO)
-         CALL ChkMemErr('READ_GEOM','G%TFACES',IZERO)
-      ENDIF
-
-      IF (G%N_VERTS_BASE>0) THEN
-         ALLOCATE(G%VERTS_BASE(3*G%N_VERTS_BASE),STAT=IZERO)
-         CALL ChkMemErr('READ_GEOM','G%VERTS',IZERO)
-
-         ALLOCATE(G%VERTS(3*G%N_VERTS_BASE),STAT=IZERO)
-         CALL ChkMemErr('READ_GEOM','G%VERTS',IZERO)
-      ENDIF
-
-   ENDIF NSUB_GEOMS_IF
+   ! NSUB_GEOMS_IF: IF (NSUB_GEOMS>0) THEN
+   !
+   !    ! if any component of a group is time dependent then the whole group is time dependent
+   !
+   !    DO I = 1, NSUB_GEOMS
+   !       GSUB=>GEOMETRY(G%SUB_GEOMS(I))
+   !
+   !       IF (GSUB%IS_DYNAMIC) THEN
+   !          G%IS_DYNAMIC = .TRUE.
+   !          IS_GEOMETRY_DYNAMIC = .TRUE.
+   !          EXIT
+   !       ENDIF
+   !    ENDDO
+   !
+   !    G%DXYZ0(1:3,1:NSUB_GEOMS) = DXYZ0(1:3,1:NSUB_GEOMS)
+   !
+   !    G%DAZIM(1:NSUB_GEOMS) = DAZIM(1:NSUB_GEOMS)
+   !    G%DELEV(1:NSUB_GEOMS) = DELEV(1:NSUB_GEOMS)
+   !    G%DSCALE(1:3,1:NSUB_GEOMS) = DSCALE(1:3,1:NSUB_GEOMS)
+   !    G%DXYZ(1:3,1:NSUB_GEOMS) = DXYZ(1:3,1:NSUB_GEOMS)
+   !
+   !    ! allocate memory for vertex and face arrays for GEOMs that contain groups (entres in GEOM_IDs )
+   !
+   !    DO I = 1, NSUB_GEOMS
+   !       GSUB=>GEOMETRY(G%SUB_GEOMS(I))
+   !       G%N_VOLUS_BASE = G%N_VOLUS_BASE + GSUB%N_VOLUS_BASE
+   !       G%N_FACES_BASE = G%N_FACES_BASE + GSUB%N_FACES_BASE
+   !       G%N_VERTS_BASE = G%N_VERTS_BASE + GSUB%N_VERTS_BASE
+   !    ENDDO
+   !
+   !    IF (G%N_VOLUS_BASE>0) THEN
+   !       ALLOCATE(G%VOLUS(4*G%N_VOLUS_BASE),STAT=IZERO)
+   !       CALL ChkMemErr('READ_GEOM','VOLUS',IZERO)
+   !
+   !       ALLOCATE(G%MATLS(G%N_VOLUS_BASE),STAT=IZERO)
+   !       CALL ChkMemErr('READ_GEOM','G%MATLS',IZERO)
+   !    ENDIF
+   !
+   !    IF (G%N_FACES_BASE>0) THEN
+   !       ALLOCATE(G%FACES(3*G%N_FACES_BASE),STAT=IZERO)
+   !       CALL ChkMemErr('READ_GEOM','G%FACES',IZERO)
+   !
+   !       ALLOCATE(G%SURFS(G%N_FACES_BASE),STAT=IZERO)
+   !       CALL ChkMemErr('READ_GEOM','G%SURFS',IZERO)
+   !
+   !       ALLOCATE(G%TFACES(6*G%N_FACES_BASE),STAT=IZERO)
+   !       CALL ChkMemErr('READ_GEOM','G%TFACES',IZERO)
+   !    ENDIF
+   !
+   !    IF (G%N_VERTS_BASE>0) THEN
+   !       ALLOCATE(G%VERTS_BASE(3*G%N_VERTS_BASE),STAT=IZERO)
+   !       CALL ChkMemErr('READ_GEOM','G%VERTS',IZERO)
+   !
+   !       ALLOCATE(G%VERTS(3*G%N_VERTS_BASE),STAT=IZERO)
+   !       CALL ChkMemErr('READ_GEOM','G%VERTS',IZERO)
+   !    ENDIF
+   !
+   ! ENDIF NSUB_GEOMS_IF
 ENDDO READ_GEOM_LOOP
 35 REWIND(LU_INPUT) ; INPUT_FILE_LINE_NUMBER = 0
 
-GEOMETRY_CHANGE_STATE = 0
-DO I = 1, N_GEOMETRY
-   G=>GEOMETRY(I)
-   IF (G%GEOC_FILENAME/='null') THEN
-      GEOMETRY_CHANGE_STATE = 2
-      EXIT
-   ENDIF
-   IF (G%IS_DYNAMIC) GEOMETRY_CHANGE_STATE=1
-ENDDO
+! GEOMETRY_CHANGE_STATE = 0
+! DO I = 1, N_GEOMETRY
+!    G=>GEOMETRY(I)
+!    IF (G%IS_DYNAMIC) GEOMETRY_CHANGE_STATE=1
+! ENDDO
 
 CALL CONVERTGEOM(T_BEGIN)
 
@@ -39197,6 +39348,7 @@ SUBROUTINE SET_GEOM_DEFAULTS
    SURF_IDS = 'null'
    SURF_ID6 = 'null'
    MATL_ID = 'null'
+   MOVE_ID = 'null'
    DEVC_ID = 'null'
    CTRL_ID = 'null'
    PROP_ID = 'null'
@@ -39882,64 +40034,64 @@ END FUNCTION GET_SURF_INDEX
 
 ! ---------------------------- SETUP_TRANSFORM ----------------------------------------
 
-SUBROUTINE SETUP_TRANSFORM(SCALE,AZ,ELEV,GAXIS,GROTATE,M)
-
-! construct a rotation matrix M that rotates a vector by
-! AZ degrees around the Z axis then ELEV degrees around
-! the (cos AZ, sin AZ, 0) axis
-
-REAL(EB), INTENT(IN) :: SCALE(3), AZ, ELEV, GAXIS(3), GROTATE
-REAL(EB), DIMENSION(3,3), INTENT(OUT) :: M
-
-REAL(EB) :: AXIS(3), M0(3,3), M1(3,3), M2(3,3), M3(3,3), MTEMP(3,3), MTEMP2(3,3)
-
-M0 = RESHAPE ((/&
-               SCALE(1),  0.0_EB, 0.0_EB,&
-                 0.0_EB,SCALE(2), 0.0_EB,&
-                 0.0_EB,  0.0_EB,SCALE(3) &
-               /),(/3,3/))
-
-AXIS = (/0.0_EB, 0.0_EB, 1.0_EB/)
-CALL SETUP_ROTATE(AZ,AXIS,M1)
-
-AXIS = (/COS(DEG2RAD*AZ), SIN(DEG2RAD*AZ), 0.0_EB/)
-CALL SETUP_ROTATE(ELEV,AXIS,M2)
-
-CALL SETUP_ROTATE(GROTATE,GAXIS,M3)
-
-MTEMP = MATMUL(M1,M0)
-MTEMP2 = MATMUL(M2,MTEMP)
-M = MATMUL(M3,MTEMP2)
-
-END SUBROUTINE SETUP_TRANSFORM
+! SUBROUTINE SETUP_TRANSFORM(SCALE,AZ,ELEV,GAXIS,GROTATE,M)
+!
+! ! construct a rotation matrix M that rotates a vector by
+! ! AZ degrees around the Z axis then ELEV degrees around
+! ! the (cos AZ, sin AZ, 0) axis
+!
+! REAL(EB), INTENT(IN) :: SCALE(3), AZ, ELEV, GAXIS(3), GROTATE
+! REAL(EB), DIMENSION(3,3), INTENT(OUT) :: M
+!
+! REAL(EB) :: AXIS(3), M0(3,3), M1(3,3), M2(3,3), M3(3,3), MTEMP(3,3), MTEMP2(3,3)
+!
+! M0 = RESHAPE ((/&
+!                SCALE(1),  0.0_EB, 0.0_EB,&
+!                  0.0_EB,SCALE(2), 0.0_EB,&
+!                  0.0_EB,  0.0_EB,SCALE(3) &
+!                /),(/3,3/))
+!
+! AXIS = (/0.0_EB, 0.0_EB, 1.0_EB/)
+! CALL SETUP_ROTATE(AZ,AXIS,M1)
+!
+! AXIS = (/COS(DEG2RAD*AZ), SIN(DEG2RAD*AZ), 0.0_EB/)
+! CALL SETUP_ROTATE(ELEV,AXIS,M2)
+!
+! CALL SETUP_ROTATE(GROTATE,GAXIS,M3)
+!
+! MTEMP = MATMUL(M1,M0)
+! MTEMP2 = MATMUL(M2,MTEMP)
+! M = MATMUL(M3,MTEMP2)
+!
+! END SUBROUTINE SETUP_TRANSFORM
 
 ! ---------------------------- SETUP_ROTATE ----------------------------------------
 
-SUBROUTINE SETUP_ROTATE(ALPHA,U,M)
-
-! construct a rotation matrix M that rotates a vector by
-! ALPHA degrees about an axis U
-
-REAL(EB), INTENT(IN) :: ALPHA, U(3)
-REAL(EB), INTENT(OUT) :: M(3,3)
-
-REAL(EB) :: UP(3,1), S(3,3), UUT(3,3), IDENTITY(3,3)
-
-UP = RESHAPE(U/SQRT(DOT_PRODUCT(U,U)),(/3,1/))
-S =   RESHAPE( (/&
-                   0.0_EB, -UP(3,1),  UP(2,1),&
-                  UP(3,1),   0.0_EB, -UP(1,1),&
-                 -UP(2,1),  UP(1,1),  0.0_EB  &
-                 /),(/3,3/))
-UUT = MATMUL(UP,TRANSPOSE(UP))
-IDENTITY = RESHAPE ((/&
-               1.0_EB,0.0_EB,0.0_EB,&
-               0.0_EB,1.0_EB,0.0_EB,&
-               0.0_EB,0.0_EB,1.0_EB &
-               /),(/3,3/))
-M = UUT + COS(ALPHA*DEG2RAD)*(IDENTITY - UUT) + SIN(ALPHA*DEG2RAD)*S
-
-END SUBROUTINE SETUP_ROTATE
+! SUBROUTINE SETUP_ROTATE(ALPHA,U,M)
+!
+! ! construct a rotation matrix M that rotates a vector by
+! ! ALPHA degrees about an axis U
+!
+! REAL(EB), INTENT(IN) :: ALPHA, U(3)
+! REAL(EB), INTENT(OUT) :: M(3,3)
+!
+! REAL(EB) :: UP(3,1), S(3,3), UUT(3,3), IDENTITY(3,3)
+!
+! UP = RESHAPE(U/SQRT(DOT_PRODUCT(U,U)),(/3,1/))
+! S =   RESHAPE( (/&
+!                    0.0_EB, -UP(3,1),  UP(2,1),&
+!                   UP(3,1),   0.0_EB, -UP(1,1),&
+!                  -UP(2,1),  UP(1,1),  0.0_EB  &
+!                  /),(/3,3/))
+! UUT = MATMUL(UP,TRANSPOSE(UP))
+! IDENTITY = RESHAPE ((/&
+!                1.0_EB,0.0_EB,0.0_EB,&
+!                0.0_EB,1.0_EB,0.0_EB,&
+!                0.0_EB,0.0_EB,1.0_EB &
+!                /),(/3,3/))
+! M = UUT + COS(ALPHA*DEG2RAD)*(IDENTITY - UUT) + SIN(ALPHA*DEG2RAD)*S
+!
+! END SUBROUTINE SETUP_ROTATE
 
 ! ! ---------------------------- `TRANSLATE_VEC` ----------------------------------------
 !
@@ -39963,46 +40115,70 @@ END SUBROUTINE SETUP_ROTATE
 
 ! ---------------------------- `TRANSLATE_VEC_INPLACE` ----------------------------------------
 
-SUBROUTINE TRANSLATE_VEC_INPLACE(XYZ,N,XINOUT)
-
-! translate a geometry by the vector XYZ
-
-INTEGER, INTENT(IN) :: N
-REAL(EB), INTENT(IN) :: XYZ(3)
-REAL(EB), INTENT(INOUT) :: XINOUT(3*N)
-
-REAL(EB) :: VEC(3)
-INTEGER :: I
-
-DO I = 1, N
-   VEC(1:3) = XYZ(1:3) + XINOUT(3*I-2:3*I) ! copy into a temp array so XIN and XOUT can point to same space
-   XINOUT(3*I-2:3*I) = VEC(1:3)
-ENDDO
-
-END SUBROUTINE TRANSLATE_VEC_INPLACE
+! SUBROUTINE TRANSLATE_VEC_INPLACE(XYZ,N,XINOUT)
+!
+! ! translate a geometry by the vector XYZ
+!
+! INTEGER, INTENT(IN) :: N
+! REAL(EB), INTENT(IN) :: XYZ(3)
+! REAL(EB), INTENT(INOUT) :: XINOUT(3*N)
+!
+! REAL(EB) :: VEC(3)
+! INTEGER :: I
+!
+! DO I = 1, N
+!    VEC(1:3) = XYZ(1:3) + XINOUT(3*I-2:3*I) ! copy into a temp array so XIN and XOUT can point to same space
+!    XINOUT(3*I-2:3*I) = VEC(1:3)
+! ENDDO
+!
+! END SUBROUTINE TRANSLATE_VEC_INPLACE
 
 ! ---------------------------- ROTATE_VEC ----------------------------------------
 
-SUBROUTINE ROTATE_VEC(M,N,XYZ0,XIN,XOUT)
+! SUBROUTINE ROTATE_VEC(M,N,XYZ0,XIN,XOUT)
+!
+! ! rotate the vector XIN about the origin XYZ0
+!
+! INTEGER, INTENT(IN) :: N
+! REAL(EB), INTENT(IN) :: M(3,3), XIN(3*N), XYZ0(3)
+! REAL(EB), INTENT(OUT) :: XOUT(3*N)
+!
+! REAL(EB) :: VEC(3)
+! INTEGER :: I
+!
+! DO I = 1, N
+!    VEC(1:3) = MATMUL(M,XIN(3*I-2:3*I)-XYZ0(1:3))  ! copy into a temp array so XIN and XOUT can point to same space
+!    XOUT(3*I-2:3*I) = VEC(1:3) + XYZ0(1:3)
+! ENDDO
+! END SUBROUTINE ROTATE_VEC
 
-! rotate the vector XIN about the origin XYZ0
+! ---------------------------- GEOMCLIPS ----------------------------------------
 
-INTEGER, INTENT(IN) :: N
-REAL(EB), INTENT(IN) :: M(3,3), XIN(3*N), XYZ0(3)
-REAL(EB), INTENT(OUT) :: XOUT(3*N)
-
-REAL(EB) :: VEC(3)
+SUBROUTINE GEOMCLIPS
+USE BOXTETRA_ROUTINES, ONLY : GEOMCLIP
+REAL(EB) :: XB(6)
 INTEGER :: I
+TYPE(GEOMETRY_TYPE), POINTER :: G=>NULL()
 
-DO I = 1, N
-   VEC(1:3) = MATMUL(M,XIN(3*I-2:3*I)-XYZ0(1:3))  ! copy into a temp array so XIN and XOUT can point to same space
-   XOUT(3*I-2:3*I) = VEC(1:3) + XYZ0(1:3)
-ENDDO
-END SUBROUTINE ROTATE_VEC
+   ! clip geometries to mesh
+
+XB(1)=-1.0
+XB(2)=0.0
+XB(3)=-1.0
+XB(4)=0.0
+XB(5)=0.0
+XB(6)=1.0
+DO I = 1, N_GEOMETRY
+   G=>GEOMETRY(I)
+   CALL GEOMCLIP(G%VERTS, G%N_VERTS, G%FACES, G%N_FACES, XB)
+END DO
+END SUBROUTINE GEOMCLIPS
 
 ! ---------------------------- PROCESS_GEOM ----------------------------------------
 
 SUBROUTINE PROCESS_GEOM(IS_DYNAMIC,TIME, N_VERTS, N_FACES, N_VOLUS)
+
+USE GEOMETRY_FUNCTIONS, ONLY: TRANSFORM_COORDINATES
 
 ! transform (scale, rotate and translate) vectors found on each &GEOM line
 
@@ -40010,9 +40186,9 @@ SUBROUTINE PROCESS_GEOM(IS_DYNAMIC,TIME, N_VERTS, N_FACES, N_VOLUS)
    REAL(EB), INTENT(IN) :: TIME
    INTEGER, INTENT(OUT) :: N_VERTS, N_FACES, N_VOLUS
 
-   INTEGER :: I
+   INTEGER :: I, IVERT, IMOVE, MOVE_INDEX
    TYPE(GEOMETRY_TYPE), POINTER :: G=>NULL()
-   REAL(EB) :: M(3,3), DELTA_T
+   REAL(EB) :: DELTA_T, VEC(1:3) ! M(3,3)
 
    IF (IS_DYNAMIC) THEN
       DELTA_T = TIME - T_BEGIN
@@ -40023,13 +40199,13 @@ SUBROUTINE PROCESS_GEOM(IS_DYNAMIC,TIME, N_VERTS, N_FACES, N_VOLUS)
    DO I = 1, N_GEOMETRY
       G=>GEOMETRY(I)
 
-      G%SCALE = G%SCALE_BASE + DELTA_T*G%SCALE_DOT
-      G%AZIM = G%AZIM_BASE + DELTA_T*G%AZIM_DOT
-      G%ELEV = G%ELEV_BASE + DELTA_T*G%ELEV_DOT
-      G%XYZ = G%XYZ_BASE + DELTA_T*G%XYZ_DOT
-      G%GROTATE = G%GROTATE_BASE + DELTA_T*G%GROTATE_DOT
+      ! G%SCALE = G%SCALE_BASE + DELTA_T*G%SCALE_DOT
+      ! G%AZIM = G%AZIM_BASE + DELTA_T*G%AZIM_DOT
+      ! G%ELEV = G%ELEV_BASE + DELTA_T*G%ELEV_DOT
+      ! G%XYZ = G%XYZ_BASE + DELTA_T*G%XYZ_DOT
+      ! G%GROTATE = G%GROTATE_BASE + DELTA_T*G%GROTATE_DOT
 
-      IF (IS_DYNAMIC .AND. G%IS_DYNAMIC .OR. .NOT.IS_DYNAMIC .AND. .NOT.G%IS_DYNAMIC) THEN
+      IF ((IS_DYNAMIC .AND. G%IS_DYNAMIC) .OR. (.NOT.IS_DYNAMIC .AND. .NOT.G%IS_DYNAMIC)) THEN
          G%N_VERTS = G%N_VERTS_BASE
          G%N_FACES = G%N_FACES_BASE
          G%N_VOLUS = G%N_VOLUS_BASE
@@ -40038,16 +40214,42 @@ SUBROUTINE PROCESS_GEOM(IS_DYNAMIC,TIME, N_VERTS, N_FACES, N_VOLUS)
 
    DO I = 1, N_GEOMETRY
       G=>GEOMETRY(I)
-
-      IF (G%NSUB_GEOMS>0) CALL EXPAND_GROUPS(I) ! create vertex and face list from geometries specified in GEOM_IDS list
       IF (G%IS_DYNAMIC .AND. .NOT.IS_DYNAMIC) CYCLE
       IF (.NOT.G%IS_DYNAMIC .AND. IS_DYNAMIC) CYCLE
-      IF (TRIM(G%GEOC_FILENAME)=='null' .OR. ABS(TIME-T_BEGIN)<TWO_EPSILON_EB) THEN
-         CALL SETUP_TRANSFORM(G%SCALE,G%AZIM,G%ELEV,G%GAXIS,G%GROTATE,M)
-         CALL ROTATE_VEC(M,G%N_VERTS,G%XYZ0,G%VERTS_BASE,G%VERTS)
-         CALL TRANSLATE_VEC_INPLACE(G%XYZ,G%N_VERTS,G%VERTS)
+      MOVE_INDEX = 0
+      IF (TRIM(G%MOVE_ID)/='null') THEN
+         DO IMOVE=1,N_MOVE
+            IF (TRIM(G%MOVE_ID)==TRIM(MOVEMENT(IMOVE)%ID)) THEN
+               MOVE_INDEX = MOVEMENT(IMOVE)%INDEX
+               EXIT
+            ENDIF
+         ENDDO
+         IF (MOVE_INDEX==0) THEN
+            WRITE(MESSAGE,'(A,A,A)')  'ERROR: &GEOM ',TRIM(G%ID),' MOVE_ID is not recognized'
+            CALL SHUTDOWN(MESSAGE) ; RETURN
+         ENDIF
+         DO IVERT=1,G%N_VERTS
+            VEC(1:3) = G%VERTS_BASE(3*IVERT-2:3*IVERT)
+            CALL TRANSFORM_COORDINATES(VEC(1),VEC(2),VEC(3),MOVE_INDEX) ! Eventually, time varying motion dealt with
+                                                                        ! here.
+            G%VERTS(3*IVERT-2:3*IVERT) = VEC(1:3)
+         ENDDO
+      ELSE
+      !    CALL SETUP_TRANSFORM(G%SCALE,G%AZIM,G%ELEV,G%GAXIS,G%GROTATE,M)
+      !    CALL ROTATE_VEC(M,G%N_VERTS,G%XYZ0,G%VERTS_BASE,G%VERTS)
+      !    CALL TRANSLATE_VEC_INPLACE(G%XYZ,G%N_VERTS,G%VERTS)
+         DO IVERT=1,G%N_VERTS
+            G%VERTS(3*IVERT-2:3*IVERT) = G%VERTS_BASE(3*IVERT-2:3*IVERT)
+         ENDDO
       ENDIF
+
    ENDDO
+
+ ! remove this if statement when GEOMCLIPS is ready for use
+   IF ( I .EQ. 0 ) THEN
+      CALL GEOMCLIPS
+   ENDIF
+
    CALL GEOM2TEXTURE
 
    N_VERTS = 0
@@ -40055,8 +40257,6 @@ SUBROUTINE PROCESS_GEOM(IS_DYNAMIC,TIME, N_VERTS, N_FACES, N_VOLUS)
    N_VOLUS = 0
    DO I = 1, N_GEOMETRY ! count vertices and faces
       G=>GEOMETRY(I)
-
-      IF (G%COMPONENT_ONLY) CYCLE
       IF (G%IS_DYNAMIC .AND. .NOT.IS_DYNAMIC) CYCLE
       IF (.NOT.G%IS_DYNAMIC .AND. IS_DYNAMIC) CYCLE
       N_VERTS = N_VERTS + G%N_VERTS
@@ -40079,8 +40279,7 @@ SUBROUTINE GEOM2TEXTURE
 
    DO I = 1, N_GEOMETRY
       G=>GEOMETRY(I)
-
-      IF (G%NSUB_GEOMS/=0 .OR. G%TEXTURE_MAPPING/='RECTANGULAR') CYCLE
+      IF (G%TEXTURE_MAPPING/='RECTANGULAR') CYCLE
       DO J = 0, G%N_FACES-1
          SURF_INDEX = G%SURFS(1+J)
          SF=>SURFACE(SURF_INDEX)
@@ -40121,11 +40320,8 @@ IMATL = 0
 OFFSET = 0
 DO I = 1, N_GEOMETRY
    G=>GEOMETRY(I)
-
    IF (G%IS_DYNAMIC .AND. .NOT.IS_DYNAMIC) CYCLE
    IF (.NOT.G%IS_DYNAMIC .AND. IS_DYNAMIC) CYCLE
-
-   IF (G%COMPONENT_ONLY) CYCLE
 
    IF (G%N_VERTS>0) THEN
       VERTS(1+IVERT:3*G%N_VERTS+IVERT) = G%VERTS(1:3*G%N_VERTS)
@@ -40155,105 +40351,104 @@ END SUBROUTINE MERGE_GEOMS
 
 ! ---------------------------- EXPAND_GROUPS ----------------------------------------
 
-SUBROUTINE EXPAND_GROUPS(IGEOM)
-
-! for each geometry specifed in a &GEOM line, merge geometries referenced
-! by GEOM_IDS after scaling, rotating and translating
-
-INTEGER, INTENT(IN) :: IGEOM
-
-INTEGER :: IVERT, IFACE, IVOLUS, J, NSUB_VERTS, NSUB_FACES, NSUB_VOLUS
-INTEGER, POINTER, DIMENSION(:) :: FIN,FOUT, SURFIN, SURFOUT, MATLIN, MATLOUT
-REAL(EB) :: M(3,3)
-REAL(EB), POINTER, DIMENSION(:) :: XIN, XOUT, TFIN, TFOUT
-REAL(EB), DIMENSION(:), POINTER :: DSCALEPTR, DXYZ0PTR, DXYZPTR
-TYPE(GEOMETRY_TYPE), POINTER :: G, GSUB=>NULL()
-REAL(EB), DIMENSION(3,3) :: GIDENTITY
-REAL(EB) :: GZERO=0.0_EB
-
-
-IF (IGEOM<=1) RETURN
-G=>GEOMETRY(IGEOM)
-
-IF (G%NSUB_GEOMS==0) RETURN
-
-IF (G%N_VERTS_BASE==0.OR.(G%N_FACES_BASE==0 .AND. G%N_VOLUS_BASE==0)) RETURN ! nothing to do if GEOM_IDS geometries are empty
-
-GIDENTITY = RESHAPE ((/&
-               1.0_EB,0.0_EB,0.0_EB,&
-               0.0_EB,1.0_EB,0.0_EB,&
-               0.0_EB,0.0_EB,1.0_EB &
-               /),(/3,3/))
-
-IVERT = 0
-IFACE = 0
-IVOLUS = 0
-DO J = 1, G%NSUB_GEOMS
-   GSUB=>GEOMETRY(G%SUB_GEOMS(J))
-   NSUB_VERTS = GSUB%N_VERTS_BASE
-   NSUB_FACES = GSUB%N_FACES_BASE
-   NSUB_VOLUS = GSUB%N_VOLUS_BASE
-
-   IF (NSUB_VERTS==0 .OR. (NSUB_FACES==0 .AND. NSUB_VOLUS==0)) CYCLE
-
-   DSCALEPTR(1:3) => G%DSCALE(1:3,J)
-   CALL SETUP_TRANSFORM(DSCALEPTR,G%DAZIM(J),G%DELEV(J),GIDENTITY,GZERO,M)
-
-   XIN(1:3*NSUB_VERTS) => GSUB%VERTS(1:3*NSUB_VERTS)
-   XOUT(1:3*NSUB_VERTS) => G%VERTS_BASE(1+3*IVERT:3*(IVERT+NSUB_VERTS))
-
-   DXYZ0PTR(1:3) => G%DXYZ0(1:3,J)
-   DXYZPTR(1:3) => G%DXYZ(1:3,J)
-   CALL ROTATE_VEC(M,NSUB_VERTS,DXYZ0PTR,XIN,XOUT)
-   CALL TRANSLATE_VEC_INPLACE(DXYZPTR,NSUB_VERTS,XOUT)
-
-   ! copy and offset face indices
-
-   IF (NSUB_FACES>0) THEN
-       FIN(1:3*NSUB_FACES) => GSUB%FACES(1        :3*NSUB_FACES        )
-      FOUT(1:3*NSUB_FACES) =>    G%FACES(1+3*IFACE:3*NSUB_FACES+3*IFACE)
-
-      FOUT = FIN + IVERT
-
-       TFIN(1:6*NSUB_FACES) => GSUB%TFACES(1        :6*NSUB_FACES        )
-      TFOUT(1:6*NSUB_FACES) =>    G%TFACES(1+6*IFACE:6*NSUB_FACES+6*IFACE)
-
-      TFOUT = TFIN
-
-      ! copy surface indices
-
-      SURFIN(1:NSUB_FACES) => GSUB%SURFS(1:NSUB_FACES)
-      SURFOUT(1:NSUB_FACES) => G%SURFS(1+IFACE:IFACE+NSUB_FACES)
-      SURFOUT = SURFIN
-   ENDIF
-
-   ! copy and offset volu indices
-
-   IF (NSUB_VOLUS>0) THEN
-      FIN(1:4*NSUB_VOLUS) => GSUB%VOLUS(1:4*NSUB_VOLUS)
-      FOUT(1:4*NSUB_VOLUS) => G%VOLUS(1+4*IVOLUS:3*(IVOLUS+NSUB_VOLUS))
-
-      FOUT = FIN + IVERT
-
-      ! copy matl indices
-
-      MATLIN(1:NSUB_VOLUS) => GSUB%MATLS(1:NSUB_VOLUS)
-      MATLOUT(1:NSUB_VOLUS) => G%MATLS(IVOLUS+1:IVOLUS+NSUB_VOLUS)
-      MATLOUT = MATLIN
-   ENDIF
-
-   IVERT = IVERT + NSUB_VERTS
-   IFACE = IFACE + NSUB_FACES
-   IVOLUS = IVOLUS + NSUB_VOLUS
-ENDDO
-G%N_VERTS = IVERT
-G%N_FACES = IFACE
-G%N_VOLUS = IVOLUS
-IF (IFACE>0 .AND. G%HAVE_SURF) G%SURFS(1:G%N_FACES) = GET_SURF_INDEX(G%SURF_ID(1))
-IF (IVOLUS>0 .AND. G%HAVE_MATL) G%MATLS(1:G%N_VOLUS) = GET_MATL_INDEX(G%MATL_ID)
-IF (IVERT>0) G%VERTS(1:3*G%N_VERTS) = G%VERTS_BASE(1:3*G%N_VERTS)
-
-END SUBROUTINE EXPAND_GROUPS
+! SUBROUTINE EXPAND_GROUPS(IGEOM)
+!
+! ! for each geometry specifed in a &GEOM line, merge geometries referenced
+! ! by GEOM_IDS after scaling, rotating and translating
+!
+! INTEGER, INTENT(IN) :: IGEOM
+!
+! INTEGER :: IVERT, IFACE, IVOLUS, J, NSUB_VERTS, NSUB_FACES, NSUB_VOLUS
+! INTEGER, POINTER, DIMENSION(:) :: FIN,FOUT, SURFIN, SURFOUT, MATLIN, MATLOUT
+! REAL(EB) :: M(3,3)
+! REAL(EB), POINTER, DIMENSION(:) :: XIN, XOUT, TFIN, TFOUT
+! REAL(EB), DIMENSION(:), POINTER :: DSCALEPTR, DXYZ0PTR, DXYZPTR
+! TYPE(GEOMETRY_TYPE), POINTER :: G, GSUB=>NULL()
+! REAL(EB), DIMENSION(3,3) :: GIDENTITY
+! REAL(EB) :: GZERO=0.0_EB
+!
+!
+! IF (IGEOM<=1) RETURN
+! G=>GEOMETRY(IGEOM)
+!
+! IF (G%NSUB_GEOMS==0) RETURN
+!
+! IF (G%N_VERTS_BASE==0.OR.(G%N_FACES_BASE==0 .AND. G%N_VOLUS_BASE==0)) RETURN ! nothing to do if GEOM_IDS geometries are empty
+!
+! GIDENTITY = RESHAPE ((/&
+!                1.0_EB,0.0_EB,0.0_EB,&
+!                0.0_EB,1.0_EB,0.0_EB,&
+!                0.0_EB,0.0_EB,1.0_EB &
+!                /),(/3,3/))
+!
+! IVERT = 0
+! IFACE = 0
+! IVOLUS = 0
+! DO J = 1, G%NSUB_GEOMS
+!    GSUB=>GEOMETRY(G%SUB_GEOMS(J))
+!    NSUB_VERTS = GSUB%N_VERTS_BASE
+!    NSUB_FACES = GSUB%N_FACES_BASE
+!    NSUB_VOLUS = GSUB%N_VOLUS_BASE
+!
+!    IF (NSUB_VERTS==0 .OR. (NSUB_FACES==0 .AND. NSUB_VOLUS==0)) CYCLE
+!
+!    XIN(1:3*NSUB_VERTS)  => GSUB%VERTS(1:3*NSUB_VERTS)
+!    XOUT(1:3*NSUB_VERTS) => G%VERTS_BASE(1+3*IVERT:3*(IVERT+NSUB_VERTS))
+!
+!    DSCALEPTR(1:3) => G%DSCALE(1:3,J)
+!    DXYZ0PTR(1:3)  => G%DXYZ0(1:3,J)
+!    DXYZPTR(1:3)   => G%DXYZ(1:3,J)
+!    CALL SETUP_TRANSFORM(DSCALEPTR,G%DAZIM(J),G%DELEV(J),GIDENTITY,GZERO,M)
+!    CALL ROTATE_VEC(M,NSUB_VERTS,DXYZ0PTR,XIN,XOUT)
+!    CALL TRANSLATE_VEC_INPLACE(DXYZPTR,NSUB_VERTS,XOUT)
+!
+!    ! copy and offset face indices
+!
+!    IF (NSUB_FACES>0) THEN
+!        FIN(1:3*NSUB_FACES) => GSUB%FACES(1        :3*NSUB_FACES        )
+!       FOUT(1:3*NSUB_FACES) =>    G%FACES(1+3*IFACE:3*NSUB_FACES+3*IFACE)
+!
+!       FOUT = FIN + IVERT
+!
+!        TFIN(1:6*NSUB_FACES) => GSUB%TFACES(1        :6*NSUB_FACES        )
+!       TFOUT(1:6*NSUB_FACES) =>    G%TFACES(1+6*IFACE:6*NSUB_FACES+6*IFACE)
+!
+!       TFOUT = TFIN
+!
+!       ! copy surface indices
+!
+!       SURFIN(1:NSUB_FACES) => GSUB%SURFS(1:NSUB_FACES)
+!       SURFOUT(1:NSUB_FACES) => G%SURFS(1+IFACE:IFACE+NSUB_FACES)
+!       SURFOUT = SURFIN
+!    ENDIF
+!
+!    ! copy and offset volu indices
+!
+!    IF (NSUB_VOLUS>0) THEN
+!       FIN(1:4*NSUB_VOLUS) => GSUB%VOLUS(1:4*NSUB_VOLUS)
+!       FOUT(1:4*NSUB_VOLUS) => G%VOLUS(1+4*IVOLUS:3*(IVOLUS+NSUB_VOLUS))
+!
+!       FOUT = FIN + IVERT
+!
+!       ! copy matl indices
+!
+!       MATLIN(1:NSUB_VOLUS) => GSUB%MATLS(1:NSUB_VOLUS)
+!       MATLOUT(1:NSUB_VOLUS) => G%MATLS(IVOLUS+1:IVOLUS+NSUB_VOLUS)
+!       MATLOUT = MATLIN
+!    ENDIF
+!
+!    IVERT = IVERT + NSUB_VERTS
+!    IFACE = IFACE + NSUB_FACES
+!    IVOLUS = IVOLUS + NSUB_VOLUS
+! ENDDO
+! G%N_VERTS = IVERT
+! G%N_FACES = IFACE
+! G%N_VOLUS = IVOLUS
+! IF (IFACE>0 .AND. G%HAVE_SURF) G%SURFS(1:G%N_FACES) = GET_SURF_INDEX(G%SURF_ID(1))
+! IF (IVOLUS>0 .AND. G%HAVE_MATL) G%MATLS(1:G%N_VOLUS) = GET_MATL_INDEX(G%MATL_ID)
+! IF (IVERT>0) G%VERTS(1:3*G%N_VERTS) = G%VERTS_BASE(1:3*G%N_VERTS)
+!
+! END SUBROUTINE EXPAND_GROUPS
 
 ! ---------------------------- CONVERTGEOM ----------------------------------------
 
@@ -41577,7 +41772,6 @@ INTEGER, INTENT(IN) :: INDU(3),COMP_I,COMP_J,NM
 TYPE(MESH_TYPE), POINTER :: M
 REAL(EB), POINTER, DIMENSION(:,:,:) :: DUDX
 INTEGER :: II,JJ,KK,N
-CHARACTER(MESSAGE_LENGTH) :: MESSAGE
 
 M=>MESHES(NM)
 
