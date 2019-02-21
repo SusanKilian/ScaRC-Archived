@@ -309,7 +309,8 @@ INTEGER, PARAMETER :: NSCARC_ERROR_PARSE_INPUT       =  1, &   !> wrong input pa
                       NSCARC_ERROR_VECTOR_LENGTH     = 23, &   !> error in vector length
                       NSCARC_ERROR_MULTIGRID_LEVEL   = 24, &   !> wrong multigrid level
                       NSCARC_ERROR_AMG_MISSING       = 25, &   !> AMG-method is currently missing
-                      NSCARC_ERROR_RHS_SETUP         = 26      !> error with rhs setup
+                      NSCARC_ERROR_RHS_SETUP         = 26, &   !> error with rhs setup
+                      NSCARC_ERROR_POC_STOP          = 27      !> temporary stop, only proof of concept
 
 INTEGER, PARAMETER :: NSCARC_PRECISION_FB            =  1, &   !> single precision for preconditioning or LU-decomposition
                       NSCARC_PRECISION_EB            =  2      !> double precision for preconditioning or LU-decomposition
@@ -482,7 +483,7 @@ END TYPE SCARC_TIME_TYPE
 !> ------------------------------------------------------------------------------------------------
 TYPE SCARC_MESSAGE_TYPE
 CHARACTER(100):: TEXT
-CHARACTER(60) :: FILE_DEBUG, FILE_CSV, FILE_DUMP, FILE_VERBOSE
+CHARACTER(60) :: FILE_DEBUG, FILE_STAT, FILE_DUMP, FILE_VERBOSE
 INTEGER :: LU_DEBUG = 0, LU_STAT = 0, LU_DUMP = 0, LU_VERBOSE = 0
 END TYPE SCARC_MESSAGE_TYPE
 
@@ -958,12 +959,14 @@ INTEGER:: NM, LASTID
 
 IF (TRIM(SCARC_STATISTICS) == '.TRUE.') BSTATISTICS = .TRUE.
 
+WRITE(*,*) 'BSTATISTICS=',BSTATISTICS
+
 !> If requested, open file for CSV-information about convergence of different solvers
 IF (BSTATISTICS) THEN
    IF (MYID == 0) THEN
-      WRITE (MSG%FILE_CSV, '(A,A)') TRIM(CHID),'_scarc.csv'
+      WRITE (MSG%FILE_STAT, '(A,A)') TRIM(CHID),'_scarc.csv'
       MSG%LU_STAT = GET_FILE_NUMBER()
-      OPEN (MSG%LU_STAT, FILE=MSG%FILE_CSV)
+      OPEN (MSG%LU_STAT, FILE=MSG%FILE_STAT)
       WRITE(MSG%LU_STAT,*) 'ite_pres, ite_total, ite_cg, ite_mg, ite_lu, ite_coarse, ite_smooth, smoothing type, level, solver, res'
    ENDIF
 ENDIF
@@ -1057,6 +1060,8 @@ SELECT CASE (NERROR)
       CERROR = 'Algebraic multigrid is currently missing'
    CASE (NSCARC_ERROR_VECTOR_LENGTH)
       CERROR = 'Inconsistent length for vector allocation'
+   CASE (NSCARC_ERROR_POC_STOP)
+      CERROR = 'Only one call of solver due to proof of concept'
 END SELECT
 
 IF (CPARAM /= SCARC_NONE) THEN
@@ -1085,9 +1090,9 @@ CLOSE(MSG%LU_DEBUG)
 STOP_STATUS = SETUP_STOP
 RETURN
 
-1000 FORMAT('Error in ScaRC-solver: ', A,' : ',   A, ' (CHID: ',A,')' )
-2000 FORMAT('Error in ScaRC-solver: ', A,' : ', I12, ' (CHID: ',A,')' )
-3000 FORMAT('Error in ScaRC-solver: ', A, ' (CHID: ',A,')' )
+1000 FORMAT('Stop in ScaRC-solver: ', A,' : ',   A, ' (CHID: ',A,')' )
+2000 FORMAT('Stop in ScaRC-solver: ', A,' : ', I12, ' (CHID: ',A,')' )
+3000 FORMAT('Stop in ScaRC-solver: ', A, ' (CHID: ',A,')' )
 END SUBROUTINE SCARC_SHUTDOWN
 
 
@@ -5539,7 +5544,11 @@ DO NSTACK = 1, N_STACK_TOTAL
          CALL SCARC_ALLOCATE_REAL1(ST%W, 1, L%NCE, NSCARC_INIT_ZERO, 'W')
          CALL SCARC_ALLOCATE_REAL1(ST%Y, 1, L%NCE, NSCARC_INIT_ZERO, 'Y')
          CALL SCARC_ALLOCATE_REAL1(ST%Z, 1, L%NCE, NSCARC_INIT_ZERO, 'Z')
+
+#ifdef WITH_SCARC_DEBUG
          CALL SCARC_ALLOCATE_REAL1(ST%E, 1, L%NCE, NSCARC_INIT_ZERO, 'E')
+         CALL SCARC_ALLOCATE_REAL1(ST%R, 1, L%NCE, NSCARC_INIT_ZERO, 'R')
+#endif
 
 #ifdef WITH_MKL_FB
          CALL SCARC_ALLOCATE_REAL1_FB(ST%Q_FB, 1, L%NCE, NSCARC_INIT_ZERO, 'Q_FB')
@@ -6457,6 +6466,10 @@ END SELECT SELECT_METHOD
 
 IF (STOP_STATUS==SETUP_STOP) RETURN
 
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_SHUTDOWN(NSCARC_ERROR_POC_STOP, SCARC_NONE, NSCARC_NONE)
+#endif
+
 T_USED(5)=T_USED(5)+CURRENT_TIME()-TNOW
 TSTEP(MYID+1)%SOLVER=MAX(TSTEP(MYID+1)%SOLVER,CURRENT_TIME()-TNOW)
 TSUM(MYID+1)%SOLVER =TSUM(MYID+1)%SOLVER+CURRENT_TIME()-TNOW
@@ -7298,6 +7311,8 @@ SELECT CASE (TYPE_SOLVER)
          CASE (NSCARC_METHOD_LU)
             ITE_LU = ITE0
       END SELECT
+   CASE (NSCARC_SOLVER_PRECON)
+      ITE_MG = ITE0
    CASE (NSCARC_SOLVER_SMOOTH)
       ITE_SMOOTH = ITE0
    CASE (NSCARC_SOLVER_COARSE)
@@ -10398,16 +10413,13 @@ END SUBROUTINE SCARC_TIMEOUT
 SUBROUTINE SCARC_DUMP_STATISTICS(ISM, NL)
 INTEGER, INTENT(IN) :: ISM, NL
 INTEGER :: NM
-IF (.NOT.BSTATISTICS) RETURN
-DO NM = 1, NMESHES
-   IF (ITE_TOTAL == 0) THEN
-      WRITE(MSG%LU_STAT,1000) ITE_TOTAL, ITE, ITE_CG, ITE_MG, ITE_SMOOTH, ISM, NL, TYPE_METHOD, TYPE_SOLVER, RESIN, ERR
-   ELSE
-      WRITE(MSG%LU_STAT,1000) ITE_TOTAL, ITE, ITE_CG, ITE_MG, ITE_SMOOTH, ISM, NL, TYPE_METHOD, TYPE_SOLVER, RES, ERR
-   ENDIF
-ENDDO
+IF (.NOT.BSTATISTICS .OR. MYID /= 0) RETURN
+IF (ITE_TOTAL == 0) THEN
+   WRITE(MSG%LU_STAT,1000) ITE_TOTAL, ITE, ITE_CG, ITE_MG, ITE_SMOOTH, ISM, NL, TYPE_METHOD, TYPE_SOLVER, RESIN, ERR
+ELSE
+   WRITE(MSG%LU_STAT,1000) ITE_TOTAL, ITE, ITE_CG, ITE_MG, ITE_SMOOTH, ISM, NL, TYPE_METHOD, TYPE_SOLVER, RES, ERR
+ENDIF
 1000 FORMAT(I10,',',i4,',',i7,',',i7,',',i7,',',i4,',',i3,',',i7,',',i7,',',E20.12,',',E20.12)
-2000 FORMAT(I6,',',i3,',',i3,',',E20.12,',',E20.12)
 END SUBROUTINE SCARC_DUMP_STATISTICS
 
 !> ----------------------------------------------------------------------------------------------------
@@ -10440,7 +10452,7 @@ TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 
 IF (ITE_TOTAL == 0) WRITE(*,*) 'CAUTION: PRESET_EXACT is active !!!'
 
-DO NM = 1, NMESHES
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    M => MESHES(NM)
    L => SCARC(NM)%LEVEL(NL)
    VE => POINT_TO_VECTOR (NM, NL, NE)
@@ -10474,7 +10486,7 @@ REAL(EB), DIMENSION(:), POINTER :: XMID, ZMID
 TYPE (MESH_TYPE), POINTER :: M=>NULL()
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 
-DO NM = 1, NMESHES
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    M => MESHES(NM)
    L => SCARC(NM)%LEVEL(NL)
    VEC => POINT_TO_VECTOR (NM, NL, NV)
@@ -10509,10 +10521,9 @@ REAL (EB) :: X, Z
 TYPE (MESH_TYPE), POINTER :: M=>NULL()
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 
-IF (ITE_TOTAL == 0) WRITE(*,*) 'CAUTION: PRESET_RHS is active !!!'
 IF (NL > NLEVEL_MIN) WRITE(*,*) 'Wrong level for presetting RHS '
 
-DO NM = 1, NMESHES
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    M => MESHES(NM)
    M%BXS = 0.0_EB
    M%BXF = 0.0_EB
@@ -10579,7 +10590,7 @@ ELSE IF (TRIM(CNAME) == 'EXACT') THEN
 ELSE IF (TRIM(CNAME) == 'DISCRET') THEN
    CDIR = 'dis'
 ENDIF
-DO NM = 1, NMESHES
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    VEC => POINT_TO_VECTOR (NM, NL, NV)
    L => SCARC(NM)%LEVEL(NL)
    if (ISM == 0) THEN
@@ -10620,9 +10631,7 @@ REAL (EB), POINTER, DIMENSION(:)     :: VC
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 
 !IF (TYPE_SOLVER /= NSCARC_SOLVER_MAIN) RETURN
-DO NM = 1, NMESHES
-
-   IF (PROCESS(NM) /= MYID) CYCLE
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    L  => SCARC(NM)%LEVEL(NL)
    VC => POINT_TO_VECTOR (NM, NL, NV)
@@ -10712,6 +10721,7 @@ SELECT CASE (NTYPE)
          WRITE(MSG%LU_DEBUG,*) 'TYPE_PARENT   = ',SV%TYPE_PARENT
          WRITE(MSG%LU_DEBUG,*) 'TYPE_SOLVER   = ',SV%TYPE_SOLVER
          WRITE(MSG%LU_DEBUG,*) 'TYPE_STAGE    = ',SV%TYPE_STAGE
+         WRITE(MSG%LU_DEBUG,*) 'TYPE_SCOPE    = ',SV%TYPE_SCOPE 
          WRITE(MSG%LU_DEBUG,*) 'TYPE_PRECON   = ',SV%TYPE_DEFCOR
          WRITE(MSG%LU_DEBUG,*) 'TYPE_ACCURACY = ',SV%TYPE_ACCURACY
          WRITE(MSG%LU_DEBUG,*) 'TYPE_INTERPOL = ',SV%TYPE_INTERPOL
@@ -10720,6 +10730,8 @@ SELECT CASE (NTYPE)
          WRITE(MSG%LU_DEBUG,*) '-- POINTERS:'
          WRITE(MSG%LU_DEBUG,*) 'X   = ',SV%X
          WRITE(MSG%LU_DEBUG,*) 'B   = ',SV%B
+         WRITE(MSG%LU_DEBUG,*) 'E   = ',SV%E
+         WRITE(MSG%LU_DEBUG,*) 'R   = ',SV%R
          WRITE(MSG%LU_DEBUG,*) 'V   = ',SV%V
          WRITE(MSG%LU_DEBUG,*) 'Q   = ',SV%Q
          WRITE(MSG%LU_DEBUG,*) 'W   = ',SV%W
@@ -10899,33 +10911,33 @@ SELECT CASE (NTYPE)
                   WRITE(MSG%LU_DEBUG,*)
                   WRITE(MSG%LU_DEBUG,'(a,i8,a)') '------OL(',NOM,')%ICG_TO_IWG:'
                   DO IW = 1, OL%NCG
-                     WRITE(MSG%LU_DEBUG,'(32i8)') OL%MAP%ICG_TO_IWG(IW)
+                     WRITE(MSG%LU_DEBUG,'(16i8)') OL%MAP%ICG_TO_IWG(IW)
                   ENDDO
                   WRITE(MSG%LU_DEBUG,*)
                   WRITE(MSG%LU_DEBUG,'(a,i8,a)') '------OL(',NOM,')%ICG_TO_ICO:'
                   DO IW = 1, OL%NCG
-                     WRITE(MSG%LU_DEBUG,'(32i8)') OL%MAP%ICG_TO_ICO(IW)
+                     WRITE(MSG%LU_DEBUG,'(16i8)') OL%MAP%ICG_TO_ICO(IW)
                   ENDDO
                   WRITE(MSG%LU_DEBUG,*)
                   WRITE(MSG%LU_DEBUG,'(a,i8,a)') '------OL(',NOM,')%ICG_TO_ICE:'
                   DO IW = 1, OL%NCG
-                     WRITE(MSG%LU_DEBUG,'(32i8)') OL%MAP%ICG_TO_ICE(IW)
+                     WRITE(MSG%LU_DEBUG,'(16i8)') OL%MAP%ICG_TO_ICE(IW)
                   ENDDO
                   WRITE(MSG%LU_DEBUG,*)
                   WRITE(MSG%LU_DEBUG,*)
                   WRITE(MSG%LU_DEBUG,'(a,i8,a)') '------OL(',NOM,')%IWL_TO_IWG:'
                   DO IW = 1, OL%NWL
-                     WRITE(MSG%LU_DEBUG,'(32i8)') OL%MAP%IWL_TO_IWG(IW)
+                     WRITE(MSG%LU_DEBUG,'(16i8)') OL%MAP%IWL_TO_IWG(IW)
                   ENDDO
                   !WRITE(MSG%LU_DEBUG,*)
                   !WRITE(MSG%LU_DEBUG,'(a,i8,a)') '------OL(',NOM,')%IWL_TO_ICW:'
                   !DO IW = 1, OL%NWL
-                  !   WRITE(MSG%LU_DEBUG,'(32i8)') OL%MAP%IWL_TO_ICW(IW)
+                  !   WRITE(MSG%LU_DEBUG,'(16i8)') OL%MAP%IWL_TO_ICW(IW)
                   !ENDDO
                   WRITE(MSG%LU_DEBUG,*)
                   WRITE(MSG%LU_DEBUG,'(a,i8,a)') '------OL(',NOM,')%IWL_TO_ICO:'
                   DO IW = 1, OL%NWL
-                     WRITE(MSG%LU_DEBUG,'(32i8)') OL%MAP%IWL_TO_ICO(IW)
+                     WRITE(MSG%LU_DEBUG,'(16i8)') OL%MAP%IWL_TO_ICO(IW)
                   ENDDO
                   !IF (BAMG) THEN
                   !   WRITE(MSG%LU_DEBUG,*)
@@ -10958,58 +10970,58 @@ SELECT CASE (NTYPE)
          WRITE(MSG%LU_DEBUG,*) 'NC  =',L%NC
          WRITE(MSG%LU_DEBUG,*) 'NW  =',L%NW
          WRITE(MSG%LU_DEBUG,*)
-         WRITE(MSG%LU_DEBUG,'(a,i6,a)') '------L%MAP%ICE_TO_IWG:'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%MAP%ICE_TO_IWG(IW), IW = L%NCS+1, L%NCE)
-         WRITE(MSG%LU_DEBUG,'(a,i6,a)') '------L%MAP%ICE_TO_IWL:'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%MAP%ICE_TO_IWL(IW), IW = L%NCS+1, L%NCE)
+         WRITE(MSG%LU_DEBUG,'(a,I8,a)') '------L%MAP%ICE_TO_IWG:'
+         WRITE(MSG%LU_DEBUG,'(8I8)') (L%MAP%ICE_TO_IWG(IW), IW = L%NCS+1, L%NCE)
+         WRITE(MSG%LU_DEBUG,'(a,I8,a)') '------L%MAP%ICE_TO_IWL:'
+         WRITE(MSG%LU_DEBUG,'(8I8)') (L%MAP%ICE_TO_IWL(IW), IW = L%NCS+1, L%NCE)
          WRITE(MSG%LU_DEBUG,*)
-         WRITE(MSG%LU_DEBUG,'(a,i6,a)') '------L%MAP%ICE_TO_ICG:'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%MAP%ICE_TO_ICG(IW), IW = L%NCS+1, L%NCE)
+         WRITE(MSG%LU_DEBUG,'(a,I8,a)') '------L%MAP%ICE_TO_ICG:'
+         WRITE(MSG%LU_DEBUG,'(8I8)') (L%MAP%ICE_TO_ICG(IW), IW = L%NCS+1, L%NCE)
          IF (N_DIRIC_GLOBAL(NLEVEL_MIN) == 0) THEN
-            WRITE(MSG%LU_DEBUG,'(a,i6,a)') '------L%MAP%ICE_TO_ICN:'
-            WRITE(MSG%LU_DEBUG,'(8i6)') (L%MAP%ICE_TO_ICN(IW), IW = L%NCS+1, L%NCE)
-            WRITE(MSG%LU_DEBUG,'(a,i6,a)') '------L%MAP%ICE_TO_VAL:'
+            WRITE(MSG%LU_DEBUG,'(a,I8,a)') '------L%MAP%ICE_TO_ICN:'
+            WRITE(MSG%LU_DEBUG,'(8I8)') (L%MAP%ICE_TO_ICN(IW), IW = L%NCS+1, L%NCE)
+            WRITE(MSG%LU_DEBUG,'(a,I8,a)') '------L%MAP%ICE_TO_VAL:'
             WRITE(MSG%LU_DEBUG,'(8e12.4)') (L%MAP%ICE_TO_VAL(IW), IW = L%NCS+1, L%NCE)
          ENDIF
          WRITE(MSG%LU_DEBUG,*)
          IF (NL == 1) THEN
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%IXG:', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%IXG, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%IXG, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%IYG:', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%IYG, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%IYG, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%IZG:', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%IZG, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%IZG, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%IXW:', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%IXW, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%IXW, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%IYW:', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%IYW, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%IYW, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%IZW:', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%IZW, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%IZW, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%IXN(1):', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%IXN(1), IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%IXN(1), IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%IYN(1):', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%IYN(1), IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%IYN(1), IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%IZN(1):', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%IZN(1), IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%IZN(1), IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%IXN(2):', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%IXN(2), IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%IXN(2), IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%IYN(2):', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%IYN(2), IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%IYN(2), IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%IZN(2):', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%IZN(2), IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%IZN(2), IW=1,L%NW)
          ENDIF
          WRITE(MSG%LU_DEBUG,*)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%BTYPE:', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%BTYPE, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%BTYPE, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%IOR:', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%IOR, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%IOR, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%NOM:', NM
-         WRITE(MSG%LU_DEBUG,'(8i6)') (L%WALL(IW)%NOM, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (L%WALL(IW)%NOM, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*)
          !IF (NL == 1) THEN
          !WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%NCPL:', NM
@@ -11019,64 +11031,64 @@ SELECT CASE (NTYPE)
          WRITE(MSG%LU_DEBUG,*)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%ICW:', NM
          DO IW=1,L%NW
-            WRITE(MSG%LU_DEBUG,'(a,i6, a,i6)') 'IW=',IW,':',L%WALL(IW)%ICW
+            WRITE(MSG%LU_DEBUG,'(a,I8, a,I8)') 'IW=',IW,':',L%WALL(IW)%ICW
          ENDDO
          WRITE(MSG%LU_DEBUG,*)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%ICO:', NM
          DO IW=1,L%NW
             IF (L%WALL(IW)%NOM /=0) &
-               WRITE(MSG%LU_DEBUG,'(a,i6, a,i6)') 'IW=',IW,':',L%WALL(IW)%ICO
+               WRITE(MSG%LU_DEBUG,'(a,I8, a,I8)') 'IW=',IW,':',L%WALL(IW)%ICO
          ENDDO
          WRITE(MSG%LU_DEBUG,*)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%ICE:', NM
          DO IW=1,L%NW
             IF (L%WALL(IW)%NOM /=0) &
-               WRITE(MSG%LU_DEBUG,'(a,i6, a,i6)') 'IW=',IW,':',L%WALL(IW)%ICE
+               WRITE(MSG%LU_DEBUG,'(a,I8, a,I8)') 'IW=',IW,':',L%WALL(IW)%ICE
          ENDDO
          WRITE(MSG%LU_DEBUG,*)
          WRITE(MSG%LU_DEBUG,*)
          WRITE(MSG%LU_DEBUG,*) '============= WALL(.)%ICG:', NM
          DO IW=1,L%NW
             IF (L%WALL(IW)%NOM /=0) &
-               WRITE(MSG%LU_DEBUG,'(a,i6, a,i6)') 'IW=',IW,':',L%WALL(IW)%ICG
+               WRITE(MSG%LU_DEBUG,'(a,I8, a,I8)') 'IW=',IW,':',L%WALL(IW)%ICG
          ENDDO
          WRITE(MSG%LU_DEBUG,*) '====================================================='
          WRITE(MSG%LU_DEBUG,*) ' Plotting out M%WALL-structure'
          WRITE(MSG%LU_DEBUG,*) '====================================================='
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%WALL_INDEX'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%WALL_INDEX, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%WALL_INDEX, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%SURF_INDEX'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%SURF_INDEX, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%SURF_INDEX, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%BACK_INDEX'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%BACK_INDEX, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%BACK_INDEX, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%BOUNDARY_TYPE'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%BOUNDARY_TYPE, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%BOUNDARY_TYPE, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%OBST_INDEX'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%OBST_INDEX, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%OBST_INDEX, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%PRESSURE_BC_INDEX'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%PRESSURE_BC_INDEX, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%PRESSURE_BC_INDEX, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%ONE_D%PRESSURE_ZONE'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%ONE_D%PRESSURE_ZONE, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%ONE_D%PRESSURE_ZONE, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%VENT_INDEX'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%VENT_INDEX, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%VENT_INDEX, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%NOM'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%EXTERNAL_WALL(IW)%NOM, IW=1,L%N_WALL_CELLS_EXT)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%EXTERNAL_WALL(IW)%NOM, IW=1,L%N_WALL_CELLS_EXT)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%ONE_D%II'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%ONE_D%II, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%ONE_D%II, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%ONE_D%JJ'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%ONE_D%JJ, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%ONE_D%JJ, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%ONE_D%KK'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%ONE_D%KK, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%ONE_D%KK, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%ONE_D%IIG'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%ONE_D%IIG, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%ONE_D%IIG, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%ONE_D%JJG'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%ONE_D%JJG, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%ONE_D%JJG, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%ONE_D%KKG'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%ONE_D%KKG, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%ONE_D%KKG, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%ONE_D%N_LAYER_CELLS'
-         WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%ONE_D%IOR, IW=1,L%NW)
+         WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%ONE_D%IOR, IW=1,L%NW)
          WRITE(MSG%LU_DEBUG,*) ' M%WALL(.)%ONE_D%IOR'
-         !WRITE(MSG%LU_DEBUG,'(8i6)') (M%WALL(IW)%ONE_D%N_LAYER_CELLS, IW=1,L%NW)
+         !WRITE(MSG%LU_DEBUG,'(16I6)') (M%WALL(IW)%ONE_D%N_LAYER_CELLS, IW=1,L%NW)
 
       ENDDO
       !ENDIF
@@ -11091,16 +11103,18 @@ SELECT CASE (NTYPE)
          WRITE(MSG%LU_DEBUG,*) 'M%N_OBST=',M%N_OBST
          WRITE(MSG%LU_DEBUG,*) 'M%OBST ... I1, I2, J1, J2, K1, K2'
          DO IWG = 1, M%N_OBST
-            WRITE(MSG%LU_DEBUG,'(6i6)') M%OBSTRUCTION(IWG)%I1,M%OBSTRUCTION(IWG)%I2,&
+            WRITE(MSG%LU_DEBUG,'(6I8)') M%OBSTRUCTION(IWG)%I1,M%OBSTRUCTION(IWG)%I2,&
                                         M%OBSTRUCTION(IWG)%J1,M%OBSTRUCTION(IWG)%J2,&
                                         M%OBSTRUCTION(IWG)%K1,M%OBSTRUCTION(IWG)%K2
              ENDDO
          WRITE(MSG%LU_DEBUG,*) 'M%N_OBST=',M%N_OBST
          WRITE(MSG%LU_DEBUG,*) 'M%N_WALL_CELLS=',M%N_WALL_CELLS
-         WRITE(MSG%LU_DEBUG,'(a,i0,a)') '(', L%NX+2,'I6)'
+         WRITE(MSG%LU_DEBUG,*) 'M%CELL_INDEX:'
          DO JJJ = L%NY+1,0,-1
-            WRITE(MSG%LU_DEBUG,*) 'M%CELL_INDEX(.,',JJJ,',.):'
-            WRITE(MSG%LU_DEBUG,*) ((M%CELL_INDEX(III,JJJ,KKK), III=0,L%NX+1,1), KKK=L%NZ+1,0,-1)
+            WRITE(MSG%LU_DEBUG,*) ' ------------- JJJ = ', JJJ
+            DO KKK = L%NZ+1,0,-1
+               WRITE(MSG%LU_DEBUG,*) (M%CELL_INDEX(III,JJJ,KKK), III=0,L%NX+1)
+            ENDDO
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'M%WALL(.)%BOUNDARY_TYPE:'
          WRITE(MSG%LU_DEBUG,'(11i8)') (M%WALL(IWG)%BOUNDARY_TYPE, IWG=1, L%NW)
@@ -11116,24 +11130,30 @@ SELECT CASE (NTYPE)
                                             IWG=1, CELL_COUNT(NM))
          WRITE(MSG%LU_DEBUG,*) 'M%WALL(.)%ONE_D% IOR,II,JJ,KK, BOUNDARY_TYPE, BTYPE, PRESSURE_BC_INDEX:'
          DO IWG = 1, L%NW
-            WRITE(MSG%LU_DEBUG,'(9I6)') &
+            WRITE(MSG%LU_DEBUG,'(9I8)') &
                IWG,M%WALL(IWG)%ONE_D%IOR,M%WALL(IWG)%ONE_D%II,M%WALL(IWG)%ONE_D%JJ,M%WALL(IWG)%ONE_D%KK,&
                M%WALL(IWG)%BOUNDARY_TYPE, L%WALL(IWG)%BTYPE, M%WALL(IWG)%PRESSURE_BC_INDEX
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'GRID%CELL_NUMBER(...)'
          DO JJJ=L%NY+1,0,-1
-            WRITE(MSG%LU_DEBUG,*) ((L%CELL_NUMBER(III,JJJ,KKK),III=0,L%NX+1),KKK=L%NZ+1,0,-1)
-            WRITE(MSG%LU_DEBUG,*)
+            WRITE(MSG%LU_DEBUG,*) ' ------------- JJJ = ', JJJ
+            DO KKK = L%NZ+1,0,-1
+               WRITE(MSG%LU_DEBUG,*) (L%CELL_NUMBER(III,JJJ,KKK),III=0,L%NX+1)
+            ENDDO
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'GRID%CELL_STATE(...)'
          DO JJJ=L%NY+1,0,-1
-            WRITE(MSG%LU_DEBUG,*) ((L%CELL_STATE(III,JJJ,KKK),III=0,L%NX+1),KKK=L%NZ+1,0,-1)
-            WRITE(MSG%LU_DEBUG,*)
+            WRITE(MSG%LU_DEBUG,*) ' ------------- JJJ = ', JJJ
+            DO KKK = L%NZ+1,0,-1
+               WRITE(MSG%LU_DEBUG,*) (L%CELL_STATE(III,JJJ,KKK),III=0,L%NX+1)
+            ENDDO
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'M%CELL_INDEX:'
          DO JJJ=L%NY+1,0,-1
-            WRITE(MSG%LU_DEBUG,*) ((M%CELL_INDEX(III,JJJ,KKK),III=0,L%NX+1),KKK=L%NZ+1,0,-1)
-            WRITE(MSG%LU_DEBUG,*)
+            WRITE(MSG%LU_DEBUG,*) ' ------------- JJJ = ', JJJ
+            DO KKK = L%NZ+1,0,-1
+               WRITE(MSG%LU_DEBUG,*) (M%CELL_INDEX(III,JJJ,KKK),III=0,L%NX+1)
+            ENDDO
          ENDDO
       ENDDO
     
@@ -11145,7 +11165,7 @@ SELECT CASE (NTYPE)
       DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          L => SCARC(NM)%LEVEL(NL)
          WRITE(MSG%LU_DEBUG,1000) CQUANTITY, NM, NL
-         WRITE(MSG%LU_DEBUG, '(8i8)') (L%WALL(J)%BTYPE, J=1,L%NW)
+         WRITE(MSG%LU_DEBUG, '(16I6)') (L%WALL(J)%BTYPE, J=1,L%NW)
       ENDDO
 
  !> ------------------------------------------------------------------------------------------------
@@ -11191,8 +11211,7 @@ CHARACTER(60):: CNAME, CFORM
 REAL (EB), POINTER, DIMENSION(:) :: VC
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 
-DO NM = 1, NMESHES
-   IF (PROCESS(NM) /= MYID) CYCLE
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    L  => SCARC(NM)%LEVEL(NL)
    VC => POINT_TO_VECTOR (NM, NL, NV)
    WRITE (CNAME, '(A,A1,A,i2.2,A,i2.2,A)') 'matlab/',CVEC,'_mesh',NM,'_level',NL,'_vec.txt'
