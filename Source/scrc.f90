@@ -7335,11 +7335,13 @@ REAL (EB) :: ALPHA, BETA, SIGMA, SIGMA_LAST
 REAL (EB) :: TNOW                                                                                       !>
 
 TNOW = CURRENT_TIME()
-!> test
+ITE_CG = 0
+
 !> get current and parent stack position, and current level
 NS = NSTACK
 NP = NPARENT
 NL = NLEVEL
+
 
 #ifdef WITH_SCARC_VERBOSE
 WRITE(MSG%LU_VERBOSE,*) '==================== Entering CG method on level ', NLEVEL
@@ -7380,18 +7382,15 @@ CALL SCARC_DEBUG_LEVEL (B, 'B INIT2', NL)
 CALL SCARC_DEBUG_LEVEL (R, 'R INIT2', NL)
 #endif
 
-RES = SCARC_L2NORM (R, NL)                                   !>  res   := ||r^0||
+RES   = SCARC_L2NORM (R, NL)                                 !>  res   := ||r^0||
 RESIN = RES                                                  !>  resin := res
 
-ITE = 0
 NSTATE = SCARC_CONVERGENCE_STATE (0, NS, NL)                 !>  res < tolerance ?
 
 IF (NSTATE /= NSCARC_STATE_CONV0) THEN                       !>  if no convergence yet, start precon
    CALL SCARC_PRECONDITIONER(NS, NS, NL)                     !>  v^0 := Precon(r^0)
    SIGMA_LAST = SCARC_SCALAR_PRODUCT(R, V, NL)               !>  sigma_last := (r^0,v^0)
    CALL SCARC_VECTOR_COPY (V, D, -1.0_EB, NL)                !>  d^0 := -v^0
-ELSE
-   NIT=0                                                     !>  if already convergence, don't iterate
 ENDIF
 
 !> ------------------------------------------------------------------------------------------------
@@ -7626,6 +7625,7 @@ INTEGER   :: NSTATE, ICYCLE
 REAL (EB) :: TNOW, TNOW_COARSE
 
 TNOW = CURRENT_TIME()
+ITE_MG = 0
 
 !> store current and parent stack position and current level
 NS = NSTACK
@@ -7664,7 +7664,6 @@ CALL SCARC_DEBUG_LEVEL (B, 'B INIT0', NL)
 !>   - Perform initial matrix-vector product on finest level
 !>   - calculate norm of initial residual on finest level
 !> ------------------------------------------------------------------------------------------------
-ITE    = 0
 !IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) THEN
    CALL SCARC_MATVEC_PRODUCT (X, V, NS, NL)                              !>  V := A*X
    CALL SCARC_VECTOR_SUM (B, V, 1.0_EB, -1.0_EB, NL)                     !>  V := B - V
@@ -7967,6 +7966,7 @@ TYPE (SCARC_SOLVER_TYPE), POINTER :: SV=>NULL(), SVP=>NULL()
 
 SV => STACK(NS)%SOLVER
 
+ITE   = 0
 CNAME = SV%CNAME
 NIT   = SV%NIT
 EPS   = SV%EPS
@@ -8294,6 +8294,7 @@ CALL SCARC_DUMP_QUANTITY(E, 'ERROR', ISM, NS, NL)
 !>
 !> ONLY TEMPORARILY - END
 !>
+
 IF (BSTATISTICS) CALL SCARC_DUMP_STATISTICS(ISM, NL)
 
 SELECT CASE (TYPE_ACCURACY)
