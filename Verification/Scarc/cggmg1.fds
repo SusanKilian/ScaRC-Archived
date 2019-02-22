@@ -6,6 +6,7 @@
       DNS   = .TRUE./
 
 &PRES SOLVER                     = 'SCARC'
+      SCARC_STATISTICS           = .TRUE.
       SCARC_METHOD               = 'KRYLOV'
       SCARC_KRYLOV               = 'CG'
       SCARC_PRECON               = 'GMG'
