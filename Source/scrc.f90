@@ -7314,12 +7314,16 @@ SELECT CASE (TYPE_SOLVER)
          CASE (NSCARC_METHOD_LU)
             ITE_LU = ITE0
       END SELECT
+WRITE(MSG%LU_VERBOSE,*) '----------> A: ITE_TOTAL, ITE0, ITE_CG, ITE_MG=', ITE_TOTAL, ITE0, ITE_CG, ITE_MG
    CASE (NSCARC_SOLVER_PRECON)
       ITE_MG = ITE0
+WRITE(MSG%LU_VERBOSE,*) '----------> B: ITE_TOTAL, ITE0, ITE_CG, ITE_MG=', ITE_TOTAL, ITE0, ITE_CG, ITE_MG
    CASE (NSCARC_SOLVER_SMOOTH)
       ITE_SMOOTH = ITE0
+WRITE(MSG%LU_VERBOSE,*) '----------> C: ITE_TOTAL, ITE0, ITE_CG, ITE_MG=', ITE_TOTAL, ITE0, ITE_CG, ITE_MG
    CASE (NSCARC_SOLVER_COARSE)
       ITE_COARSE = ITE0
+WRITE(MSG%LU_VERBOSE,*) '----------> D: ITE_TOTAL, ITE0, ITE_CG, ITE_MG=', ITE_TOTAL, ITE0, ITE_CG, ITE_MG
 END SELECT
 ITE_TOTAL = ITE_TOTAL + 1
 
@@ -7344,7 +7348,9 @@ NL = NLEVEL
 
 
 #ifdef WITH_SCARC_VERBOSE
+WRITE(MSG%LU_VERBOSE,*) '==========================================================================='
 WRITE(MSG%LU_VERBOSE,*) '==================== Entering CG method on level ', NLEVEL
+WRITE(MSG%LU_VERBOSE,*) '==========================================================================='
 #endif
 !> ------------------------------------------------------------------------------------------------
 !> Initialization:
@@ -7399,6 +7405,7 @@ ENDIF
 CG_LOOP: DO ITE = 1, NIT
 
    CALL SCARC_INCREASE_ITERATION_COUNTS(ITE)
+WRITE(*,*) 'CG_METHOD , ITE_CG =',ITE_CG, TYPE_SOLVER
 
    CALL SCARC_MATVEC_PRODUCT (D, Y, NS, NL)                  !>  y^k := A*d^k
 
@@ -7448,7 +7455,7 @@ ENDDO CG_LOOP
 !>   - Set ghost cell values along external boundaries
 !>   - Exchange values along internal boundaries
 !> ------------------------------------------------------------------------------------------------
-CALL SCARC_CONVERGENCE_RATE(NSTATE, NS)
+CALL SCARC_CONVERGENCE_RATE(NSTATE, NS, NL)
 
 #ifdef WITH_SCARC_DEBUG
 CALL SCARC_DEBUG_LEVEL (X, 'X FINAL', NL)
@@ -7633,7 +7640,9 @@ NP = NPARENT
 NL = NLEVEL
 
 #ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,*) '==================== Entering Multigrid method on level ', NLEVEL
+WRITE(MSG%LU_VERBOSE,*) '------------------------------------------------------------------------------'
+WRITE(MSG%LU_VERBOSE,*) '--------------------------  Entering Multigrid method on level ', NLEVEL
+WRITE(MSG%LU_VERBOSE,*) '------------------------------------------------------------------------------'
 #endif
 !> ------------------------------------------------------------------------------------------------
 !> Initialization:
@@ -7676,6 +7685,9 @@ CALL SCARC_DEBUG_LEVEL (B, 'B INIT0', NL)
 #ifdef WITH_SCARC_DEBUG
 CALL SCARC_DEBUG_LEVEL (V, 'V INIT0', NL)
 #endif
+#ifdef WITH_SCARC_VERBOSE
+WRITE(MSG%LU_VERBOSE,*) '-----------> SCARC_MULTIGRID:  NIT=',NIT
+#endif
 
 ICYCLE = SCARC_CYCLING_CONTROL(NSCARC_CYCLING_SETUP, NL)
 
@@ -7683,6 +7695,9 @@ ICYCLE = SCARC_CYCLING_CONTROL(NSCARC_CYCLING_SETUP, NL)
 !> Perform multigrid-looping (start each iteration on finest level)
 !> ------------------------------------------------------------------------------------------------
 MULTIGRID_LOOP: DO ITE = 1, NIT
+
+   CALL SCARC_INCREASE_ITERATION_COUNTS(ITE)
+WRITE(*,*) 'MG-METHOD, ITE_MG =',ITE_MG, TYPE_SOLVER
 
    NL = NLEVEL_MIN
    ICYCLE = SCARC_CYCLING_CONTROL(NSCARC_CYCLING_RESET, NL)
@@ -7712,7 +7727,7 @@ MULTIGRID_LOOP: DO ITE = 1, NIT
       TSUM(MYID+1)%COARSE =TSUM(MYID+1)%COARSE+CURRENT_TIME()-TNOW_COARSE
 
 #ifdef WITH_SCARC_DEBUG
-!CALL SCARC_VECTOR_CLEAR (X, NLEVEL_MAX)                                    !> X_coarse := 0.0
+CALL SCARC_VECTOR_CLEAR (X, NLEVEL_MAX)                                    !> X_coarse := 0.0, only for testing
 !CALL SCARC_PRESET_VECTOR(X, NLEVEL_MAX)
 #endif
 
@@ -7732,13 +7747,16 @@ MULTIGRID_LOOP: DO ITE = 1, NIT
 
    IF (NL /= NLEVEL_MIN) CALL SCARC_SHUTDOWN(NSCARC_ERROR_MULTIGRID_LEVEL, SCARC_NONE, NL)
 
-   CALL SCARC_INCREASE_ITERATION_COUNTS(ITE)
 
  !> ---------------------------------------------------------------------------------------------
  !> Compute norm of new residual on finest level and  leave loop correspondingly
  !> ---------------------------------------------------------------------------------------------
    CALL SCARC_MATVEC_PRODUCT (X, V, NS, NL)                                   !> V := A*X
    CALL SCARC_VECTOR_SUM (B, V, 1.0_EB, -1.0_EB, NL)                          !> V := F - V
+
+#ifdef WITH_SCARC_VERBOSE
+WRITE(MSG%LU_VERBOSE,*) '--------------> SCARC_MULTIGRID: AFTER CYCLING: ', ITE
+#endif
 
 !   IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) THEN
       RES = SCARC_L2NORM (V, NL)                                              !> RES := ||V||
@@ -7761,8 +7779,8 @@ ENDDO MULTIGRID_LOOP
 !>   - Set ghost cell values along external boundaries
 !>   - Exchange values along internal boundaries (consistency!)
 !> ------------------------------------------------------------------------------------------------
-!IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) CALL SCARC_CONVERGENCE_RATE(NSTATE, NS)
-CALL SCARC_CONVERGENCE_RATE(NSTATE, NS)
+!IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) CALL SCARC_CONVERGENCE_RATE(NSTATE, NS, NL)
+CALL SCARC_CONVERGENCE_RATE(NSTATE, NS, NL)
 
 SELECT CASE (TYPE_STAGE)
    CASE (NSCARC_SOLVER_MAIN)
@@ -7921,6 +7939,7 @@ ENDIF
 SMOOTH_LOOP: DO ITE=1, NIT
 
    CALL SCARC_INCREASE_ITERATION_COUNTS(ITE)
+WRITE(*,*) 'SM-METHOD, ITE_SMOOTH =',ITE_SMOOTH, TYPE_SOLVER
 
 #ifdef WITH_MKL
    IF (TYPE_SMOOTH == NSCARC_DEFCOR_LU) THEN
@@ -7971,6 +7990,7 @@ CNAME = SV%CNAME
 NIT   = SV%NIT
 EPS   = SV%EPS
 OMEGA = SV%OMEGA
+CAPPA = -1.0
 
 TYPE_PARENT   = NP
 TYPE_METHOD   = SV%TYPE_METHOD
@@ -8297,10 +8317,8 @@ CALL SCARC_DUMP_QUANTITY(E, 'ERROR', ISM, NS, NL)
 
 SELECT CASE (TYPE_ACCURACY)
    CASE (NSCARC_ACCURACY_RELATIVE)
-      IF (RES <= RESIN*EPS)                    NSTATE = NSCARC_STATE_CONV
-      IF (RES <= NSCARC_THRESHOLD_CONVERGENCE) NSTATE = NSCARC_STATE_CONV
+      IF (RES <= RESIN*EPS .OR. RES <= NSCARC_THRESHOLD_CONVERGENCE) NSTATE = NSCARC_STATE_CONV
    CASE (NSCARC_ACCURACY_ABSOLUTE)
-      !IF (RES <= EPS .AND. RES <= RESIN*1.0E-2) THEN
       IF (RES <= EPS .AND. RES <= RESIN) THEN
          IF (ITE == 0) THEN
             NSTATE = NSCARC_STATE_CONV0
@@ -8333,8 +8351,8 @@ END FUNCTION SCARC_CONVERGENCE_STATE
 !> ------------------------------------------------------------------------------------------------
 !> Compute convergence rate and print out residual information for final loop
 !> ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_CONVERGENCE_RATE(NSTATE, NS)
-INTEGER, INTENT(IN) :: NSTATE, NS
+SUBROUTINE SCARC_CONVERGENCE_RATE(NSTATE, NS, NL)
+INTEGER, INTENT(IN) :: NSTATE, NS, NL
 
 IF (NSTATE == NSCARC_STATE_DIVG) THEN
    ITE    = - 1
@@ -8363,7 +8381,7 @@ ELSE
    ENDIF
 ENDIF
 
-CALL SCARC_DUMP_CAPPA()
+CALL SCARC_DUMP_STATISTICS(0, NS, NL)
 
 #ifdef WITH_SCARC_VERBOSE
 IF (TRIM(CNAME) /= 'SCARC_COARSE_CG') THEN
@@ -10318,15 +10336,6 @@ WRITE(MSG%LU_STAT,1000) ITE_PRES, NS, ITE_TOTAL, ITE_CG, ITE_MG, NL, ITE_SMOOTH,
 END SUBROUTINE SCARC_DUMP_STATISTICS
 
 
-!> ----------------------------------------------------------------------------------------------------
-!> Dump only convergence rate informtion
-!> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DUMP_CAPPA
-IF (.NOT.BSTATISTICS) RETURN
-IF (MYID == 0) WRITE(MSG%LU_STAT,1000) -1, ITE_TOTAL, -1, -1, -1, -1, -1, -1, -1, -1, CAPPA
-1000 FORMAT(I8,',',I8,',',I8,',',I8,',',I8,',',I8,',',I4,',',I4,',',I4,',',I4,',',E20.12)
-END SUBROUTINE SCARC_DUMP_CAPPA
-
 
 !> ================================================================================================
 !> START DEBUGGING PART  
@@ -11294,7 +11303,7 @@ END SUBROUTINE SCARC_MATLAB_MATRIX
 !!!CGBARO!!!!>   - Set ghost cell values along external boundaries
 !!!CGBARO!!!!>   - Exchange values along internal boundaries
 !!!CGBARO!!!!> ------------------------------------------------------------------------------------------------
-!!!CGBARO!!!CALL SCARC_CONVERGENCE_RATE(NSTATE, NS)
+!!!CGBARO!!!CALL SCARC_CONVERGENCE_RATE(NSTATE, NS, NL)
 !!!CGBARO!!!
 !!!CGBARO!!!#ifdef WITH_SCARC_DEBUG
 !!!CGBARO!!!CALL SCARC_DEBUG_LEVEL (X, 'X FINAL', NL)
