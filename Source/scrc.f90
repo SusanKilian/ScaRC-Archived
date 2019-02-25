@@ -6499,8 +6499,8 @@ TYPE(SCARC_MATRIX_BANDED_TYPE), POINTER :: AB=>NULL()
 TNOW = CURRENT_TIME()
 
 #ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_LEVEL (NV1, 'A: MATVEC 1 ', NL)
-CALL SCARC_DEBUG_LEVEL (NV2, 'A: MATVEC 2 ', NL)
+!CALL SCARC_DEBUG_LEVEL (NV1, 'A: MATVEC 1 ', NL)
+!CALL SCARC_DEBUG_LEVEL (NV2, 'A: MATVEC 2 ', NL)
 #endif
 
 WRITE(MSG%LU_DEBUG,*) 'MATVEC: TYPE_SCOPE =',STACK(NS)%SOLVER%TYPE_SCOPE, NS
@@ -6515,8 +6515,8 @@ WRITE(MSG%LU_DEBUG,*) 'MATVEC: EXCHANGING DUE TO GLOBAL SCOPE'
 ENDIF
 
 #ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_LEVEL (NV1, 'B: MATVEC 1 ', NL)
-CALL SCARC_DEBUG_LEVEL (NV2, 'B: MATVEC 2 ', NL)
+!CALL SCARC_DEBUG_LEVEL (NV1, 'B: MATVEC 1 ', NL)
+!CALL SCARC_DEBUG_LEVEL (NV2, 'B: MATVEC 2 ', NL)
 #endif
 
 !>
@@ -6548,8 +6548,8 @@ SELECT CASE (TYPE_MATRIX)
             DO ICOL = AC%ROW(IC)+1, AC%ROW(IC+1)-1                            !> subdiagonal entries
                JC = AC%COL(ICOL)
                V2(IC) =  V2(IC) + AC%VAL(ICOL)* V1(JC)
-               WRITE(MSG%LU_DEBUG,'(A,3i4,3e14.6)') 'IC, ICOL, JC, V1(IC), V2(IC), A(ICOL):', &
-                                IC, ICOL, JC, V1(IC), V2(IC), AC%VAL(ICOL)
+!               WRITE(MSG%LU_DEBUG,'(A,3i4,3e14.6)') 'IC, ICOL, JC, V1(IC), V2(IC), A(ICOL):', &
+!                                IC, ICOL, JC, V1(IC), V2(IC), AC%VAL(ICOL)
 
             ENDDO
          ENDDO
@@ -6588,8 +6588,8 @@ SELECT CASE (TYPE_MATRIX)
 END SELECT
 
 #ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_LEVEL (NV1, 'C: MATVEC 1 ', NL)
-CALL SCARC_DEBUG_LEVEL (NV2, 'C: MATVEC 2 ', NL)
+!CALL SCARC_DEBUG_LEVEL (NV1, 'C: MATVEC 1 ', NL)
+!CALL SCARC_DEBUG_LEVEL (NV2, 'C: MATVEC 2 ', NL)
 #endif
 
 TSTEP(MYID+1)%MATVEC=MAX(TSTEP(MYID+1)%MATVEC,CURRENT_TIME()-TNOW)
@@ -7703,16 +7703,21 @@ WRITE(*,*) 'MG-METHOD, ITE_MG =',ITE_MG, TYPE_SOLVER
 
       !>
       !> Presmoothing  (smoothing/restriction till coarsest level is reached)
-      !> it is working on vector V by default 
+      !> initial and final residual are passed via vector V by default
       !>
       PRESMOOTHING_LOOP: DO WHILE (NL < NLEVEL_MAX)
-         CALL SCARC_SMOOTHER (NSCARC_CYCLING_PRESMOOTH, NS+1, NS, NL)         !> D_fine   := smooth(defect)
+         CALL SCARC_SMOOTHER (NSCARC_CYCLING_PRESMOOTH, NS+1, NS, NL)         !> D_fine   := Smooth(defect)
 
 #ifdef WITH_SCARC_DEBUG
 !CALL SCARC_PRESET_VECTOR(D, NL)
 #endif
-         CALL SCARC_RESTRICTION (V, B, NL, NL+1)                              !> B_coarse := rest(D_fine)
-         CALL SCARC_VECTOR_CLEAR (X, NL+1)                                    !> X_coarse := 0.0
+         CALL SCARC_RESTRICTION (V, B, NL, NL+1)                              !> B_coarse := Rest(D_fine)
+
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_LEVEL (V, 'V before restriction', NL)
+CALL SCARC_DEBUG_LEVEL (B, 'B after restriction', NL+1)
+#endif
+         CALL SCARC_VECTOR_CLEAR (X, NL+1)                                    !> use zero initial guess on coarse level
          NL = NL + 1                                                          !> set coarser level
       ENDDO PRESMOOTHING_LOOP
 
@@ -7727,6 +7732,7 @@ WRITE(*,*) 'MG-METHOD, ITE_MG =',ITE_MG, TYPE_SOLVER
 #ifdef WITH_SCARC_DEBUG
 !CALL SCARC_VECTOR_CLEAR (X, NLEVEL_MAX)                                    !> X_coarse := 0.0, only for testing
 !CALL SCARC_PRESET_VECTOR(X, NLEVEL_MAX)
+CALL SCARC_DEBUG_LEVEL (X, 'X Coarse', NLEVEL_MAX)
 #endif
 
       !>
@@ -7734,9 +7740,18 @@ WRITE(*,*) 'MG-METHOD, ITE_MG =',ITE_MG, TYPE_SOLVER
       !>
       POSTSMOOTHING_LOOP: DO WHILE (NL > NLEVEL_MIN)
          NL=NL-1
-         CALL SCARC_PROLONGATION (X, V, NL+1, NL)                             !> V_fine := prol(X_coarse)
-         CALL SCARC_VECTOR_SUM (V, X, 1.0_EB, 1.0_EB, NL)                     !> X_fine := V_fine + X_fine
-         CALL SCARC_SMOOTHER (NSCARC_CYCLING_POSTSMOOTH, NS+1, NS, NL)        !> V_fine := smooth(defect)
+
+         CALL SCARC_PROLONGATION (X, V, NL+1, NL)                             !> V_fine := Prol(X_coarse)
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_LEVEL (X, 'before prolongation', NL+1)
+CALL SCARC_DEBUG_LEVEL (V, 'after prolongation', NL)
+#endif
+         CALL SCARC_VECTOR_SUM (V, X, 0.8_EB, 1.0_EB, NL)                     !> X_fine := V_fine + X_fine
+
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_LEVEL (X, 'X New Iterate', NL)
+#endif
+         CALL SCARC_SMOOTHER (NSCARC_CYCLING_POSTSMOOTH, NS+1, NS, NL)        !> V_fine := Smooth(defect)
          ICYCLE = SCARC_CYCLING_CONTROL(NSCARC_CYCLING_PROCEED, NL)           !> perform requested cycle
          IF (ICYCLE /= NSCARC_CYCLING_POSTSMOOTH) CYCLE CYCLE_LOOP
       ENDDO POSTSMOOTHING_LOOP
@@ -7908,16 +7923,13 @@ NL = NLEVEL
 
 CALL SCARC_SETUP_SOLVER(NS, NP)
 
-#ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,*) '==================== Entering Smoother on level ', NLEVEL
-#endif
 !> 
 !> Calculate initial defect on l2-norm on level NL (only if BMATVEC and Bl2NORM are set to .TRUE.)
 !> Because initial vector in MG is set to zero, this defect corresponds to F
 !> 
 ITE = 0
 BL2NORM  = .TRUE.
-BMATVEC  = .FALSE.
+BMATVEC  = .TRUE.
 
 IF (BMATVEC) THEN
    CALL SCARC_MATVEC_PRODUCT (X, V, NP, NL)                              !>  v := A*x
@@ -7951,8 +7963,8 @@ WRITE(*,*) 'SM-METHOD, ITE_SMOOTH =',ITE_SMOOTH, TYPE_SOLVER
 #endif
 
    CALL SCARC_VECTOR_SUM      (V, X, OMEGA, 1.0_EB, NL)                 !>  x := omega * v + x
-   CALL SCARC_MATVEC_PRODUCT  (X, V, NP, NL)                            !>  v := A*x
 
+   CALL SCARC_MATVEC_PRODUCT  (X, V, NP, NL)                            !>  v := A*x
    CALL SCARC_VECTOR_SUM      (B, V, 1.0_EB, -1.0_EB, NL)               !>  v := b - v
 
    !IF (BL2NORM.OR.ITE==NIT) THEN
@@ -7966,9 +7978,6 @@ ENDDO SMOOTH_LOOP
 
 CALL SCARC_RELEASE_SOLVER(NS, NP)
 
-#ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,*) '==================== Leaving  Smoother on level ', NLEVEL
-#endif
 TSTEP(MYID+1)%SMOOTH=MAX(TSTEP(MYID+1)%SMOOTH,CURRENT_TIME()-TNOW)
 TSUM(MYID+1)%SMOOTH =TSUM(MYID+1)%SMOOTH+CURRENT_TIME()-TNOW
 END SUBROUTINE SCARC_SMOOTHER
@@ -8294,18 +8303,18 @@ NSTATE = NSCARC_STATE_PROCEED
 #ifdef WITH_SCARC_DEBUG
 !CALL SCARC_PRESET_EXACT(E, NL)
 
-call SCARC_DEBUG_LEVEL (R, 'RESIDUAL', NL)
-call SCARC_DEBUG_LEVEL (E, 'EXACT'   , NL)
-call SCARC_DEBUG_LEVEL (X, 'DISCRET' , NL)
-
-CALL SCARC_DUMP_QUANTITY(R, 'RESIDUAL', ISM, NS, NL)
-CALL SCARC_DUMP_QUANTITY(X, 'DISCRET' , ISM, NS, NL)
-
-CALL SCARC_VECTOR_SUM(X, E, 1.0_EB, -1.0_EB, NL)
-ERR = SCARC_L2NORM (E, NL)
-
-call SCARC_DEBUG_LEVEL (E, 'ERROR', NL)
-CALL SCARC_DUMP_QUANTITY(E, 'ERROR', ISM, NS, NL)
+!call SCARC_DEBUG_LEVEL (R, 'RESIDUAL', NL)
+!call SCARC_DEBUG_LEVEL (E, 'EXACT'   , NL)
+!call SCARC_DEBUG_LEVEL (X, 'DISCRET' , NL)
+!
+!CALL SCARC_DUMP_QUANTITY(R, 'RESIDUAL', ISM, NS, NL)
+!CALL SCARC_DUMP_QUANTITY(X, 'DISCRET' , ISM, NS, NL)
+!
+!CALL SCARC_VECTOR_SUM(X, E, 1.0_EB, -1.0_EB, NL)
+!ERR = SCARC_L2NORM (E, NL)
+!
+!call SCARC_DEBUG_LEVEL (E, 'ERROR', NL)
+!CALL SCARC_DUMP_QUANTITY(E, 'ERROR', ISM, NS, NL)
 
 #endif
 !>
@@ -8352,8 +8361,8 @@ SUBROUTINE SCARC_CONVERGENCE_RATE(NSTATE, NS, NL)
 INTEGER, INTENT(IN) :: NSTATE, NS, NL
 
 IF (NSTATE == NSCARC_STATE_DIVG) THEN
-   ITE    = - 1
-   CAPPA  = 1.0_EB
+   ITE   = - 1
+   CAPPA = 1.0_EB
 ELSE
    IF (NSTATE == NSCARC_STATE_CONV0) THEN
      ITE= 0
@@ -8364,7 +8373,6 @@ ELSE
    ENDIF
    IF (RESIN >= TWO_EPSILON_EB) THEN
       IF (ITE== 0) THEN
-         !CAPPA = (RES/RESIN)
          CAPPA = 0.0_EB
       ELSE
          IF (NSTATE == NSCARC_STATE_CONV0) THEN
@@ -8382,7 +8390,6 @@ CALL SCARC_DUMP_STATISTICS(0, NS, NL)
 
 #ifdef WITH_SCARC_VERBOSE
 IF (TRIM(CNAME) /= 'SCARC_COARSE_CG') THEN
-!   IF (MYID==0) WRITE(LU_OUTPUT,2000) CNAME, ITE, CAPPA
    WRITE(MSG%LU_VERBOSE,2000) STACK(NS)%SOLVER%CNAME, ITE, CAPPA
 ENDIF
 #endif
@@ -10311,7 +10318,7 @@ IF (.NOT.BSTATISTICS .OR. MYID /= 0) RETURN
 IF (ITE_TOTAL == 0 .AND. TYPE_SOLVER /= NSCARC_SOLVER_MAIN) RETURN
 WRITE(MSG%LU_STAT,1000) ITE_PRES, NS, ITE_TOTAL, ITE_CG, ITE_MG, NL, ITE_SMOOTH, ISM, ITE_COARSE, ITE_LU, RES, CAPPA
 
-1000 FORMAT(10(I6,','), 2E14.4)
+1000 FORMAT(10(I6,','), E16.8,',',E16.8)
 END SUBROUTINE SCARC_DUMP_STATISTICS
 
 
