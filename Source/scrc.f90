@@ -228,12 +228,13 @@ INTEGER, PARAMETER :: NSCARC_STATE_PROCEED          =  0, &   !> proceed loop
 
 INTEGER, PARAMETER :: NSCARC_DEBUG_MATRIX           =  1, &   !> show matrix
                       NSCARC_DEBUG_MATRIXS          =  2, &   !> show symmetric matrix
-                      NSCARC_DEBUG_WALLINFO         =  3, &   !> show wall information
-                      NSCARC_DEBUG_FACEINFO         =  4, &   !> show face information
-                      NSCARC_DEBUG_BC_INDEX         =  5, &   !> show pressure_bc_index
-                      NSCARC_DEBUG_GRIDINFO         =  6, &   !> show discretization information
-                      NSCARC_DEBUG_SUBDIVISION      =  7, &   !> show subdivision
-                      NSCARC_DEBUG_STACK            =  8      !> show stack information 
+                      NSCARC_DEBUG_LU               =  3, &   !> show symmetric matrix
+                      NSCARC_DEBUG_WALLINFO         =  4, &   !> show wall information
+                      NSCARC_DEBUG_FACEINFO         =  5, &   !> show face information
+                      NSCARC_DEBUG_BC_INDEX         =  6, &   !> show pressure_bc_index
+                      NSCARC_DEBUG_GRIDINFO         =  7, &   !> show discretization information
+                      NSCARC_DEBUG_SUBDIVISION      =  8, &   !> show subdivision
+                      NSCARC_DEBUG_STACK            =  9      !> show stack information 
 
 INTEGER, PARAMETER :: NSCARC_COARSENING_BASIC       =  1, &   !> basic coarsening
                       NSCARC_COARSENING_FALGOUT     =  2, &   !> parallel Falgout
@@ -5345,6 +5346,7 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
          CASE (NSCARC_RELAX_LU)                                
             STACK(NSTACK)%SOLVER => PRECON_LU
             CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
+            CALL SCARC_SETUP_LU(NLEVEL_MIN, NLEVEL_MAX)
 
          !> LU-preconditioning (acting locally by default)
          CASE (NSCARC_RELAX_ILU)                                
@@ -6113,6 +6115,12 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    ENDDO LEVEL_LOOP
 ENDDO MESHES_LOOP
+
+#ifdef WITH_SCARC_DEBUG
+DO NL = NLEVEL_MIN, NLEVEL_MAX
+   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_LU, NL, 'LU-Decomposition')
+ENDDO
+#endif
 
 END SUBROUTINE SCARC_SETUP_LU
 
@@ -10749,12 +10757,6 @@ SELECT CASE (NTYPE)
                DO IC = 1, AC%NR-1
                   WRITE(MSG%LU_DEBUG,'(i5,a,20f8.1)') IC,':',(AC%VAL(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
                ENDDO
-               IF (ALLOCATED(AC%LU)) THEN
-                  WRITE(MSG%LU_DEBUG,*) '---------------------- LU:'
-                  DO IC = 1, AC%NR-1
-                     WRITE(MSG%LU_DEBUG,'(i5,a,20f8.1)') IC,':',(AC%LU(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
-                  ENDDO
-               ENDIF
 #ifdef WITH_MKL
                !IF ((TYPE_METHOD == NSCARC_METHOD_LU) .AND. (TYPE_MKL == NSCARC_MKL_GLOBAL)) THEN
                !   WRITE(MSG%LU_DEBUG,*) '---------------------- AG_COL:'
@@ -10803,6 +10805,35 @@ SELECT CASE (NTYPE)
 
       END SELECT
 
+
+   !> ------------------------------------------------------------------------------------------------
+   !> Debug system matrix A (corresponding to system type)
+   !> ------------------------------------------------------------------------------------------------
+   CASE (NSCARC_DEBUG_LU)
+
+      DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+         L  => SCARC(NM)%LEVEL(NL)
+         AC => SCARC(NM)%LEVEL(NL)%AC
+         WRITE(MSG%LU_DEBUG,1000) CQUANTITY, NM, NL
+         WRITE(MSG%LU_DEBUG,*) '----------- SHOWING FULL COMPACT MATRIX ENTRIES'
+         WRITE(MSG%LU_DEBUG,*) 'NCS =',L%NCS
+         WRITE(MSG%LU_DEBUG,*) 'NV =',AC%NA
+         WRITE(MSG%LU_DEBUG,*) 'NC =',AC%NC
+         WRITE(MSG%LU_DEBUG,*) 'NR =',AC%NR
+         WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%LU) =',SIZE(AC%LU)
+         WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%COL) =',SIZE(AC%COL)
+         WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%ROW) =',SIZE(AC%ROW)
+         WRITE(MSG%LU_DEBUG,*) '---------------------- AC%ROW:'
+         WRITE(MSG%LU_DEBUG,'(7i8)') (AC%ROW(IC), IC=1,AC%NR)
+         WRITE(MSG%LU_DEBUG,*) '---------------------- AC%COL:'
+         DO IC = 1, AC%NR-1
+            WRITE(MSG%LU_DEBUG,'(i5,a,20i9)') IC,':',(AC%COL(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
+         ENDDO
+         WRITE(MSG%LU_DEBUG,*) '---------------------- LU:'
+         DO IC = 1, AC%NR-1
+            WRITE(MSG%LU_DEBUG,'(i5,a,20f8.1)') IC,':',(AC%LU(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
+         ENDDO
+      ENDDO
 
    !> ------------------------------------------------------------------------------------------------
    !> Debug symmetric system matrix AS
