@@ -229,12 +229,13 @@ INTEGER, PARAMETER :: NSCARC_STATE_PROCEED          =  0, &   !> proceed loop
 INTEGER, PARAMETER :: NSCARC_DEBUG_MATRIX           =  1, &   !> show matrix
                       NSCARC_DEBUG_MATRIXS          =  2, &   !> show symmetric matrix
                       NSCARC_DEBUG_LU               =  3, &   !> show symmetric matrix
-                      NSCARC_DEBUG_WALLINFO         =  4, &   !> show wall information
-                      NSCARC_DEBUG_FACEINFO         =  5, &   !> show face information
-                      NSCARC_DEBUG_BC_INDEX         =  6, &   !> show pressure_bc_index
-                      NSCARC_DEBUG_GRIDINFO         =  7, &   !> show discretization information
-                      NSCARC_DEBUG_SUBDIVISION      =  8, &   !> show subdivision
-                      NSCARC_DEBUG_STACK            =  9      !> show stack information 
+                      NSCARC_DEBUG_ILU              =  4, &   !> show symmetric matrix
+                      NSCARC_DEBUG_WALLINFO         =  5, &   !> show wall information
+                      NSCARC_DEBUG_FACEINFO         =  6, &   !> show face information
+                      NSCARC_DEBUG_BC_INDEX         =  7, &   !> show pressure_bc_index
+                      NSCARC_DEBUG_GRIDINFO         =  8, &   !> show discretization information
+                      NSCARC_DEBUG_SUBDIVISION      =  9, &   !> show subdivision
+                      NSCARC_DEBUG_STACK            = 10      !> show stack information 
 
 INTEGER, PARAMETER :: NSCARC_COARSENING_BASIC       =  1, &   !> basic coarsening
                       NSCARC_COARSENING_FALGOUT     =  2, &   !> parallel Falgout
@@ -5352,6 +5353,7 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
          CASE (NSCARC_RELAX_ILU)                                
             STACK(NSTACK)%SOLVER => PRECON_ILU
             CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
+            CALL SCARC_SETUP_ILU(NLEVEL_MIN, NLEVEL_MAX)
 
          !> FFT-preconditioning (acting locally by default)
          CASE (NSCARC_RELAX_FFT)                                
@@ -6061,7 +6063,81 @@ ENDDO MESHES_LOOP
 END SUBROUTINE SCARC_SETUP_FFT
 
 !> ----------------------------------------------------------------------------------------------------
-!> Allocate and initialize LU decomposition of Poisson matrix 
+!> Allocate and initialize ILU decomposition of Poisson matrix 
+!> L- and U-parts are stored in the same array, diagonal elements of L are supposed to be 1
+!> ----------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_ILU(NLMIN, NLMAX)
+INTEGER, INTENT(IN) :: NLMIN, NLMAX
+INTEGER :: NM, NL, I, J, K, J1, J2, JW, JJ, JROW
+REAL(EB) :: TL
+INTEGER, DIMENSION(:), ALLOCATABLE :: IW, UPTR
+TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
+TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
+
+MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   LEVEL_LOOP: DO NL = NLMIN, NLMAX
+
+      L  => SCARC(NM)%LEVEL(NL)
+      AC => SCARC(NM)%LEVEL(NL)%AC
+
+      !> Allocate auxiliary array IW and preset it with zero
+      CALL SCARC_ALLOCATE_INT1(IW  , 1, L%NC, NSCARC_INIT_ZERO, 'IW')
+      CALL SCARC_ALLOCATE_INT1(UPTR, 1, L%NC, NSCARC_INIT_ZERO, 'UPTR')
+
+      !> Allocate ILU-part of Poisson matrix and preset it with Poisson matrix itself
+      CALL SCARC_ALLOCATE_REAL1(AC%ILU, 1, AC%NA, NSCARC_INIT_ZERO, 'LU')
+      AC%ILU = AC%VAL
+
+      CELL_LOOP: DO K = 1, L%NC
+
+         J1 = AC%ROW(K)
+         J2 = AC%ROW(K+1)-1
+
+         DO J = J1, J2
+           IW(AC%COL(J)) = J
+         ENDDO
+
+         COLUMNS_LOOP: DO J = J1, J2
+
+            JROW = AC%COL(J)
+            IF (JROW >= K) EXIT COLUMNS_LOOP                  !> Exit if diagonal element is reached
+
+            TL = AC%ILU(J) * AC%ILU(UPTR(JROW))
+            AC%ILU(J) = TL
+              
+            DO JJ = UPTR(JROW)+1, AC%ROW(JROW+1)-1            !> Perform linear combination
+               JW = IW(AC%COL(JJ))
+               IF (JW /= 0) AC%ILU(JW) = AC%ILU(JW) - TL * AC%ILU(JJ)
+            ENDDO
+
+         ENDDO COLUMNS_LOOP
+
+         UPTR(K) = J
+         IF (JROW /= K .OR. AC%ILU(J) == 0.0_EB) WRITE(*,*) 'ERROR IN LU'
+         AC%ILU(J) = 1.0_EB/AC%ILU(J)
+
+         DO I = J1, J2
+            IW(AC%COL(I)) = 0
+         ENDDO
+
+      ENDDO CELL_LOOP
+
+      DEALLOCATE(IW)
+
+   ENDDO LEVEL_LOOP
+ENDDO MESHES_LOOP
+
+#ifdef WITH_SCARC_DEBUG
+DO NL = NLEVEL_MIN, NLEVEL_MAX
+   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_ILU, NL, 'LU-Decomposition')
+ENDDO
+#endif
+
+END SUBROUTINE SCARC_SETUP_ILU
+
+
+!> ----------------------------------------------------------------------------------------------------
+!> Allocate and initialize ILU decomposition of Poisson matrix 
 !> L- and U-parts are stored in the same array, diagonal elements of L are supposed to be 1
 !> ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_LU(NLMIN, NLMAX)
@@ -6077,7 +6153,8 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       L  => SCARC(NM)%LEVEL(NL)
       AC => SCARC(NM)%LEVEL(NL)%AC
 
-      CALL SCARC_ALLOCATE_REAL1(AC%LU, 1, AC%NA, NSCARC_INIT_ONE, 'LU')
+      CALL SCARC_ALLOCATE_REAL1(AC%LU, 1, AC%NA, NSCARC_INIT_ZERO, 'LU')
+      AC%LU = AC%VAL
 
       CELL_LOOP: DO IC = 1, L%NC
 
@@ -6090,9 +6167,10 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             DO JCOL = AC%ROW(JC), AC%ROW(JC+1)-1
                IF (AC%ROW(JCOL) >= JC) CYCLE
                VAL = VAL - AC%LU(ICOL)*AC%LU(JCOL)
+               WRITE(MSG%LU_DEBUG,*) '1: IC, JC, JCOL, VAL', IC, JC, JCOL, VAL
             ENDDO
        
-           AC%LU(ICOL) = VAL / AC%VAL(ICOL)
+           AC%LU(ICOL) = VAL / AC%VAL(AC%ROW(IC))
 
          ENDDO LOWER_LOOP
 
@@ -10807,7 +10885,7 @@ SELECT CASE (NTYPE)
 
 
    !> ------------------------------------------------------------------------------------------------
-   !> Debug system matrix A (corresponding to system type)
+   !> Debug LU decomposition of matrix A 
    !> ------------------------------------------------------------------------------------------------
    CASE (NSCARC_DEBUG_LU)
 
@@ -10832,6 +10910,35 @@ SELECT CASE (NTYPE)
          WRITE(MSG%LU_DEBUG,*) '---------------------- LU:'
          DO IC = 1, AC%NR-1
             WRITE(MSG%LU_DEBUG,'(i5,a,20f8.1)') IC,':',(AC%LU(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
+         ENDDO
+      ENDDO
+
+   !> ------------------------------------------------------------------------------------------------
+   !> Debug ILU decomposition of matrix A 
+   !> ------------------------------------------------------------------------------------------------
+   CASE (NSCARC_DEBUG_ILU)
+
+      DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+         L  => SCARC(NM)%LEVEL(NL)
+         AC => SCARC(NM)%LEVEL(NL)%AC
+         WRITE(MSG%LU_DEBUG,1000) CQUANTITY, NM, NL
+         WRITE(MSG%LU_DEBUG,*) '----------- SHOWING FULL COMPACT MATRIX ENTRIES'
+         WRITE(MSG%LU_DEBUG,*) 'NCS =',L%NCS
+         WRITE(MSG%LU_DEBUG,*) 'NV =',AC%NA
+         WRITE(MSG%LU_DEBUG,*) 'NC =',AC%NC
+         WRITE(MSG%LU_DEBUG,*) 'NR =',AC%NR
+         WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%ILU) =',SIZE(AC%ILU)
+         WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%COL) =',SIZE(AC%COL)
+         WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%ROW) =',SIZE(AC%ROW)
+         WRITE(MSG%LU_DEBUG,*) '---------------------- AC%ROW:'
+         WRITE(MSG%LU_DEBUG,'(7i8)') (AC%ROW(IC), IC=1,AC%NR)
+         WRITE(MSG%LU_DEBUG,*) '---------------------- AC%COL:'
+         DO IC = 1, AC%NR-1
+            WRITE(MSG%LU_DEBUG,'(i5,a,20i9)') IC,':',(AC%COL(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
+         ENDDO
+         WRITE(MSG%LU_DEBUG,*) '---------------------- LU:'
+         DO IC = 1, AC%NR-1
+            WRITE(MSG%LU_DEBUG,'(i5,a,20f8.1)') IC,':',(AC%ILU(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
          ENDDO
       ENDDO
 
