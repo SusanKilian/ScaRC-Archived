@@ -6116,64 +6116,6 @@ ENDDO MESHES_LOOP
 
 END SUBROUTINE SCARC_SETUP_LU
 
-!> ----------------------------------------------------------------------------------------------------
-!> Allocate and initialize LU decomposition of Poisson matrix 
-!> L- and U-parts are stored in the same array, diagonal elements of L are supposed to be 1
-!> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_LU(NLMIN, NLMAX)
-INTEGER, INTENT(IN) :: NLMIN, NLMAX
-INTEGER :: NM, NL, IC, JC, ICOL, JCOL
-REAL(EB) :: VAL
-TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
-TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
-
-MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   LEVEL_LOOP: DO NL = NLMIN, NLMAX
-                                 
-      L  => SCARC(NM)%LEVEL(NL)
-      AC => SCARC(NM)%LEVEL(NL)%AC
-
-      CALL SCARC_ALLOCATE_REAL1(AC%LU, 1, AC%NA, NSCARC_INIT_ONE, 'LU')
-
-      CELL_LOOP: DO IC = 1, L%NC
-
-         LOWER_LOOP: DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1       
-
-            JC = AC%COL(ICOL) 
-            IF (JC >= IC) CYCLE
-            VAL = AC%VAL(ICOL)
-
-            DO JCOL = AC%ROW(JC), AC%ROW(JC+1)-1
-               IF (AC%ROW(JCOL) >= JC) CYCLE
-               VAL = VAL - AC%LU(ICOL)*AC%LU(JCOL)
-            ENDDO
-       
-           AC%LU(ICOL) = VAL / AC%VAL(ICOL)
-
-         ENDDO LOWER_LOOP
-
-         UPPER_LOOP: DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1      
-
-            JC = AC%COL(ICOL) 
-            IF (JC < IC) CYCLE
-            VAL = AC%VAL(ICOL)
-
-            DO JCOL = AC%ROW(JC), AC%ROW(JC+1)-1
-               IF (AC%ROW(JCOL) >= JC) CYCLE
-               VAL = VAL - AC%LU(ICOL)*AC%LU(JCOL)
-            ENDDO
-
-            AC%LU(ICOL) = VAL
-
-         ENDDO UPPER_LOOP
-
-      ENDDO CELL_LOOP
-
-   ENDDO LEVEL_LOOP
-ENDDO MESHES_LOOP
-
-END SUBROUTINE SCARC_SETUP_LU
-
 
 #ifdef WITH_MKL
 !> ------------------------------------------------------------------------------------------------
