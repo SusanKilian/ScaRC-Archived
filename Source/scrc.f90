@@ -6250,15 +6250,19 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 31    CONTINUE
 
       DO 500 K=1,L%NC
+
+WRITE(MSG%LU_DEBUG,*) '================= K =', K
+
          J1 = AC%ROW(K)
          J2 = AC%ROW(K+1)-1
          DO 100 J=J1,J2
             IW(AC%COL(J)) = J
 100      CONTINUE
+WRITE(MSG%LU_DEBUG,*) '          IW=',IW
          J = J1
 150      JROW = AC%COL(J)
 
-         if (JROW .ge.K) goto 150
+         if (JROW .ge.K) goto 180
 
          TL = AC%ILU(j)*AC%ILU(AC%ROW(jrow))
          AC%ILU(j) = TL
@@ -6269,7 +6273,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             if (JW .ne.0) AC%ILU(JW) = AC%ILU(JW) - TL * AC%ILU(JJ)
 140      CONTINUE
 
-         J = J + 1
+180      J = J + 1
          if (J .LE. J2) goto 150
 
 200      if (JROW .NE.K .OR. AC%ILU(J).EQ.0.0_EB) goto 600
