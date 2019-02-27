@@ -1,6 +1,6 @@
 &HEAD CHID='ilu1',TITLE='Basic Poisson test of default ScaRC solver on 2D-pipe geometry with 4 meshes' /
 
-&MESH IJK=8,1,8  XB=0.0,0.8,-0.01,0.01,0.0,0.8 /
+&MESH IJK=3,1,3  XB=0.0,0.3,-0.01,0.01,0.0,0.3 /
 
 &MISC NOISE = .FALSE. 
       DNS   = .TRUE./
@@ -13,10 +13,10 @@
 
 &SURF ID='INFLOW',VEL=-2.0, RAMP_V='IN' /
 
-&VENT XB=0.0,0.0,-0.01,0.01,0.2,0.6 SURF_ID='INFLOW', COLOR = 'GREEN' /
-&VENT XB=0.8,0.8,-0.01,0.01,0.2,0.6 SURF_ID='OPEN',   COLOR = 'GREEN' /
+&VENT XB=0.0,0.0,-0.01,0.01,0.0,0.3 SURF_ID='INFLOW', COLOR = 'GREEN' /
+&VENT XB=0.3,0.3,-0.01,0.01,0.0,0.3 SURF_ID='OPEN',   COLOR = 'GREEN' /
 
-&OBST XB=0.2,0.4,-0.01,0.01,0.2,0.6, COLOR='GRAY' /
+ OBST XB=0.2,0.4,-0.01,0.01,0.2,0.6, COLOR='GRAY' /
 
 &SLCF PBY=0.0,QUANTITY='VELOCITY',VECTOR=.TRUE. /
 &SLCF PBY=0.0,QUANTITY='PRESSURE' /
