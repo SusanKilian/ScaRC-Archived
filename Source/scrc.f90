@@ -592,6 +592,8 @@ REAL(FB), DIMENSION (-3:3)           :: STENCIL_FB     !> store basic stencil in
 REAL(EB), ALLOCATABLE, DIMENSION (:) :: VAL            !> values of matrix (real precision)
 REAL(EB), ALLOCATABLE, DIMENSION (:) :: LU             !> LU-decomposition
 REAL(EB), ALLOCATABLE, DIMENSION (:) :: ILU            !> ILU-decomposition
+REAL(EB), ALLOCATABLE, DIMENSION (:) :: L              !> ILU-decomposition
+REAL(EB), ALLOCATABLE, DIMENSION (:) :: U              !> ILU-decomposition
 REAL(EB), ALLOCATABLE, DIMENSION (:) :: SGS            !> symmetric GS-decomposition
 REAL(EB), ALLOCATABLE, DIMENSION (:) :: SSOR           !> SSOR-decomposition
 REAL(EB), DIMENSION (-3:3)           :: STENCIL        !> store basic stencil information in single precision
@@ -6062,15 +6064,84 @@ ENDDO MESHES_LOOP
 
 END SUBROUTINE SCARC_SETUP_FFT
 
+
 !> ----------------------------------------------------------------------------------------------------
 !> Allocate and initialize ILU decomposition of Poisson matrix 
 !> L- and U-parts are stored in the same array, diagonal elements of L are supposed to be 1
 !> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_ILU(NLMIN, NLMAX)
+SUBROUTINE SCARC_SETUP_ILU2(NLMIN, NLMAX)
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
-INTEGER :: NM, NL, I, J, K, J1, J2, JW, JJ, JROW
-REAL(EB) :: TL
-INTEGER, DIMENSION(:), ALLOCATABLE :: IW, UPTR
+INTEGER :: NM, NL, IC, IPTR, JC, JPTR, KC, KPTR
+TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
+TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
+
+MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   LEVEL_LOOP: DO NL = NLMIN, NLMAX
+
+      L  => SCARC(NM)%LEVEL(NL)
+      AC => SCARC(NM)%LEVEL(NL)%AC
+
+      !> Allocate ILU-part of Poisson matrix and preset it with Poisson matrix itself
+      CALL SCARC_ALLOCATE_REAL1(AC%ILU, 1, AC%NA, NSCARC_INIT_ZERO, 'ILU')
+      CALL SCARC_ALLOCATE_REAL1(AC%L, 1, AC%NA, NSCARC_INIT_ZERO, 'L')
+      CALL SCARC_ALLOCATE_REAL1(AC%U, 1, AC%NA, NSCARC_INIT_ZERO, 'U')
+      AC%U = AC%VAL
+
+      CELL_LOOP: DO IC = 2, L%NC
+
+WRITE(MSG%LU_DEBUG,*) '======================================================='
+WRITE(MSG%LU_DEBUG,*) '---------------- IC =',IC
+
+        
+         COLUMN_LOOP: DO IPTR = AC%ROW(IC), AC%ROW(IC+1)-1
+
+            KC = AC%COL(IPTR)                        !> get number of neighboring cell
+            IF (KC >= IC) CYCLE                      !> only consider neighbors with lower cell numbers than IC
+
+            KPTR = AC%ROW(KC)                        !> get diagonal entry of neighbor
+            AC%L(IPTR) = AC%U(IPTR)/AC%U(KPTR)           
+WRITE(MSG%LU_DEBUG,'(A,i1,A,i1,A,i1,A,i1,A,i1,A,i1,a,F16.8)') &
+    'A: L_(',IC,',',KC,') =  U_(',IC,',',KC,') / U_(',KC,',',KC,') = ',AC%L(IPTR)
+
+            DO JPTR = AC%ROW(IC), AC%ROW(IC+1)-1
+
+               JC = AC%COL(JPTR)
+               IF (JC<=KC) CYCLE                     !> only consider neighbors with higher cell numbers than IC
+
+               DO KPTR = AC%ROW(KC), AC%ROW(KC+1)-1  
+                  IF (AC%COL(KPTR) == JC) EXIT
+               ENDDO
+
+               AC%U(JPTR) = AC%U(JPTR) - AC%L(IPTR) * AC%U(KPTR)
+WRITE(MSG%LU_DEBUG,'(A,i1,A,i1,A,i1,A,i1,A,i1,A,i1,a,i1,A,i1,A,F16.8)') &
+    'B:  U_(',IC,',',JC,') =  U_(',IC,',',JC,') - L_(',IC,',',KC,') / U_(',KC,',',JC,') = ',AC%U(JPTR)
+
+            ENDDO
+
+         ENDDO COLUMN_LOOP
+      ENDDO CELL_LOOP
+
+   ENDDO LEVEL_LOOP
+ENDDO MESHES_LOOP
+
+#ifdef WITH_SCARC_DEBUG
+DO NL = NLEVEL_MIN, NLEVEL_MAX
+   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_ILU, NL, 'LU-Decomposition')
+ENDDO
+#endif
+
+END SUBROUTINE SCARC_SETUP_ILU2
+
+
+!> ----------------------------------------------------------------------------------------------------
+!> Allocate and initialize ILU decomposition of Poisson matrix 
+!> L- and U-parts are stored in the same array, diagonal elements of L are supposed to be 1
+!> ----------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_ILU_SAAD(NLMIN, NLMAX)
+INTEGER, INTENT(IN) :: NLMIN, NLMAX
+INTEGER :: NM, NL, IC, JC, IPTR, IPTR1, IPTR2, JPTR, KPTR, JDIAG
+REAL(EB) :: VAL
+INTEGER, DIMENSION(:), ALLOCATABLE :: AUX
 TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
 
@@ -6081,46 +6152,140 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       AC => SCARC(NM)%LEVEL(NL)%AC
 
       !> Allocate auxiliary array IW and preset it with zero
-      CALL SCARC_ALLOCATE_INT1(IW  , 1, L%NC, NSCARC_INIT_ZERO, 'IW')
-      CALL SCARC_ALLOCATE_INT1(UPTR, 1, L%NC, NSCARC_INIT_ZERO, 'UPTR')
+      CALL SCARC_ALLOCATE_INT1(AUX, 1, L%NC, NSCARC_INIT_ZERO, 'AUX')
+
+      !> Allocate ILU-part of Poisson matrix and preset it with Poisson matrix itself
+      CALL SCARC_ALLOCATE_REAL1(AC%ILU, 1, AC%NA, NSCARC_INIT_ZERO, 'LU')
+      CALL SCARC_ALLOCATE_REAL1(AC%U, 1, AC%NA, NSCARC_INIT_ZERO, 'U')
+      CALL SCARC_ALLOCATE_REAL1(AC%L, 1, AC%NA, NSCARC_INIT_ZERO, 'L')
+      AC%ILU = AC%VAL
+
+      CELL_LOOP: DO IC = 1, L%NC
+
+         IPTR1 = AC%ROW(IC)
+         IPTR2 = AC%ROW(IC+1)-1
+
+         DO IPTR = IPTR1, IPTR2
+           AUX(AC%COL(IPTR)) = IPTR
+         ENDDO
+WRITE(MSG%LU_DEBUG,'(a,5i4,a,9i3)') '================= IC=',IC, IPTR1, IPTR2, AC%COL(IPTR1), AC%COL(IPTR2), ' : ',AUX
+
+         COLUMNS_LOOP: DO IPTR = IPTR1, IPTR2
+
+            JC = AC%COL(IPTR)
+            IF (JC >= IC) CYCLE
+
+            JDIAG = AC%ROW(JC)
+
+            VAL = AC%ILU(IPTR) * AC%ILU(JDIAG)
+            AC%ILU(IPTR) = VAL
+WRITE(MSG%LU_DEBUG,'(a,i4,a,i4,a,i4,a,i4,a,F20.4)') &
+     '   processing IPTR=',IPTR,': JC =',JC, ': JDIAG=',JDIAG,': ILU(',IPTR,')=',VAL
+              
+            DO JPTR = AC%ROW(JC), AC%ROW(JC+1)-1            !> Perform linear combination
+               IF (AC%COL(JPTR) < IC) CYCLE
+               KPTR = AUX(AC%COL(JPTR))
+               IF (KPTR /= 0) THEN
+                  AC%ILU(KPTR) = AC%ILU(KPTR) - VAL * AC%ILU(JPTR)
+WRITE(MSG%LU_DEBUG,'(a,i4,a,i4,a,i4,a,F20.4)') &
+     '   processing JPTR=',JPTR,': KPTR =',KPTR, ': ILU(',KPTR,')=',AC%ILU(KPTR)
+               ENDIF
+            ENDDO
+
+         ENDDO COLUMNS_LOOP
+
+         AC%ILU(AC%ROW(IC)) = 1.0_EB/AC%ILU(AC%ROW(IC))
+WRITE(MSG%LU_DEBUG,'(a,i4,a,F20.4)') '   ILU(',AC%ROW(IC),')=',AC%ILU(AC%ROW(IC))
+
+         DO JPTR = IPTR1, IPTR2
+           AUX(AC%COL(JPTR)) = 0
+         ENDDO
+
+      ENDDO CELL_LOOP
+
+      DEALLOCATE(AUX)
+
+   ENDDO LEVEL_LOOP
+ENDDO MESHES_LOOP
+
+#ifdef WITH_SCARC_DEBUG
+DO NL = NLEVEL_MIN, NLEVEL_MAX
+   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_ILU, NL, 'LU-Decomposition')
+ENDDO
+#endif
+
+END SUBROUTINE SCARC_SETUP_ILU_SAAD
+
+!> ----------------------------------------------------------------------------------------------------
+!> Allocate and initialize ILU decomposition of Poisson matrix 
+!> L- and U-parts are stored in the same array, diagonal elements of L are supposed to be 1
+!> ----------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_ILU(NLMIN, NLMAX)
+INTEGER, INTENT(IN) :: NLMIN, NLMAX
+INTEGER :: NM, NL, I, J, K, J1, J2, JROW, JJ, JW, ICODE
+REAL(EB) :: TL
+INTEGER, DIMENSION(:), ALLOCATABLE :: IW
+TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
+TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
+
+MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   LEVEL_LOOP: DO NL = NLMIN, NLMAX
+
+      L  => SCARC(NM)%LEVEL(NL)
+      AC => SCARC(NM)%LEVEL(NL)%AC
+
+      !> Allocate auxiliary array IW and preset it with zero
+      CALL SCARC_ALLOCATE_INT1(IW, 1, L%NC, NSCARC_INIT_ZERO, 'AUX')
 
       !> Allocate ILU-part of Poisson matrix and preset it with Poisson matrix itself
       CALL SCARC_ALLOCATE_REAL1(AC%ILU, 1, AC%NA, NSCARC_INIT_ZERO, 'LU')
       AC%ILU = AC%VAL
 
-      CELL_LOOP: DO K = 1, L%NC
+      DO 30 I = 1, AC%ROW(L%NC+1)-1
+         AC%ILU(I) = AC%VAL(I)
+30    CONTINUE
 
+      DO 31 I=1,L%NC
+         IW (i)=0
+31    CONTINUE
+
+      DO 500 K=1,L%NC
          J1 = AC%ROW(K)
          J2 = AC%ROW(K+1)-1
+         DO 100 J=J1,J2
+            IW(AC%COL(J)) = J
+100      CONTINUE
+         J = J1
+150      JROW = AC%COL(J)
 
-         DO J = J1, J2
-           IW(AC%COL(J)) = J
-         ENDDO
+         if (JROW .ge.K) goto 150
 
-         COLUMNS_LOOP: DO J = J1, J2
+         TL = AC%ILU(j)*AC%ILU(AC%ROW(jrow))
+         AC%ILU(j) = TL
 
-            JROW = AC%COL(J)
-            IF (JROW >= K) EXIT COLUMNS_LOOP                  !> Exit if diagonal element is reached
+         DO 140 JJ = AC%ROW(jrow), AC%ROW(jrow+1) -1
+            if (AC%COL(JJ)<=JROW) GOTO 140
+            JW = IW(AC%COL(JJ))
+            if (JW .ne.0) AC%ILU(JW) = AC%ILU(JW) - TL * AC%ILU(JJ)
+140      CONTINUE
 
-            TL = AC%ILU(J) * AC%ILU(UPTR(JROW))
-            AC%ILU(J) = TL
-              
-            DO JJ = UPTR(JROW)+1, AC%ROW(JROW+1)-1            !> Perform linear combination
-               JW = IW(AC%COL(JJ))
-               IF (JW /= 0) AC%ILU(JW) = AC%ILU(JW) - TL * AC%ILU(JJ)
-            ENDDO
+         J = J + 1
+         if (J .LE. J2) goto 150
 
-         ENDDO COLUMNS_LOOP
-
-         UPTR(K) = J
-         IF (JROW /= K .OR. AC%ILU(J) == 0.0_EB) WRITE(*,*) 'ERROR IN LU'
+200      if (JROW .NE.K .OR. AC%ILU(J).EQ.0.0_EB) goto 600
          AC%ILU(J) = 1.0_EB/AC%ILU(J)
 
-         DO I = J1, J2
-            IW(AC%COL(I)) = 0
-         ENDDO
+         DO 201 I = J1, J2
+           IW(AC%COL(J)) = 0
+201      CONTINUE
 
-      ENDDO CELL_LOOP
+500   CONTINUE
+
+      ICODE = 0
+      RETURN
+
+600   ICODE= k
+      RETURN
 
       DEALLOCATE(IW)
 
@@ -6134,6 +6299,8 @@ ENDDO
 #endif
 
 END SUBROUTINE SCARC_SETUP_ILU
+
+
 
 
 !> ----------------------------------------------------------------------------------------------------
@@ -10856,6 +11023,7 @@ SELECT CASE (NTYPE)
                !   ENDDO
                !ENDDO
 #endif
+               CALL SCARC_MATLAB_MATRIX(AC%VAL, AC%ROW, AC%COL, L%NCS, L%NCS, NM, NL, 'A')
             ENDDO
 
 
@@ -10936,9 +11104,17 @@ SELECT CASE (NTYPE)
          DO IC = 1, AC%NR-1
             WRITE(MSG%LU_DEBUG,'(i5,a,20i9)') IC,':',(AC%COL(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
          ENDDO
-         WRITE(MSG%LU_DEBUG,*) '---------------------- LU:'
+         WRITE(MSG%LU_DEBUG,*) '---------------------- ILU:'
          DO IC = 1, AC%NR-1
-            WRITE(MSG%LU_DEBUG,'(i5,a,20f8.1)') IC,':',(AC%ILU(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
+            WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%ILU(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
+         ENDDO
+         WRITE(MSG%LU_DEBUG,*) '---------------------- L:'
+         DO IC = 1, AC%NR-1
+            WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%L(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
+         ENDDO
+         WRITE(MSG%LU_DEBUG,*) '---------------------- U:'
+         DO IC = 1, AC%NR-1
+            WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%U(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
          ENDDO
       ENDDO
 
@@ -11353,16 +11529,18 @@ REAL(EB), DIMENSION(:), INTENT(IN) :: VAL
 INTEGER , DIMENSION(:), INTENT(IN) :: ROW
 INTEGER , DIMENSION(:), INTENT(IN) :: COL
 INTEGER , INTENT(IN) :: NM, NL, NC1, NC2
-CHARACTER(1), INTENT(IN):: CMATRIX
+CHARACTER(*), INTENT(IN):: CMATRIX
 INTEGER :: IC, JC, ICOL, MMATRIX
 CHARACTER(60):: CNAME, CFORM
 REAL(EB):: MATRIX_LINE(1000)
 
 WRITE (CNAME, '(A,A1,A,i2.2,A,i2.2,A)') 'matlab/',CMATRIX,'_mesh',NM,'_level',NL,'_mat.txt'
-WRITE (CFORM, '(I3, A)' ) NC2-1, "(F7.1,,),F7.1,;" 
+!WRITE (CFORM, '(A,I3, 2A)' ) "(", NC2-1, "(F7.1,','),F7.1,';')" 
+WRITE (CFORM, '(A,I3, 2A)' ) "(", NC2-1, "(F7.1,' '),F7.1,' ')" 
+WRITE(*,*) 'CFORM=',CFORM
 MMATRIX=GET_FILE_NUMBER()
 OPEN(MMATRIX,FILE=CNAME)
-WRITE(MMATRIX, *) CMATRIX, ' = ['
+!WRITE(MMATRIX, *) CMATRIX, ' = ['
 DO IC = 1, NC1
    MATRIX_LINE=0.0_EB
    DO JC = 1, NC2
@@ -11372,7 +11550,7 @@ DO IC = 1, NC1
    ENDDO
    WRITE(MMATRIX, CFORM) (MATRIX_LINE(JC),JC=1,NC2)
 ENDDO
-WRITE(MMATRIX, *) ' ]'
+!WRITE(MMATRIX, *) ' ]'
 CLOSE(MMATRIX)
  
 END SUBROUTINE SCARC_MATLAB_MATRIX
