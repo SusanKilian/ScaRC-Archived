@@ -48,7 +48,7 @@ PUBLIC SCARC_CAPPA                             !> Convergence rate
 PUBLIC SCARC_ACCURACY                          !> Chosen accuracy type (relative/absolute)
 PUBLIC SCARC_PRECISION                         !> Single/double precision for preconditioning or LU-decomposition
 PUBLIC SCARC_TWOLEVEL                          !> Type of Twolevel-CG-method
-PUBLIC SCARC_STATISTICS                        !> Plot ScarC statistics into chid_scarc.csv
+PUBLIC SCARC_ERROR_FILE                        !> Print ScaRC error file
 
 PUBLIC SCARC_KRYLOV                            !> Type of Krylov method
 PUBLIC SCARC_KRYLOV_ITERATIONS                 !> Maximum number of iterations for Krylov method
@@ -140,7 +140,7 @@ CHARACTER(40) :: SCARC_MKL_MTYPE = 'SYMMETRIC'              !> Type of MKL matri
 #endif
 
 !> Debugging parameters
-CHARACTER(40) :: SCARC_STATISTICS = '.FALSE.'               !> Print ScaRC statistics into chid_scarc.csv (TRUE/FALSE)
+CHARACTER(40) :: SCARC_ERROR_FILE = '.FALSE.'               !> Print ScaRC statistics into chid_scarc.csv (TRUE/FALSE)
 
 INTEGER :: IERROR = 0
 
@@ -195,11 +195,11 @@ INTEGER, PARAMETER :: NSCARC_BROADCAST_SUM          =  1, &     !> broadcast loc
 INTEGER, PARAMETER :: NSCARC_RELAX_JACOBI          =  1, &     !> preconditioning by local JACOBI-methods
                       NSCARC_RELAX_SGS             =  2, &     !> preconditioning by local SSOR-methods
                       NSCARC_RELAX_SSOR            =  3, &     !> preconditioning by local SSOR-methods
-                      NSCARC_RELAX_FFT             =  4, &     !> preconditioning by local FFT-methods
-                      NSCARC_RELAX_GMG             =  5, &     !> preconditioning by local GMG-methods
-                      NSCARC_RELAX_LU              =  6, &     !> preconditioning by local LU-decompositions (own)
-                      NSCARC_RELAX_ILU             =  7, &     !> preconditioning by local ILU-decompositions (own)
-                      NSCARC_RELAX_MKL             =  8        !> preconditioning by local LU-decompositions (MKL)
+                      NSCARC_RELAX_SSORM           =  4, &     !> preconditioning by local SSOR-methods
+                      NSCARC_RELAX_FFT             =  5, &     !> preconditioning by local FFT-methods
+                      NSCARC_RELAX_GMG             =  6, &     !> preconditioning by local GMG-methods
+                      NSCARC_RELAX_ILU             =  8, &     !> preconditioning by local ILU-decompositions (own)
+                      NSCARC_RELAX_MKL             =  9        !> preconditioning by local LU-decompositions (MKL)
  
 INTEGER, PARAMETER :: NSCARC_SCOPE_GLOBAL           =  1, &    !> scope of defect correction is global
                       NSCARC_SCOPE_LOCAL            =  2       !> scope of defect correction is local
@@ -228,14 +228,12 @@ INTEGER, PARAMETER :: NSCARC_STATE_PROCEED          =  0, &   !> proceed loop
 
 INTEGER, PARAMETER :: NSCARC_DEBUG_MATRIX           =  1, &   !> show matrix
                       NSCARC_DEBUG_MATRIXS          =  2, &   !> show symmetric matrix
-                      NSCARC_DEBUG_LU               =  3, &   !> show symmetric matrix
-                      NSCARC_DEBUG_ILU              =  4, &   !> show symmetric matrix
-                      NSCARC_DEBUG_WALLINFO         =  5, &   !> show wall information
-                      NSCARC_DEBUG_FACEINFO         =  6, &   !> show face information
-                      NSCARC_DEBUG_BC_INDEX         =  7, &   !> show pressure_bc_index
-                      NSCARC_DEBUG_GRIDINFO         =  8, &   !> show discretization information
-                      NSCARC_DEBUG_SUBDIVISION      =  9, &   !> show subdivision
-                      NSCARC_DEBUG_STACK            = 10      !> show stack information 
+                      NSCARC_DEBUG_WALLINFO         =  3, &   !> show wall information
+                      NSCARC_DEBUG_FACEINFO         =  4, &   !> show face information
+                      NSCARC_DEBUG_BC_INDEX         =  5, &   !> show pressure_bc_index
+                      NSCARC_DEBUG_GRIDINFO         =  6, &   !> show discretization information
+                      NSCARC_DEBUG_SUBDIVISION      =  7, &   !> show subdivision
+                      NSCARC_DEBUG_STACK            =  8      !> show stack information 
 
 INTEGER, PARAMETER :: NSCARC_COARSENING_BASIC       =  1, &   !> basic coarsening
                       NSCARC_COARSENING_FALGOUT     =  2, &   !> parallel Falgout
@@ -390,7 +388,7 @@ LOGICAL :: BGMG        = .FALSE.                           ! Geometric Multigrid
 LOGICAL :: BTWOLEVEL   = .FALSE.                           ! Method with two grid levels used?
 LOGICAL :: BMULTILEVEL = .FALSE.                           ! Method with multiple grid levels used?
 LOGICAL :: BSTRUCTURED = .TRUE.                            ! Structured/Unstructured discretization used?
-LOGICAL :: BSTATISTICS = .FALSE.                           ! store iteration statistics in CSV-file
+LOGICAL :: BCSV = .FALSE.                           ! store iteration statistics in CSV-file
 LOGICAL :: BFFT        = .FALSE.                           ! FFT-method used?
 LOGICAL :: BMKL        = .FALSE.                           ! MKL-method used?
 LOGICAL :: BMKL_LEVEL(NSCARC_LEVEL_MAX)  = .FALSE.         ! level-dependent MKL method used ?
@@ -590,12 +588,9 @@ REAL(FB), ALLOCATABLE, DIMENSION (:) :: VAL_FB         !> values of matrix (sing
 REAL(FB), DIMENSION (-3:3)           :: STENCIL_FB     !> store basic stencil information in single precision
 #else
 REAL(EB), ALLOCATABLE, DIMENSION (:) :: VAL            !> values of matrix (real precision)
-REAL(EB), ALLOCATABLE, DIMENSION (:) :: LU             !> LU-decomposition
 REAL(EB), ALLOCATABLE, DIMENSION (:) :: ILU            !> ILU-decomposition
-REAL(EB), ALLOCATABLE, DIMENSION (:) :: L              !> ILU-decomposition
-REAL(EB), ALLOCATABLE, DIMENSION (:) :: U              !> ILU-decomposition
 REAL(EB), ALLOCATABLE, DIMENSION (:) :: SGS            !> symmetric GS-decomposition
-REAL(EB), ALLOCATABLE, DIMENSION (:) :: SSOR           !> SSOR-decomposition
+REAL(EB), ALLOCATABLE, DIMENSION (:) :: SSORM          !> SSOR-decomposition in matrix notation
 REAL(EB), DIMENSION (-3:3)           :: STENCIL        !> store basic stencil information in single precision
 #endif
 INTEGER,  ALLOCATABLE, DIMENSION (:) :: ROW            !> row pointer
@@ -735,7 +730,7 @@ INTEGER, POINTER, DIMENSION (:,:)       :: WALL_INDEX_PTR   !> Pointer to WALL_I
 
 !> Matrices in different storage techniques
 TYPE (SCARC_MATRIX_BANDED_TYPE)  :: AB                      !> Poisson matrix in banded storage technique
-TYPE (SCARC_MATRIX_COMPACT_TYPE) :: AC, PC                  !> Poisson matrix in compact storage technique
+TYPE (SCARC_MATRIX_COMPACT_TYPE) :: AC                      !> Poisson matrix in compact storage technique
 #ifdef WITH_MKL
 TYPE (SCARC_MATRIX_COMPACT_TYPE) :: ACS                     !> symmetric part of Poisson matrix (only for MKL)
 #endif
@@ -883,13 +878,15 @@ TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: COARSE_CLUSTER
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: COARSE_PARDISO
 #endif
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_JACOBI
+TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_SGS
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_SSOR
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_LU
+TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_SSORM
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_ILU
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_FFT
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_GMG
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: SMOOTH_JACOBI
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: SMOOTH_SSOR
+TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: SMOOTH_SSORM
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: SMOOTH_FFT
 #ifdef WITH_MKL
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_MKL
@@ -965,12 +962,12 @@ SUBROUTINE SCARC_SETUP_MESSAGING
 INTEGER:: NM, LASTID
 #endif
 
-IF (TRIM(SCARC_STATISTICS) == '.TRUE.') BSTATISTICS = .TRUE.
+IF (TRIM(SCARC_ERROR_FILE) == '.TRUE.') BCSV = .TRUE.
 
-WRITE(*,*) 'BSTATISTICS=',BSTATISTICS
+WRITE(*,*) 'BCSV=',BCSV
 
 !> If requested, open file for CSV-information about convergence of different solvers
-IF (BSTATISTICS) THEN
+IF (BCSV) THEN
    IF (MYID == 0) THEN
       WRITE (MSG%FILE_STAT, '(A,A)') TRIM(CHID),'_scarc.csv'
       MSG%LU_STAT = GET_FILE_NUMBER()
@@ -1202,8 +1199,8 @@ SELECT CASE (TRIM(SCARC_METHOD))
             TYPE_PRECON = NSCARC_RELAX_SGS
          CASE ('SSOR')
             TYPE_PRECON = NSCARC_RELAX_SSOR
-         CASE ('LU')
-            TYPE_PRECON = NSCARC_RELAX_LU
+         CASE ('SSORM')
+            TYPE_PRECON = NSCARC_RELAX_SSORM
          CASE ('ILU')
             TYPE_PRECON = NSCARC_RELAX_ILU
          CASE ('GMG')
@@ -1211,10 +1208,12 @@ SELECT CASE (TRIM(SCARC_METHOD))
             SELECT CASE (TRIM(SCARC_SMOOTH))
                CASE ('JACOBI')
                   TYPE_SMOOTH = NSCARC_RELAX_JACOBI
+               CASE ('SGS')
+                  TYPE_SMOOTH = NSCARC_RELAX_SGS
                CASE ('SSOR')
                   TYPE_SMOOTH = NSCARC_RELAX_SSOR
-               CASE ('LU')
-                  TYPE_SMOOTH = NSCARC_RELAX_LU
+               CASE ('SSORM')
+                  TYPE_SMOOTH = NSCARC_RELAX_SSORM
                CASE ('ILU')
                   TYPE_SMOOTH = NSCARC_RELAX_ILU
                CASE ('FFT')
@@ -1298,12 +1297,18 @@ SELECT CASE (TRIM(SCARC_METHOD))
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_MULTIGRID, NSCARC_NONE)
       END SELECT
 
-      !> set type of smoother (JACOBI/SSOR)
+      !> set type of smoother (JACOBI/SGS/SSOR/SSORM/ILU/PARDISO/CLUSTER)
       SELECT CASE (TRIM(SCARC_SMOOTH))                        !> use same parameters as for preconditioner
          CASE ('JACOBI')
             TYPE_SMOOTH = NSCARC_RELAX_JACOBI
+         CASE ('SGS')
+            TYPE_SMOOTH = NSCARC_RELAX_SGS
          CASE ('SSOR')
             TYPE_SMOOTH = NSCARC_RELAX_SSOR
+         CASE ('SSORM')
+            TYPE_SMOOTH = NSCARC_RELAX_SSORM
+         CASE ('ILU')
+            TYPE_SMOOTH = NSCARC_RELAX_ILU
          CASE ('FFT')
             IF (TYPE_DISCRET == NSCARC_CELL_UNSTRUCTURED) &
                CALL SCARC_SHUTDOWN(NSCARC_ERROR_FFT_DISCRET, SCARC_NONE, NSCARC_NONE)
@@ -5341,17 +5346,23 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
             CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
 
          !> SSOR-preconditioning (acting locally by default)
+         CASE (NSCARC_RELAX_SGS)                                
+            STACK(NSTACK)%SOLVER => PRECON_SGS
+            CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
+            CALL SCARC_SETUP_SGS(NLEVEL_MIN, NLEVEL_MAX)
+
+         !> SSOR-preconditioning (acting locally by default)
          CASE (NSCARC_RELAX_SSOR)                                
             STACK(NSTACK)%SOLVER => PRECON_SSOR
             CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
 
-         !> LU-preconditioning (acting locally by default)
-         CASE (NSCARC_RELAX_LU)                                
-            STACK(NSTACK)%SOLVER => PRECON_LU
+         !> SSOR-preconditioning (acting locally by default)
+         CASE (NSCARC_RELAX_SSORM)                                
+            STACK(NSTACK)%SOLVER => PRECON_SSORM
             CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
-            CALL SCARC_SETUP_LU(NLEVEL_MIN, NLEVEL_MAX)
+            CALL SCARC_SETUP_SSORM(NLEVEL_MIN, NLEVEL_MAX)
 
-         !> LU-preconditioning (acting locally by default)
+         !> ILU(0)-preconditioning (acting locally by default)
          CASE (NSCARC_RELAX_ILU)                                
             STACK(NSTACK)%SOLVER => PRECON_ILU
             CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
@@ -5364,7 +5375,7 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
             CALL SCARC_SETUP_FFT(NLEVEL_MIN, NLEVEL_MIN)
 
 #ifdef WITH_MKL
-         !> LU-preconditioning based on MKL (eithr locally or globally acting depending on user specification)
+         !> LU-preconditioning based on MKL (either locally or globally acting depending on user specification)
          CASE (NSCARC_RELAX_MKL)                                 
             STACK(NSTACK)%SOLVER => PRECON_MKL
 
@@ -5795,13 +5806,12 @@ SV%OMEGA =  SCARC_PRECON_OMEGA
 SELECT CASE(TYPE_PRECON)
    CASE (NSCARC_RELAX_JACOBI)
       SV%CNAME = 'SCARC_PRECON_JACOBI'
-   CASE (NSCARC_RELAX_SSOR)
-      SV%CNAME = 'SCARC_PRECON_SSOR'
    CASE (NSCARC_RELAX_SGS)
       SV%CNAME = 'SCARC_PRECON_SGS'
-   CASE (NSCARC_RELAX_LU)
-      SV%CNAME = 'SCARC_PRECON_LU'
-      SV%OMEGA = 1.0_EB
+   CASE (NSCARC_RELAX_SSOR)
+      SV%CNAME = 'SCARC_PRECON_SSOR'
+   CASE (NSCARC_RELAX_SSORM)
+      SV%CNAME = 'SCARC_PRECON_SSORM'
    CASE (NSCARC_RELAX_ILU)
       SV%CNAME = 'SCARC_PRECON_ILU'
       SV%OMEGA = 1.0_EB
@@ -5877,8 +5887,14 @@ SV%TYPE_SCOPE = NSCOPE
 SELECT CASE(TYPE_SMOOTH)
    CASE (NSCARC_RELAX_JACOBI)
       SV%CNAME = 'SCARC_SMOOTH_JACOBI'
+   CASE (NSCARC_RELAX_SGS)
+      SV%CNAME = 'SCARC_SMOOTH_SGS'
    CASE (NSCARC_RELAX_SSOR)
       SV%CNAME = 'SCARC_SMOOTH_SSOR'
+   CASE (NSCARC_RELAX_SSORM)
+      SV%CNAME = 'SCARC_SMOOTH_SSORM'
+   CASE (NSCARC_RELAX_ILU)
+      SV%CNAME = 'SCARC_SMOOTH_ILU'
    CASE (NSCARC_RELAX_FFT)
       SV%CNAME = 'SCARC_SMOOTH_FFT'
 #ifdef WITH_MKL
@@ -6064,14 +6080,159 @@ ENDDO MESHES_LOOP
 
 END SUBROUTINE SCARC_SETUP_FFT
 
+!> ----------------------------------------------------------------------------------------------------
+!> Store SGS preconditioner in matrix form
+!> Based on the following splitting of A = D - E - F
+!> where :   D is the diagonal part
+!>          -E is the strictly lower part
+!>          -F is the strictly upper part
+!> the SSOR-preconditioner in matrix form is defined
+!>           B_SGS = (D - E) D^{-1} (D - F)
+!>                   (I - E D^{-1}) (D - F)
+!> Now, defining the triangular matrices
+!>               L  = (I - E D^{-1}) 
+!>               U  = (D - F)
+!> the SSOR-preconditioning can be thought as the solution of two triangular systems
+!> Both matrices can be stored as a single matrix that occupies the same amount of storage as A
+!> where the same row and column pointers can be used as for A (identical pattern)
+!> Note that the diagonal elements of L are 1 (and are omitted, only the diagonal of U is stored there)
+!> ----------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_SGS(NLMIN, NLMAX)
+INTEGER, INTENT(IN) :: NLMIN, NLMAX
+INTEGER :: NM, NL, IC, JC, IPTR
+TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
+TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
+
+MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   LEVEL_LOOP: DO NL = NLMIN, NLMAX
+
+      L  => SCARC(NM)%LEVEL(NL)
+      AC => SCARC(NM)%LEVEL(NL)%AC
+
+      !> Allocate workspace for SGS decomposition of Poisson matrix 
+      CALL SCARC_ALLOCATE_REAL1(AC%SGS, 1, AC%NA, NSCARC_INIT_ZERO, 'ILU')
+
+      CELL_LOOP: DO IC = 1, L%NC
+        
+         DO IPTR = AC%ROW(IC), AC%ROW(IC+1)-1
+            JC = AC%COL(IPTR)
+
+            !> Definition of lower elements
+            !>  l(i,j) = omega * a(i,j)/a(j,j)
+            IF (JC < IC)  AC%SGS(IPTR) = AC%VAL(IPTR) / AC%VAL(AC%ROW(JC))
+
+            !> Definition of diagonal element
+            !> u(i,i) = a(i,i)
+            IF (JC == IC) AC%SGS(IPTR) = AC%VAL(IPTR)
+
+            !> Definition of upper elements
+            !> u(i,j) = omega * a(i,j)
+            IF (JC > IC)  AC%SGS(IPTR) = AC%VAL(IPTR) 
+         ENDDO
+            
+      ENDDO CELL_LOOP
+
+   ENDDO LEVEL_LOOP
+ENDDO MESHES_LOOP
+
+#ifdef WITH_SCARC_DEBUG
+DO NL = NLEVEL_MIN, NLEVEL_MAX
+   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_MATRIX, NL, 'SGS-Decomposition')
+ENDDO
+#endif
+
+END SUBROUTINE SCARC_SETUP_SGS
 
 !> ----------------------------------------------------------------------------------------------------
-!> Allocate and initialize ILU decomposition of Poisson matrix 
-!> L- and U-parts are stored in the same array, diagonal elements of L are supposed to be 1
+!> Store SSOR preconditioner in matrix form
+!> Based on the following splitting of A = D - E - F
+!> where :   D is the diagonal part
+!>          -E is the strictly lower part
+!>          -F is the strictly upper part
+!> the SSOR-preconditioner in matrix form is defined
+!>           B_SSOR = (D - omega E) D^{-1} (D - omega F)
+!>                    (I - omega E D^{-1}) (D - omega F)
+!> Now, defining the triangular matrices
+!>               L  = (I - omega E D^{-1}) 
+!>               U  = (D - omega F)
+!> the SSOR-preconditioning can be thought as the solution of two triangular systems
+!> Both matrices can be stored as a single matrix that occupies the same amount of storage as A
+!> where the same row and column pointers can be used as for A (identical pattern)
+!> Note that the diagonal elements of L are 1 (and are omitted, only the diagonal of U is stored there)
 !> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_ILU2(NLMIN, NLMAX)
+SUBROUTINE SCARC_SETUP_SSORM(NLMIN, NLMAX)
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
-INTEGER :: NM, NL, IC, IPTR, JC, JPTR, KC, KPTR
+INTEGER :: NM, NL, IC, JC, IPTR
+TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
+TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
+
+MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   LEVEL_LOOP: DO NL = NLMIN, NLMAX
+
+      L  => SCARC(NM)%LEVEL(NL)
+      AC => SCARC(NM)%LEVEL(NL)%AC
+
+      !> Allocate workspace for SSORM decomposition of Poisson matrix 
+      CALL SCARC_ALLOCATE_REAL1(AC%SSORM, 1, AC%NA, NSCARC_INIT_ZERO, 'ILU')
+
+      CELL_LOOP: DO IC = 1, L%NC
+        
+         DO IPTR = AC%ROW(IC), AC%ROW(IC+1)-1
+            JC = AC%COL(IPTR)
+
+            !> Definition of lower elements
+            !>  l(i,j) = omega * a(i,j)/a(j,j)
+            IF (JC < IC)  THEN
+               AC%SSORM(IPTR) = OMEGA * AC%VAL(IPTR) / AC%VAL(AC%ROW(JC))
+WRITE(MSG%LU_DEBUG,*) 'LOWER: ',IC,': AC%SSORM(',IPTR,')=',AC%SSORM(IPTR)
+            ENDIF
+
+            !> Definition of diagonal element
+            !> u(i,i) = a(i,i)
+            IF (JC == IC) THEN
+               AC%SSORM(IPTR) = AC%VAL(IPTR)
+WRITE(MSG%LU_DEBUG,*) 'DIAG : ',IC,': AC%SSORM(',IPTR,')=',AC%SSORM(IPTR)
+            ENDIF
+
+            !> Definition of upper elements
+            !> u(i,j) = omega * a(i,j)
+            IF (JC > IC) THEN
+               AC%SSORM(IPTR) = OMEGA * AC%VAL(IPTR) 
+WRITE(MSG%LU_DEBUG,*) 'UPPER: ',IC,': AC%SSORM(',IPTR,')=',AC%SSORM(IPTR)
+            ENDIF
+
+         ENDDO
+            
+      ENDDO CELL_LOOP
+
+   ENDDO LEVEL_LOOP
+ENDDO MESHES_LOOP
+
+#ifdef WITH_SCARC_DEBUG
+DO NL = NLEVEL_MIN, NLEVEL_MAX
+   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_MATRIX, NL, 'SSORM-Decomposition')
+ENDDO
+#endif
+
+END SUBROUTINE SCARC_SETUP_SSORM
+
+
+!> ----------------------------------------------------------------------------------------------------
+!> Allocate and initialize ILU(0) decomposition of Poisson matrix 
+!> L- and U-parts are stored in the same array, diagonal elements of L are supposed to be 1
+!> Based on Saad-algorithm 10.4 from 'Iterative Methods for Sparse Linear Systems':
+!>   for i = 2 , ... , n do
+!>      for k = 1 , ... , i-1 and for (i,k) in NZ(A) do
+!>         compute a_ik = a_ik / a_kk
+!>         for j = k+1 , ... , n and for (i,j) in NZ(A) do
+!>            compute a_ij = a_ij - a_ik a_kj
+!>         enddo
+!>      enddo
+!>   enddo
+!> ----------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_ILU(NLMIN, NLMAX)
+INTEGER, INTENT(IN) :: NLMIN, NLMAX
+INTEGER :: NM, NL, IC, JC, KC, IPTR, JPTR, KPTR, KPTR0
 TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
 
@@ -6083,38 +6244,30 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       !> Allocate ILU-part of Poisson matrix and preset it with Poisson matrix itself
       CALL SCARC_ALLOCATE_REAL1(AC%ILU, 1, AC%NA, NSCARC_INIT_ZERO, 'ILU')
-      CALL SCARC_ALLOCATE_REAL1(AC%L, 1, AC%NA, NSCARC_INIT_ZERO, 'L')
-      CALL SCARC_ALLOCATE_REAL1(AC%U, 1, AC%NA, NSCARC_INIT_ZERO, 'U')
-      AC%U = AC%VAL
+      AC%ILU = AC%VAL
 
       CELL_LOOP: DO IC = 2, L%NC
 
-WRITE(MSG%LU_DEBUG,*) '======================================================='
-WRITE(MSG%LU_DEBUG,*) '---------------- IC =',IC
-
-        
          COLUMN_LOOP: DO IPTR = AC%ROW(IC), AC%ROW(IC+1)-1
 
             KC = AC%COL(IPTR)                        !> get number of neighboring cell
             IF (KC >= IC) CYCLE                      !> only consider neighbors with lower cell numbers than IC
+            IF (AC%ILU(IPTR) == 0) CYCLE
 
             KPTR = AC%ROW(KC)                        !> get diagonal entry of neighbor
-            AC%L(IPTR) = AC%U(IPTR)/AC%U(KPTR)           
-WRITE(MSG%LU_DEBUG,'(A,i1,A,i1,A,i1,A,i1,A,i1,A,i1,a,F16.8)') &
-    'A: L_(',IC,',',KC,') =  U_(',IC,',',KC,') / U_(',KC,',',KC,') = ',AC%L(IPTR)
+            AC%ILU(IPTR) = AC%ILU(IPTR)/AC%ILU(KPTR)           
 
             DO JPTR = AC%ROW(IC), AC%ROW(IC+1)-1
 
                JC = AC%COL(JPTR)
                IF (JC<=KC) CYCLE                     !> only consider neighbors with higher cell numbers than IC
+               IF (AC%ILU(JPTR) == 0) CYCLE
 
-               DO KPTR = AC%ROW(KC), AC%ROW(KC+1)-1  
-                  IF (AC%COL(KPTR) == JC) EXIT
+               KPTR = -1
+               DO KPTR0 = AC%ROW(KC), AC%ROW(KC+1)-1
+                  IF (AC%COL(KPTR0) == JC) KPTR = KPTR0
                ENDDO
-
-               AC%U(JPTR) = AC%U(JPTR) - AC%L(IPTR) * AC%U(KPTR)
-WRITE(MSG%LU_DEBUG,'(A,i1,A,i1,A,i1,A,i1,A,i1,A,i1,a,i1,A,i1,A,F16.8)') &
-    'B:  U_(',IC,',',JC,') =  U_(',IC,',',JC,') - L_(',IC,',',KC,') / U_(',KC,',',JC,') = ',AC%U(JPTR)
+               IF (KPTR>0) AC%ILU(JPTR) = AC%ILU(JPTR) - AC%ILU(IPTR) * AC%ILU(KPTR)
 
             ENDDO
 
@@ -6126,252 +6279,12 @@ ENDDO MESHES_LOOP
 
 #ifdef WITH_SCARC_DEBUG
 DO NL = NLEVEL_MIN, NLEVEL_MAX
-   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_ILU, NL, 'LU-Decomposition')
-ENDDO
-#endif
-
-END SUBROUTINE SCARC_SETUP_ILU2
-
-
-!> ----------------------------------------------------------------------------------------------------
-!> Allocate and initialize ILU decomposition of Poisson matrix 
-!> L- and U-parts are stored in the same array, diagonal elements of L are supposed to be 1
-!> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_ILU_SAAD(NLMIN, NLMAX)
-INTEGER, INTENT(IN) :: NLMIN, NLMAX
-INTEGER :: NM, NL, IC, JC, IPTR, IPTR1, IPTR2, JPTR, KPTR, JDIAG
-REAL(EB) :: VAL
-INTEGER, DIMENSION(:), ALLOCATABLE :: AUX
-TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
-TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
-
-MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   LEVEL_LOOP: DO NL = NLMIN, NLMAX
-
-      L  => SCARC(NM)%LEVEL(NL)
-      AC => SCARC(NM)%LEVEL(NL)%AC
-
-      !> Allocate auxiliary array IW and preset it with zero
-      CALL SCARC_ALLOCATE_INT1(AUX, 1, L%NC, NSCARC_INIT_ZERO, 'AUX')
-
-      !> Allocate ILU-part of Poisson matrix and preset it with Poisson matrix itself
-      CALL SCARC_ALLOCATE_REAL1(AC%ILU, 1, AC%NA, NSCARC_INIT_ZERO, 'LU')
-      CALL SCARC_ALLOCATE_REAL1(AC%U, 1, AC%NA, NSCARC_INIT_ZERO, 'U')
-      CALL SCARC_ALLOCATE_REAL1(AC%L, 1, AC%NA, NSCARC_INIT_ZERO, 'L')
-      AC%ILU = AC%VAL
-
-      CELL_LOOP: DO IC = 1, L%NC
-
-         IPTR1 = AC%ROW(IC)
-         IPTR2 = AC%ROW(IC+1)-1
-
-         DO IPTR = IPTR1, IPTR2
-           AUX(AC%COL(IPTR)) = IPTR
-         ENDDO
-WRITE(MSG%LU_DEBUG,'(a,5i4,a,9i3)') '================= IC=',IC, IPTR1, IPTR2, AC%COL(IPTR1), AC%COL(IPTR2), ' : ',AUX
-
-         COLUMNS_LOOP: DO IPTR = IPTR1, IPTR2
-
-            JC = AC%COL(IPTR)
-            IF (JC >= IC) CYCLE
-
-            JDIAG = AC%ROW(JC)
-
-            VAL = AC%ILU(IPTR) * AC%ILU(JDIAG)
-            AC%ILU(IPTR) = VAL
-WRITE(MSG%LU_DEBUG,'(a,i4,a,i4,a,i4,a,i4,a,F20.4)') &
-     '   processing IPTR=',IPTR,': JC =',JC, ': JDIAG=',JDIAG,': ILU(',IPTR,')=',VAL
-              
-            DO JPTR = AC%ROW(JC), AC%ROW(JC+1)-1            !> Perform linear combination
-               IF (AC%COL(JPTR) < IC) CYCLE
-               KPTR = AUX(AC%COL(JPTR))
-               IF (KPTR /= 0) THEN
-                  AC%ILU(KPTR) = AC%ILU(KPTR) - VAL * AC%ILU(JPTR)
-WRITE(MSG%LU_DEBUG,'(a,i4,a,i4,a,i4,a,F20.4)') &
-     '   processing JPTR=',JPTR,': KPTR =',KPTR, ': ILU(',KPTR,')=',AC%ILU(KPTR)
-               ENDIF
-            ENDDO
-
-         ENDDO COLUMNS_LOOP
-
-         AC%ILU(AC%ROW(IC)) = 1.0_EB/AC%ILU(AC%ROW(IC))
-WRITE(MSG%LU_DEBUG,'(a,i4,a,F20.4)') '   ILU(',AC%ROW(IC),')=',AC%ILU(AC%ROW(IC))
-
-         DO JPTR = IPTR1, IPTR2
-           AUX(AC%COL(JPTR)) = 0
-         ENDDO
-
-      ENDDO CELL_LOOP
-
-      DEALLOCATE(AUX)
-
-   ENDDO LEVEL_LOOP
-ENDDO MESHES_LOOP
-
-#ifdef WITH_SCARC_DEBUG
-DO NL = NLEVEL_MIN, NLEVEL_MAX
-   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_ILU, NL, 'LU-Decomposition')
-ENDDO
-#endif
-
-END SUBROUTINE SCARC_SETUP_ILU_SAAD
-
-!> ----------------------------------------------------------------------------------------------------
-!> Allocate and initialize ILU decomposition of Poisson matrix 
-!> L- and U-parts are stored in the same array, diagonal elements of L are supposed to be 1
-!> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_ILU(NLMIN, NLMAX)
-INTEGER, INTENT(IN) :: NLMIN, NLMAX
-INTEGER :: NM, NL, I, J, K, J1, J2, JROW, JJ, JW, ICODE
-REAL(EB) :: TL
-INTEGER, DIMENSION(:), ALLOCATABLE :: IW
-TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
-TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
-
-MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   LEVEL_LOOP: DO NL = NLMIN, NLMAX
-
-      L  => SCARC(NM)%LEVEL(NL)
-      AC => SCARC(NM)%LEVEL(NL)%AC
-
-      !> Allocate auxiliary array IW and preset it with zero
-      CALL SCARC_ALLOCATE_INT1(IW, 1, L%NC, NSCARC_INIT_ZERO, 'AUX')
-
-      !> Allocate ILU-part of Poisson matrix and preset it with Poisson matrix itself
-      CALL SCARC_ALLOCATE_REAL1(AC%ILU, 1, AC%NA, NSCARC_INIT_ZERO, 'LU')
-      AC%ILU = AC%VAL
-
-      DO 30 I = 1, AC%ROW(L%NC+1)-1
-         AC%ILU(I) = AC%VAL(I)
-30    CONTINUE
-
-      DO 31 I=1,L%NC
-         IW (i)=0
-31    CONTINUE
-
-      DO 500 K=1,L%NC
-
-WRITE(MSG%LU_DEBUG,*) '================= K =', K
-
-         J1 = AC%ROW(K)
-         J2 = AC%ROW(K+1)-1
-         DO 100 J=J1,J2
-            IW(AC%COL(J)) = J
-100      CONTINUE
-WRITE(MSG%LU_DEBUG,*) '          IW=',IW
-         J = J1
-150      JROW = AC%COL(J)
-
-         if (JROW .ge.K) goto 180
-
-         TL = AC%ILU(j)*AC%ILU(AC%ROW(jrow))
-         AC%ILU(j) = TL
-
-         DO 140 JJ = AC%ROW(jrow), AC%ROW(jrow+1) -1
-            if (AC%COL(JJ)<=JROW) GOTO 140
-            JW = IW(AC%COL(JJ))
-            if (JW .ne.0) AC%ILU(JW) = AC%ILU(JW) - TL * AC%ILU(JJ)
-140      CONTINUE
-
-180      J = J + 1
-         if (J .LE. J2) goto 150
-
-200      if (JROW .NE.K .OR. AC%ILU(J).EQ.0.0_EB) goto 600
-         AC%ILU(J) = 1.0_EB/AC%ILU(J)
-
-         DO 201 I = J1, J2
-           IW(AC%COL(J)) = 0
-201      CONTINUE
-
-500   CONTINUE
-
-      ICODE = 0
-      RETURN
-
-600   ICODE= k
-      RETURN
-
-      DEALLOCATE(IW)
-
-   ENDDO LEVEL_LOOP
-ENDDO MESHES_LOOP
-
-#ifdef WITH_SCARC_DEBUG
-DO NL = NLEVEL_MIN, NLEVEL_MAX
-   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_ILU, NL, 'LU-Decomposition')
+   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_MATRIX, NL, 'LU-Decomposition')
 ENDDO
 #endif
 
 END SUBROUTINE SCARC_SETUP_ILU
 
-
-
-
-!> ----------------------------------------------------------------------------------------------------
-!> Allocate and initialize ILU decomposition of Poisson matrix 
-!> L- and U-parts are stored in the same array, diagonal elements of L are supposed to be 1
-!> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_LU(NLMIN, NLMAX)
-INTEGER, INTENT(IN) :: NLMIN, NLMAX
-INTEGER :: NM, NL, IC, JC, ICOL, JCOL
-REAL(EB) :: VAL
-TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
-TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
-
-MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   LEVEL_LOOP: DO NL = NLMIN, NLMAX
-                                 
-      L  => SCARC(NM)%LEVEL(NL)
-      AC => SCARC(NM)%LEVEL(NL)%AC
-
-      CALL SCARC_ALLOCATE_REAL1(AC%LU, 1, AC%NA, NSCARC_INIT_ZERO, 'LU')
-      AC%LU = AC%VAL
-
-      CELL_LOOP: DO IC = 1, L%NC
-
-         LOWER_LOOP: DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1       
-
-            JC = AC%COL(ICOL) 
-            IF (JC >= IC) CYCLE
-            VAL = AC%VAL(ICOL)
-
-            DO JCOL = AC%ROW(JC), AC%ROW(JC+1)-1
-               IF (AC%ROW(JCOL) >= JC) CYCLE
-               VAL = VAL - AC%LU(ICOL)*AC%LU(JCOL)
-               WRITE(MSG%LU_DEBUG,*) '1: IC, JC, JCOL, VAL', IC, JC, JCOL, VAL
-            ENDDO
-       
-           AC%LU(ICOL) = VAL / AC%VAL(AC%ROW(IC))
-
-         ENDDO LOWER_LOOP
-
-         UPPER_LOOP: DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1      
-
-            JC = AC%COL(ICOL) 
-            IF (JC < IC) CYCLE
-            VAL = AC%VAL(ICOL)
-
-            DO JCOL = AC%ROW(JC), AC%ROW(JC+1)-1
-               IF (AC%ROW(JCOL) >= JC) CYCLE
-               VAL = VAL - AC%LU(ICOL)*AC%LU(JCOL)
-            ENDDO
-
-            AC%LU(ICOL) = VAL
-
-         ENDDO UPPER_LOOP
-
-      ENDDO CELL_LOOP
-
-   ENDDO LEVEL_LOOP
-ENDDO MESHES_LOOP
-
-#ifdef WITH_SCARC_DEBUG
-DO NL = NLEVEL_MIN, NLEVEL_MAX
-   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_LU, NL, 'LU-Decomposition')
-ENDDO
-#endif
-
-END SUBROUTINE SCARC_SETUP_LU
 
 
 #ifdef WITH_MKL
@@ -7120,10 +7033,10 @@ END SUBROUTINE SCARC_VECTOR_INIT
 SUBROUTINE SCARC_RELAXATION (NV1, NV2, NS, NP, NL)
 USE POIS, ONLY: H2CZSS, H3CZSS
 INTEGER, INTENT(IN):: NV1, NV2, NS, NP, NL
-INTEGER  :: NM, IC, JC, IW, I, J, K, ICOL 
+INTEGER  :: NM, IC, JC, IW, I, J, K, ICOL, ITYPE, IDIAG
 INTEGER  :: IXW, IYW, IZW, ICW, IOR0
 REAL(EB) :: AUX, OMEGA_SSOR=1.5_EB, VAL
-REAL(EB), DIMENSION(:), POINTER ::  V1, V2
+REAL(EB), DIMENSION(:), POINTER ::  V1, V2, LU
 #ifdef WITH_MKL_FB
 REAL(FB), DIMENSION(:), POINTER ::  V1_FB, V2_FB
 #endif
@@ -7145,7 +7058,8 @@ CALL SCARC_DEBUG_LEVEL (NV1, 'A: BLOCK_SOLVER 1', NL)
 CALL SCARC_DEBUG_LEVEL (NV2, 'A: BLOCK_SOLVER 2', NL)
 #endif
 
-SELECT CASE (STACK(NS-1)%SOLVER%TYPE_RELAX)
+ITYPE = STACK(NS-1)%SOLVER%TYPE_RELAX
+SELECT CASE (ITYPE)
 
    !> ----------------------------------------------------------------------------------------
    !> Preconditioning by blockwise Jacobi
@@ -7284,6 +7198,65 @@ SELECT CASE (STACK(NS-1)%SOLVER%TYPE_RELAX)
          END SELECT SSOR_MATRIX_CASE
 
       ENDDO SSOR_MESHES_LOOP
+
+   !> ----------------------------------------------------------------------------------------
+   !> Preconditioning by blockwise SSORM or ILU
+   !> in both cases preconditioner is given as separate matrix which is based
+   !> on the same storage technique as the matrix AC itself
+   !> and two tridiagonal systems have to be solved
+   !> V1 contains the RHS to be solved for, V2 will contain the solution
+   !> ----------------------------------------------------------------------------------------
+   CASE (NSCARC_RELAX_SGS, NSCARC_RELAX_SSORM, NSCARC_RELAX_ILU)
+
+      SSORM_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+         L  => SCARC(NM)%LEVEL(NL)
+         AC => SCARC(NM)%LEVEL(NL)%AC
+
+         SELECT CASE(ITYPE)
+            CASE(NSCARC_RELAX_SGS)
+               LU => L%AC%SGS
+            CASE(NSCARC_RELAX_SSORM)
+               LU => L%AC%SSORM
+            CASE(NSCARC_RELAX_ILU)
+               LU => L%AC%ILU
+         END SELECT
+
+         V1 => POINT_TO_VECTOR(NM, NL, NV1)
+         V2 => POINT_TO_VECTOR(NM, NL, NV2)
+
+         !> Forward solve: 
+         !> Compute sol(i) = rhs(i) - sum L(i,j) x sol(j)
+         DO IC = 1, L%NCS
+            V2(IC) = V1(IC)
+            DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1
+               JC = AC%COL(ICOL)
+               IF (JC >= IC) CYCLE
+               V2(IC) = V2(IC) - LU(ICOL) * V2(JC)
+WRITE(MSG%LU_DEBUG,*) 'A: V2(',IC,')=',V2(IC), JC
+            ENDDO
+         ENDDO
+
+         !> Backward solve
+         !> Compute sol: inv(U) sol
+         DO IC = L%NCS, 1, -1
+
+            DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1
+               JC = AC%COL(ICOL)
+               IF (JC <= IC) CYCLE
+               V2(IC) = V2(IC) - LU(ICOL) * V2(JC)
+WRITE(MSG%LU_DEBUG,*) 'B: V2(',IC,')=',V2(IC), JC
+            ENDDO
+
+            !> Compute sol(i) = sol(i)/U(i,i)
+            IDIAG = AC%ROW(IC)
+            V2(IC) = V2(IC)/LU(IDIAG) 
+
+WRITE(MSG%LU_DEBUG,*) 'C: V2(',IC,')=',V2(IC), IDIAG
+         ENDDO
+
+      ENDDO SSORM_MESHES_LOOP
+
 
    !> ----------------------------------------------------------------------------------------
    !> Preconditioning by blockwise Geometric Multigrid
@@ -7837,43 +7810,43 @@ INTEGER :: IL
 SELECT_PRECON_TYPE: SELECT CASE (TYPE_TWOLEVEL)
 
    !> --------------------------------------------------------------------
-   !> classical one-level preconditioning
+   !> Classical one-level preconditioning
    !> --------------------------------------------------------------------
    CASE (NSCARC_TWOLEVEL_NONE)
 
       CALL SCARC_VECTOR_COPY (R, V, 1.0_EB, NL)                   !>  v := r
-      CALL SCARC_RELAXATION (R, V, NS+1, NP, NL)           !>  v := Precon(r)
+      CALL SCARC_RELAXATION (R, V, NS+1, NP, NL)                  !>  v := Relax(r)
 
    !> --------------------------------------------------------------------
-   !> additive two-level preconditioning
+   !> Additive two-level preconditioning
    !> --------------------------------------------------------------------
    CASE (NSCARC_TWOLEVEL_ADD)
 
       CALL SCARC_VECTOR_COPY (R, B, 1.0_EB, NL)                   !>  Use r^l as right hand side for preconditioner
-      DO IL = NL, NLEVEL_MAX-1                                   !>  successively restrict it to coarser levels up to coarsest
-         CALL SCARC_RESTRICTION (B, B, IL, IL+1)                !>  b^{l+1} := Restriction(r^l)
+      DO IL = NL, NLEVEL_MAX-1                                    !>  successively restrict it to coarser levels up to coarsest
+         CALL SCARC_RESTRICTION (B, B, IL, IL+1)                  !>  b^{l+1} := Restriction(r^l)
       ENDDO
 
       CALL SCARC_METHOD_COARSE(NS+2, NS, NLEVEL_MAX)              !>  solve A^L * x^L := b^L on coarsest level
       CALL SCARC_VECTOR_COPY (X, Z, 1.0_EB, NLEVEL_MAX)           !>  z^L := x^L
 
-      DO IL = NLEVEL_MAX-1, NL, -1                               !>  successively prolong it to finer levels up to finest
-         CALL SCARC_PROLONGATION(Z, Z, IL+1, IL)                !>  z^l := Prolongation(z^{l+1})
+      DO IL = NLEVEL_MAX-1, NL, -1                                !>  successively interpolate to finer levels up to finest
+         CALL SCARC_PROLONGATION(Z, Z, IL+1, IL)                  !>  z^l := Prolongation(z^{l+1})
       ENDDO
 
       CALL SCARC_VECTOR_COPY (R, V, 1.0_EB, NL)                   !>  v^l := r^l
-      CALL SCARC_RELAXATION (R, V, NS+1, NP, NL)           !>  v^l := Precon(r^l)
+      CALL SCARC_RELAXATION (R, V, NS+1, NP, NL)                  !>  v^l := Relax(r^l)
       CALL SCARC_VECTOR_SUM (Z, V, 1.0_EB, 1.0_EB, NL)            !>  v^l := z^l + v^l
 
    !> --------------------------------------------------------------------
-   !> multiplicative two-level preconditioning (coarse first, fine second)
+   !> Multiplicative two-level preconditioning (coarse first, fine second)
    !> --------------------------------------------------------------------
    CASE (NSCARC_TWOLEVEL_MUL)
 
       CALL SCARC_VECTOR_COPY (R, B, 1.0_EB, NL)                   !>  Use r^l as right hand side for preconditioner
 
       DO IL = NL, NLEVEL_MAX-1
-         CALL SCARC_RESTRICTION (B, B, IL, IL+1)                !>  b^{l+1} := Restriction(r^l)
+         CALL SCARC_RESTRICTION (B, B, IL, IL+1)                  !>  b^{l+1} := Restriction(r^l)
       ENDDO
 
       CALL SCARC_METHOD_COARSE(NS+2, NS, NLEVEL_MAX)              !>  solve A^L * x^L := b^L on coarsest level
@@ -7886,11 +7859,11 @@ SELECT_PRECON_TYPE: SELECT CASE (TYPE_TWOLEVEL)
 
       CALL SCARC_VECTOR_SUM (R, Z, 1.0_EB, -1.0_EB, NL)           !>  z^l := r^l - z^l
       CALL SCARC_VECTOR_COPY (Z, V, 1.0_EB, NL)                   !>  v^l := z^l
-      CALL SCARC_RELAXATION (Z, V, NS+1, NP, NL)           !>  v^l := Precon(z^l)
+      CALL SCARC_RELAXATION (Z, V, NS+1, NP, NL)                  !>  v^l := Relax(z^l)
       CALL SCARC_VECTOR_SUM (Y, V, 1.0_EB, 1.0_EB, NL)            !>  v^l := y^l - z^l
 
    !> --------------------------------------------------------------------
-   !> multiplicative two-level preconditioning (fine first, coarse second)
+   !> Multiplicative two-level preconditioning (fine first, coarse second),
    !> coarse level is one level away from finest one (one coarsening step)
    !> --------------------------------------------------------------------
    CASE (NSCARC_TWOLEVEL_MUL2)
@@ -7898,7 +7871,7 @@ SELECT_PRECON_TYPE: SELECT CASE (TYPE_TWOLEVEL)
       WRITE(*,*) 'TOFIX: where is restriction?'
 
       CALL SCARC_VECTOR_COPY (R, V, 1.0_EB, NL)                   !>  v^l := r^l
-      CALL SCARC_RELAXATION (R, V, NS+1, NP, NL)           !>  v^l := Precon(r^l)
+      CALL SCARC_RELAXATION (R, V, NS+1, NP, NL)                  !>  v^l := Relax(r^l)
       CALL SCARC_MATVEC_PRODUCT (V, Z, NS, NL)                    !>  z^l := A^{l} * v^l
 
       CALL SCARC_VECTOR_SUM (R, Z, 1.0_EB, -1.0_EB, NL)           !>  z^l := r^l - z^l
@@ -7910,20 +7883,20 @@ SELECT_PRECON_TYPE: SELECT CASE (TYPE_TWOLEVEL)
 
 
    !> --------------------------------------------------------------------
-   !> only coarse grid preconditioner
+   !> Only coarse grid preconditioner
    !> --------------------------------------------------------------------
    CASE (NSCARC_TWOLEVEL_COARSE)
 
       CALL SCARC_VECTOR_COPY (R, B, 1.0_EB, NL)                   !>  Use r^l as right hand side for preconditioner
-      DO IL = NL, NLEVEL_MAX-1                                   !>  successively restrict it to coarser levels up to coarsest
-         CALL SCARC_RESTRICTION (B, B, IL, IL+1)                !>  b^{l+1} := rest(b^l)
+      DO IL = NL, NLEVEL_MAX-1                                    !>  successively restrict it to coarser levels up to coarsest
+         CALL SCARC_RESTRICTION (B, B, IL, IL+1)                  !>  b^{l+1} := Restriction(b^l)
       ENDDO
 
       CALL SCARC_METHOD_COARSE(NS+2, NS, NLEVEL_MAX)              !>  solve A^L * x^L := b^L on coarsest level
       CALL SCARC_VECTOR_COPY (X, Y, 1.0_EB, NLEVEL_MAX)           !>  y^L := x^L
 
-      DO IL = NLEVEL_MAX-1, NL, -1                               !>  successively prolong it to finer levels up to finest
-         CALL SCARC_PROLONGATION (Y, Y, NL+1, NL)                 !>  y^l := prol(y^{l+1})
+      DO IL = NLEVEL_MAX-1, NL, -1                                !>  successively interpolate to finer levels up to finest
+         CALL SCARC_PROLONGATION (Y, Y, NL+1, NL)                 !>  y^l := Prolongation(y^{l+1})
       ENDDO
       CALL SCARC_VECTOR_COPY (Y, V, 1.0_EB, NL)                   !>  v^l := y^l
 
@@ -8678,7 +8651,7 @@ IF (RES > NSCARC_THRESHOLD_DIVGERGENCE) NSTATE = NSCARC_STATE_DIVG
 
 SCARC_CONVERGENCE_STATE = NSTATE
 
-IF (BSTATISTICS) CALL SCARC_DUMP_STATISTICS(ISM, NS, NL)
+IF (BCSV) CALL SCARC_DUMP_STATISTICS(ISM, NS, NL)
 
 #ifdef WITH_SCARC_VERBOSE
 !IF (MYID == 0) WRITE(LU_OUTPUT,1000) TRIM(CNAME), NL, ITE, RES
@@ -10655,7 +10628,7 @@ END SUBROUTINE SCARC_TIMEOUT
 SUBROUTINE SCARC_DUMP_STATISTICS(ISM, NS, NL)
 INTEGER, INTENT(IN) :: ISM, NS, NL
 
-IF (.NOT.BSTATISTICS .OR. MYID /= 0) RETURN
+IF (.NOT.BCSV .OR. MYID /= 0) RETURN
 IF (ITE_TOTAL == 0 .AND. TYPE_SOLVER /= NSCARC_SOLVER_MAIN) RETURN
 WRITE(MSG%LU_STAT,1000) ITE_PRES, NS, ITE_TOTAL, ITE_CG, ITE_MG, NL, ITE_SMOOTH, ISM, ITE_COARSE, ITE_LU, RES, CAPPA
 
@@ -11006,6 +10979,24 @@ SELECT CASE (NTYPE)
                DO IC = 1, AC%NR-1
                   WRITE(MSG%LU_DEBUG,'(i5,a,20f8.1)') IC,':',(AC%VAL(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
                ENDDO
+               IF (ALLOCATED(AC%SGS)) THEN
+                  WRITE(MSG%LU_DEBUG,*) '---------------------- SGS:'
+                  DO IC = 1, AC%NR-1
+                     WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%SGS(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
+                  ENDDO
+               ENDIF
+               IF (ALLOCATED(AC%SSORM)) THEN
+                  WRITE(MSG%LU_DEBUG,*) '---------------------- SSORM:'
+                  DO IC = 1, AC%NR-1
+                     WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%SSORM(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
+                  ENDDO
+               ENDIF
+               IF (ALLOCATED(AC%ILU)) THEN
+                  WRITE(MSG%LU_DEBUG,*) '---------------------- ILU:'
+                  DO IC = 1, AC%NR-1
+                     WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%ILU(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
+                  ENDDO
+               ENDIF
 #ifdef WITH_MKL
                !IF ((TYPE_METHOD == NSCARC_METHOD_LU) .AND. (TYPE_MKL == NSCARC_MKL_GLOBAL)) THEN
                !   WRITE(MSG%LU_DEBUG,*) '---------------------- AG_COL:'
@@ -11055,72 +11046,6 @@ SELECT CASE (NTYPE)
 
       END SELECT
 
-
-   !> ------------------------------------------------------------------------------------------------
-   !> Debug LU decomposition of matrix A 
-   !> ------------------------------------------------------------------------------------------------
-   CASE (NSCARC_DEBUG_LU)
-
-      DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-         L  => SCARC(NM)%LEVEL(NL)
-         AC => SCARC(NM)%LEVEL(NL)%AC
-         WRITE(MSG%LU_DEBUG,1000) CQUANTITY, NM, NL
-         WRITE(MSG%LU_DEBUG,*) '----------- SHOWING FULL COMPACT MATRIX ENTRIES'
-         WRITE(MSG%LU_DEBUG,*) 'NCS =',L%NCS
-         WRITE(MSG%LU_DEBUG,*) 'NV =',AC%NA
-         WRITE(MSG%LU_DEBUG,*) 'NC =',AC%NC
-         WRITE(MSG%LU_DEBUG,*) 'NR =',AC%NR
-         WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%LU) =',SIZE(AC%LU)
-         WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%COL) =',SIZE(AC%COL)
-         WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%ROW) =',SIZE(AC%ROW)
-         WRITE(MSG%LU_DEBUG,*) '---------------------- AC%ROW:'
-         WRITE(MSG%LU_DEBUG,'(7i8)') (AC%ROW(IC), IC=1,AC%NR)
-         WRITE(MSG%LU_DEBUG,*) '---------------------- AC%COL:'
-         DO IC = 1, AC%NR-1
-            WRITE(MSG%LU_DEBUG,'(i5,a,20i9)') IC,':',(AC%COL(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
-         ENDDO
-         WRITE(MSG%LU_DEBUG,*) '---------------------- LU:'
-         DO IC = 1, AC%NR-1
-            WRITE(MSG%LU_DEBUG,'(i5,a,20f8.1)') IC,':',(AC%LU(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
-         ENDDO
-      ENDDO
-
-   !> ------------------------------------------------------------------------------------------------
-   !> Debug ILU decomposition of matrix A 
-   !> ------------------------------------------------------------------------------------------------
-   CASE (NSCARC_DEBUG_ILU)
-
-      DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-         L  => SCARC(NM)%LEVEL(NL)
-         AC => SCARC(NM)%LEVEL(NL)%AC
-         WRITE(MSG%LU_DEBUG,1000) CQUANTITY, NM, NL
-         WRITE(MSG%LU_DEBUG,*) '----------- SHOWING FULL COMPACT MATRIX ENTRIES'
-         WRITE(MSG%LU_DEBUG,*) 'NCS =',L%NCS
-         WRITE(MSG%LU_DEBUG,*) 'NV =',AC%NA
-         WRITE(MSG%LU_DEBUG,*) 'NC =',AC%NC
-         WRITE(MSG%LU_DEBUG,*) 'NR =',AC%NR
-         WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%ILU) =',SIZE(AC%ILU)
-         WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%COL) =',SIZE(AC%COL)
-         WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%ROW) =',SIZE(AC%ROW)
-         WRITE(MSG%LU_DEBUG,*) '---------------------- AC%ROW:'
-         WRITE(MSG%LU_DEBUG,'(7i8)') (AC%ROW(IC), IC=1,AC%NR)
-         WRITE(MSG%LU_DEBUG,*) '---------------------- AC%COL:'
-         DO IC = 1, AC%NR-1
-            WRITE(MSG%LU_DEBUG,'(i5,a,20i9)') IC,':',(AC%COL(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
-         ENDDO
-         WRITE(MSG%LU_DEBUG,*) '---------------------- ILU:'
-         DO IC = 1, AC%NR-1
-            WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%ILU(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
-         ENDDO
-         WRITE(MSG%LU_DEBUG,*) '---------------------- L:'
-         DO IC = 1, AC%NR-1
-            WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%L(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
-         ENDDO
-         WRITE(MSG%LU_DEBUG,*) '---------------------- U:'
-         DO IC = 1, AC%NR-1
-            WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%U(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
-         ENDDO
-      ENDDO
 
    !> ------------------------------------------------------------------------------------------------
    !> Debug symmetric system matrix AS
