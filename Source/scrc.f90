@@ -117,7 +117,7 @@ CHARACTER(40) :: SCARC_SMOOTH            = 'SSOR'           !> Smoother for MG (
 CHARACTER(40) :: SCARC_SMOOTH_SCOPE      = 'LOCAL'          !> Scope of action (LOCAL/GLOBAL)
 INTEGER       :: SCARC_SMOOTH_ITERATIONS = 5                !> Max number of iterations
 REAL (EB)     :: SCARC_SMOOTH_ACCURACY   = 1.E-8_EB         !> Requested accuracy for convergence
-REAL (EB)     :: SCARC_SMOOTH_OMEGA      = 0.80E+0_EB       !> Relaxation parameter
+REAL (EB)     :: SCARC_SMOOTH_OMEGA      = 1.50E+0_EB       !> Relaxation parameter
 
 !> Parameters for preconditioning method (used in Krylov-methods)
 CHARACTER(40) :: SCARC_PRECON            = 'NONE'           !> Preconditioner for CG/BICG (JACOBI/SSOR/FFT/PARDISO/MG)
@@ -193,13 +193,15 @@ INTEGER, PARAMETER :: NSCARC_BROADCAST_SUM          =  1, &     !> broadcast loc
                       NSCARC_BROADCAST_LAST         =  5        !> broadcast local value and deliver last
 
 INTEGER, PARAMETER :: NSCARC_RELAX_JACOBI          =  1, &     !> preconditioning by local JACOBI-methods
-                      NSCARC_RELAX_SGS             =  2, &     !> preconditioning by local SSOR-methods
-                      NSCARC_RELAX_SSOR            =  3, &     !> preconditioning by local SSOR-methods
-                      NSCARC_RELAX_SSORM           =  4, &     !> preconditioning by local SSOR-methods
-                      NSCARC_RELAX_FFT             =  5, &     !> preconditioning by local FFT-methods
-                      NSCARC_RELAX_GMG             =  6, &     !> preconditioning by local GMG-methods
-                      NSCARC_RELAX_ILU             =  8, &     !> preconditioning by local ILU-decompositions (own)
-                      NSCARC_RELAX_MKL             =  9        !> preconditioning by local LU-decompositions (MKL)
+                      NSCARC_RELAX_SSOR            =  2, &     !> preconditioning by local SSOR-methods
+                      NSCARC_RELAX_GSM             =  3, &     !> preconditioning by local GS-methods (matrix form)
+                      NSCARC_RELAX_SGSM            =  4, &     !> preconditioning by local SGS-methods (matrix form)
+                      NSCARC_RELAX_SORM            =  5, &     !> preconditioning by local SOR-methods (matrix form)
+                      NSCARC_RELAX_SSORM           =  6, &     !> preconditioning by local SSOR-methods (matrix form)
+                      NSCARC_RELAX_FFT             =  7, &     !> preconditioning by local FFT-methods
+                      NSCARC_RELAX_GMG             =  8, &     !> preconditioning by local GMG-methods
+                      NSCARC_RELAX_ILU             =  9, &     !> preconditioning by local ILU-decompositions (own)
+                      NSCARC_RELAX_MKL             = 10        !> preconditioning by local LU-decompositions (MKL)
  
 INTEGER, PARAMETER :: NSCARC_SCOPE_GLOBAL           =  1, &    !> scope of defect correction is global
                       NSCARC_SCOPE_LOCAL            =  2       !> scope of defect correction is local
@@ -388,7 +390,7 @@ LOGICAL :: BGMG        = .FALSE.                           ! Geometric Multigrid
 LOGICAL :: BTWOLEVEL   = .FALSE.                           ! Method with two grid levels used?
 LOGICAL :: BMULTILEVEL = .FALSE.                           ! Method with multiple grid levels used?
 LOGICAL :: BSTRUCTURED = .TRUE.                            ! Structured/Unstructured discretization used?
-LOGICAL :: BCSV = .FALSE.                           ! store iteration statistics in CSV-file
+LOGICAL :: BCSV        = .FALSE.                           ! store iteration statistics in CSV-file
 LOGICAL :: BFFT        = .FALSE.                           ! FFT-method used?
 LOGICAL :: BMKL        = .FALSE.                           ! MKL-method used?
 LOGICAL :: BMKL_LEVEL(NSCARC_LEVEL_MAX)  = .FALSE.         ! level-dependent MKL method used ?
@@ -589,8 +591,10 @@ REAL(FB), DIMENSION (-3:3)           :: STENCIL_FB     !> store basic stencil in
 #else
 REAL(EB), ALLOCATABLE, DIMENSION (:) :: VAL            !> values of matrix (real precision)
 REAL(EB), ALLOCATABLE, DIMENSION (:) :: ILU            !> ILU-decomposition
-REAL(EB), ALLOCATABLE, DIMENSION (:) :: SGS            !> symmetric GS-decomposition
-REAL(EB), ALLOCATABLE, DIMENSION (:) :: SSORM          !> SSOR-decomposition in matrix notation
+REAL(EB), ALLOCATABLE, DIMENSION (:) :: GSM            !> GS-decomposition in matrix form
+REAL(EB), ALLOCATABLE, DIMENSION (:) :: SGSM           !> symmetric GS-decomposition in matrix form
+REAL(EB), ALLOCATABLE, DIMENSION (:) :: SORM           !> SOR-decomposition in matrix form
+REAL(EB), ALLOCATABLE, DIMENSION (:) :: SSORM          !> SSOR-decomposition in matrix form
 REAL(EB), DIMENSION (-3:3)           :: STENCIL        !> store basic stencil information in single precision
 #endif
 INTEGER,  ALLOCATABLE, DIMENSION (:) :: ROW            !> row pointer
@@ -770,7 +774,7 @@ INTEGER :: TYPE_STAGE     = NSCARC_UNDEFINED_INT    !> stage for working vectors
 INTEGER :: TYPE_SCOPE     = NSCARC_UNDEFINED_INT    !> scope of acting (global/local)
 INTEGER :: TYPE_NLMIN     = NSCARC_UNDEFINED_INT    !> minimum level for that solver
 INTEGER :: TYPE_NLMAX     = NSCARC_UNDEFINED_INT    !> maximum level for that solver
-INTEGER :: TYPE_RELAX    = NSCARC_UNDEFINED_INT    !> relaxation method
+INTEGER :: TYPE_RELAX     = NSCARC_UNDEFINED_INT    !> relaxation method
 INTEGER :: TYPE_TWOLEVEL  = NSCARC_UNDEFINED_INT    !> schwarz method?
 INTEGER :: TYPE_INTERPOL  = NSCARC_UNDEFINED_INT    !> interpolation type
 INTEGER :: TYPE_ACCURACY  = NSCARC_UNDEFINED_INT    !> accuracy requirements
@@ -867,30 +871,17 @@ INTEGER, ALLOCATABLE, DIMENSION(:) :: REQ7
 !> --------------------------------------------------------------------------------------------
 TYPE (SCARC_TYPE), SAVE, DIMENSION(:), ALLOCATABLE, TARGET :: SCARC
 
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: MAIN_CG
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: MAIN_GMG
-#ifdef WITH_MKL
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: MAIN_LU      
-#endif
+TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: MAIN_CG, MAIN_GMG
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: COARSE_KRYLOV
 #ifdef WITH_MKL
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: COARSE_CLUSTER
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: COARSE_PARDISO
+TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: MAIN_LU      
+TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: COARSE_CLUSTER, COARSE_PARDISO
 #endif
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_JACOBI
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_SGS
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_SSOR
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_SSORM
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_ILU
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_FFT
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_GMG
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: SMOOTH_JACOBI
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: SMOOTH_SSOR
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: SMOOTH_SSORM
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: SMOOTH_FFT
+TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_JACOBI, PRECON_SSOR, PRECON_ILU, PRECON_FFT, PRECON_GMG
+TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_GSM, PRECON_SGSM, PRECON_SORM, PRECON_SSORM
+TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: SMOOTH_JACOBI, SMOOTH_SSOR, SMOOTH_FFT
 #ifdef WITH_MKL
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_MKL
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: SMOOTH_MKL
+TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_MKL, SMOOTH_MKL
 #endif
 TYPE (SCARC_STACK_TYPE)  , SAVE, DIMENSION(:), ALLOCATABLE, TARGET :: STACK
 TYPE (SCARC_TIME_TYPE)   , SAVE, DIMENSION(:), ALLOCATABLE :: TSETUP, TSUM, TSTEP
@@ -963,8 +954,6 @@ INTEGER:: NM, LASTID
 #endif
 
 IF (TRIM(SCARC_ERROR_FILE) == '.TRUE.') BCSV = .TRUE.
-
-WRITE(*,*) 'BCSV=',BCSV
 
 !> If requested, open file for CSV-information about convergence of different solvers
 IF (BCSV) THEN
@@ -1191,29 +1180,29 @@ SELECT CASE (TRIM(SCARC_METHOD))
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_KRYLOV_INTERPOL, NSCARC_NONE)
       END SELECT
 
-      !> set type of preconditioner (JACOBI/SSOR/GMG)
+      !> set type of preconditioner (JACOBI/SSOR/GSM/SGSM/SORM/SSORM/ILU/FFT/GMG/PARDISO/CLUSTER)
       SELECT CASE (TRIM(SCARC_PRECON))
-         CASE ('JACOBI')
+         CASE ('JACOBI')                                    !> Jacobi preconditioner
             TYPE_PRECON = NSCARC_RELAX_JACOBI
-         CASE ('SGS')
-            TYPE_PRECON = NSCARC_RELAX_SGS
-         CASE ('SSOR')
+         CASE ('SSOR')                                      !> Symmetric SOR preconditioner
             TYPE_PRECON = NSCARC_RELAX_SSOR
-         CASE ('SSORM')
+         CASE ('GSM')                                       !> Gauss-Seidel preconditioner in matrix form
+            TYPE_PRECON = NSCARC_RELAX_GSM
+         CASE ('SGSM')                                      !> Symmetric Gauss-Seidel preconditioner in matrix form
+            TYPE_PRECON = NSCARC_RELAX_SGSM
+         CASE ('SORM')                                      !> SOR preconditioner in matrix form
+            TYPE_PRECON = NSCARC_RELAX_SORM
+         CASE ('SSORM')                                     !> Symmetric SOR preconditioner in matrix form
             TYPE_PRECON = NSCARC_RELAX_SSORM
-         CASE ('ILU')
+         CASE ('ILU')                                       !> ILU preconditioner
             TYPE_PRECON = NSCARC_RELAX_ILU
-         CASE ('GMG')
+         CASE ('GMG')                                       !> Geometric multigrid preconditioner
             TYPE_PRECON = NSCARC_RELAX_GMG
             SELECT CASE (TRIM(SCARC_SMOOTH))
                CASE ('JACOBI')
                   TYPE_SMOOTH = NSCARC_RELAX_JACOBI
-               CASE ('SGS')
-                  TYPE_SMOOTH = NSCARC_RELAX_SGS
                CASE ('SSOR')
                   TYPE_SMOOTH = NSCARC_RELAX_SSOR
-               CASE ('SSORM')
-                  TYPE_SMOOTH = NSCARC_RELAX_SSORM
                CASE ('ILU')
                   TYPE_SMOOTH = NSCARC_RELAX_ILU
                CASE ('FFT')
@@ -1242,22 +1231,22 @@ SELECT CASE (TRIM(SCARC_METHOD))
                   CALL SCARC_SHUTDOWN(NSCARC_ERROR_MKL_STORAGE, SCARC_NONE, NSCARC_NONE)
 #endif
             END SELECT
-         CASE ('FFT')
+         CASE ('FFT')                                                !> FFT preconditioner
             IF (TYPE_DISCRET == NSCARC_CELL_UNSTRUCTURED) &
                CALL SCARC_SHUTDOWN(NSCARC_ERROR_FFT_DISCRET, SCARC_NONE, NSCARC_NONE)
             TYPE_PRECON = NSCARC_RELAX_FFT
-         CASE ('PARDISO')
+         CASE ('PARDISO')                                            !> LU preconditioner based on MKL-PARDISO
 #ifdef WITH_MKL
             IF (TYPE_MATRIX == NSCARC_MATRIX_COMPACT) THEN
                TYPE_PRECON   = NSCARC_RELAX_MKL
                TYPE_MKL      = NSCARC_MKL_LOCAL
             ELSE
                CALL SCARC_SHUTDOWN(NSCARC_ERROR_MKL_STORAGE, SCARC_NONE, NSCARC_NONE)
-            ENDIF
+            ENDIF                                    
 #else
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_MKL_PARDISO, SCARC_NONE, NSCARC_NONE)
 #endif
-         CASE ('CLUSTER')
+         CASE ('CLUSTER')                            !>  LU-preconditioner based on MKL Cluster_Sparse_Solver
 #ifdef WITH_MKL
             IF (TYPE_MATRIX == NSCARC_MATRIX_COMPACT) THEN
                TYPE_PRECON   = NSCARC_RELAX_MKL
@@ -1301,12 +1290,8 @@ SELECT CASE (TRIM(SCARC_METHOD))
       SELECT CASE (TRIM(SCARC_SMOOTH))                        !> use same parameters as for preconditioner
          CASE ('JACOBI')
             TYPE_SMOOTH = NSCARC_RELAX_JACOBI
-         CASE ('SGS')
-            TYPE_SMOOTH = NSCARC_RELAX_SGS
          CASE ('SSOR')
             TYPE_SMOOTH = NSCARC_RELAX_SSOR
-         CASE ('SSORM')
-            TYPE_SMOOTH = NSCARC_RELAX_SSORM
          CASE ('ILU')
             TYPE_SMOOTH = NSCARC_RELAX_ILU
          CASE ('FFT')
@@ -5346,23 +5331,35 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
             CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
 
          !> SSOR-preconditioning (acting locally by default)
-         CASE (NSCARC_RELAX_SGS)                                
-            STACK(NSTACK)%SOLVER => PRECON_SGS
-            CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
-            CALL SCARC_SETUP_SGS(NLEVEL_MIN, NLEVEL_MAX)
-
-         !> SSOR-preconditioning (acting locally by default)
          CASE (NSCARC_RELAX_SSOR)                                
             STACK(NSTACK)%SOLVER => PRECON_SSOR
             CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
 
-         !> SSOR-preconditioning (acting locally by default)
+         !> GS-preconditioning in matrix form (acting locally by default)
+         CASE (NSCARC_RELAX_GSM)                                
+            STACK(NSTACK)%SOLVER => PRECON_GSM
+            CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
+            CALL SCARC_SETUP_GSM(NLEVEL_MIN, NLEVEL_MAX)
+
+         !> SGS-preconditioning in matrix form (acting locally by default)
+         CASE (NSCARC_RELAX_SGSM)                                
+            STACK(NSTACK)%SOLVER => PRECON_SGSM
+            CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
+            CALL SCARC_SETUP_SGSM(NLEVEL_MIN, NLEVEL_MAX)
+
+         !> SOR-preconditioning in matrix form (acting locally by default)
+         CASE (NSCARC_RELAX_SORM)                                
+            STACK(NSTACK)%SOLVER => PRECON_SORM
+            CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
+            CALL SCARC_SETUP_SORM(NLEVEL_MIN, NLEVEL_MAX, NSTACK)
+
+         !> SSOR-preconditioning in matrix form (acting locally by default)
          CASE (NSCARC_RELAX_SSORM)                                
             STACK(NSTACK)%SOLVER => PRECON_SSORM
             CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
-            CALL SCARC_SETUP_SSORM(NLEVEL_MIN, NLEVEL_MAX)
+            CALL SCARC_SETUP_SSORM(NLEVEL_MIN, NLEVEL_MAX, NSTACK)
 
-         !> ILU(0)-preconditioning (acting locally by default)
+         !> ILU(0)-preconditioning in matrix form (acting locally by default)
          CASE (NSCARC_RELAX_ILU)                                
             STACK(NSTACK)%SOLVER => PRECON_ILU
             CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
@@ -5735,13 +5732,15 @@ SELECT_COARSE: SELECT CASE (TYPE_COARSE)
 #ifdef WITH_MKL
    CASE (NSCARC_COARSE_DIRECT)
 
-      !> Multi-mesh case: initialize current stack position as global CLUSTER_SPARSE_SOLVER
-      IF (N_MPI_PROCESSES > 1) THEN
+      !> Global scope in the multi-mesh case:
+      !> initialize current stack position as global CLUSTER_SPARSE_SOLVER
+      IF (NSCOPE == NSCARC_SCOPE_GLOBAL .AND. N_MPI_PROCESSES > 1) THEN
          STACK(NSTACK)%SOLVER => COARSE_CLUSTER               
          CALL SCARC_SETUP_MKL(NSCARC_SOLVER_COARSE, NSCOPE, NSTAGE, NSTACK, NLMIN, NLMAX)
          CALL SCARC_SETUP_CLUSTER(NLMIN, NLMAX)
 
-      !> Single-mesh case: initialize current stack position as PARDISO solver
+      !> Local scope:
+      !> initialize current stack position as PARDISO solver
       ELSE
          STACK(NSTACK)%SOLVER => COARSE_PARDISO
          CALL SCARC_SETUP_MKL(NSCARC_SOLVER_COARSE, NSCOPE, NSTAGE, NSTACK, NLMIN, NLMAX)
@@ -5806,10 +5805,14 @@ SV%OMEGA =  SCARC_PRECON_OMEGA
 SELECT CASE(TYPE_PRECON)
    CASE (NSCARC_RELAX_JACOBI)
       SV%CNAME = 'SCARC_PRECON_JACOBI'
-   CASE (NSCARC_RELAX_SGS)
-      SV%CNAME = 'SCARC_PRECON_SGS'
    CASE (NSCARC_RELAX_SSOR)
       SV%CNAME = 'SCARC_PRECON_SSOR'
+   CASE (NSCARC_RELAX_GSM)
+      SV%CNAME = 'SCARC_PRECON_GSM'
+   CASE (NSCARC_RELAX_SGSM)
+      SV%CNAME = 'SCARC_PRECON_SGSM'
+   CASE (NSCARC_RELAX_SORM)
+      SV%CNAME = 'SCARC_PRECON_SORM'
    CASE (NSCARC_RELAX_SSORM)
       SV%CNAME = 'SCARC_PRECON_SSORM'
    CASE (NSCARC_RELAX_ILU)
@@ -5887,12 +5890,8 @@ SV%TYPE_SCOPE = NSCOPE
 SELECT CASE(TYPE_SMOOTH)
    CASE (NSCARC_RELAX_JACOBI)
       SV%CNAME = 'SCARC_SMOOTH_JACOBI'
-   CASE (NSCARC_RELAX_SGS)
-      SV%CNAME = 'SCARC_SMOOTH_SGS'
    CASE (NSCARC_RELAX_SSOR)
       SV%CNAME = 'SCARC_SMOOTH_SSOR'
-   CASE (NSCARC_RELAX_SSORM)
-      SV%CNAME = 'SCARC_SMOOTH_SSORM'
    CASE (NSCARC_RELAX_ILU)
       SV%CNAME = 'SCARC_SMOOTH_ILU'
    CASE (NSCARC_RELAX_FFT)
@@ -6087,17 +6086,9 @@ END SUBROUTINE SCARC_SETUP_FFT
 !>          -E is the strictly lower part
 !>          -F is the strictly upper part
 !> the SSOR-preconditioner in matrix form is defined
-!>           B_SGS = (D - E) D^{-1} (D - F)
-!>                   (I - E D^{-1}) (D - F)
-!> Now, defining the triangular matrices
-!>               L  = (I - E D^{-1}) 
-!>               U  = (D - F)
-!> the SSOR-preconditioning can be thought as the solution of two triangular systems
-!> Both matrices can be stored as a single matrix that occupies the same amount of storage as A
-!> where the same row and column pointers can be used as for A (identical pattern)
-!> Note that the diagonal elements of L are 1 (and are omitted, only the diagonal of U is stored there)
+!>           B_GSM = (D - E) 
 !> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_SGS(NLMIN, NLMAX)
+SUBROUTINE SCARC_SETUP_GSM(NLMIN, NLMAX)
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL, IC, JC, IPTR
 TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
@@ -6109,25 +6100,15 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       L  => SCARC(NM)%LEVEL(NL)
       AC => SCARC(NM)%LEVEL(NL)%AC
 
-      !> Allocate workspace for SGS decomposition of Poisson matrix 
-      CALL SCARC_ALLOCATE_REAL1(AC%SGS, 1, AC%NA, NSCARC_INIT_ZERO, 'ILU')
+      !> Allocate workspace for GSM decomposition of Poisson matrix 
+      CALL SCARC_ALLOCATE_REAL1(AC%GSM, 1, AC%NA, NSCARC_INIT_ZERO, 'ILU')
 
       CELL_LOOP: DO IC = 1, L%NC
         
          DO IPTR = AC%ROW(IC), AC%ROW(IC+1)-1
             JC = AC%COL(IPTR)
-
-            !> Definition of lower elements
-            !>  l(i,j) = omega * a(i,j)/a(j,j)
-            IF (JC < IC)  AC%SGS(IPTR) = AC%VAL(IPTR) / AC%VAL(AC%ROW(JC))
-
-            !> Definition of diagonal element
-            !> u(i,i) = a(i,i)
-            IF (JC == IC) AC%SGS(IPTR) = AC%VAL(IPTR)
-
-            !> Definition of upper elements
-            !> u(i,j) = omega * a(i,j)
-            IF (JC > IC)  AC%SGS(IPTR) = AC%VAL(IPTR) 
+            IF (JC > IC) CYCLE
+            AC%GSM(IPTR) = AC%VAL(IPTR) 
          ENDDO
             
       ENDDO CELL_LOOP
@@ -6137,11 +6118,121 @@ ENDDO MESHES_LOOP
 
 #ifdef WITH_SCARC_DEBUG
 DO NL = NLEVEL_MIN, NLEVEL_MAX
-   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_MATRIX, NL, 'SGS-Decomposition')
+   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_MATRIX, NL, 'GSM-Decomposition')
 ENDDO
 #endif
 
-END SUBROUTINE SCARC_SETUP_SGS
+END SUBROUTINE SCARC_SETUP_GSM
+
+!> ----------------------------------------------------------------------------------------------------
+!> Store symmetric Gauss-Seidel preconditioner in matrix form
+!> Based on the following splitting of A = D - E - F
+!> where :   D is the diagonal part
+!>          -E is the strictly lower part
+!>          -F is the strictly upper part
+!> the SGS-preconditioner in matrix form is defined
+!>           B_SGSM = (D - E) D^{-1} (D - F)  =  (I - E D^{-1}) (D - F)
+!> ----------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_SGSM(NLMIN, NLMAX)
+INTEGER, INTENT(IN) :: NLMIN, NLMAX
+INTEGER :: NM, NL, IC, JC, IPTR
+TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
+TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
+
+MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   LEVEL_LOOP: DO NL = NLMIN, NLMAX
+
+      L  => SCARC(NM)%LEVEL(NL)
+      AC => SCARC(NM)%LEVEL(NL)%AC
+
+      !> Allocate workspace for SGSM decomposition of Poisson matrix 
+      CALL SCARC_ALLOCATE_REAL1(AC%SGSM, 1, AC%NA, NSCARC_INIT_ZERO, 'ILU')
+
+      CELL_LOOP: DO IC = 1, L%NC
+        
+         DO IPTR = AC%ROW(IC), AC%ROW(IC+1)-1
+            JC = AC%COL(IPTR)
+
+            !> Definition of lower elements
+            !>  l(i,j) = omega * a(i,j)/a(j,j)
+            IF (JC < IC)  AC%SGSM(IPTR) = AC%VAL(IPTR) / AC%VAL(AC%ROW(JC))
+
+            !> Definition of diagonal element
+            !> u(i,i) = a(i,i)
+            IF (JC == IC) AC%SGSM(IPTR) = AC%VAL(IPTR)
+
+            !> Definition of upper elements
+            !> u(i,j) = omega * a(i,j)
+            IF (JC > IC)  AC%SGSM(IPTR) = AC%VAL(IPTR) 
+         ENDDO
+            
+      ENDDO CELL_LOOP
+
+   ENDDO LEVEL_LOOP
+ENDDO MESHES_LOOP
+
+#ifdef WITH_SCARC_DEBUG
+DO NL = NLEVEL_MIN, NLEVEL_MAX
+   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_MATRIX, NL, 'SGSM-Decomposition')
+ENDDO
+#endif
+
+END SUBROUTINE SCARC_SETUP_SGSM
+
+!> ----------------------------------------------------------------------------------------------------
+!> Store SOR preconditioner in matrix form
+!> Based on the following splitting of A = D - E - F
+!> where :   D is the diagonal part
+!>          -E is the strictly lower part
+!>          -F is the strictly upper part
+!> the SOR-preconditioner in matrix form is defined
+!>           B_SORM = 1/omega * (D - omega * E) 
+!> ----------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_SORM(NLMIN, NLMAX, NSTACK)
+INTEGER, INTENT(IN) :: NLMIN, NLMAX, NSTACK
+REAL (EB) :: OMEGA
+INTEGER :: NM, NL, IC, JC, IPTR
+TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
+TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
+
+OMEGA = STACK(NSTACK)%SOLVER%OMEGA
+
+MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   LEVEL_LOOP: DO NL = NLMIN, NLMAX
+
+      L  => SCARC(NM)%LEVEL(NL)
+      AC => SCARC(NM)%LEVEL(NL)%AC
+
+      !> Allocate workspace for SORM decomposition of Poisson matrix 
+      CALL SCARC_ALLOCATE_REAL1(AC%SORM, 1, AC%NA, NSCARC_INIT_ZERO, 'ILU')
+
+      CELL_LOOP: DO IC = 1, L%NC
+        
+         DO IPTR = AC%ROW(IC), AC%ROW(IC+1)-1
+            JC = AC%COL(IPTR)
+
+            !> Definition of lower elements
+            !>  l(i,j) = omega * a(i,j)/a(j,j)
+            IF (JC < IC)  AC%SORM(IPTR) = AC%VAL(IPTR) 
+
+            !> Definition of diagonal element
+            !> u(i,i) = a(i,i)
+            IF (JC == IC) AC%SORM(IPTR) = AC%VAL(IPTR)/OMEGA
+
+         ENDDO
+            
+      ENDDO CELL_LOOP
+
+   ENDDO LEVEL_LOOP
+ENDDO MESHES_LOOP
+
+#ifdef WITH_SCARC_DEBUG
+DO NL = NLEVEL_MIN, NLEVEL_MAX
+   CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_MATRIX, NL, 'SORM-Decomposition')
+ENDDO
+#endif
+
+END SUBROUTINE SCARC_SETUP_SORM
 
 !> ----------------------------------------------------------------------------------------------------
 !> Store SSOR preconditioner in matrix form
@@ -6150,21 +6241,26 @@ END SUBROUTINE SCARC_SETUP_SGS
 !>          -E is the strictly lower part
 !>          -F is the strictly upper part
 !> the SSOR-preconditioner in matrix form is defined
-!>           B_SSOR = (D - omega E) D^{-1} (D - omega F)
-!>                    (I - omega E D^{-1}) (D - omega F)
-!> Now, defining the triangular matrices
-!>               L  = (I - omega E D^{-1}) 
-!>               U  = (D - omega F)
+!>           B_SSOR = 1/(omega * (2-omega)) * (D - omega * E) D^{-1} (D - omega * F) 
+!>                  = (I - omega E D^{-1}) * [1/(omega * (2-omega)) * D -  1/(2-omega) * F]
+!> Defining the triangular matrices
+!>               L  = I - omega E D^{-1} 
+!>               U  = 1/(omega * (2-omega)) * D -  1/(2-omega) * F
 !> the SSOR-preconditioning can be thought as the solution of two triangular systems
 !> Both matrices can be stored as a single matrix that occupies the same amount of storage as A
 !> where the same row and column pointers can be used as for A (identical pattern)
 !> Note that the diagonal elements of L are 1 (and are omitted, only the diagonal of U is stored there)
 !> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_SSORM(NLMIN, NLMAX)
-INTEGER, INTENT(IN) :: NLMIN, NLMAX
+SUBROUTINE SCARC_SETUP_SSORM(NLMIN, NLMAX, NSTACK)
+INTEGER, INTENT(IN) :: NLMIN, NLMAX, NSTACK
 INTEGER :: NM, NL, IC, JC, IPTR
+REAL(EB) :: OMEGA, SCAL1, SCAL2
 TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
+
+OMEGA = STACK(NSTACK)%SOLVER%OMEGA
+SCAL1  = 1.0_EB / (OMEGA * (2.0_EB - OMEGA))
+SCAL2  = 1.0_EB / (2.0_EB - OMEGA)
 
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    LEVEL_LOOP: DO NL = NLMIN, NLMAX
@@ -6178,28 +6274,17 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CELL_LOOP: DO IC = 1, L%NC
         
          DO IPTR = AC%ROW(IC), AC%ROW(IC+1)-1
+
             JC = AC%COL(IPTR)
 
-            !> Definition of lower elements
-            !>  l(i,j) = omega * a(i,j)/a(j,j)
-            IF (JC < IC)  THEN
-               AC%SSORM(IPTR) = OMEGA * AC%VAL(IPTR) / AC%VAL(AC%ROW(JC))
-WRITE(MSG%LU_DEBUG,*) 'LOWER: ',IC,': AC%SSORM(',IPTR,')=',AC%SSORM(IPTR)
-            ENDIF
+            !> Definition of lower elements:  l(i,j) = omega * a(i,j)/a(j,j)
+            IF (JC < IC) AC%SSORM(IPTR) = OMEGA * AC%VAL(IPTR) / AC%VAL(AC%ROW(JC))
 
-            !> Definition of diagonal element
-            !> u(i,i) = a(i,i)
-            IF (JC == IC) THEN
-               AC%SSORM(IPTR) = AC%VAL(IPTR)
-WRITE(MSG%LU_DEBUG,*) 'DIAG : ',IC,': AC%SSORM(',IPTR,')=',AC%SSORM(IPTR)
-            ENDIF
+            !> Definition of diagonal element:  u(i,i) = a(i,i)
+            IF (JC == IC) AC%SSORM(IPTR) = SCAL1 * AC%VAL(IPTR)
 
-            !> Definition of upper elements
-            !> u(i,j) = omega * a(i,j)
-            IF (JC > IC) THEN
-               AC%SSORM(IPTR) = OMEGA * AC%VAL(IPTR) 
-WRITE(MSG%LU_DEBUG,*) 'UPPER: ',IC,': AC%SSORM(',IPTR,')=',AC%SSORM(IPTR)
-            ENDIF
+            !> Definition of upper elements:  u(i,j) = omega * a(i,j)
+            IF (JC > IC) AC%SSORM(IPTR) = SCAL2 * AC%VAL(IPTR) 
 
          ENDDO
             
@@ -6207,6 +6292,8 @@ WRITE(MSG%LU_DEBUG,*) 'UPPER: ',IC,': AC%SSORM(',IPTR,')=',AC%SSORM(IPTR)
 
    ENDDO LEVEL_LOOP
 ENDDO MESHES_LOOP
+
+!STACK(NSTACK)%SOLVER%OMEGA = 1.0_EB
 
 #ifdef WITH_SCARC_DEBUG
 DO NL = NLEVEL_MIN, NLEVEL_MAX
@@ -7035,7 +7122,7 @@ USE POIS, ONLY: H2CZSS, H3CZSS
 INTEGER, INTENT(IN):: NV1, NV2, NS, NP, NL
 INTEGER  :: NM, IC, JC, IW, I, J, K, ICOL, ITYPE, IDIAG
 INTEGER  :: IXW, IYW, IZW, ICW, IOR0
-REAL(EB) :: AUX, OMEGA_SSOR=1.5_EB, VAL
+REAL(EB) :: AUX, OMEGA_SSOR, VAL
 REAL(EB), DIMENSION(:), POINTER ::  V1, V2, LU
 #ifdef WITH_MKL_FB
 REAL(FB), DIMENSION(:), POINTER ::  V1_FB, V2_FB
@@ -7097,6 +7184,10 @@ SELECT CASE (ITYPE)
    !> Preconditioning by blockwise SSOR
    !> ----------------------------------------------------------------------------------------
    CASE (NSCARC_RELAX_SSOR)
+
+      !OMEGA_SSOR = STACK(NS)%SOLVER%OMEGA
+      OMEGA_SSOR = 1.5_EB
+WRITE(*,*) 'RELAX_SSOR: OMEGA = ', OMEGA_SSOR
 
       SSOR_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -7200,13 +7291,13 @@ SELECT CASE (ITYPE)
       ENDDO SSOR_MESHES_LOOP
 
    !> ----------------------------------------------------------------------------------------
-   !> Preconditioning by blockwise SSORM or ILU
-   !> in both cases preconditioner is given as separate matrix which is based
-   !> on the same storage technique as the matrix AC itself
-   !> and two tridiagonal systems have to be solved
+   !> Preconditioning by different matrix-form preconditioners
+   !> in all cases the preconditioner is given as separate matrix which is based
+   !> on the same storage technique as the matrix AC itself;
+   !> two tridiagonal systems have to be solved
    !> V1 contains the RHS to be solved for, V2 will contain the solution
    !> ----------------------------------------------------------------------------------------
-   CASE (NSCARC_RELAX_SGS, NSCARC_RELAX_SSORM, NSCARC_RELAX_ILU)
+   CASE (NSCARC_RELAX_GSM, NSCARC_RELAX_SGSM, NSCARC_RELAX_SORM, NSCARC_RELAX_SSORM, NSCARC_RELAX_ILU)
 
       SSORM_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -7214,8 +7305,12 @@ SELECT CASE (ITYPE)
          AC => SCARC(NM)%LEVEL(NL)%AC
 
          SELECT CASE(ITYPE)
-            CASE(NSCARC_RELAX_SGS)
-               LU => L%AC%SGS
+            CASE(NSCARC_RELAX_GSM)
+               LU => L%AC%GSM
+            CASE(NSCARC_RELAX_SGSM)
+               LU => L%AC%SGSM
+            CASE(NSCARC_RELAX_SORM)
+               LU => L%AC%SORM
             CASE(NSCARC_RELAX_SSORM)
                LU => L%AC%SSORM
             CASE(NSCARC_RELAX_ILU)
@@ -7236,6 +7331,9 @@ SELECT CASE (ITYPE)
 WRITE(MSG%LU_DEBUG,*) 'A: V2(',IC,')=',V2(IC), JC
             ENDDO
          ENDDO
+
+         !> If preconditioner is not symmetric, upper matrix U is zero and nothing has to be solved
+         IF (ITYPE == NSCARC_RELAX_GSM .OR. ITYPE == NSCARC_RELAX_SORM) CYCLE
 
          !> Backward solve
          !> Compute sol: inv(U) sol
@@ -10979,10 +11077,22 @@ SELECT CASE (NTYPE)
                DO IC = 1, AC%NR-1
                   WRITE(MSG%LU_DEBUG,'(i5,a,20f8.1)') IC,':',(AC%VAL(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
                ENDDO
-               IF (ALLOCATED(AC%SGS)) THEN
-                  WRITE(MSG%LU_DEBUG,*) '---------------------- SGS:'
+               IF (ALLOCATED(AC%GSM)) THEN
+                  WRITE(MSG%LU_DEBUG,*) '---------------------- GSM:'
                   DO IC = 1, AC%NR-1
-                     WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%SGS(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
+                     WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%GSM(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
+                  ENDDO
+               ENDIF
+               IF (ALLOCATED(AC%SGSM)) THEN
+                  WRITE(MSG%LU_DEBUG,*) '---------------------- SGSM:'
+                  DO IC = 1, AC%NR-1
+                     WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%SGSM(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
+                  ENDDO
+               ENDIF
+               IF (ALLOCATED(AC%SORM)) THEN
+                  WRITE(MSG%LU_DEBUG,*) '---------------------- SORM:'
+                  DO IC = 1, AC%NR-1
+                     WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%SORM(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
                   ENDDO
                ENDIF
                IF (ALLOCATED(AC%SSORM)) THEN
@@ -11466,7 +11576,6 @@ REAL(EB):: MATRIX_LINE(1000)
 WRITE (CNAME, '(A,A1,A,i2.2,A,i2.2,A)') 'matlab/',CMATRIX,'_mesh',NM,'_level',NL,'_mat.txt'
 !WRITE (CFORM, '(A,I3, 2A)' ) "(", NC2-1, "(F7.1,','),F7.1,';')" 
 WRITE (CFORM, '(A,I3, 2A)' ) "(", NC2-1, "(F7.1,' '),F7.1,' ')" 
-WRITE(*,*) 'CFORM=',CFORM
 MMATRIX=GET_FILE_NUMBER()
 OPEN(MMATRIX,FILE=CNAME)
 !WRITE(MMATRIX, *) CMATRIX, ' = ['
