@@ -1,4 +1,4 @@
-&HEAD CHID='ilu1',TITLE='Basic Poisson test of default ScaRC solver on 2D-pipe geometry with 4 meshes' /
+&HEAD CHID='sgs1',TITLE='Basic Poisson test of default ScaRC solver on 2D-pipe geometry with 4 meshes' /
 
 &MESH IJK=8,1,8  XB=0.0,0.8,-0.01,0.01,0.0,0.8 /
 
@@ -7,7 +7,7 @@
 
 &PRES SOLVER ='SCARC'
       SCARC_ERROR_FILE = .TRUE.
-      SCARC_PRECON = 'ILU' /
+      SCARC_PRECON = 'SGS' /
 
 &TIME T_END=0.5, DT=0.002 /
 

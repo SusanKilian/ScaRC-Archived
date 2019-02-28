@@ -9,7 +9,7 @@
       DNS   = .TRUE./
 
 &PRES SOLVER                  = 'SCARC'
-      SCARC_STATISTICS        = .TRUE.
+      SCARC_ERROR_FILE        = .TRUE.
       SCARC_METHOD            = 'MULTIGRID'
       SCARC_SMOOTH            = 'SSOR'
       SCARC_COARSE            = 'DIRECT'
