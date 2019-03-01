@@ -4219,6 +4219,11 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
 
    !> Global KGM method - proof of concept
    CASE (NSCARC_METHOD_KGM)
+
+      TYPE_DISCRET = NSCARC_DISCRET_UNSTRUCTURED
+      CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)                   !> setup size only for fine grid
+
+      TYPE_DISCRET = NSCARC_DISCRET_STRUCTURED
       CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)                   !> setup size only for fine grid
 
    !> Global Krylov method
