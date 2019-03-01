@@ -1,14 +1,15 @@
-&HEAD CHID='csr4',TITLE='Basic Poisson test of default ScaRC solver on 2D-pipe geometry with 4 meshes' /
+&HEAD CHID='fft1',TITLE='ScaRC-GMG for 2D-square with obstruction on 8 meshes' /
 
-&MESH IJK=4,1,4  XB=0.0,0.4,-0.01,0.01,0.0,0.4 /
-&MESH IJK=4,1,4  XB=0.4,0.8,-0.01,0.01,0.0,0.4 /
-&MESH IJK=4,1,4  XB=0.0,0.4,-0.01,0.01,0.4,0.8 /
-&MESH IJK=4,1,4  XB=0.4,0.8,-0.01,0.01,0.4,0.8 /
+&MESH IJK=8,1,8, XB=0.0,0.8,-0.01,0.01,0.0,0.8 /
 
 &MISC NOISE = .FALSE. 
       DNS   = .TRUE./
 
-&PRES SOLVER ='SCARC', SCARC_MATRIX_FORMAT = 'CSR', SCARC_PRECON = 'SSOR' /
+&PRES SOLVER                  = 'SCARC'
+      SCARC_ERROR_FILE        = .TRUE.
+      SCARC_METHOD            = 'KRYLOV'
+      SCARC_PRECON            = 'FFT'   /
+
 
 &TIME T_END=0.5, DT=0.002 /
 
