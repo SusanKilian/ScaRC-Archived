@@ -733,6 +733,8 @@ INTEGER, ALLOCATABLE, DIMENSION (:)     :: NC_OFFSET_DOF    !> offset for local 
 
 !> Cell and wall information
 INTEGER, ALLOCATABLE, DIMENSION (:,:,:) :: CELL_NUMBER      !> indicates if cell is degree of freedom
+INTEGER, ALLOCATABLE, DIMENSION (:,:,:) :: CELL_NUMBER_S    !> indicates if cell is degree of freedom for structured grid
+INTEGER, ALLOCATABLE, DIMENSION (:,:,:) :: CELL_NUMBER_U    !> indicates if cell is degree of freedom for unstructured grid
 INTEGER, ALLOCATABLE, DIMENSION (:,:,:) :: CELL_STATE       !> state of single cells (gasphase/solid)
 INTEGER, ALLOCATABLE, DIMENSION (:,:,:) :: CELL_INDEX       !> cell index list
 INTEGER, ALLOCATABLE, DIMENSION (:,:)   :: WALL_INDEX       !> wall index list
@@ -924,7 +926,12 @@ CALL SCARC_PARSE_INPUT          ; IF (STOP_STATUS==SETUP_STOP) RETURN
 CALL SCARC_SETUP_LEVELS                                                   !> different grid levels
 CALL SCARC_SETUP_TYPES          ; IF (STOP_STATUS==SETUP_STOP) RETURN     !> basic ScaRC-types for all used grid levels
 CALL SCARC_SETUP_MESHES         ; IF (STOP_STATUS==SETUP_STOP) RETURN     !> mesh information
+
+TYPE_DISCRET = NSCARC_DISCRET_UNSTRUCTURED; PRES_ON_WHOLE_DOMAIN = .FALSE.
 CALL SCARC_SETUP_DISCRETIZATION ; IF (STOP_STATUS==SETUP_STOP) RETURN     !> discretization information
+TYPE_DISCRET = NSCARC_DISCRET_STRUCTURED; PRES_ON_WHOLE_DOMAIN = .TRUE.
+CALL SCARC_SETUP_DISCRETIZATION ; IF (STOP_STATUS==SETUP_STOP) RETURN     !> discretization information
+
 CALL SCARC_SETUP_INTERFACES     ; IF (STOP_STATUS==SETUP_STOP) RETURN     !> structures related to mesh interfaces
 CALL SCARC_SETUP_GLOBALS        ; IF (STOP_STATUS==SETUP_STOP) RETURN     !> global variables on fine level
 CALL SCARC_SETUP_WALLS          ; IF (STOP_STATUS==SETUP_STOP) RETURN     !> information along neighboring walls
@@ -4463,12 +4470,19 @@ END SUBROUTINE SCARC_SETUP_SYSTEM
 SUBROUTINE SCARC_SETUP_MATRIX (NM, NL)
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: IX, IY, IZ, IC, IP
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER
 TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
-TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL(), AC_PTR=>NULL()
+TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
 TYPE(SCARC_MATRIX_BANDED_TYPE), POINTER :: AB=>NULL()
 
 !> Initialize data structures
 L => SCARC(NM)%LEVEL(NL)
+SELECT CASE(TYPE_DISCRET)
+   CASE (NSCARC_DISCRET_STRUCTURED)
+      CELL_NUMBER => L%CELL_NUMBER_S
+   CASE (NSCARC_DISCRET_UNSTRUCTURED)
+      CELL_NUMBER => L%CELL_NUMBER_U
+END SELECT
 
 !> Compute single matrix entries and corresponding row and column pointers
 !> Along internal boundaries use placeholders for the neighboring matrix entries
@@ -4495,7 +4509,7 @@ SELECT_STORAGE_TYPE: SELECT CASE (TYPE_MATRIX)
    
                IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(IX, IY, IZ)/=NSCARC_CELL_GASPHASE) CYCLE
 
-               IC = L%CELL_NUMBER(IX, IY, IZ)
+               IC = CELL_NUMBER(IX, IY, IZ)
                CALL SCARC_SETUP_MATRIX_MAINDIAG_COMPACT (IC, IX, IY, IZ, IP, NM, NL)
 
                IF (VALID_SUBDIAG(IX, IY, IZ,  1, NM, NL)) &
@@ -4538,7 +4552,7 @@ SELECT_STORAGE_TYPE: SELECT CASE (TYPE_MATRIX)
    
                IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(IX, IY, IZ)/=NSCARC_CELL_GASPHASE) CYCLE
 
-               IC = L%CELL_NUMBER(IX, IY, IZ)
+               IC = CELL_NUMBER(IX, IY, IZ)
 
                IF (VALID_SUBDIAG(IX, IY, IZ,  3, NM, NL)) &
                   CALL SCARC_SETUP_MATRIX_SUBDIAG_BANDED(IC, IX, IY, IZ, IX, IY, IZ-1, 3, NM, NL)
@@ -4657,15 +4671,18 @@ INTEGER  :: IX, IY, IZ
 #endif
 REAL(EB) :: DSCAL, DH1, DH2
 LOGICAL  :: BINTERNAL
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER=>NULL()
 TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
 
 L => SCARC(NM)%LEVEL(NL)
 SELECT CASE(TYPE_DISCRET)
    CASE (NSCARC_DISCRET_STRUCTURED)
-      AC => SCARC(NM)%LEVEL(NL)%ACS
+      AC => L%ACS
+      CELL_NUMBER => L%CELL_NUMBER_S
    CASE (NSCARC_DISCRET_UNSTRUCTURED)
-      AC => SCARC(NM)%LEVEL(NL)%ACU
+      AC => L%ACU
+      CELL_NUMBER => L%CELL_NUMBER_U
 END SELECT
 
 SELECT CASE (ABS(IOR0))
@@ -4694,7 +4711,7 @@ IF (BINTERNAL) THEN
 
    IF (PRES_ON_WHOLE_DOMAIN .OR. L%CELL_STATE(IX2, IY2, IZ2) == NSCARC_CELL_GASPHASE) THEN
       AC%VAL(IP) = AC%VAL(IP) + DSCAL
-      AC%COL(IP) = L%CELL_NUMBER(IX2, IY2, IZ2)
+      AC%COL(IP) = CELL_NUMBER(IX2, IY2, IZ2)
 
       AC%STENCIL(-IOR0) = AC%VAL(IP)
 
@@ -4723,7 +4740,7 @@ WRITE(MSG%LU_DEBUG,*) 'MATRIX_SUBDIAG: IP, IW:', IP, IW, AC%COL(IP)
          IX = L%WALL(IW)%IXG
          IY = L%WALL(IW)%IYG
          IZ = L%WALL(IW)%IZG
-         AC%COL_GLOBAL(IP) = L%CELL_NUMBER(IX, IY, IZ) + L%NC_OFFSET(L%WALL(IW)%NOM)
+         AC%COL_GLOBAL(IP) = CELL_NUMBER(IX, IY, IZ) + L%NC_OFFSET(L%WALL(IW)%NOM)
       ENDIF
 #endif
 
@@ -4742,9 +4759,16 @@ INTEGER, INTENT(IN) :: IC, IOR0, NM, NL
 INTEGER :: IXW, IYW, IZW
 INTEGER :: IXG, IYG, IZG
 INTEGER :: IW
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER=>NULL()
 TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 
 L => SCARC(NM)%LEVEL(NL)
+SELECT CASE(TYPE_DISCRET)
+   CASE (NSCARC_DISCRET_STRUCTURED)
+      CELL_NUMBER => L%CELL_NUMBER_S
+   CASE (NSCARC_DISCRET_UNSTRUCTURED)
+      CELL_NUMBER => L%CELL_NUMBER_S
+END SELECT
 
 ASSIGN_SUBDIAG_TYPE = -1
 SEARCH_WALL_CELLS_LOOP: DO IW = L%FACE(IOR0)%IWG_PTR, L%FACE(IOR0)%IWG_PTR+L%FACE(IOR0)%NFW
@@ -4755,7 +4779,7 @@ SEARCH_WALL_CELLS_LOOP: DO IW = L%FACE(IOR0)%IWG_PTR, L%FACE(IOR0)%IWG_PTR+L%FAC
   IYW = L%WALL(IW)%IYW
   IZW = L%WALL(IW)%IZW
 
-  IF (L%CELL_NUMBER(IXW, IYW, IZW) /= IC) CYCLE
+  IF (CELL_NUMBER(IXW, IYW, IZW) /= IC) CYCLE
 
   IXG = L%WALL(IW)%IXG
   IYG = L%WALL(IW)%IYG
@@ -5029,6 +5053,7 @@ SUBROUTINE SCARC_SETUP_BOUNDARY (NM, NL)
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: I, J, K, IOR0, IW, IC, NOM, IP, NW, NC, ICN, ICE, JC, ICOL, IS=0
 REAL(EB) :: DBC
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER=>NULL()
 TYPE(SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
 TYPE(SCARC_MATRIX_BANDED_TYPE), POINTER :: AB=>NULL()
@@ -5050,9 +5075,11 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
 
       SELECT CASE(TYPE_DISCRET)
          CASE (NSCARC_DISCRET_STRUCTURED)
-            AC => SCARC(NM)%LEVEL(NL)%ACS
+            AC => L%ACS
+            CELL_NUMBER => L%CELL_NUMBER_S
          CASE (NSCARC_DISCRET_UNSTRUCTURED)
-            AC => SCARC(NM)%LEVEL(NL)%ACU
+            AC => L%ACU
+            CELL_NUMBER => L%CELL_NUMBER_U
       END SELECT
       
       !>
@@ -5154,8 +5181,8 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
             IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(I, J, K)/=NSCARC_CELL_GASPHASE) CYCLE
       
             NOM  = L%WALL(IW)%NOM
-            L%WALL(IW)%ICW = L%CELL_NUMBER(I, J, K)
-            IC = L%CELL_NUMBER(I, J, K)
+            L%WALL(IW)%ICW = CELL_NUMBER(I, J, K)
+            IC = CELL_NUMBER(I, J, K)
       
             PERIODIC_NBR_COMPACT_IF1: IF (NOM == NMESHES) THEN
                ICE = L%WALL(IW)%ICE(1)                            !> adjacent ghost cell number
@@ -5195,8 +5222,8 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
          IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(I, J, K)/=NSCARC_CELL_GASPHASE) CYCLE
       
          NOM  = L%WALL(IW)%NOM
-         L%WALL(IW)%ICW = L%CELL_NUMBER(I, J, K)
-         IC = L%CELL_NUMBER(I, J, K)
+         L%WALL(IW)%ICW = CELL_NUMBER(I, J, K)
+         IC = CELL_NUMBER(I, J, K)
       
          SELECT CASE (ABS(IOR0))
             CASE (1)
@@ -5268,8 +5295,8 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
          IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(I, J, K)/=NSCARC_CELL_GASPHASE) CYCLE
       
          NOM  = L%WALL(IW)%NOM
-         L%WALL(IW)%ICW = L%CELL_NUMBER(I, J, K)
-         IC = L%CELL_NUMBER(I, J, K)
+         L%WALL(IW)%ICW = CELL_NUMBER(I, J, K)
+         IC = CELL_NUMBER(I, J, K)
       
          SELECT CASE (ABS(IOR0))
             CASE (1)
@@ -7246,21 +7273,31 @@ SUBROUTINE SCARC_VECTOR_INIT (NV, VAL, NL)
 INTEGER, INTENT(IN):: NV, NL
 REAL (EB), INTENT(IN) :: VAL
 INTEGER :: IC, NM, I, J, K
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER
 REAL (EB), POINTER, DIMENSION(:) :: VC
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
    L => SCARC(NM)%LEVEL(NL)
    VC => POINT_TO_VECTOR (NM, NL, NV)
+   SELECT CASE(TYPE_DISCRET)
+      CASE (NSCARC_DISCRET_STRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_S
+      CASE (NSCARC_DISCRET_UNSTRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_U
+   END SELECT
+
    DO K = 1, L%NZ
       DO J = 1, L%NY
          DO I = 1, L%NX
             IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(I, J, K)/=NSCARC_CELL_GASPHASE) CYCLE
-            IC = L%CELL_NUMBER(I,J,K)
+            IC = CELL_NUMBER(I,J,K)
             VC(IC) = VAL
          ENDDO
       ENDDO
    ENDDO
+
 ENDDO
 
 END SUBROUTINE SCARC_VECTOR_INIT
@@ -7273,6 +7310,7 @@ USE POIS, ONLY: H2CZSS, H3CZSS
 INTEGER, INTENT(IN):: NV1, NV2, NS, NP, NL
 INTEGER  :: NM, IC, JC, IW, I, J, K, ICOL, ITYPE, IDIAG
 INTEGER  :: IXW, IYW, IZW, ICW, IOR0
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER
 REAL(EB) :: AUX, OMEGA_SSOR = 1.5_EB, VAL
 REAL(EB), DIMENSION(:), POINTER ::  V1, V2, LU
 #ifdef WITH_MKL_FB
@@ -7556,6 +7594,13 @@ WRITE(MSG%LU_DEBUG,'(8E14.6)') V2
          V1  => POINT_TO_VECTOR(NM, NL, NV1)
          V2  => POINT_TO_VECTOR(NM, NL, NV2)
 
+         SELECT CASE(TYPE_DISCRET)
+            CASE (NSCARC_DISCRET_STRUCTURED)
+               CELL_NUMBER => L%CELL_NUMBER_S
+            CASE (NSCARC_DISCRET_UNSTRUCTURED)
+               CELL_NUMBER => L%CELL_NUMBER_U
+         END SELECT
+
          DO K = 1, L%NZ
             DO J = 1, L%NY
                DO I = 1, L%NX
@@ -7571,7 +7616,7 @@ WRITE(MSG%LU_DEBUG,'(8E14.6)') V2
             IYW = L%WALL(IW)%IYW
             IZW = L%WALL(IW)%IZW
 
-            ICW = L%CELL_NUMBER(IXW,IYW,IZW)
+            ICW = CELL_NUMBER(IXW,IYW,IZW)
 
             VAL = 0.0_EB                              !> Use zero BC's 
             SELECT CASE(L%WALL(IW)%IOR)
@@ -8697,6 +8742,7 @@ END SUBROUTINE SCARC_RELEASE_SOLVER
 SUBROUTINE SCARC_SETUP_WORKSPACE(NS, NL, NRHS)
 INTEGER, INTENT(IN) :: NS, NL, NRHS
 INTEGER :: NM, IW, IOR0, I, J, K, IC
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER
 REAL(EB) :: VAL
 REAL(EB), POINTER, DIMENSION(:,:,:) :: PRHS, HP
 TYPE (MESH_TYPE), POINTER :: M=>NULL()
@@ -8717,6 +8763,13 @@ SELECT CASE (SV%TYPE_SOLVER)
          L  => SCARC(NM)%LEVEL(NL)
          ST => SCARC(NM)%LEVEL(NL)%STAGE(SV%TYPE_STAGE)
 
+         SELECT CASE(TYPE_DISCRET)
+            CASE (NSCARC_DISCRET_STRUCTURED)
+               CELL_NUMBER => L%CELL_NUMBER_S
+            CASE (NSCARC_DISCRET_UNSTRUCTURED)
+               CELL_NUMBER => L%CELL_NUMBER_U
+         END SELECT
+
          PRHS => M%PRHS
          IF (PREDICTOR) THEN
             HP => M%H
@@ -8734,7 +8787,7 @@ SELECT CASE (SV%TYPE_SOLVER)
                   DO J = 1, M%JBAR
                      DO I = 1, M%IBAR
                         IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(I, J, K)/=NSCARC_CELL_GASPHASE) CYCLE
-                        IC = L%CELL_NUMBER(I,J,K)
+                        IC = CELL_NUMBER(I,J,K)
                         ST%B(IC) = PRHS(I, J, K)                 !> use right hand side from pres-routine
                         ST%X(IC) = HP(I, J, K)                   !> use last iterate as initial solution
                      ENDDO
@@ -8759,7 +8812,7 @@ SELECT CASE (SV%TYPE_SOLVER)
             IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(I, J, K)/=NSCARC_CELL_GASPHASE) CYCLE
 
             IOR0 = L%WALL(IW)%IOR
-            IC   = L%CELL_NUMBER(I,J,K)
+            IC   = CELL_NUMBER(I,J,K)
 
             !> Dirichlet BC's:
             !> these are based on the SETTING in BTYPE
@@ -9015,6 +9068,7 @@ END SUBROUTINE SCARC_CONVERGENCE_RATE
 SUBROUTINE SCARC_RESTRICTION (NVB, NVC, NLF, NLC)
 INTEGER, INTENT(IN) :: NVB, NVC, NLF, NLC
 INTEGER :: NM
+INTEGER, DIMENSION(:,:,:), POINTER :: LF_CELL_NUMBER, LC_CELL_NUMBER
 INTEGER :: IXF, IYF, IZF, ICF(8)=0, ICFB(-2:2,-2:2)=0
 INTEGER :: IXC, IYC, IZC, ICC
 REAL(EB), POINTER, DIMENSION(:) :: VC, VF
@@ -9033,6 +9087,15 @@ IF (BMULTILEVEL) THEN
       VF => POINT_TO_VECTOR(NM, NLF, NVB)
       VC => POINT_TO_VECTOR(NM, NLC, NVC)
 
+      SELECT CASE(TYPE_DISCRET)
+         CASE(NSCARC_DISCRET_UNSTRUCTURED)
+            LF_CELL_NUMBER = LF%CELL_NUMBER_U
+            LC_CELL_NUMBER = LC%CELL_NUMBER_U
+         CASE(NSCARC_DISCRET_STRUCTURED)
+            LF_CELL_NUMBER = LF%CELL_NUMBER_S
+            LC_CELL_NUMBER = LC%CELL_NUMBER_S
+      END SELECT
+
       IF (TWO_D) THEN
 
          SELECT_INTERPOL: SELECT CASE (TYPE_INTERPOL)
@@ -9050,10 +9113,10 @@ IF (BMULTILEVEL) THEN
 
                      ICC = LC%CELL_NUMBER(IXC, 1, IZC)
 
-                     ICF(1) = LF%CELL_NUMBER(IXF-1, 1, IZF-1)
-                     ICF(2) = LF%CELL_NUMBER(IXF-1, 1, IZF  )
-                     ICF(3) = LF%CELL_NUMBER(IXF  , 1, IZF-1)
-                     ICF(4) = LF%CELL_NUMBER(IXF  , 1, IZF  )
+                     ICF(1) = LF_CELL_NUMBER(IXF-1, 1, IZF-1)
+                     ICF(2) = LF_CELL_NUMBER(IXF-1, 1, IZF  )
+                     ICF(3) = LF_CELL_NUMBER(IXF  , 1, IZF-1)
+                     ICF(4) = LF_CELL_NUMBER(IXF  , 1, IZF  )
 
                      VC(ICC) = 0.25_EB * (  VF(ICF(1)) &
                                           + VF(ICF(2)) &
@@ -9077,25 +9140,25 @@ IF (BMULTILEVEL) THEN
 
                      ICC = LC%CELL_NUMBER(IXC, 1, IZC)
 
-                     ICFB(-2,-2) = LF%CELL_NUMBER(IXF-2, 1, IZF-2)
-                     ICFB(-1,-2) = LF%CELL_NUMBER(IXF-1, 1, IZF-2)
-                     ICFB( 1,-2) = LF%CELL_NUMBER(IXF  , 1, IZF-2)
-                     ICFB( 2,-2) = LF%CELL_NUMBER(IXF+1, 1, IZF-2)
+                     ICFB(-2,-2) = LF_CELL_NUMBER(IXF-2, 1, IZF-2)
+                     ICFB(-1,-2) = LF_CELL_NUMBER(IXF-1, 1, IZF-2)
+                     ICFB( 1,-2) = LF_CELL_NUMBER(IXF  , 1, IZF-2)
+                     ICFB( 2,-2) = LF_CELL_NUMBER(IXF+1, 1, IZF-2)
 
-                     ICFB(-2,-1) = LF%CELL_NUMBER(IXF-2, 1, IZF-1)
-                     ICFB(-1,-1) = LF%CELL_NUMBER(IXF-1, 1, IZF-1)
-                     ICFB( 1,-1) = LF%CELL_NUMBER(IXF  , 1, IZF-1)
-                     ICFB( 2,-1) = LF%CELL_NUMBER(IXF+1, 1, IZF-1)
+                     ICFB(-2,-1) = LF_CELL_NUMBER(IXF-2, 1, IZF-1)
+                     ICFB(-1,-1) = LF_CELL_NUMBER(IXF-1, 1, IZF-1)
+                     ICFB( 1,-1) = LF_CELL_NUMBER(IXF  , 1, IZF-1)
+                     ICFB( 2,-1) = LF_CELL_NUMBER(IXF+1, 1, IZF-1)
 
-                     ICFB(-2, 1) = LF%CELL_NUMBER(IXF-2, 1, IZF)
-                     ICFB(-1, 1) = LF%CELL_NUMBER(IXF-1, 1, IZF)
-                     ICFB( 1, 1) = LF%CELL_NUMBER(IXF  , 1, IZF)
-                     ICFB( 2, 1) = LF%CELL_NUMBER(IXF+1, 1, IZF)
+                     ICFB(-2, 1) = LF_CELL_NUMBER(IXF-2, 1, IZF)
+                     ICFB(-1, 1) = LF_CELL_NUMBER(IXF-1, 1, IZF)
+                     ICFB( 1, 1) = LF_CELL_NUMBER(IXF  , 1, IZF)
+                     ICFB( 2, 1) = LF_CELL_NUMBER(IXF+1, 1, IZF)
 
-                     ICFB(-2, 2) = LF%CELL_NUMBER(IXF-2, 1, IZF+1)
-                     ICFB(-1, 2) = LF%CELL_NUMBER(IXF-1, 1, IZF+1)
-                     ICFB( 1, 2) = LF%CELL_NUMBER(IXF  , 1, IZF+1)
-                     ICFB( 2, 2) = LF%CELL_NUMBER(IXF+1, 1, IZF+1)
+                     ICFB(-2, 2) = LF_CELL_NUMBER(IXF-2, 1, IZF+1)
+                     ICFB(-1, 2) = LF_CELL_NUMBER(IXF-1, 1, IZF+1)
+                     ICFB( 1, 2) = LF_CELL_NUMBER(IXF  , 1, IZF+1)
+                     ICFB( 2, 2) = LF_CELL_NUMBER(IXF+1, 1, IZF+1)
 
                      IF (IXC==1.AND.IZC==1) THEN
                         VC(ICC) = SCALR*( &
@@ -9166,14 +9229,14 @@ IF (BMULTILEVEL) THEN
 
                   ICC = LC%CELL_NUMBER(IXC, IYC, IZC)
 
-                  ICF(1) = LF%CELL_NUMBER(IXF-1, IYF-1, IZF-1)
-                  ICF(2) = LF%CELL_NUMBER(IXF-1, IYF-1, IZF  )
-                  ICF(3) = LF%CELL_NUMBER(IXF-1, IYF  , IZF-1)
-                  ICF(4) = LF%CELL_NUMBER(IXF-1, IYF  , IZF  )
-                  ICF(5) = LF%CELL_NUMBER(IXF  , IYF-1, IZF-1)
-                  ICF(6) = LF%CELL_NUMBER(IXF  , IYF-1, IZF  )
-                  ICF(7) = LF%CELL_NUMBER(IXF  , IYF  , IZF-1)
-                  ICF(8) = LF%CELL_NUMBER(IXF  , IYF  , IZF  )
+                  ICF(1) = LF_CELL_NUMBER(IXF-1, IYF-1, IZF-1)
+                  ICF(2) = LF_CELL_NUMBER(IXF-1, IYF-1, IZF  )
+                  ICF(3) = LF_CELL_NUMBER(IXF-1, IYF  , IZF-1)
+                  ICF(4) = LF_CELL_NUMBER(IXF-1, IYF  , IZF  )
+                  ICF(5) = LF_CELL_NUMBER(IXF  , IYF-1, IZF-1)
+                  ICF(6) = LF_CELL_NUMBER(IXF  , IYF-1, IZF  )
+                  ICF(7) = LF_CELL_NUMBER(IXF  , IYF  , IZF-1)
+                  ICF(8) = LF_CELL_NUMBER(IXF  , IYF  , IZF  )
 
                   VC(ICC) = 0.125_EB * (  VF(ICF(1)) &
                                         + VF(ICF(2)) &
@@ -9207,6 +9270,7 @@ INTEGER, INTENT(IN) :: NVC, NVB, NLC, NLF
 INTEGER :: NM, I
 INTEGER  :: IXF, IYF, IZF, ICF(8)=0, ICFB(-1:1,-1:1)=0
 INTEGER  :: IXC, IYC, IZC, ICC
+INTEGER, DIMENSION(:,:,:), POINTER :: LF_CELL_NUMBER, LC_CELL_NUMBER
 REAL(EB), POINTER, DIMENSION(:) :: VC, VF
 TYPE (SCARC_LEVEL_TYPE), POINTER :: LF=>NULL(), LC=>NULL()
 
@@ -9222,6 +9286,15 @@ IF (BMULTILEVEL) THEN
 
          VC => POINT_TO_VECTOR(NM, NLC, NVC)
          VF => POINT_TO_VECTOR(NM, NLF, NVB)
+
+         SELECT CASE(TYPE_DISCRET)
+            CASE(NSCARC_DISCRET_UNSTRUCTURED)
+               LF_CELL_NUMBER = LF%CELL_NUMBER_U
+               LC_CELL_NUMBER = LC%CELL_NUMBER_U
+            CASE(NSCARC_DISCRET_STRUCTURED)
+               LF_CELL_NUMBER = LF%CELL_NUMBER_S
+               LC_CELL_NUMBER = LC%CELL_NUMBER_S
+         END SELECT
 
          IF (TWO_D) THEN
 
@@ -9239,10 +9312,10 @@ IF (BMULTILEVEL) THEN
 
                         ICC = LC%CELL_NUMBER(IXC, 1, IZC)
 
-                        ICF(1) = LF%CELL_NUMBER(IXF-1, 1, IZF-1)
-                        ICF(2) = LF%CELL_NUMBER(IXF-1, 1, IZF  )
-                        ICF(3) = LF%CELL_NUMBER(IXF  , 1, IZF-1)
-                        ICF(4) = LF%CELL_NUMBER(IXF  , 1, IZF  )
+                        ICF(1) = LF_CELL_NUMBER(IXF-1, 1, IZF-1)
+                        ICF(2) = LF_CELL_NUMBER(IXF-1, 1, IZF  )
+                        ICF(3) = LF_CELL_NUMBER(IXF  , 1, IZF-1)
+                        ICF(4) = LF_CELL_NUMBER(IXF  , 1, IZF  )
 
                         DO I = 1, 4
                            VF(ICF(I)) = VC(ICC)
@@ -9262,10 +9335,10 @@ IF (BMULTILEVEL) THEN
 
                         ICC = LC%CELL_NUMBER(IXC, 1, IZC)
 
-                        ICFB(-1,-1) = LF%CELL_NUMBER(IXF-1, 1, IZF-1)
-                        ICFB(-1, 1) = LF%CELL_NUMBER(IXF-1, 1, IZF  )
-                        ICFB( 1,-1) = LF%CELL_NUMBER(IXF  , 1, IZF-1)
-                        ICFB( 1, 1) = LF%CELL_NUMBER(IXF  , 1, IZF  )
+                        ICFB(-1,-1) = LF_CELL_NUMBER(IXF-1, 1, IZF-1)
+                        ICFB(-1, 1) = LF_CELL_NUMBER(IXF-1, 1, IZF  )
+                        ICFB( 1,-1) = LF_CELL_NUMBER(IXF  , 1, IZF-1)
+                        ICFB( 1, 1) = LF_CELL_NUMBER(IXF  , 1, IZF  )
 
                         IF (IXC==1.AND.IZC==1) THEN
                            VF(ICFB(-1,-1)) = VC(ICC)
@@ -9333,14 +9406,14 @@ IF (BMULTILEVEL) THEN
 
                      ICC = LC%CELL_NUMBER(IXC, IYC, IZC)
 
-                     ICF(1) = LF%CELL_NUMBER(IXF-1, IYF-1, IZF-1)
-                     ICF(2) = LF%CELL_NUMBER(IXF-1, IYF-1, IZF  )
-                     ICF(3) = LF%CELL_NUMBER(IXF-1, IYF  , IZF-1)
-                     ICF(4) = LF%CELL_NUMBER(IXF-1, IYF  , IZF  )
-                     ICF(5) = LF%CELL_NUMBER(IXF  , IYF-1, IZF-1)
-                     ICF(6) = LF%CELL_NUMBER(IXF  , IYF-1, IZF  )
-                     ICF(7) = LF%CELL_NUMBER(IXF  , IYF  , IZF-1)
-                     ICF(8) = LF%CELL_NUMBER(IXF  , IYF  , IZF  )
+                     ICF(1) = LF_CELL_NUMBER(IXF-1, IYF-1, IZF-1)
+                     ICF(2) = LF_CELL_NUMBER(IXF-1, IYF-1, IZF  )
+                     ICF(3) = LF_CELL_NUMBER(IXF-1, IYF  , IZF-1)
+                     ICF(4) = LF_CELL_NUMBER(IXF-1, IYF  , IZF  )
+                     ICF(5) = LF_CELL_NUMBER(IXF  , IYF-1, IZF-1)
+                     ICF(6) = LF_CELL_NUMBER(IXF  , IYF-1, IZF  )
+                     ICF(7) = LF_CELL_NUMBER(IXF  , IYF  , IZF-1)
+                     ICF(8) = LF_CELL_NUMBER(IXF  , IYF  , IZF  )
 
                      DO I = 1, 8
                         VF(ICF(I)) = VC(ICC)
@@ -9375,6 +9448,7 @@ END SUBROUTINE SCARC_UPDATE_PRECONDITIONER
 SUBROUTINE SCARC_UPDATE_PRESSURE_MAINCELLS(NL)
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, I, J, K, IC
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER
 REAL(EB), POINTER, DIMENSION(:,:,:) :: HP
 TYPE (MESH_TYPE), POINTER :: M=>NULL()
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
@@ -9386,6 +9460,13 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    L  => SCARC(NM)%LEVEL(NL)
    ST => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)
 
+   SELECT CASE(TYPE_DISCRET)
+      CASE (NSCARC_DISCRET_STRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_S
+      CASE (NSCARC_DISCRET_UNSTRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_U
+   END SELECT
+
    IF (PREDICTOR) THEN
       HP => M%H
    ELSE
@@ -9396,7 +9477,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       DO J = 1, M%JBAR
          DO I = 1, M%IBAR
             IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(I, J, K)/=NSCARC_CELL_GASPHASE) CYCLE
-            IC = L%CELL_NUMBER(I,J,K)
+            IC = CELL_NUMBER(I,J,K)
             HP(I, J, K) = ST%X(IC)
          ENDDO
       ENDDO
@@ -9615,6 +9696,7 @@ INTEGER  :: IOR_NBR, IOR_OWN, IC, ICE, ICG, IFACE
 INTEGER  :: IX, IY, IZ
 INTEGER  :: IXW, IYW, IZW
 INTEGER  :: IXG, IYG, IZG
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER
 !INTEGER  :: IXN, IYN, IZN
 INTEGER  :: I, J, K, LL
 REAL(EB) :: ZSUM
@@ -9746,12 +9828,19 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !> ---------------------------------------------------------------------------------------
          CASE (NSCARC_EXCHANGE_GRID_INFO)
 
+            SELECT CASE(TYPE_DISCRET)
+               CASE (NSCARC_DISCRET_STRUCTURED)
+                  CELL_NUMBER => L%CELL_NUMBER_S
+               CASE (NSCARC_DISCRET_UNSTRUCTURED)
+                  CELL_NUMBER => L%CELL_NUMBER_U
+            END SELECT
+
             IPTR=1
             OS%SEND_INT=0
             DO IWL = 1, OL%NWL
                IWG = OL%MAP%IWL_TO_IWG(IWL)
                OS%SEND_INT(IPTR  ) = L%CELL_STATE(L%WALL(IWG)%IXW,L%WALL(IWG)%IYW,L%WALL(IWG)%IZW)
-               OS%SEND_INT(IPTR+1) = L%CELL_NUMBER(L%WALL(IWG)%IXW,L%WALL(IWG)%IYW,L%WALL(IWG)%IZW)
+               OS%SEND_INT(IPTR+1) =   CELL_NUMBER(L%WALL(IWG)%IXW,L%WALL(IWG)%IYW,L%WALL(IWG)%IZW)
                IPTR = IPTR + 2
             ENDDO
 
@@ -9798,6 +9887,13 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
             VECTOR => POINT_TO_VECTOR(NM, NL, TYPE_VECTOR)
 
+            SELECT CASE(TYPE_DISCRET)
+               CASE (NSCARC_DISCRET_STRUCTURED)
+                  CELL_NUMBER => L%CELL_NUMBER_S
+               CASE (NSCARC_DISCRET_UNSTRUCTURED)
+                  CELL_NUMBER => L%CELL_NUMBER_U
+            END SELECT
+
             LL = 1
             DO ICG= 1, OL%NCG
                !ZSUM = 0.0_EB
@@ -9806,13 +9902,13 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                IY  = L%WALL(IWG)%IYW
                IZ  = L%WALL(IWG)%IZW
 
-               !ZSUM = VECTOR(L%CELL_NUMBER(IX, IY, IZ))
+               !ZSUM = VECTOR(CELL_NUMBER(IX, IY, IZ))
                !OS%SEND_REAL(LL) = ZSUM/REAL(OL%NCPLR,EB)
 
                IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(IX, IY, IZ)/=NSCARC_CELL_GASPHASE) THEN
                   OS%SEND_REAL(LL) = NSCARC_HUGE_REAL
                ELSE
-                  OS%SEND_REAL(LL) = VECTOR(L%CELL_NUMBER(IX, IY, IZ))
+                  OS%SEND_REAL(LL) = VECTOR(CELL_NUMBER(IX, IY, IZ))
                ENDIF
 
                LL = LL + 1
@@ -9829,6 +9925,13 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !> ---------------------------------------------------------------------------------------
          CASE (NSCARC_EXCHANGE_CELL_INDEX)
 
+            SELECT CASE(TYPE_DISCRET)
+               CASE (NSCARC_DISCRET_STRUCTURED)
+                  CELL_NUMBER => L%CELL_NUMBER_S
+               CASE (NSCARC_DISCRET_UNSTRUCTURED)
+                  CELL_NUMBER => L%CELL_NUMBER_U
+            END SELECT
+
             OS%SEND_INT = 0
             LL = 1
             DO ICG= 1, OL%NCG
@@ -9840,7 +9943,7 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(IX, IY, IZ)/=NSCARC_CELL_GASPHASE) THEN
                   OS%SEND_INT(LL) = NSCARC_HUGE_INT
                ELSE
-                  OS%SEND_INT(LL) = L%CELL_NUMBER(IX, IY, IZ)
+                  OS%SEND_INT(LL) = CELL_NUMBER(IX, IY, IZ)
                ENDIF
 
                LL = LL + 1
@@ -9857,6 +9960,13 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !> ---------------------------------------------------------------------------------------
          CASE (NSCARC_EXCHANGE_MATRIX_VALUE)
 
+            SELECT CASE(TYPE_DISCRET)
+               CASE (NSCARC_DISCRET_STRUCTURED)
+                  CELL_NUMBER => L%CELL_NUMBER_S
+               CASE (NSCARC_DISCRET_UNSTRUCTURED)
+                  CELL_NUMBER => L%CELL_NUMBER_U
+            END SELECT
+
             LL = 1
             DO ICG= 1, OL%NCG
                IWG = OL%MAP%ICG_TO_IWG(ICG)
@@ -9867,7 +9977,7 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(IX, IY, IZ)/=NSCARC_CELL_GASPHASE) THEN
                   OS%SEND_REAL(LL) = NSCARC_HUGE_REAL
                ELSE
-                  IC = L%CELL_NUMBER(IX, IY, IZ)
+                  IC = CELL_NUMBER(IX, IY, IZ)
                   ICE = OL%MAP%ICG_TO_ICE(ICG)
                   DO ICOL = AC%ROW(IC)+1, AC%ROW(IC+1)-1
                      IF (AC%COL(ICOL) == ICE) THEN
@@ -10003,6 +10113,14 @@ MESH_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             !> unpack information about neighboring grids
             !> ------------------------------------------------------------------------------------
             CASE (NSCARC_EXCHANGE_GRID_INFO)
+
+               SELECT CASE(TYPE_DISCRET)
+                  CASE (NSCARC_DISCRET_STRUCTURED)
+                     CELL_NUMBER => L%CELL_NUMBER_S
+                  CASE (NSCARC_DISCRET_UNSTRUCTURED)
+                     CELL_NUMBER => L%CELL_NUMBER_U
+               END SELECT
+
                IPTR=1
                DO ICG = 1, OL%NCG
 
@@ -10023,7 +10141,7 @@ MESH_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                   !IF (OL%WALL(ICG)%STATE == NSCARC_CELL_GASPHASE.AND.L%CELL_STATE(IXW,IYW,IZW)/=NSCARC_CELL_SOLID) THEN
                   IF (OL%WALL(ICG)%STATE == NSCARC_CELL_GASPHASE) THEN
                      L%CELL_STATE(IXG, IYG, IZG)  = OL%WALL(ICG)%STATE
-                     L%CELL_NUMBER(IXG, IYG, IZG) = OL%WALL(ICG)%DOF
+                       CELL_NUMBER(IXG, IYG, IZG) = OL%WALL(ICG)%DOF
                   ENDIF
 
                ENDDO
@@ -10233,12 +10351,24 @@ MESHES_LOOP1: DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
    S => SCARC(NM)
    L => SCARC(NM)%LEVEL(NLEVEL_MIN)
 
-   CALL SCARC_ALLOCATE_INT3(L%CELL_NUMBER, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_NONE, 'CELL_NUMBER')
-   CALL SCARC_ALLOCATE_INT3(L%CELL_STATE , 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_NONE, 'CELL_STATE')
+!   CALL SCARC_ALLOCATE_INT3(L%CELL_NUMBER  , 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_NONE, 'CELL_NUMBER')
+!   L%CELL_NUMBER = NSCARC_UNDEFINED_INT
 
-   L%CELL_NUMBER = NSCARC_UNDEFINED_INT
+   CALL SCARC_ALLOCATE_INT3(L%CELL_STATE   , 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_NONE, 'CELL_STATE')
    L%CELL_STATE  = NSCARC_UNDEFINED_INT
    L%CELL_STATE(1:L%NX, 1:L%NY, 1:L%NZ) = NSCARC_CELL_GASPHASE
+
+   !> Allocate cell-number array only for structured case - only temporarily for proof of concept of KGM-method
+   IF (TYPE_DISCRET == NSCARC_DISCRET_STRUCTURED) THEN
+      CALL SCARC_ALLOCATE_INT3(L%CELL_NUMBER_S, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_NONE, 'CELL_NUMBER')
+      L%CELL_NUMBER_S = NSCARC_UNDEFINED_INT
+   ENDIF
+
+   !> Allocate cell-number array only for unstructured case - only temporarily for proof of concept of KGM-method
+   IF (TYPE_DISCRET == NSCARC_DISCRET_UNSTRUCTURED) THEN
+      CALL SCARC_ALLOCATE_INT3(L%CELL_NUMBER_U, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_NONE, 'CELL_NUMBER')
+      L%CELL_NUMBER_U = NSCARC_UNDEFINED_INT
+   ENDIF
 
 ENDDO MESHES_LOOP1
 
@@ -10272,7 +10402,7 @@ MESHES_LOOP3 : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
          DO J=1,L%NY
             DO I=1,L%NX
                L%NC_LOCAL(NM) = L%NC_LOCAL(NM) + 1
-               L%CELL_NUMBER(I,J,K)   = L%NC_LOCAL(NM)
+               L%CELL_NUMBER_S(I,J,K) = L%NC_LOCAL(NM)          !> only temporarily
             ENDDO
          ENDDO
       ENDDO
@@ -10284,7 +10414,7 @@ MESHES_LOOP3 : DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
             DO I=1,L%NX
                IF (L%CELL_STATE(I,J,K) == NSCARC_CELL_GASPHASE ) THEN
                   L%NC_LOCAL(NM) = L%NC_LOCAL(NM) + 1
-                  L%CELL_NUMBER(I,J,K)   = L%NC_LOCAL(NM)
+                  L%CELL_NUMBER_U(I,J,K) = L%NC_LOCAL(NM)          !> only temporarily
                ENDIF
             ENDDO
          ENDDO
@@ -10313,8 +10443,12 @@ MESHES_LOOP1: DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
    LF => SCARC(NM)%LEVEL(NLEVEL_MIN)
    LC => SCARC(NM)%LEVEL(NL)
 
-   CALL SCARC_ALLOCATE_INT3(LC%CELL_NUMBER, 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, NSCARC_INIT_NONE, 'CELL_NUMBER')
-   CALL SCARC_ALLOCATE_INT3(LC%CELL_STATE , 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, NSCARC_INIT_NONE, 'CELL_STATE')
+   CALL SCARC_ALLOCATE_INT3(LC%CELL_STATE, 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, NSCARC_INIT_NONE, 'CELL_NUMBER')
+   IF (TYPE_DISCRET == NSCARC_DISCRET_STRUCTURED) THEN
+      CALL SCARC_ALLOCATE_INT3(LC%CELL_NUMBER_S , 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, NSCARC_INIT_NONE, 'CELL_STATE')
+   ELSE
+      CALL SCARC_ALLOCATE_INT3(LC%CELL_NUMBER_U , 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, NSCARC_INIT_NONE, 'CELL_STATE')
+   ENDIF
 
    LC%CELL_NUMBER = NSCARC_UNDEFINED_INT
    LC%CELL_STATE  = NSCARC_UNDEFINED_INT
@@ -10332,7 +10466,7 @@ MESHES_LOOP1: DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
                IXF = (IX-1)*NSTEP + 1
                LC%CELL_STATE(IX,IY,IZ) = LF%CELL_STATE(IXF, IYF, IZF)
                LC%NC_LOCAL(NM)  = LC%NC_LOCAL(NM) + 1
-               LC%CELL_NUMBER(IX,IY,IZ) = LC%NC_LOCAL(NM)
+               LC%CELL_NUMBER_S(IX,IY,IZ) = LC%NC_LOCAL(NM)
             ENDDO
          ENDDO
       ENDDO
@@ -10348,7 +10482,7 @@ MESHES_LOOP1: DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
                LC%CELL_STATE(IX,IY,IZ) = LF%CELL_STATE(IXF, IYF, IZF)
                IF (LF%CELL_STATE(IXF, IYF, IZF) == NSCARC_CELL_GASPHASE) THEN
                   LC%NC_LOCAL(NM)  = LC%NC_LOCAL(NM) + 1
-                  LC%CELL_NUMBER(IX,IY,IZ) = LC%NC_LOCAL(NM)
+                  LC%CELL_NUMBER_U(IX,IY,IZ) = LC%NC_LOCAL(NM)
                ENDIF
             ENDDO
          ENDDO
@@ -10368,18 +10502,27 @@ END SUBROUTINE SCARC_SETUP_DISCRETIZATION_LEVEL
 SUBROUTINE SCARC_FILTER_MEANVALUE(NV, NL)
 INTEGER, INTENT(IN) :: NV, NL
 INTEGER :: NM, IC, I, J, K
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER
 REAL(EB), DIMENSION(:) , POINTER :: VC
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 
 LOCAL_REAL = 0.0_EB
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
    L => SCARC(NM)%LEVEL(NL)
+   SELECT CASE(TYPE_DISCRET)
+      CASE (NSCARC_DISCRET_STRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_S
+      CASE (NSCARC_DISCRET_UNSTRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_U
+   END SELECT
+
    VC => POINT_TO_VECTOR(NM, NL, NV)
    DO K = 1, L%NZ
       DO J = 1, L%NY
          DO I = 1, L%NX
             IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(I, J, K)/=NSCARC_CELL_GASPHASE) CYCLE
-            IC = L%CELL_NUMBER(I,J,K)
+            IC = CELL_NUMBER(I,J,K)
             LOCAL_REAL(NM) = LOCAL_REAL(NM) + VC(IC)
          ENDDO
       ENDDO
@@ -10396,12 +10539,18 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    L   => SCARC(NM)%LEVEL(NL)
    VC  => POINT_TO_VECTOR(NM, NL, NV)
+   SELECT CASE(TYPE_DISCRET)
+      CASE (NSCARC_DISCRET_STRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_S
+      CASE (NSCARC_DISCRET_UNSTRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_U
+   END SELECT
 
    DO K = 1, L%NZ
       DO J = 1, L%NY
          DO I = 1, L%NX
             IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(I, J, K)/=NSCARC_CELL_GASPHASE) CYCLE
-            IC = L%CELL_NUMBER(I,J,K)
+            IC = CELL_NUMBER(I,J,K)
             VC(IC) = VC(IC) - GLOBAL_REAL
          ENDDO
       ENDDO
@@ -11009,6 +11158,7 @@ SUBROUTINE SCARC_PRESET_EXACT (NE, NL)
 INTEGER, INTENT(IN):: NE, NL
 REAL (EB), POINTER, DIMENSION(:) :: VE
 INTEGER :: IC, NM, I, K
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER
 REAL(EB), DIMENSION(:), POINTER :: XMID, ZMID
 TYPE (MESH_TYPE), POINTER :: M=>NULL()
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
@@ -11016,13 +11166,22 @@ TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 IF (ITE_TOTAL == 0) WRITE(*,*) 'CAUTION: PRESET_EXACT is active !!!'
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
    M => MESHES(NM)
    L => SCARC(NM)%LEVEL(NL)
    VE => POINT_TO_VECTOR (NM, NL, NE)
+
+   SELECT CASE(TYPE_DISCRET)
+      CASE (NSCARC_DISCRET_STRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_S
+      CASE (NSCARC_DISCRET_UNSTRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_U
+   END SELECT
+
    DO K = 1, L%NZ
       DO I = 1, L%NX
          IF (.NOT.PRES_ON_WHOLE_DOMAIN.AND.L%CELL_STATE(I,1,K) /= NSCARC_CELL_GASPHASE) CYCLE
-         IC = L%CELL_NUMBER(I,1,K)
+         IC = CELL_NUMBER(I,1,K)
          IF (NL == NLEVEL_MIN) THEN
             XMID => M%XC
             ZMID => M%ZC
@@ -11045,18 +11204,28 @@ SUBROUTINE SCARC_PRESET_VECTOR (NV, NL)
 INTEGER, INTENT(IN):: NV, NL
 REAL (EB), POINTER, DIMENSION(:) :: VEC
 INTEGER :: IC, NM, I, K
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER
 REAL(EB), DIMENSION(:), POINTER :: XMID, ZMID
 TYPE (MESH_TYPE), POINTER :: M=>NULL()
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
    M => MESHES(NM)
    L => SCARC(NM)%LEVEL(NL)
    VEC => POINT_TO_VECTOR (NM, NL, NV)
+
+   SELECT CASE(TYPE_DISCRET)
+      CASE (NSCARC_DISCRET_STRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_S
+      CASE (NSCARC_DISCRET_UNSTRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_U
+   END SELECT
+
    DO K = 1, L%NZ
       DO I = 1, L%NX
          IF (.NOT.PRES_ON_WHOLE_DOMAIN.AND.L%CELL_STATE(I,1,K) /= NSCARC_CELL_GASPHASE) CYCLE
-         IC = L%CELL_NUMBER(I,1,K)
+         IC = CELL_NUMBER(I,1,K)
          IF (NL == NLEVEL_MIN) THEN
             XMID => M%XC
             ZMID => M%ZC
@@ -11080,6 +11249,7 @@ SUBROUTINE SCARC_PRESET_RHS (NV, NL)
 INTEGER, INTENT(IN):: NV, NL
 REAL (EB), POINTER, DIMENSION(:) :: VC
 INTEGER :: IC, NM, I, K
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER
 REAL (EB) :: X, Z
 TYPE (MESH_TYPE), POINTER :: M=>NULL()
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
@@ -11087,17 +11257,26 @@ TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 IF (NL > NLEVEL_MIN) WRITE(*,*) 'Wrong level for presetting RHS '
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
    M => MESHES(NM)
    M%BXS = 0.0_EB
    M%BXF = 0.0_EB
    M%BZS = 0.0_EB
    M%BZF = 0.0_EB
+
    L => SCARC(NM)%LEVEL(NL)
    VC => POINT_TO_VECTOR (NM, NL, NV)
+   SELECT CASE(TYPE_DISCRET)
+      CASE (NSCARC_DISCRET_STRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_S
+      CASE (NSCARC_DISCRET_UNSTRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_U
+   END SELECT
+
    DO K = 1, L%NZ
       DO I = 1, L%NX
          IF (.NOT.PRES_ON_WHOLE_DOMAIN.AND.L%CELL_STATE(I,1,K) /= NSCARC_CELL_GASPHASE) CYCLE
-         IC = L%CELL_NUMBER(I,1,K)
+         IC = CELL_NUMBER(I,1,K)
          X  = M%XC(I)
          Z  = M%ZC(K)
          WRITE(MSG%LU_DEBUG,'(A,i3,a,e10.2,a,e10.2,a,e12.4)') 'IC=',IC,':X=',X,':Z=',Z,': RHS=',VC(IC)
@@ -11189,6 +11368,7 @@ SUBROUTINE SCARC_DEBUG_LEVEL (NV, CVEC, NL)
 INTEGER, INTENT(IN):: NV, NL
 REAL (EB):: VALUES(0:100)
 INTEGER :: NM, II, JJ, KK, IC, NX8, NY8, NZ8
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER
 CHARACTER (*), INTENT(IN) :: CVEC
 REAL (EB), POINTER, DIMENSION(:)     :: VC
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
@@ -11198,6 +11378,13 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    L  => SCARC(NM)%LEVEL(NL)
    VC => POINT_TO_VECTOR (NM, NL, NV)
+
+   SELECT CASE(TYPE_DISCRET)
+      CASE (NSCARC_DISCRET_STRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_S
+      CASE (NSCARC_DISCRET_UNSTRUCTURED)
+         CELL_NUMBER => L%CELL_NUMBER_U
+   END SELECT
 
    NX8=MIN(12,L%NX)
    NY8=MIN(12,L%NY)
@@ -11212,7 +11399,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             DO JJ = NY8, 1, - 1
                DO II=1,NX8
                   !IF (L%CELL_STATE(II,JJ,KK) == NSCARC_CELL_GASPHASE) THEN
-                     IC=L%CELL_NUMBER(II,JJ,KK)
+                     IC=CELL_NUMBER(II,JJ,KK)
                      IF (ABS(VC(IC))<1.0E-14_EB) THEN
                         VALUES(II)=0.0_EB
                      ELSE
@@ -11250,6 +11437,7 @@ END SUBROUTINE SCARC_DEBUG_LEVEL
 SUBROUTINE SCARC_DEBUG_QUANTITY(NTYPE, NL, CQUANTITY)
 INTEGER, INTENT(IN) :: NTYPE, NL
 INTEGER :: NM, NOM, IP, IC, ID, IW, I, J, IOR0, INBR, III, JJJ, KKK, IWG
+INTEGER, DIMENSION(:,:,:), POINTER :: CELL_NUMBER
 CHARACTER (*), INTENT(IN) :: CQUANTITY
 TYPE (MESH_TYPE), POINTER :: M=>NULL()
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL(), OL=>NULL()
@@ -11699,6 +11887,12 @@ SELECT CASE (NTYPE)
       DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          M => MESHES(NM)
          L => SCARC(NM)%LEVEL(NL)
+         SELECT CASE(TYPE_DISCRET)
+            CASE (NSCARC_DISCRET_STRUCTURED)
+               CELL_NUMBER => L%CELL_NUMBER_S
+            CASE (NSCARC_DISCRET_UNSTRUCTURED)
+               CELL_NUMBER => L%CELL_NUMBER_U
+         END SELECT
          WRITE(MSG%LU_DEBUG,*) 'M%N_OBST=',M%N_OBST
          WRITE(MSG%LU_DEBUG,*) 'M%OBST ... I1, I2, J1, J2, K1, K2'
          DO IWG = 1, M%N_OBST
@@ -11737,7 +11931,7 @@ SELECT CASE (NTYPE)
          DO JJJ=L%NY+1,0,-1
             WRITE(MSG%LU_DEBUG,*) ' ------------- JJJ = ', JJJ
             DO KKK = L%NZ+1,0,-1
-               WRITE(MSG%LU_DEBUG,*) (L%CELL_NUMBER(III,JJJ,KKK),III=0,L%NX+1)
+               WRITE(MSG%LU_DEBUG,*) (CELL_NUMBER(III,JJJ,KKK),III=0,L%NX+1)
             ENDDO
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'GRID%CELL_STATE(...)'
@@ -12058,7 +12252,7 @@ END SUBROUTINE SCARC_MATLAB_MATRIX
 !!!CGBARO!!!      DO J = 1, S%JBAR
 !!!CGBARO!!!         DO I = 1, S%IBAR
 !!!CGBARO!!!            IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(I, J, K)/=NSCARC_CELL_GASPHASE) CYCLE
-!!!CGBARO!!!            IC = L%CELL_NUMBER(I,J,K)
+!!!CGBARO!!!            IC = CELL_NUMBER(I,J,K)
 !!!CGBARO!!!            HP(I, J, K) = ST%X(IC)
 !!!CGBARO!!!         ENDDO
 !!!CGBARO!!!      ENDDO
@@ -12094,7 +12288,7 @@ END SUBROUTINE SCARC_MATLAB_MATRIX
 !!!CGBARO!!!      DO J = 1, M%JBAR
 !!!CGBARO!!!         DO I = 1, M%IBAR
 !!!CGBARO!!!            IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(I, J, K)/=NSCARC_CELL_GASPHASE) CYCLE
-!!!CGBARO!!!            IC = L%CELL_NUMBER(I,J,K)
+!!!CGBARO!!!            IC = CELL_NUMBER(I,J,K)
 !!!CGBARO!!!            ST%B(IC) = PRHS(I, J, K)                 !> use right hand side from pres-routine
 !!!CGBARO!!!         ENDDO
 !!!CGBARO!!!      ENDDO
@@ -12110,7 +12304,7 @@ END SUBROUTINE SCARC_MATLAB_MATRIX
 !!!CGBARO!!!      IF (.NOT.PRES_ON_WHOLE_DOMAIN .AND. L%CELL_STATE(I, J, K)/=NSCARC_CELL_GASPHASE) CYCLE
 !!!CGBARO!!!
 !!!CGBARO!!!      IOR0 = L%WALL(IW)%IOR
-!!!CGBARO!!!      IC   = L%CELL_NUMBER(I,J,K)
+!!!CGBARO!!!      IC   = CELL_NUMBER(I,J,K)
 !!!CGBARO!!!
 !!!CGBARO!!!      !> Dirichlet BC's:
 !!!CGBARO!!!      !> these are based on the SETTING in BTYPE
