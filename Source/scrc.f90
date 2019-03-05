@@ -4376,10 +4376,10 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
    !> Global MGM method - proof of concept
    CASE (NSCARC_METHOD_MGM)
 
-      TYPE_DISCRET = NSCARC_DISCRET_UNSTRUCTURED
+      TYPE_DISCRET = NSCARC_DISCRET_STRUCTURED
       CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)                   !> setup size only for fine grid
 
-      TYPE_DISCRET = NSCARC_DISCRET_STRUCTURED
+      TYPE_DISCRET = NSCARC_DISCRET_UNSTRUCTURED
       CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)                   !> setup size only for fine grid
 
    !> Global Krylov method
@@ -4798,6 +4798,8 @@ SELECT CASE(TYPE_DISCRET)
    CASE (NSCARC_DISCRET_UNSTRUCTURED)
       AC => L%UD%AC
 END SELECT
+
+WRITE(MSG%LU_DEBUG,*) 'MATRIX_MAINDIAG_COMPACT: IC, IX, IY, IZ:', IC, IX, IY, IZ
 
 AC%VAL(IP) = - 2.0_EB/(L%DXL(IX-1)*L%DXL(IX))
 IF (.NOT.TWO_D) AC%VAL(IP) = AC%VAL(IP) - 2.0_EB/(L%DYL(IY-1)*L%DYL(IY))
@@ -5634,7 +5636,6 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
 
       !> Allocate velocity vectors along internal obstructions for the setting of internal BC's
       CALL SCARC_SETUP_MGM(NLEVEL_MIN, NLEVEL_MIN)
-
 
       !> ------- First part of method: Setup CG solver for inhomogeneous problem on structured discretization
       TYPE_DISCRET = NSCARC_DISCRET_STRUCTURED
