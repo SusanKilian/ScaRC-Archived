@@ -7065,7 +7065,7 @@ SELECT CASE (NTYPE)
                AC%NR  = L%NC + 1
 
                !> Determine sizes of overlapped parts for later communication with corresponding neighbors
-               DO IW = 1, L%N_WALL_CELLS
+               DO IW = 1, L%N_WALL_CELLS_EXT
                   NOM = D%WALL(IW)%NOM
                   IF (NOM /= 0) THEN
                      OL  => SCARC(NM)%OSCARC(NOM)%LEVEL(NL)
@@ -7112,7 +7112,7 @@ SELECT CASE (NTYPE)
                AB%NDIAG = L%NC
 
                !> Determine sizes of overlapped parts for later communication with corresponding neighbors
-               DO IW = 1, L%N_WALL_CELLS
+               DO IW = 1, L%N_WALL_CELLS_EXT
                   NOM = D%WALL(IW)%NOM
                   IF (NOM /= 0) THEN
                      OL  => SCARC(NM)%OSCARC(NOM)%LEVEL(NL)
@@ -7163,7 +7163,7 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    L%SUBDIVISION = 0
 
-   WALL_CELLS_LOOP: DO IW = 1, L%N_WALL_CELLS
+   WALL_CELLS_LOOP: DO IW = 1, L%N_WALL_CELLS_EXT
 
       IOR0 = D%WALL(IW)%IOR
 
