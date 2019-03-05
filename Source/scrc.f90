@@ -7765,17 +7765,27 @@ REAL(EB), DIMENSION(:), POINTER ::  V1, V2
 #ifdef WITH_MKL
 EXTERNAL :: DAXPBY
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
+TYPE (SCARC_DISCRET_TYPE), POINTER :: D=>NULL()
 #endif
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
    V1 => POINT_TO_VECTOR(NM, NL, NV1)
    V2 => POINT_TO_VECTOR(NM, NL, NV2)
+
 #ifdef WITH_MKL
+   SELECT CASE(TYPE_DISCRET)
+      CASE (NSCARC_DISCRET_STRUCTURED)
+         D => L%SD
+      CASE (NSCARC_DISCRET_UNSTRUCTURED)
+         D => L%UD
+   END SELECT
    L => SCARC(NM)%LEVEL(NL)
-   CALL DAXPBY(L%NC, SCAL1, V1, 1, SCAL2, V2, 1)
+   CALL DAXPBY(D%NC, SCAL1, V1, 1, SCAL2, V2, 1)
 #else
    V2 = SCAL1 * V1 + SCAL2 * V2
 #endif
+
 ENDDO
 
 END SUBROUTINE SCARC_VECTOR_SUM
@@ -7792,6 +7802,7 @@ REAL(EB), DIMENSION(:), POINTER ::  V1, V2
 #ifdef WITH_MKL
 EXTERNAL :: DCOPY, DSCAL
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
+TYPE (SCARC_DISCRET_TYPE), POINTER :: D=>NULL()
 #endif
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -7801,8 +7812,14 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 #ifdef WITH_MKL
    L => SCARC(NM)%LEVEL(NL)
-   CALL DCOPY(L%NC, V1, 1, V2, 1)
-   CALL DSCAL(L%NC, SCAL1, V2, 1)
+   SELECT CASE(TYPE_DISCRET)
+      CASE (NSCARC_DISCRET_STRUCTURED)
+         D => L%SD
+      CASE (NSCARC_DISCRET_UNSTRUCTURED)
+         D => L%UD
+   END SELECT
+   CALL DCOPY(D%NC, V1, 1, V2, 1)
+   CALL DSCAL(D%NC, SCAL1, V2, 1)
 #else
    V2 = SCAL1 * V1
 #endif
@@ -7922,7 +7939,7 @@ SELECT CASE (ITYPE)
 
                AC => D%AC
 
-               DO IC = 1, L%NC
+               DO IC = 1, D%NC
                   V2(IC) = V2(IC) / AC%VAL(AC%ROW(IC))
                ENDDO
 
@@ -7930,7 +7947,7 @@ SELECT CASE (ITYPE)
             CASE (NSCARC_MATRIX_BANDED)
 
                AB => D%AB
-               DO IC = 1, L%NC
+               DO IC = 1, D%NC
                   V2(IC) = V2(IC) / AB%VAL(AB%POS(0),IC)
                ENDDO
 
@@ -7963,21 +7980,21 @@ SELECT CASE (ITYPE)
 
                AC => D%AC
 
-               SSOR_FORWARD_COMPACT_LOOP: DO IC = 1, L%NC                        !> forward SSOR step
+               SSOR_FORWARD_COMPACT_LOOP: DO IC = 1, D%NC                        !> forward SSOR step
                   AUX = 0.0_EB
                   DO ICOL = AC%ROW(IC)+1, AC%ROW(IC+1)-1                  
                      IF (AC%COL(ICOL) >= IC) CYCLE                            !> only process lower diags
-                     IF (AC%COL(ICOL) <= L%NC) AUX = AUX + AC%VAL(ICOL) * V2(AC%COL(ICOL))
+                     IF (AC%COL(ICOL) <= D%NC) AUX = AUX + AC%VAL(ICOL) * V2(AC%COL(ICOL))
                   ENDDO 
                   V2(IC) = (V2(IC) - AUX * OMEGA_SSOR) / AC%VAL(AC%ROW(IC))
 !WRITE(MSG%LU_DEBUG,*) 'SSOR1: ',IC, AUX, AC%VAL(AC%ROW(IC)), V2(IC)
                ENDDO SSOR_FORWARD_COMPACT_LOOP
       
-               SSOR_BACKWARD_COMPACT_LOOP: DO IC = L%NC-1, 1, -1                 !> backward SSOR step
+               SSOR_BACKWARD_COMPACT_LOOP: DO IC = D%NC-1, 1, -1                 !> backward SSOR step
                   AUX = 0.0_EB
                   DO ICOL = AC%ROW(IC)+1, AC%ROW(IC+1)-1
                      IF (AC%COL(ICOL) <= IC) CYCLE                            !> only process upper diags
-                     IF (AC%COL(ICOL) <= L%NC) THEN
+                     IF (AC%COL(ICOL) <= D%NC) THEN
                        AUX = AUX + AC%VAL(ICOL) * V2(AC%COL(ICOL))
 !WRITE(MSG%LU_DEBUG,*) 'SSOR2: ',IC, AUX, AC%VAL(AC%ROW(IC)), V2(IC), AC%COL(ICOL)
                      ENDIF
@@ -7995,21 +8012,21 @@ SELECT CASE (ITYPE)
                !> ---------- 2D version
                IF (TWO_D) THEN
 
-                  SSOR_FORWARD_BANDED_2D_LOOP: DO IC = 1, L%NC                 !> forward SSOR step
+                  SSOR_FORWARD_BANDED_2D_LOOP: DO IC = 1, D%NC                 !> forward SSOR step
                      AUX = 0.0_EB
                      DO IOR0 = 1, 3, 2                                          !> only process lower x- and z-diag
                         JC = IC + AB%OFFSET(IOR0)         
-                        IF (JC >= 1 .AND. JC <= L%NC) AUX = AUX + AB%VAL(AB%POS(IOR0),IC) * V2(JC)
+                        IF (JC >= 1 .AND. JC <= D%NC) AUX = AUX + AB%VAL(AB%POS(IOR0),IC) * V2(JC)
                      ENDDO 
                      V2(IC) = (V2(IC) - AUX * OMEGA_SSOR) / AB%VAL(AB%POS(0),IC)
 !WRITE(MSG%LU_DEBUG,*) 'SSOR1: ',IC, AUX, AB%VAL(AB%POS(0),IC), V2(IC)
                   ENDDO SSOR_FORWARD_BANDED_2D_LOOP
       
-                  SSOR_BACKWARD_BANDED_2D_LOOP: DO IC = L%NC-1, 1, -1          !> backward SSOR step
+                  SSOR_BACKWARD_BANDED_2D_LOOP: DO IC = D%NC-1, 1, -1          !> backward SSOR step
                      AUX = 0.0_EB
                      DO IOR0 = -1, -3, -2                                       !> only process upper x- and z-diag
                        JC = IC + AB%OFFSET(IOR0)         
-                        IF (JC <= L%NC) THEN
+                        IF (JC <= D%NC) THEN
                            AUX = AUX + AB%VAL(AB%POS(IOR0),IC) * V2(JC)
 !WRITE(MSG%LU_DEBUG,*) 'SSOR2: ',IC, AUX, AB%VAL(AB%POS(0),IC), V2(IC), JC
                         ENDIF
@@ -8021,25 +8038,25 @@ SELECT CASE (ITYPE)
                !> ---------- 3D version
                ELSE
 
-                  SSOR_FORWARD_BANDED_3D_LOOP: DO IC = 1, L%NC                    !> forward SSOR step
+                  SSOR_FORWARD_BANDED_3D_LOOP: DO IC = 1, D%NC                    !> forward SSOR step
                      AUX = 0.0_EB
                      DO IOR0 = 1, 3                                             !> only process lower diags
                         IF (AB%POS(IOR0) == 0) CYCLE                            !> no contribution for y-direction in 2D
                         JC = IC + AB%OFFSET(IOR0)         
-                        IF (JC >= 1 .AND. JC <= L%NC) AUX = AUX + AB%VAL(AB%POS(IOR0),IC) * V2(JC)
+                        IF (JC >= 1 .AND. JC <= D%NC) AUX = AUX + AB%VAL(AB%POS(IOR0),IC) * V2(JC)
                      ENDDO 
                      V2(IC) = (V2(IC) - AUX * OMEGA_SSOR) / AB%VAL(AB%POS(0),IC)
 !WRITE(MSG%LU_DEBUG,*) 'SSOR1: ',IC, AUX, AB%VAL(AB%POS(0),IC), V2(IC)
                   ENDDO SSOR_FORWARD_BANDED_3D_LOOP
       
-                  SSOR_BACKWARD_BANDED_3D_LOOP: DO IC = L%NC-1, 1, -1             !> backward SSOR step
+                  SSOR_BACKWARD_BANDED_3D_LOOP: DO IC = D%NC-1, 1, -1             !> backward SSOR step
                      AUX = 0.0_EB
                      DO IOR0 = -1, -3, -1                                       !> only process upper diags
                         IF (AB%POS(IOR0) == 0) CYCLE                            !> no contribution for y-direction in 2D
                         JC = IC + AB%OFFSET(IOR0)         
 !WRITE(MSG%LU_DEBUG,*) 'SSOR2: Testing ',IC, JC
 !WRITE(MSG%LU_DEBUG,*) 'SSOR2: yes'
-                        IF (JC >= IC .AND. JC <= L%NC) AUX = AUX + AB%VAL(AB%POS(IOR0),IC) * V2(JC)
+                        IF (JC >= IC .AND. JC <= D%NC) AUX = AUX + AB%VAL(AB%POS(IOR0),IC) * V2(JC)
 !WRITE(MSG%LU_DEBUG,*) 'SSOR2: ',IC, AUX, AB%VAL(AB%POS(0),IC), V2(IC), JC
                      ENDDO 
                      V2(IC) = V2(IC) - AUX * OMEGA_SSOR / AB%VAL(AB%POS(0),IC)
@@ -8093,7 +8110,7 @@ WRITE(MSG%LU_DEBUG,'(8E14.6)') V1
 
          !> Forward solve: 
          !> Compute sol(i) = rhs(i) - sum L(i,j) x sol(j)
-         DO IC = 1, L%NC
+         DO IC = 1, D%NC
             V2(IC) = V1(IC)
             DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1
                JC = AC%COL(ICOL)
@@ -8108,7 +8125,7 @@ WRITE(MSG%LU_DEBUG,*) 'A: V2(',IC,')=',V2(IC), JC
 
          !> Backward solve
          !> Compute sol: inv(U) sol
-         DO IC = L%NC, 1, -1
+         DO IC = D%NC, 1, -1
 
             DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1
                JC = AC%COL(ICOL)
@@ -8258,14 +8275,14 @@ CALL SCARC_DEBUG_LEVEL (NV2, 'C: FFT-PRECON 2', NL)
             V1_FB => POINT_TO_VECTOR_FB (NM, NL, NV1)
             V2_FB => POINT_TO_VECTOR_FB (NM, NL, NV2)
    
-            V1_FB(1:L%NC) = REAL(V1(1:L%NC), FB)
-            V2_FB(1:L%NC) = 0.0_FB
+            V1_FB(1:D%NC) = REAL(V1(1:D%NC), FB)
+            V2_FB(1:D%NC) = 0.0_FB
    
             CALL CLUSTER_SPARSE_SOLVER_S(MKL%CT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, D%NC_GLOBAL, &
                                          AC_SYM%VAL_FB, AC_SYM%ROW, AC_SYM%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                                          MKL%MSGLVL, V1_FB, V2_FB, MPI_COMM_WORLD, MKL%ERROR)
    
-            V2(1:L%NC) = REAL(V2_FB(1:L%NC), EB)
+            V2(1:D%NC) = REAL(V2_FB(1:D%NC), EB)
    
 #else
             CALL CLUSTER_SPARSE_SOLVER_D(MKL%CT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, D%NC_GLOBAL, &
@@ -8305,19 +8322,19 @@ CALL SCARC_DEBUG_LEVEL (NV2, 'C: FFT-PRECON 2', NL)
             V1_FB => POINT_TO_VECTOR_FB (NM, NL, NV1)
             V2_FB => POINT_TO_VECTOR_FB (NM, NL, NV2)
    
-            V1_FB(1:L%NC) = REAL(V1(1:L%NC), FB)
-            V2_FB(1:L%NC) = 0.0_FB
+            V1_FB(1:D%NC) = REAL(V1(1:D%NC), FB)
+            V2_FB(1:D%NC) = 0.0_FB
    
-            CALL PARDISO_S(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, L%NC, AC_SYM%VAL_FB, AC_SYM%ROW, AC_SYM%COL, &
+            CALL PARDISO_S(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, D%NC, AC_SYM%VAL_FB, AC_SYM%ROW, AC_SYM%COL, &
                            MKL%PERM, MKL%NRHS, MKL%IPARM, MKL%MSGLVL, V1_FB, V2_FB, MKL%ERROR)
    
-            V2(1:L%NC) = REAL(V2_FB(1:L%NC), EB)
+            V2(1:D%NC) = REAL(V2_FB(1:D%NC), EB)
 #else
    
             V1 => POINT_TO_VECTOR (NM, NL, NV1)
             V2 => POINT_TO_VECTOR (NM, NL, NV2)
    
-            CALL PARDISO_D(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, L%NC, AC_SYM%VAL, AC_SYM%ROW, AC_SYM%COL, &
+            CALL PARDISO_D(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, D%NC, AC_SYM%VAL, AC_SYM%ROW, AC_SYM%COL, &
                            MKL%PERM, MKL%NRHS, MKL%IPARM, MKL%MSGLVL, V1, V2, MKL%ERROR)
    
 #endif
@@ -8482,7 +8499,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    V1_FB = REAL(V1, FB)
    V2_FB = 0.0_FB
 
-   CALL PARDISO_S(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, L%NC, &
+   CALL PARDISO_S(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, D%NC, &
                   AC_SYM%VAL_FB, AC_SYM%ROW, AC_SYM%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                   MKL%MSGLVL, V1_FB, V2_FB, MKL%ERROR)
 
@@ -8495,7 +8512,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    V2 = 0.0_EB
 
-   CALL PARDISO_D(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, L%NC, &
+   CALL PARDISO_D(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, D%NC, &
                   AC_SYM%VAL, AC_SYM%ROW, AC_SYM%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                   MKL%MSGLVL, V1, V2, MKL%ERROR)
 
@@ -9484,11 +9501,16 @@ SELECT CASE (SV%TYPE_SOLVER)
          DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             L  => SCARC(NM)%LEVEL(NL)
             ST => SCARC(NM)%LEVEL(NL)%STAGE(SV%TYPE_STAGE)
-            ST%D(L%NC+1:L%NCE) = 0.0_EB
-            ST%R(L%NC+1:L%NCE) = 0.0_EB
-            ST%V(L%NC+1:L%NCE) = 0.0_EB
-            ST%Y(L%NC+1:L%NCE) = 0.0_EB
-            ST%Z(L%NC+1:L%NCE) = 0.0_EB
+            ST%D = 0.0_EB
+            ST%R = 0.0_EB
+            ST%V = 0.0_EB
+            ST%Y = 0.0_EB
+            ST%Z = 0.0_EB
+            !ST%D(D%NC+1:D%NCE) = 0.0_EB
+            !ST%R(D%NC+1:D%NCE) = 0.0_EB
+            !ST%V(D%NC+1:D%NCE) = 0.0_EB
+            !ST%Y(D%NC+1:D%NCE) = 0.0_EB
+            !ST%Z(D%NC+1:D%NCE) = 0.0_EB
          ENDDO
       ENDIF
 
@@ -9498,8 +9520,10 @@ SELECT CASE (SV%TYPE_SOLVER)
          DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             L  => SCARC(NM)%LEVEL(NL)
             ST => SCARC(NM)%LEVEL(NL)%STAGE(SV%TYPE_STAGE)
-            ST%V(L%NC+1:L%NCE) = 0.0_EB
-            ST%Z(L%NC+1:L%NCE) = 0.0_EB
+            ST%V = 0.0_EB
+            ST%Z = 0.0_EB
+            !ST%V(D%NC+1:D%NCE) = 0.0_EB
+            !ST%Z(D%NC+1:D%NCE) = 0.0_EB
          ENDDO
       ENDIF
 
@@ -9509,7 +9533,7 @@ SELECT CASE (SV%TYPE_SOLVER)
          IF (UPPER_MESH_INDEX == NMESHES) THEN
             L  => SCARC(NM)%LEVEL(NL)
             ST => SCARC(NM)%LEVEL(NL)%STAGE(SV%TYPE_STAGE)
-            LOCAL_REAL = ST%B(L%NC)
+            LOCAL_REAL = ST%B(D%NC)
          ELSE
             LOCAL_REAL = 0.0_EB
          ENDIF
@@ -9530,8 +9554,10 @@ SELECT CASE (SV%TYPE_SOLVER)
             STP => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)
             ST%X = 0.0_EB
             ST%B = STP%R
-            ST%V(L%NC+1:L%NCE) = 0.0_EB
-            ST%Z(L%NC+1:L%NCE) = 0.0_EB
+            ST%V = 0.0_EB
+            ST%Z = 0.0_EB
+            !ST%V(D%NC+1:D%NCE) = 0.0_EB
+            !ST%Z(D%NC+1:D%NCE) = 0.0_EB
          ENDDO
       ENDIF
 
