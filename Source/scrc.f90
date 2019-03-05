@@ -2579,6 +2579,7 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       !> If there exists a neighbor for that wall cell, setup corresponding neighborship information
       IF (NOM /= 0) THEN
+WRITE(MSG%LU_DEBUG,*) 'CALLING NEIGHBOR ', IWG, IOR0, NM, NOM, NLEVEL_MIN
          CALL SCARC_SETUP_WALLCELL_NEIGHBOR(EWC%IIO_MIN, EWC%IIO_MAX, &
                                             EWC%JJO_MIN, EWC%JJO_MAX, &
                                             EWC%KKO_MIN, EWC%KKO_MAX, &
@@ -12184,6 +12185,13 @@ SELECT CASE (NTYPE)
       DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          M => MESHES(NM)
          L => SCARC(NM)%LEVEL(NL)
+         SELECT CASE(TYPE_DISCRET)
+            CASE (NSCARC_DISCRET_STRUCTURED)
+               D => L%SD
+            CASE (NSCARC_DISCRET_UNSTRUCTURED)
+               D => L%UD
+         END SELECT
+         PTR => D%PTR
          WRITE(MSG%LU_DEBUG,1000) CQUANTITY, NM, NL
          WRITE(MSG%LU_DEBUG,*) 'SIZE(PTR%ICE_TO_IWG)=',SIZE(PTR%ICE_TO_IWG)
          WRITE(MSG%LU_DEBUG,*) 'SIZE(PTR%ICE_TO_IWL)=',SIZE(PTR%ICE_TO_IWL)
