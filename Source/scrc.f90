@@ -586,18 +586,18 @@ END TYPE SCARC_OBST_TYPE
 !> --------------------------------------------------------------------------------------------
 !> Matrix entries which will be stored and exchanged during generation of condensed system
 !> --------------------------------------------------------------------------------------------
-TYPE SCARC_CONDENSED_TYPE
-INTEGER :: NROW, NCOL
+TYPE SCARC_MATRIX_SWITCH_TYPE
+INTEGER :: N_ROW, N_COL
 #ifdef WITH_MKL_FB
-REAL(FB) :: VAL_ORIG(NSCARC_MAX_STENCIL) = 0.0_EB          !> original values (double precision)
-REAL(FB) :: VAL_COND(NSCARC_MAX_STENCIL) = 0.0_EB          !> condensed values (double precision)
+REAL(FB) :: VAL_ORIG(NSCARC_MAX_STENCIL) = 0.0_EB         !> original values (double precision)
+REAL(FB) :: VAL_COND(NSCARC_MAX_STENCIL) = 0.0_EB         !> condensed values (double precision)
 #else
-REAL(EB) :: VAL_ORIG(NSCARC_MAX_STENCIL) = 0.0_EB          !> original values (single precision)
-REAL(EB) :: VAL_COND(NSCARC_MAX_STENCIL) = 0.0_EB          !> condensed values (single precision)
+REAL(EB) :: VAL_ORIG(NSCARC_MAX_STENCIL) = 0.0_EB         !> original values (single precision)
+REAL(EB) :: VAL_COND(NSCARC_MAX_STENCIL) = 0.0_EB         !> condensed values (single precision)
 #endif
 INTEGER :: COL(NSCARC_MAX_STENCIL) = 0                    !> column pointers
 INTEGER :: PTR(NSCARC_MAX_STENCIL) = 0                    !> storage pointer
-END TYPE SCARC_CONDENSED_TYPE
+END TYPE SCARC_MATRIX_SWITCH_TYPE
 
 !> --------------------------------------------------------------------------------------------
 !> Compact sparse row (COMPACT) storage type for matrices
@@ -609,10 +609,10 @@ END TYPE SCARC_CONDENSED_TYPE
 TYPE SCARC_MATRIX_COMPACT_TYPE
 CHARACTER(40) :: CNAME                                     !> Name of matrix
 INTEGER :: POS(-3:3)                                       !> Position of IOR's in STENCIL
-INTEGER :: NSTENCIL                                        !> number of points in matrix stencil
-INTEGER :: NA                                              !> number of matrix values 
-INTEGER :: NR                                              !> number of matrix rows
-INTEGER :: NSTORE = 0
+INTEGER :: N_STENCIL                                       !> number of points in matrix stencil
+INTEGER :: N_SWITCH = 0
+INTEGER :: N_VAL                                          !> number of matrix values 
+INTEGER :: N_ROW                                          !> number of matrix rows
 #ifdef WITH_MKL_FB
 REAL(FB), ALLOCATABLE, DIMENSION (:) :: VAL_FB             !> values of matrix (single precision)
 REAL(FB), DIMENSION (-3:3)           :: STENCIL_FB         !> store basic stencil information in single precision
@@ -628,7 +628,7 @@ REAL(EB), DIMENSION (-3:3)           :: STENCIL            !> store basic stenci
 INTEGER,  ALLOCATABLE, DIMENSION (:) :: ROW                !> row pointer
 INTEGER,  ALLOCATABLE, DIMENSION (:) :: COL                !> column pointers
 INTEGER,  ALLOCATABLE, DIMENSION (:) :: COL_GLOBAL         !> column pointer for global numbering
-TYPE (SCARC_CONDENSED_TYPE) :: STORE(NSCARC_MAX_STENCIL)
+TYPE (SCARC_MATRIX_SWITCH_TYPE) :: SWITCH(NSCARC_MAX_STENCIL)
 END TYPE SCARC_MATRIX_COMPACT_TYPE
 
 !> --------------------------------------------------------------------------------------------
@@ -641,11 +641,12 @@ END TYPE SCARC_MATRIX_COMPACT_TYPE
 !> --------------------------------------------------------------------------------------------
 TYPE SCARC_MATRIX_BANDED_TYPE
 CHARACTER(40) :: CNAME                                  !> Name of matrix
-INTEGER :: NSTENCIL                                     !> number of points in matrix stencil
 INTEGER :: POS(-3:3)                                    !> position of IOR's in STENCIL and in matrix storage array
-INTEGER :: NA, NAS                                      !> number of matrix values in general and symmetric cass
-INTEGER :: NDIAG, NLEN                                  !> length of main diagonal
-INTEGER :: NLO, NUP                                     !> number of lower and upper diagonals
+INTEGER :: N_STENCIL                                    !> number of points in matrix stencil
+INTEGER :: N_VAL                                        !> number of matrix values in general and symmetric cass
+INTEGER :: N_DIAG                                       !> length of main diagonal
+INTEGER :: N_SUB_LOWER                                  !> number of lower diagonals
+INTEGER :: N_SUB_UPPER                                  !> number of upper diagonals
 #ifdef WITH_MKL_FB
 REAL(FB), ALLOCATABLE, DIMENSION (:,:) :: VAL_FB        !> values of matrix (double precision)
 REAL(FB), DIMENSION (-3:3)             :: STENCIL_FB    !> store basic stencil information in single precision
@@ -2362,11 +2363,11 @@ LEVEL_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       SELECT CASE (TYPE_MATRIX)
          CASE (NSCARC_MATRIX_COMPACT)
-            ODF%AC%NA = 0                                        !> number of matrix values
-            ODF%AC%NR = 0                                        !> number of row pointers
+            ODF%AC%N_VAL = 0                                        !> number of matrix values
+            ODF%AC%N_ROW = 0                                        !> number of row pointers
          CASE (NSCARC_MATRIX_BANDED)
-            ODF%AB%NA   = 0                                      !> number of matrix values
-            ODF%AB%NDIAG  = 0                                      !> number of bands to store
+            ODF%AB%N_VAL   = 0                                      !> number of matrix values
+            ODF%AB%N_DIAG  = 0                                      !> number of bands to store
       END SELECT
 
       IF (OS%NICMAX_S == 0 .AND. OS%NICMAX_R == 0) CYCLE LEVEL_OTHER_MESHES_LOOP
@@ -2398,11 +2399,11 @@ LEVEL_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
             SELECT CASE (TYPE_MATRIX)
                CASE (NSCARC_MATRIX_COMPACT)
-                  ODC%AC%NA = 0                                            !> number of matrix values
-                  ODC%AC%NR = 0                                            !> number of row pointers
+                  ODC%AC%N_VAL = 0                                            !> number of matrix values
+                  ODC%AC%N_ROW = 0                                            !> number of row pointers
                CASE (NSCARC_MATRIX_BANDED)
-                  ODC%AB%NA = 0                                            !> number of matrix values
-                  ODC%AB%NDIAG = 0                                         !> number of bands to store
+                  ODC%AB%N_VAL = 0                                            !> number of matrix values
+                  ODC%AB%N_DIAG = 0                                         !> number of bands to store
             END SELECT
 
          ENDDO
@@ -4966,13 +4967,13 @@ WRITE(MSG%LU_DEBUG,*) 'TYPE_DISCRET =',TYPE_DISCRET
          ENDDO
       ENDDO
       
-      AC%ROW(AC%NR) = IP
-      AC%NA         = IP-1                         !> set correct number of matrix entries
+      AC%ROW(AC%N_ROW) = IP
+      AC%N_VAL         = IP-1                         !> set correct number of matrix entries
 
-      WRITE(MSG%LU_DEBUG,*) 'SYSTEM: AC%NA=',AC%NA
-      WRITE(MSG%LU_DEBUG,*) 'SYSTEM: AC%NR=',AC%NR
+      WRITE(MSG%LU_DEBUG,*) 'SYSTEM: AC%N_VAL=',AC%N_VAL
+      WRITE(MSG%LU_DEBUG,*) 'SYSTEM: AC%N_ROW=',AC%N_ROW
 
-      CALL SCARC_RESIZE_MATRIX_COMPACT(AC, AC%NA, 'Resized System-Matrix')
+      CALL SCARC_RESIZE_MATRIX_COMPACT(AC, AC%N_VAL, 'Resized System-Matrix')
 
 
    !> 
@@ -5409,15 +5410,15 @@ IF (SCARC_MKL_MTYPE == 'SYMMETRIC') THEN
    ENDDO
 
    !> Compute number of entries in symmetric matrix
-   AC_SYM%NA = 0
+   AC_SYM%N_VAL = 0
    DO IC = 1, D%NC
       DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1
          IF (TYPE_MKL_LEVEL(NL) == NSCARC_MKL_LOCAL) THEN
             JC = AC%COL(ICOL)
-            IF (JC >= IC .AND. JC <= D%NC) AC_SYM%NA = AC_SYM%NA+1  
+            IF (JC >= IC .AND. JC <= D%NC) AC_SYM%N_VAL = AC_SYM%N_VAL+1  
          ELSE IF (TYPE_MKL_LEVEL(NL) == NSCARC_MKL_GLOBAL) THEN
             JC = AC%COL_GLOBAL(ICOL)
-            IF (JC >= IC + D%NC_OFFSET(NM)) AC_SYM%NA = AC_SYM%NA+1
+            IF (JC >= IC + D%NC_OFFSET(NM)) AC_SYM%N_VAL = AC_SYM%N_VAL+1
          ELSE
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_MATRIX_SETUP, SCARC_NONE, TYPE_MKL_LEVEL(NL))
          ENDIF
@@ -5425,19 +5426,19 @@ IF (SCARC_MKL_MTYPE == 'SYMMETRIC') THEN
    ENDDO
 
 ELSE
-   AC_SYM%NA = AC%NA
+   AC_SYM%N_VAL = AC%N_VAL
 ENDIF
 
 !> ------------------------------------------------------------------------------------------------
 !> allocate storage for symmetric matrix and its column and row pointers
 !> ------------------------------------------------------------------------------------------------
-AC_SYM%NR = AC%NR
+AC_SYM%N_ROW = AC%N_ROW
 CALL SCARC_ALLOCATE_MATRIX_COMPACT(AC_SYM, 'AC_SYM', NL, NSCARC_INIT_ZERO)
 
 !> if global MKL method is used, also allocate auxiliary space for computation of global numbering
 IF (IS_MKL_LEVEL(NL)) THEN
-   CALL SCARC_ALLOCATE_INT1(KCOL_AUX, 1, AC%NSTENCIL, NSCARC_INIT_NONE, 'KCOL_AUX')
-   CALL SCARC_ALLOCATE_INT1(KC_AUX  , 1, AC%NSTENCIL, NSCARC_INIT_NONE, 'KC_AUX')
+   CALL SCARC_ALLOCATE_INT1(KCOL_AUX, 1, AC%N_STENCIL, NSCARC_INIT_NONE, 'KCOL_AUX')
+   CALL SCARC_ALLOCATE_INT1(KC_AUX  , 1, AC%N_STENCIL, NSCARC_INIT_NONE, 'KC_AUX')
 ENDIF
 
 !> ------------------------------------------------------------------------------------------------
@@ -5530,12 +5531,13 @@ END SUBROUTINE SCARC_SETUP_MATRIX_MKL
 !> ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_BOUNDARY (NM, NL)
 INTEGER, INTENT(IN) :: NM, NL
-INTEGER :: I, J, K, IOR0, IW, IC, NOM, IP, NW, NC, ICN, ICE, JC, ICOL, IS=0
+INTEGER :: I, J, K, IOR0, IW, IC, NOM, IP, NW, NC, ICN, ICE, JC, ICOL, IS
 REAL(EB) :: DBC
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 TYPE (SCARC_DISCRET_TYPE), POINTER :: D=>NULL()
 TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
 TYPE (SCARC_MATRIX_BANDED_TYPE),  POINTER :: AB=>NULL()
+TYPE (SCARC_MATRIX_SWITCH_TYPE),  POINTER :: AS=>NULL()
 
 L  => SCARC(NM)%LEVEL(NL)
 
@@ -5569,26 +5571,28 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
       
             NC = D%NC_LOCAL(NMESHES)
             IP = AC%ROW(NC)
+            IS = 1
       
             !> store column indices and values of diagonal and all off-diagonal entries in last row
             !> index '1' correspondings to main diagonal entry
-            IS = IS + 1
+            AS => AC%SWITCH(IS)
+
             ICOL = 1
-            AC%STORE(1)%PTR(ICOL)      = IP
-            AC%STORE(1)%COL(ICOL)      = AC%COL(IP)
-            AC%STORE(1)%VAL_ORIG(ICOL) = AC%VAL(IP)
-            AC%STORE(1)%VAL_COND(ICOL) = 1.0_EB
+            AS%PTR(ICOL)      = IP
+            AS%COL(ICOL)      = AC%COL(IP)
+            AS%VAL_ORIG(ICOL) = AC%VAL(IP)
+            AS%VAL_COND(ICOL) = 1.0_EB
       
             DO IP = AC%ROW(NC)+1, AC%ROW(NC+1)-1
                ICOL = ICOL + 1
-               AC%STORE(1)%PTR(ICOL)      = IP
-               AC%STORE(1)%COL(ICOL)      = AC%COL(IP)
-               AC%STORE(1)%VAL_ORIG(ICOL) = AC%VAL(IP)
-               AC%STORE(1)%VAL_COND(ICOL) = 0.0_EB
+               AS%PTR(ICOL)      = IP
+               AS%COL(ICOL)      = AC%COL(IP)
+               AS%VAL_ORIG(ICOL) = AC%VAL(IP)
+               AS%VAL_COND(ICOL) = 0.0_EB
             ENDDO
       
-            AC%STORE(1)%NROW = NC              !> row index of last row
-            AC%STORE(1)%NCOL = ICOL            !> number of stored columns
+            AS%N_ROW = NC              !> row index of last row
+            AS%N_COL = ICOL            !> number of stored columns
       
             !> within last mesh: check which other cells have a connection to the last cell;
             !> in each corresponding matrix row store the column index and value of just that matrix entry
@@ -5597,12 +5601,13 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
             DO IP = AC%ROW(JC)+1, AC%ROW(JC+1)-1
                IF (AC%COL(IP) == NC) THEN
                   IS = IS + 1
-                  AC%STORE(IS)%PTR(1)      = IP
-                  AC%STORE(IS)%COL(1)      = JC
-                  AC%STORE(IS)%VAL_ORIG(1) = AC%VAL(IP)
-                  AC%STORE(IS)%VAL_COND(1) = 0.0_EB
-                  AC%STORE(IS)%NROW        = JC
-                  AC%STORE(IS)%NCOL        = 1
+                  AS => AC%SWITCH(IS)
+                  AS%PTR(1)      = IP
+                  AS%COL(1)      = JC
+                  AS%VAL_ORIG(1) = AC%VAL(IP)
+                  AS%VAL_COND(1) = 0.0_EB
+                  AS%N_ROW        = JC
+                  AS%N_COL        = 1
                   EXIT
                ENDIF
             ENDDO
@@ -5611,12 +5616,13 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
             DO IP = AC%ROW(JC)+1, AC%ROW(JC+1)-1
                IF (AC%COL(IP) == NC) THEN
                   IS = IS + 1
-                  AC%STORE(IS)%PTR(1)      = IP
-                  AC%STORE(IS)%COL(1)      = JC
-                  AC%STORE(IS)%VAL_ORIG(1) = AC%VAL(IP)
-                  AC%STORE(IS)%VAL_COND(1) = 0.0_EB
-                  AC%STORE(IS)%NROW        = JC
-                  AC%STORE(IS)%NCOL        = 1
+                  AS => AC%SWITCH(IS)
+                  AS%PTR(1)      = IP
+                  AS%COL(1)      = JC
+                  AS%VAL_ORIG(1) = AC%VAL(IP)
+                  AS%VAL_COND(1) = 0.0_EB
+                  AS%N_ROW        = JC
+                  AS%N_COL        = 1
                   EXIT
                ENDIF
             ENDDO
@@ -5626,12 +5632,13 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
                DO IP = AC%ROW(JC)+1, AC%ROW(JC+1)-1
                   IF (AC%COL(IP) == NC) THEN
                      IS = IS + 1
-                     AC%STORE(IS)%PTR(1)      = IP
-                     AC%STORE(IS)%COL(1)      = JC
-                     AC%STORE(IS)%VAL_ORIG(1) = AC%VAL(IP)
-                     AC%STORE(IS)%VAL_COND(1) = 0.0_EB
-                     AC%STORE(IS)%NROW        = JC
-                     AC%STORE(IS)%NCOL        = 1
+                     AS => AC%SWITCH(IS)
+                     AS%PTR(1)      = IP
+                     AS%COL(1)      = JC
+                     AS%VAL_ORIG(1) = AC%VAL(IP)
+                     AS%VAL_COND(1) = 0.0_EB
+                     AS%N_ROW        = JC
+                     AS%N_COL        = 1
                      EXIT
                   ENDIF
                ENDDO
@@ -5665,18 +5672,20 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
                DO IP = AC%ROW(ICN)+1, AC%ROW(ICN+1)-1
                   IF (AC%COL(IP) == ICE) THEN
                      IS = IS + 1
-                     AC%STORE(IS)%PTR(1)      = IP
-                     AC%STORE(IS)%COL(1)      = ICN
-                     AC%STORE(IS)%VAL_ORIG(1) = AC%VAL(IP)
-                     AC%STORE(IS)%VAL_COND(1) = 0.0_EB
-                     AC%STORE(IS)%NROW        = JC
-                     AC%STORE(IS)%NCOL        = 1
+                     AS => AC%SWITCH(IS)
+                     AS%PTR(1)      = IP
+                     AS%COL(1)      = ICN
+                     AS%VAL_ORIG(1) = AC%VAL(IP)
+                     AS%VAL_COND(1) = 0.0_EB
+                     AS%N_ROW       = JC
+                     AS%N_COL       = 1
                      EXIT
                   ENDIF
                ENDDO
             ENDIF PERIODIC_NBR_COMPACT_IF1
          ENDDO WALL_CELLS_COMPACT_LOOP1
-         AC%NSTORE = IS
+
+         AC%N_SWITCH = IS
       
       ENDIF NO_DIRIC_COMPACT_IF
       
@@ -5689,23 +5698,23 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
          IOR0 = D%WALL(IW)%IOR
          IF (TWO_D .AND. ABS(IOR0) == 2) CYCLE              !> cycle boundaries in y-direction for 2D-cases
       
-         I    = D%WALL(IW)%IXW
-         J    = D%WALL(IW)%IYW
-         K    = D%WALL(IW)%IZW
+         I = D%WALL(IW)%IXW
+         J = D%WALL(IW)%IYW
+         K = D%WALL(IW)%IZW
       
          IF (IS_UNSTRUCTURED .AND. L%CELL_STATE(I, J, K) /= NSCARC_CELL_GASPHASE) CYCLE
       
-         NOM  = D%WALL(IW)%NOM
-         D%WALL(IW)%ICW =D%CELL_NUMBER(I, J, K)
+         NOM = D%WALL(IW)%NOM
+         D%WALL(IW)%ICW = D%CELL_NUMBER(I, J, K)
          IC =D%CELL_NUMBER(I, J, K)
       
          SELECT CASE (ABS(IOR0))
             CASE (1)
-               DBC= L%DXI2           ! Achtung: Wirklich richtig oder Mittelwert?
+               DBC = L%DXI2           ! Achtung: Wirklich richtig oder Mittelwert?
             CASE (2)
-               DBC= L%DYI2
+               DBC = L%DYI2
             CASE (3)
-               DBC= L%DZI2
+               DBC = L%DZI2
          END SELECT
       
          !> SPD-matrix with mixture of Dirichlet and Neumann BC's according to the SETTING of BTYPE
@@ -5730,10 +5739,11 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
       !> If there are no Dirichlet BC's transform sytem into condensed one by replacing the
       !> matrix entries in last column and row by the stored ones (zeros and one at diaonal position)
       SETUP_CONDENSED_COMPACT_IF: IF (NBC_DIRIC_GLOBAL(NLEVEL_MIN) == 0 .AND. TYPE_PRECON /= NSCARC_RELAX_FFT) THEN
-         DO IS = 1, AC%NSTORE
-            DO ICOL = 1, AC%STORE(IS)%NCOL
-               IP = AC%STORE(IS)%PTR(ICOL)
-               AC%VAL(IP) = AC%STORE(IS)%VAL_COND(ICOL)
+         DO IS = 1, AC%N_SWITCH
+            AS => AC%SWITCH(IS)
+            DO ICOL = 1, AS%N_COL
+               IP = AS%PTR(ICOL)
+               AC%VAL(IP) = AS%VAL_COND(ICOL)
             ENDDO
          ENDDO
       ENDIF SETUP_CONDENSED_COMPACT_IF
@@ -5762,9 +5772,9 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
          IOR0 = D%WALL(IW)%IOR
          IF (TWO_D .AND. ABS(IOR0) == 2) CYCLE              !> cycle boundaries in y-direction for 2D-cases
       
-         I    = D%WALL(IW)%IXW
-         J    = D%WALL(IW)%IYW
-         K    = D%WALL(IW)%IZW
+         I = D%WALL(IW)%IXW
+         J = D%WALL(IW)%IYW
+         K = D%WALL(IW)%IZW
       
          IF (IS_UNSTRUCTURED .AND. L%CELL_STATE(I, J, K) /= NSCARC_CELL_GASPHASE) CYCLE
       
@@ -5774,11 +5784,11 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
       
          SELECT CASE (ABS(IOR0))
             CASE (1)
-               DBC= L%DXI2           ! Achtung: Wirklich richtig oder Mittelwert?
+               DBC = L%DXI2           ! Achtung: Wirklich richtig oder Mittelwert?
             CASE (2)
-               DBC= L%DYI2
+               DBC = L%DYI2
             CASE (3)
-               DBC= L%DZI2
+               DBC = L%DZI2
          END SELECT
       
          !> SPD-matrix with mixture of Dirichlet and Neumann BC's according to the SETTING of BTYPE
@@ -5846,10 +5856,10 @@ IF (UPPER_MESH_INDEX == NMESHES) THEN
 
    !> process last column entries of all rows except of last one
    !> for those rows only one matrix entry was stored, namely that one which connects to the last cell
-   DO IS = 2, AC%NSTORE
-      JC = AC%STORE(IS)%COL(1)
+   DO IS = 2, AC%N_SWITCH
+      JC = AC%SWITCH(IS)%COL(1)
       IF (JC < NC) THEN
-         VC(JC) = VC(JC) - AC%STORE(IS)%VAL_ORIG(1)*VC(NC)
+         VC(JC) = VC(JC) - AC%SWITCH(IS)%VAL_ORIG(1)*VC(NC)
       ENDIF
    ENDDO
 
@@ -6797,7 +6807,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       AC => D%AC
 
       !> Allocate workspace for GSM decomposition of Poisson matrix 
-      CALL SCARC_ALLOCATE_REAL1(AC%GSM, 1, AC%NA, NSCARC_INIT_ZERO, 'ILU')
+      CALL SCARC_ALLOCATE_REAL1(AC%GSM, 1, AC%N_VAL, NSCARC_INIT_ZERO, 'ILU')
 
       CELL_LOOP: DO IC = 1, L%NC
         
@@ -6849,7 +6859,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       AC => D%AC
 
       !> Allocate workspace for SGSM decomposition of Poisson matrix 
-      CALL SCARC_ALLOCATE_REAL1(AC%SGSM, 1, AC%NA, NSCARC_INIT_ZERO, 'ILU')
+      CALL SCARC_ALLOCATE_REAL1(AC%SGSM, 1, AC%N_VAL, NSCARC_INIT_ZERO, 'ILU')
 
       CELL_LOOP: DO IC = 1, L%NC
         
@@ -6914,7 +6924,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       AC => D%AC
 
       !> Allocate workspace for SORM decomposition of Poisson matrix 
-      CALL SCARC_ALLOCATE_REAL1(AC%SORM, 1, AC%NA, NSCARC_INIT_ZERO, 'ILU')
+      CALL SCARC_ALLOCATE_REAL1(AC%SORM, 1, AC%N_VAL, NSCARC_INIT_ZERO, 'ILU')
 
       CELL_LOOP: DO IC = 1, L%NC
         
@@ -6986,7 +6996,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       AC => D%AC
 
       !> Allocate workspace for SSORM decomposition of Poisson matrix 
-      CALL SCARC_ALLOCATE_REAL1(AC%SSORM, 1, AC%NA, NSCARC_INIT_ZERO, 'ILU')
+      CALL SCARC_ALLOCATE_REAL1(AC%SSORM, 1, AC%N_VAL, NSCARC_INIT_ZERO, 'ILU')
 
       CELL_LOOP: DO IC = 1, L%NC
         
@@ -7054,7 +7064,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       AC => D%AC
 
       !> Allocate ILU-part of Poisson matrix and preset it with Poisson matrix itself
-      CALL SCARC_ALLOCATE_REAL1(AC%ILU, 1, AC%NA, NSCARC_INIT_ZERO, 'ILU')
+      CALL SCARC_ALLOCATE_REAL1(AC%ILU, 1, AC%N_VAL, NSCARC_INIT_ZERO, 'ILU')
       AC%ILU = AC%VAL
 
       CELL_LOOP: DO IC = 2, L%NC
@@ -7367,16 +7377,16 @@ WRITE(MSG%LU_DEBUG,*) 'MATRIX_SIZED: POINTING TO UNSTRUCTURED'
 
                AC => D%AC
                IF (TWO_D) THEN
-                  AC%NSTENCIL = 5
+                  AC%N_STENCIL = 5
                   AC%POS(-3:3) = (/1,0,2,3,4,0,5/)     !> assignment of IOR settings to position in stencil
                ELSE
-                  AC%NSTENCIL = 7
+                  AC%N_STENCIL = 7
                   AC%POS(-3:3) = (/1,2,3,4,5,6,7/)
                ENDIF
 
-               AC%NA  = D%NC * AC%NSTENCIL
-               AC%NR  = D%NC + 1
-WRITE(MSG%LU_DEBUG,*) 'MATRIX_SIZED: AC%NA=',AC%NA,': AC%NR=',AC%NR
+               AC%N_VAL  = D%NC * AC%N_STENCIL
+               AC%N_ROW  = D%NC + 1
+WRITE(MSG%LU_DEBUG,*) 'MATRIX_SIZED: AC%N_VAL=',AC%N_VAL,': AC%N_ROW=',AC%N_ROW
 
                !> Determine sizes of overlapped parts for later communication with corresponding neighbors
                DO IW = 1, L%NC_WALL_EXT
@@ -7389,7 +7399,7 @@ WRITE(MSG%LU_DEBUG,*) 'MATRIX_SIZED: AC%NA=',AC%NA,': AC%NR=',AC%NR
                         CASE (NSCARC_DISCRET_UNSTRUCTURED)
                            OD => L%UNSTRUCTURED
                      END SELECT
-                     OD%AC%NA = OD%AC%NA + AC%NSTENCIL
+                     OD%AC%N_VAL = OD%AC%N_VAL + AC%N_STENCIL
                   ENDIF
                ENDDO
 
@@ -7401,31 +7411,31 @@ WRITE(MSG%LU_DEBUG,*) 'MATRIX_SIZED: AC%NA=',AC%NA,': AC%NR=',AC%NR
                AB => D%AB
 
                IF (TWO_D) THEN
-                  AB%NSTENCIL   = 5                      !> 5-point Laplacian
-                  AB%NLO        = 2                      !> number of lower diagonals
-                  AB%NUP        = 2                      !> number of upper diagonals
-                  AB%POS(-3:3)  = (/5,0,4,3,2,0,1/)      !> assignment of IOR settings to columns in matrix array
-                  AB%OFFSET( 3) = -L%NC_X                  !> lower z
-                  AB%OFFSET( 1) = -1                     !> lower x
-                  AB%OFFSET( 0) =  0                     !> diag
-                  AB%OFFSET(-1) =  1                     !> upper x
-                  AB%OFFSET(-3) =  L%NC_X                  !> upper z
+                  AB%N_STENCIL   = 5                      !> 5-point Laplacian
+                  AB%N_SUB_LOWER = 2                      !> number of lower diagonals
+                  AB%N_SUB_UPPER = 2                      !> number of upper diagonals
+                  AB%POS(-3:3)   = (/5,0,4,3,2,0,1/)      !> assignment of IOR settings to columns in matrix array
+                  AB%OFFSET( 3)  = -L%NC_X                !> lower z
+                  AB%OFFSET( 1)  = -1                     !> lower x
+                  AB%OFFSET( 0)  =  0                     !> diag
+                  AB%OFFSET(-1)  =  1                     !> upper x
+                  AB%OFFSET(-3)  =  L%NC_X                !> upper z
                ELSE
-                  AB%NSTENCIL   = 7                      !> 7-point Laplacian
-                  AB%NLO        = 3                      !> number of lower diagonals
-                  AB%NUP        = 3                      !> number of upper diagonals
-                  AB%POS(-3:3)  = (/7,6,5,4,3,2,1/)      !> assignment of IOR settings to columns in matrix array
-                  AB%OFFSET( 3) = -L%NC_X*L%NC_Y             !> lower z
-                  AB%OFFSET( 2) = -L%NC_X                  !> lower y
-                  AB%OFFSET( 1) = -1                     !> lower x
-                  AB%OFFSET( 0) =  0                     !> diag
-                  AB%OFFSET(-1) =  1                     !> upper x
-                  AB%OFFSET(-2) =  L%NC_X                  !> upper y
-                  AB%OFFSET(-3) =  L%NC_X*L%NC_Y             !> upper z
+                  AB%N_STENCIL   = 7                      !> 7-point Laplacian
+                  AB%N_SUB_LOWER = 3                      !> number of lower diagonals
+                  AB%N_SUB_UPPER = 3                      !> number of upper diagonals
+                  AB%POS(-3:3)   = (/7,6,5,4,3,2,1/)      !> assignment of IOR settings to columns in matrix array
+                  AB%OFFSET( 3)  = -L%NC_X*L%NC_Y         !> lower z
+                  AB%OFFSET( 2)  = -L%NC_X                !> lower y
+                  AB%OFFSET( 1)  = -1                     !> lower x
+                  AB%OFFSET( 0)  =  0                     !> diag
+                  AB%OFFSET(-1)  =  1                     !> upper x
+                  AB%OFFSET(-2)  =  L%NC_X                !> upper y
+                  AB%OFFSET(-3)  =  L%NC_X*L%NC_Y         !> upper z
                ENDIF
 
-               AB%NA    = D%NC * AB%NSTENCIL
-               AB%NDIAG = D%NC
+               AB%N_VAL    = D%NC * AB%N_STENCIL
+               AB%N_DIAG = D%NC
 
                !> Determine sizes of overlapped parts for later communication with corresponding neighbors
                DO IW = 1, L%NC_WALL_EXT
@@ -7438,7 +7448,7 @@ WRITE(MSG%LU_DEBUG,*) 'MATRIX_SIZED: AC%NA=',AC%NA,': AC%NR=',AC%NR
                         CASE (NSCARC_DISCRET_UNSTRUCTURED)
                            OD => L%UNSTRUCTURED
                      END SELECT
-                     OD%AB%NA = OD%AB%NA + AB%NSTENCIL
+                     OD%AB%N_VAL = OD%AB%N_VAL + AB%N_STENCIL
                   ENDIF
                ENDDO
 
@@ -10708,7 +10718,7 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !> ---------------------------------------------------------------------------------------
          CASE (NSCARC_EXCHANGE_MATRIX_SIZE)
 
-            OS%SEND_INT_BASIC(1) = OD%AC%NA
+            OS%SEND_INT_BASIC(1) = OD%AC%N_VAL
 
             IF (RNODE /= SNODE) THEN
                N_REQ = N_REQ+1
@@ -10877,9 +10887,9 @@ MESH_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
                SELECT CASE (TYPE_MATRIX)
                   CASE (NSCARC_MATRIX_COMPACT)
-                     OD%AC%NA = RECV_INT_BASIC(1)
+                     OD%AC%N_VAL = RECV_INT_BASIC(1)
                   CASE (NSCARC_MATRIX_BANDED)
-                     OD%AB%NA = RECV_INT_BASIC(1)
+                     OD%AB%N_VAL = RECV_INT_BASIC(1)
                END SELECT
 
             !> ------------------------------------------------------------------------------------
@@ -11503,22 +11513,22 @@ WRITE(MSG%LU_VERBOSE,1000) CNAME
 
 #ifdef WITH_MKL_FB
 WRITE(CINFO,'(A,A20,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.VAL_FB'
-CALL SCARC_ALLOCATE_REAL1_FB(AC%VAL_FB, 1, AC%NA, NINIT, CINFO)
+CALL SCARC_ALLOCATE_REAL1_FB(AC%VAL_FB, 1, AC%N_VAL, NINIT, CINFO)
 #else
 WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.VAL'
-CALL SCARC_ALLOCATE_REAL1(AC%VAL, 1, AC%NA, NINIT, CINFO)
+CALL SCARC_ALLOCATE_REAL1(AC%VAL, 1, AC%N_VAL, NINIT, CINFO)
 #endif
 
 WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.ROW'
-CALL SCARC_ALLOCATE_INT1(AC%ROW, 1, AC%NR, NINIT, CINFO)
+CALL SCARC_ALLOCATE_INT1(AC%ROW, 1, AC%N_ROW, NINIT, CINFO)
 
 WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.COL'
-CALL SCARC_ALLOCATE_INT1(AC%COL, 1, AC%NA, NINIT, CINFO)
+CALL SCARC_ALLOCATE_INT1(AC%COL, 1, AC%N_VAL, NINIT, CINFO)
 
 #ifdef WITH_MKL
 IF (IS_MKL_LEVEL(NL)) THEN
    WRITE(CINFO,'(A,A)') TRIM(CNAME),'.COL_GLOBAL'
-   CALL SCARC_ALLOCATE_INT1 (AC%COL_GLOBAL, 1, AC%NA, NINIT, CINFO)
+   CALL SCARC_ALLOCATE_INT1 (AC%COL_GLOBAL, 1, AC%N_VAL, NINIT, CINFO)
 ENDIF
 #endif
 
@@ -11541,18 +11551,18 @@ WRITE(MSG%LU_VERBOSE,1000) CNAME1, CNAME2
 #endif
 
 AC2%CNAME    = CNAME2
-AC2%NA       = AC1%NA
-AC2%NR       = AC1%NR 
-AC2%NSTORE   = AC1%NSTORE 
+AC2%N_VAL    = AC1%N_VAL
+AC2%N_ROW    = AC1%N_ROW 
+AC2%N_SWITCH = AC1%N_SWITCH 
 AC2%POS      = AC1%POS
 
-AC2%NSTENCIL = AC1%NSTENCIL
+AC2%N_STENCIL = AC1%N_STENCIL
 AC2%STENCIL  = AC1%STENCIL
 
 IF (.NOT.ALLOCATED(AC2%VAL)) THEN
    WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME2),'_LEV',NL,'.VAL'
-   CALL SCARC_ALLOCATE_REAL1(AC2%VAL, 1, AC2%NA, NSCARC_INIT_NONE, CINFO)
-ELSE IF (SIZE(AC2%VAL) /= AC1%NA) THEN
+   CALL SCARC_ALLOCATE_REAL1(AC2%VAL, 1, AC2%N_VAL, NSCARC_INIT_NONE, CINFO)
+ELSE IF (SIZE(AC2%VAL) /= AC1%N_VAL) THEN
    CALL SCARC_SHUTDOWN(NSCARC_ERROR_MATRIX_COPY, CNAME2, NSCARC_NONE)
 ENDIF
 AC2%VAL = AC1%VAL
@@ -11565,8 +11575,8 @@ ENDIF
 
 IF (.NOT.ALLOCATED(AC2%ROW)) THEN
    WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME2),'_LEV',NL,'.ROW'
-   CALL SCARC_ALLOCATE_INT1(AC2%ROW, 1, AC2%NR, NSCARC_INIT_NONE, CINFO)
-ELSE IF (SIZE(AC2%ROW) /= AC1%NR+1) THEN
+   CALL SCARC_ALLOCATE_INT1(AC2%ROW, 1, AC2%N_ROW, NSCARC_INIT_NONE, CINFO)
+ELSE IF (SIZE(AC2%ROW) /= AC1%N_ROW+1) THEN
    CALL SCARC_SHUTDOWN(NSCARC_ERROR_MATRIX_COPY, CNAME2, NSCARC_NONE)
 ENDIF
 AC2%ROW = AC1%ROW
@@ -11579,8 +11589,8 @@ ENDIF
 
 IF (.NOT.ALLOCATED(AC2%VAL)) THEN
    WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME2),'_LEV',NL,'.COL'
-   CALL SCARC_ALLOCATE_INT1(AC2%COL, 1, AC2%NA, NSCARC_INIT_NONE, CINFO)
-ELSE IF (SIZE(AC2%COL) /= AC1%NA) THEN
+   CALL SCARC_ALLOCATE_INT1(AC2%COL, 1, AC2%N_VAL, NSCARC_INIT_NONE, CINFO)
+ELSE IF (SIZE(AC2%COL) /= AC1%N_VAL) THEN
    CALL SCARC_SHUTDOWN(NSCARC_ERROR_MATRIX_COPY, CNAME2, NSCARC_NONE)
 ENDIF
 AC2%COL = AC1%COL
@@ -11594,7 +11604,7 @@ ENDIF
 #ifdef WITH_MKL
 IF (.NOT.ALLOCATED(AC2%COL_GLOBAL) .AND. IS_MKL_LEVEL(NL)) THEN
    WRITE(CINFO,'(A,A)') TRIM(CNAME2),'.COL_GLOBAL'
-   CALL SCARC_ALLOCATE_INT1 (AC2%COL_GLOBAL, 1, AC2%NA, NSCARC_INIT_NONE, CINFO)
+   CALL SCARC_ALLOCATE_INT1 (AC2%COL_GLOBAL, 1, AC2%N_VAL, NSCARC_INIT_NONE, CINFO)
    AC2%COL_GLOBAL = AC1%COL_GLOBAL
    IF (BREMOVE) THEN
       DEALLOCATE(AC1%COL_GLOBAL)
@@ -11602,7 +11612,7 @@ IF (.NOT.ALLOCATED(AC2%COL_GLOBAL) .AND. IS_MKL_LEVEL(NL)) THEN
       WRITE(MSG%LU_VERBOSE,2000) 'INT1', CINFO
 #endif
    ENDIF
-ELSE IF (SIZE(AC2%COL) /= AC1%NA) THEN
+ELSE IF (SIZE(AC2%COL) /= AC1%N_VAL) THEN
    CALL SCARC_SHUTDOWN(NSCARC_ERROR_MATRIX_COPY, CNAME2, NSCARC_NONE)
 ENDIF
 #endif
@@ -11631,14 +11641,14 @@ AB%CNAME = CNAME
 
 #ifdef WITH_MKL_FB
 WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.VAL_FB'
-CALL SCARC_ALLOCATE_REAL2_FB(AB%VAL_FB, 1, AB%NSTENCIL , 1, AB%NDIAG, NINIT, CINFO)
+CALL SCARC_ALLOCATE_REAL2_FB(AB%VAL_FB, 1, AB%N_STENCIL , 1, AB%N_DIAG, NINIT, CINFO)
 #else
 WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.VAL'
-CALL SCARC_ALLOCATE_REAL2(AB%VAL, 1, AB%NSTENCIL , 1, AB%NDIAG, NINIT, CINFO)
+CALL SCARC_ALLOCATE_REAL2(AB%VAL, 1, AB%N_STENCIL , 1, AB%N_DIAG, NINIT, CINFO)
 #endif
 
 #ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,1000) CNAME, AB%NA, AB%NDIAG
+WRITE(MSG%LU_VERBOSE,1000) CNAME, AB%N_VAL, AB%N_DIAG
 #endif
 1000 FORMAT('Allocating BANDED  matrix ',A20,' with NA=',I8,' and NDIAG=',I8)
 END SUBROUTINE SCARC_ALLOCATE_MATRIX_BANDED
@@ -11650,7 +11660,7 @@ END SUBROUTINE SCARC_ALLOCATE_MATRIX_BANDED
 SUBROUTINE SCARC_DEALLOCATE_MATRIX_COMPACT(AC)
 TYPE (SCARC_MATRIX_COMPACT_TYPE), INTENT(INOUT) :: AC
 
-AC%NSTENCIL = 0
+AC%N_STENCIL = 0
 AC%STENCIL = 0
 
 #ifdef WITH_MKL_FB
@@ -11661,8 +11671,8 @@ DEALLOCATE(AC%VAL)
 DEALLOCATE(AC%COL)
 DEALLOCATE(AC%ROW)
 
-AC%NA  = 0
-AC%NR  = 0
+AC%N_VAL  = 0
+AC%N_ROW  = 0
 
 #ifdef WITH_SCARC_VERBOSE
 WRITE(MSG%LU_VERBOSE,1000) AC%CNAME
@@ -11688,11 +11698,11 @@ REAL(EB), ALLOCATABLE, DIMENSION(:) :: VAL
 #endif
 INTEGER, ALLOCATABLE, DIMENSION(:) :: COL
 
-IF (AC%NA == NSIZE) THEN
+IF (AC%N_VAL == NSIZE) THEN
    RETURN                                  !> matrix has already desired size
-ELSE IF (AC%NA > NSIZE) THEN
+ELSE IF (AC%N_VAL > NSIZE) THEN
 
-   AC%NA = NSIZE
+   AC%N_VAL = NSIZE
 
    WRITE(CINFO,'(A,A)') TRIM(CNAME),'.VAL'
 
@@ -12159,8 +12169,8 @@ SELECT CASE (NTYPE)
                WRITE(MSG%LU_DEBUG,1000) CQUANTITY, NM, NL
                WRITE(MSG%LU_DEBUG,*) '----------- SHOWING FULL COMPACT MATRIX ENTRIES'
                WRITE(MSG%LU_DEBUG,*) 'D%NC =',D%NC
-               WRITE(MSG%LU_DEBUG,*) 'AC%NA =',AC%NA
-               WRITE(MSG%LU_DEBUG,*) 'AC%NR =',AC%NR
+               WRITE(MSG%LU_DEBUG,*) 'AC%N_VAL =',AC%N_VAL
+               WRITE(MSG%LU_DEBUG,*) 'AC%N_ROW =',AC%N_ROW
                WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%VAL) =',SIZE(AC%VAL)
                WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%COL) =',SIZE(AC%COL)
                WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%ROW) =',SIZE(AC%ROW)
@@ -12169,42 +12179,42 @@ SELECT CASE (NTYPE)
                WRITE(MSG%LU_DEBUG,*) '---------------------- AC%STENCIL:'
                WRITE(MSG%LU_DEBUG,'(7F8.1)') (AC%STENCIL(IC), IC=-3,3)
                WRITE(MSG%LU_DEBUG,*) '---------------------- AC%ROW:'
-               WRITE(MSG%LU_DEBUG,'(7i8)') (AC%ROW(IC), IC=1,AC%NR)
+               WRITE(MSG%LU_DEBUG,'(7i8)') (AC%ROW(IC), IC=1,AC%N_ROW)
                WRITE(MSG%LU_DEBUG,*) '---------------------- AC%COL:'
-               DO IC = 1, AC%NR-1
+               DO IC = 1, AC%N_ROW-1
                   WRITE(MSG%LU_DEBUG,'(i5,a,20i9)') IC,':',(AC%COL(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
                ENDDO
                WRITE(MSG%LU_DEBUG,*) '---------------------- A:'
-               DO IC = 1, AC%NR-1
+               DO IC = 1, AC%N_ROW-1
                   WRITE(MSG%LU_DEBUG,'(i5,a,20f8.1)') IC,':',(AC%VAL(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
                ENDDO
                IF (ALLOCATED(AC%GSM)) THEN
                   WRITE(MSG%LU_DEBUG,*) '---------------------- GSM:'
-                  DO IC = 1, AC%NR-1
+                  DO IC = 1, AC%N_ROW-1
                      WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%GSM(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
                   ENDDO
                ENDIF
                IF (ALLOCATED(AC%SGSM)) THEN
                   WRITE(MSG%LU_DEBUG,*) '---------------------- SGSM:'
-                  DO IC = 1, AC%NR-1
+                  DO IC = 1, AC%N_ROW-1
                      WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%SGSM(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
                   ENDDO
                ENDIF
                IF (ALLOCATED(AC%SORM)) THEN
                   WRITE(MSG%LU_DEBUG,*) '---------------------- SORM:'
-                  DO IC = 1, AC%NR-1
+                  DO IC = 1, AC%N_ROW-1
                      WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%SORM(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
                   ENDDO
                ENDIF
                IF (ALLOCATED(AC%SSORM)) THEN
                   WRITE(MSG%LU_DEBUG,*) '---------------------- SSORM:'
-                  DO IC = 1, AC%NR-1
+                  DO IC = 1, AC%N_ROW-1
                      WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%SSORM(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
                   ENDDO
                ENDIF
                IF (ALLOCATED(AC%ILU)) THEN
                   WRITE(MSG%LU_DEBUG,*) '---------------------- ILU:'
-                  DO IC = 1, AC%NR-1
+                  DO IC = 1, AC%N_ROW-1
                      WRITE(MSG%LU_DEBUG,'(i5,a,20f15.6)') IC,':',(AC%ILU(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
                   ENDDO
                ENDIF
@@ -12216,14 +12226,14 @@ SELECT CASE (NTYPE)
                !      WRITE(MSG%LU_DEBUG,*)  IC,':',(AC%COLG(IP),IP=AC%ROW(IC),AC%ROW(IC+1)-1)
                !   ENDDO
                !ENDIF
-               !DO IC=1,AC%NR-1
+               !DO IC=1,AC%N_ROW-1
                !   DO IP=AC%ROW(IC),AC%ROW(IC+1)-1
                !       WRITE(MSG%LU_DEBUG,'(2I8,F24.12)') IC,AC%COL(IP),AC%VAL(IP)
                !       WRITE(MSG%LU_DEBUG,*) IC,AC%COL(IP),AC%VAL(IP)
                !   ENDDO
                !   WRITE(MSG%LU_DEBUG,*)
                !ENDDO
-               !DO IC=1,AC%NR-1
+               !DO IC=1,AC%N_ROW-1
                !   DO IP=AC%ROW(IC),AC%ROW(IC+1)-1
                !       IF (IC == AC%COL(IP)) WRITE(MSG%LU_DEBUG,'(2I8,F24.12)') IC,AC%COL(IP),AC%VAL(IP)
                !   ENDDO
@@ -12247,8 +12257,8 @@ SELECT CASE (NTYPE)
                WRITE(MSG%LU_DEBUG,1000) CQUANTITY, NM, NL
                WRITE(MSG%LU_DEBUG,*) '----------- SHOWING FULL BANDED MATRIX ENTRIES'
                WRITE(MSG%LU_DEBUG,*) 'NC =',D%NC
-               WRITE(MSG%LU_DEBUG,*) 'NA  =',AB%NA
-               WRITE(MSG%LU_DEBUG,*) 'NDIAG =',AB%NDIAG
+               WRITE(MSG%LU_DEBUG,*) 'N_VAL  =',AB%N_VAL
+               WRITE(MSG%LU_DEBUG,*) 'N_DIAG =',AB%N_DIAG
                WRITE(MSG%LU_DEBUG,*) 'SIZE(AB%VAL) =',SIZE(AB%VAL)
                WRITE(MSG%LU_DEBUG,*) '---------------------- AB%POS:'
                WRITE(MSG%LU_DEBUG,'(7i8)') (AB%POS(IC), IC=-3,3)
@@ -12257,8 +12267,8 @@ SELECT CASE (NTYPE)
                WRITE(MSG%LU_DEBUG,*) '---------------------- AB%OFFSET:'
                WRITE(MSG%LU_DEBUG,'(7i8)') (AB%OFFSET(IC), IC=-3,3)
                WRITE(MSG%LU_DEBUG,*) '---------------------- AB%VAL:'
-               DO ID = 1, AB%NSTENCIL
-                  WRITE(MSG%LU_DEBUG,*) ID,':',(AB%VAL(ID, IC),IC=1,AB%NDIAG)
+               DO ID = 1, AB%N_STENCIL
+                  WRITE(MSG%LU_DEBUG,*) ID,':',(AB%VAL(ID, IC),IC=1,AB%N_DIAG)
                ENDDO
             ENDDO
 
