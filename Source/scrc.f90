@@ -225,7 +225,7 @@ INTEGER, PARAMETER :: NSCARC_TWOLEVEL_NONE           =  0, &    !> no two levels
 INTEGER, PARAMETER :: NSCARC_CYCLING_F               =  0, &    !> F-cycle for mg-method
                       NSCARC_CYCLING_V               =  1, &    !> V-cycle for mg-method
                       NSCARC_CYCLING_W               =  2, &    !> W-cycle for mg-method
-                      NSCARC_CYCLING_SETUP           =  3, &    !> initialize cycle counts
+                      NSCARC_CYCLING_SETUP           =  3, &    !> initialize cycle 
                       NSCARC_CYCLING_RESET           =  4, &    !> reset cycle counts
                       NSCARC_CYCLING_PROCEED         =  5, &    !> proceed cycle counts
                       NSCARC_CYCLING_NEXT            =  6, &    !> perform next cycling loop
@@ -747,15 +747,14 @@ END TYPE SCARC_DISCRET_TYPE
 !> Multigrid type - to be extended for algebraic multigrid
 !> --------------------------------------------------------------------------------------------
 TYPE SCARC_MULTIGRID_TYPE
-INTEGER :: CYCLING(2) = 0                                  !> Counter for multigrid cycling
+INTEGER :: CYCLING(2) = 0                                   !> Counter for multigrid cycling
 END TYPE SCARC_MULTIGRID_TYPE
 
 !> --------------------------------------------------------------------------------------------
 !> McKenney-Greengard-Mayo method
 !> --------------------------------------------------------------------------------------------
 TYPE SCARC_MGM_TYPE
-REAL(EB), DIMENSION(:), ALLOCATABLE :: US, VS, WS          !> velocity components in predictor
-REAL(EB), DIMENSION(:), ALLOCATABLE :: U , V , W           !> velocity components in corrector
+REAL(EB), DIMENSION(:), ALLOCATABLE :: U, V, W              !> velocity components along internal BC's
 END TYPE SCARC_MGM_TYPE
 
 !> --------------------------------------------------------------------------------------------
@@ -986,7 +985,7 @@ CALL SCARC_PARSE_INPUT                   ; IF (STOP_STATUS==SETUP_STOP) RETURN
 !> Setup information on grid levels, ScaRC-types, discretization, neighbors, global variables and faces
 CALL SCARC_SETUP_LEVELS                  ; IF (STOP_STATUS==SETUP_STOP) RETURN     
 CALL SCARC_SETUP_TYPES                   ; IF (STOP_STATUS==SETUP_STOP) RETURN     
-CALL SCARC_SETUP_DISCRETIZATION          ; IF (STOP_STATUS==SETUP_STOP) RETURN     
+CALL SCARC_SETUP_DISCRET                 ; IF (STOP_STATUS==SETUP_STOP) RETURN     
 CALL SCARC_SETUP_NEIGHBORS               ; IF (STOP_STATUS==SETUP_STOP) RETURN     
 CALL SCARC_SETUP_GLOBALS                 ; IF (STOP_STATUS==SETUP_STOP) RETURN       
 CALL SCARC_SETUP_FACES                   ; IF (STOP_STATUS==SETUP_STOP) RETURN              
@@ -1900,7 +1899,7 @@ END SUBROUTINE SCARC_SETUP_TYPES
 !> -----------------------------------------------------------------------------
 !> Setup discretization information 
 !> -----------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_DISCRETIZATION
+SUBROUTINE SCARC_SETUP_DISCRET
 INTEGER :: NL, NM, IX, IY, IZ, IO, I, J, K
 INTEGER :: NX, NY, NZ
 REAL(EB), DIMENSION(:), POINTER :: XCOR, YCOR, ZCOR
@@ -1973,7 +1972,7 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !> On finest level store information about obstructions
          L%N_OBST = M%N_OBST
          ALLOCATE(L%OBST(L%N_OBST), STAT=IERROR)
-         CALL ChkMemErr('SCARC_SETUP_DISCRETIZATION','OBST',IERROR)
+         CALL ChkMemErr('SCARC_SETUP_DISCRET','OBST',IERROR)
 
          DO IO = 1, L%N_OBST
             L%OBST(IO)%I1  = M%OBSTRUCTION(IO)%I1
@@ -2115,7 +2114,7 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       !> Allocate wall information array 
       ALLOCATE(D%WALL(L%NC_WALL), STAT=IERROR)
-      CALL ChkMemErr('SCARC_SETUP_DISCRETIZATION','WALL',IERROR)
+      CALL ChkMemErr('SCARC_SETUP_DISCRET','WALL',IERROR)
 
       !> Allocate and preset cell numbers array 
       CALL SCARC_ALLOCATE_INT3(D%CELL_NUMBER, 0, L%NC_X+1, 0, L%NC_Y+1, 0, L%NC_Z+1, NSCARC_INIT_NONE, 'CELL_NUMBER')
@@ -2131,6 +2130,7 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          ENDDO
       ENDDO
       D%NC = D%NC_LOCAL(NM)
+WRITE(MSG%LU_DEBUG,*) 'SETUP_DISCRET: STRUCTURED PART : D%NC=',D%NC
 
 
       !> ---------------- Then process unstructured discretization
@@ -2147,7 +2147,7 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       !> Allocate wall information array 
       ALLOCATE(D%WALL(L%NC_WALL), STAT=IERROR)
-      CALL ChkMemErr('SCARC_SETUP_DISCRETIZATION','WALL',IERROR)
+      CALL ChkMemErr('SCARC_SETUP_DISCRET','WALL',IERROR)
 
       !> Define local cell numbers for Poisson equation
       DO K=1,L%NC_Z
@@ -2161,6 +2161,7 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          ENDDO
       ENDDO
       D%NC = D%NC_LOCAL(NM)
+WRITE(MSG%LU_DEBUG,*) 'SETUP_DISCRET: UNSTRUCTURED PART : D%NC=',D%NC
 
    !>
    !> If only one specified type of discretization must be admistrated:
@@ -2187,7 +2188,7 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       !> Allocate wall information array 
       ALLOCATE(D%WALL(L%NC_WALL), STAT=IERROR)
-      CALL ChkMemErr('SCARC_SETUP_DISCRETIZATION','WALL',IERROR)
+      CALL ChkMemErr('SCARC_SETUP_DISCRET','WALL',IERROR)
 
       !> Define local cell numbers for Poisson equation
       DO K=1,L%NC_Z
@@ -2212,13 +2213,13 @@ ENDDO MESHES_LOOP2
 #ifdef WITH_SCARC_DEBUG
 CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_DISCRET, NLEVEL_MIN, 'DISCRET')
 #endif
-END SUBROUTINE SCARC_SETUP_DISCRETIZATION
+END SUBROUTINE SCARC_SETUP_DISCRET
 
 
 !> -----------------------------------------------------------------------------
 !> Setup discretization information on coarser levels
 !> -----------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_DISCRETIZATION_LEVEL(NL)
+SUBROUTINE SCARC_SETUP_DISCRET_LEVEL(NL)
 
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, IXF, IYF, IZF, IX, IY, IZ, NSTEP
@@ -2292,7 +2293,7 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 ENDDO MESHES_LOOP1
 
-END SUBROUTINE SCARC_SETUP_DISCRETIZATION_LEVEL
+END SUBROUTINE SCARC_SETUP_DISCRET_LEVEL
 
 !> ------------------------------------------------------------------------------------------------
 !> Setup communication structure for data exchange along mesh interfaces
@@ -2730,7 +2731,7 @@ CALL SCARC_SETUP_DIMENSIONS(NLEVEL_MIN)
 
 !> If necessary (in case of MG-method) also get discretization information and dimensions on coarser levels
 DO NL = NLEVEL_MIN+1, NLEVEL_MAX
-   CALL SCARC_SETUP_DISCRETIZATION_LEVEL(NL)
+   CALL SCARC_SETUP_DISCRET_LEVEL(NL)
    CALL SCARC_SETUP_DIMENSIONS(NL)
 ENDDO
 
@@ -4455,24 +4456,28 @@ END SUBROUTINE SCARC_SETUP_EXCHANGE_DIMENSIONS
 SUBROUTINE SCARC_SETUP_GLOBALS
 INTEGER :: NM, NP
 
-!> Allocate and preset counter and displacement vector for global data exchanges
-CALL SCARC_ALLOCATE_INT1 (COUNTS, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'COUNTS')
-CALL SCARC_ALLOCATE_INT1 (DISPLS, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'DISPLS')
+IF (N_MPI_PROCESSES > 1) THEN
+
+   !> Allocate and preset counter and displacement vector for global data exchanges
+   CALL SCARC_ALLOCATE_INT1 (COUNTS, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'COUNTS')
+   CALL SCARC_ALLOCATE_INT1 (DISPLS, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'DISPLS')
+
+   !> Get number of data to send per process
+   DO NP = 0, N_MPI_PROCESSES-1
+      DO NM = 1, NMESHES
+         IF (PROCESS(NM)==NP) COUNTS(NP) = COUNTS(NP) + 1
+      ENDDO
+   ENDDO
+
+   !> Get displacements on communication vector for all meshes
+   DO NP = 1, N_MPI_PROCESSES-1
+      DISPLS(NP) = COUNTS(NP-1) + DISPLS(NP-1)
+   ENDDO
+
+ENDIF
 
 CALL SCARC_ALLOCATE_INT1 (LOCAL_INT , 1, NMESHES, NSCARC_INIT_ZERO, 'LOCAL_INT')
 CALL SCARC_ALLOCATE_REAL1(LOCAL_REAL, 1, NMESHES, NSCARC_INIT_ZERO, 'LOCAL_REAL')
-
-!> Get number of data to send per process
-DO NP = 0, N_MPI_PROCESSES-1
-   DO NM = 1, NMESHES
-      IF (PROCESS(NM)==NP) COUNTS(NP) = COUNTS(NP) + 1
-   ENDDO
-ENDDO
-
-!> Get displacements on communication vector for all meshes
-DO NP = 1, N_MPI_PROCESSES-1
-   DISPLS(NP) = COUNTS(NP-1) + DISPLS(NP-1)
-ENDDO
 
 CALL SCARC_SETUP_DIMENSIONS(NLEVEL_MIN)
 
@@ -4639,39 +4644,51 @@ INTEGER :: NM, NL
 !> ---------------------------------------------------------------------------------------------
 SELECT_METHOD: SELECT CASE (TYPE_METHOD)
 
-   !> Global MGM method - proof of concept
+   !>
+   !> -------- Global MGM method - currently just proof of concept
+   !>
    CASE (NSCARC_METHOD_MGM)
 
-      CALL SCARC_SETUP_DISCRET_TYPE (NSCARC_DISCRET_STRUCTURED)
-      CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)             !> setup size for fine grid
+WRITE(MSG%LU_DEBUG,*) 'Processing MGM-method: SETUP_SYSTEM: SETUP_MATRIX_SIZES: STRUCTURED'
 
-      CALL SCARC_SETUP_DISCRET_TYPE (NSCARC_DISCRET_UNSTRUCTURED)
-      CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)             !> setup size for fine grid
+      CALL SCARC_SETUP_DISCRET_TYPE (NSCARC_DISCRET_STRUCTURED)              !> first process structured discretization
+      CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)         !> setup size for fine grid
 
-   !> Global Krylov method
+WRITE(MSG%LU_DEBUG,*) 'Processing MGM-method: SETUP_SYSTEM: SETUP_MATRIX_SIZES: UNSTRUCTURED'
+
+      CALL SCARC_SETUP_DISCRET_TYPE (NSCARC_DISCRET_UNSTRUCTURED)            !> then process unstructured discretization
+      CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)         !> setup size for fine grid
+
+   !>
+   !> -------- Global Krylov method
+   !>
    CASE (NSCARC_METHOD_KRYLOV)
 
-      CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)             !> use specified discretization
+      CALL SCARC_SETUP_DISCRET_TYPE (TYPE_DISCRET)                           !> process specified discretization type
+      CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)         !> use specified discretization
 
-      IF (HAS_TWO_LEVELS) &                                                       !> two grid levels?
-         CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MAX)          !> setup size for coarse grid
+      IF (HAS_TWO_LEVELS) &                                                  !> two grid levels used?
+         CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MAX)      !> setup size for coarse grid
 
-      IF (IS_CG_GMG) THEN                                                        !> GMG-preconditioning?
+      IF (IS_CG_GMG) THEN                                                    !> GMG-preconditioning?
          DO NL=NLEVEL_MIN+1, NLEVEL_MAX
-            CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX , NL)              !> setup size for all levels
+            CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX , NL)          !> setup size for all levels
          ENDDO
       ENDIF
 
-   !> Global Multigrid  method
+   !>
+   !> -------- Global Multigrid method
+   !>
    CASE (NSCARC_METHOD_MULTIGRID)
 
-      SELECT CASE (TYPE_MULTIGRID)                                               !> use specified discretization
-         CASE (NSCARC_MULTIGRID_GEOMETRIC)                                       !> Geometric MG?
+      CALL SCARC_SETUP_DISCRET_TYPE (TYPE_DISCRET)                           !> process specified discretization type
+      SELECT CASE (TYPE_MULTIGRID)                                          
+         CASE (NSCARC_MULTIGRID_GEOMETRIC)                                   !> Geometric MG?
             DO NL=NLEVEL_MIN, NLEVEL_MAX
-               CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NL)            !> setup size for all levels
+               CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NL)        !> setup size for all levels
             ENDDO
-         CASE (NSCARC_MULTIGRID_ALGEBRAIC)                                       !> Algebraic MG?
-            CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)       !> setup sizes for AMG
+         CASE (NSCARC_MULTIGRID_ALGEBRAIC)                                   !> Algebraic MG?
+            CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)   !> setup sizes for AMG
       END SELECT
 
 END SELECT SELECT_METHOD
@@ -6260,13 +6277,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       NW1 = L%NC_WALL_EXT + 1
       NW2 = L%NC_WALL_EXT + L%NC_WALL_INT
 
-      CALL SCARC_ALLOCATE_REAL1(MGM%US, NW1, NW2, NSCARC_INIT_ZERO, 'UM') 
-      CALL SCARC_ALLOCATE_REAL1(MGM%VS, NW1, NW2, NSCARC_INIT_ZERO, 'VM') 
-      CALL SCARC_ALLOCATE_REAL1(MGM%WS, NW1, NW2, NSCARC_INIT_ZERO, 'WM') 
-
-      CALL SCARC_ALLOCATE_REAL1(MGM%U , NW1, NW2, NSCARC_INIT_ZERO, 'UM') 
-      CALL SCARC_ALLOCATE_REAL1(MGM%V , NW1, NW2, NSCARC_INIT_ZERO, 'VM') 
-      CALL SCARC_ALLOCATE_REAL1(MGM%W , NW1, NW2, NSCARC_INIT_ZERO, 'WM') 
+      CALL SCARC_ALLOCATE_REAL1(MGM%U, NW1, NW2, NSCARC_INIT_ZERO, 'UM') 
+      CALL SCARC_ALLOCATE_REAL1(MGM%V, NW1, NW2, NSCARC_INIT_ZERO, 'VM') 
+      CALL SCARC_ALLOCATE_REAL1(MGM%W, NW1, NW2, NSCARC_INIT_ZERO, 'WM') 
 
    ENDDO
 ENDDO
@@ -7314,7 +7327,7 @@ END SUBROUTINE SCARC_SETUP_PARDISO
 
 
 !> ------------------------------------------------------------------------------------------------
-!> Set sizes for transfer matrices
+!> Define sizes for system matrix A (including extended regions related to overlaps)
 !> ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_MATRIX_SIZES(NTYPE, NL)
 INTEGER, INTENT(IN) :: NTYPE, NL
@@ -7325,11 +7338,10 @@ TYPE (SCARC_DISCRET_TYPE), POINTER :: D=>NULL(), OD=>NULL()
 TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
 TYPE (SCARC_MATRIX_BANDED_TYPE), POINTER :: AB=>NULL()
 
+WRITE(MSG%LU_DEBUG,*) 'IN SETUP_MATRIX_SIZES: TYPE_DISCRET =', TYPE_DISCRET, IS_STRUCTURED, IS_UNSTRUCTURED
+
 SELECT CASE (NTYPE)
 
-   !> --------------------------------------------------------------------------------------------------
-   !> Define sizes for system matrix A (including extended regions related to overlaps)
-   !> --------------------------------------------------------------------------------------------------
    CASE (NSCARC_SIZE_MATRIX)
 
       LEVEL_SYSTEM_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -7338,13 +7350,17 @@ SELECT CASE (NTYPE)
          SELECT CASE(TYPE_DISCRET)
             CASE (NSCARC_DISCRET_STRUCTURED)
                D => L%STRUCTURED
+WRITE(MSG%LU_DEBUG,*) 'MATRIX_SIZED: POINTING TO STRUCTURED'
             CASE (NSCARC_DISCRET_UNSTRUCTURED)
                D => L%UNSTRUCTURED
+WRITE(MSG%LU_DEBUG,*) 'MATRIX_SIZED: POINTING TO UNSTRUCTURED'
          END SELECT
 
          SELECT CASE (TYPE_MATRIX)
 
-            !> Matrix in compact storage technique
+            !>
+            !> -------- Matrix in compact storage technique
+            !>
             CASE (NSCARC_MATRIX_COMPACT)
 
                AC => D%AC
@@ -7375,7 +7391,9 @@ WRITE(MSG%LU_DEBUG,*) 'MATRIX_SIZED: AC%NA=',AC%NA,': AC%NR=',AC%NR
                   ENDIF
                ENDDO
 
-            !> Matrix in banded storage technique
+            !>
+            !> -------- Matrix in banded storage technique
+            !>
             CASE (NSCARC_MATRIX_BANDED)
 
                AB => D%AB
@@ -7426,8 +7444,14 @@ WRITE(MSG%LU_DEBUG,*) 'MATRIX_SIZED: AC%NA=',AC%NA,': AC%NR=',AC%NR
 
       ENDDO LEVEL_SYSTEM_MESHES_LOOP
 
-      !> Exchange sizes for matrices and vectors
+      !>
+      !> -------- Exchange sizes for matrices and vectors
+      !>
       IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_SIZE, NL)
+
+!> Temporarily disabled
+!>   CASE (NSCARC_SIZE_PROLONGATION)
+!>   CASE (NSCARC_SIZE_RESTRICTION)
 
 END SELECT
 
@@ -9462,11 +9486,11 @@ SELECT CASE (SV%TYPE_SOLVER)
                      IOR0 = WC%IOR
                      SELECT CASE (ABS(IOR0))
                         CASE(1)
-                           ST%B(IC) = RDT * MGM%US(IW)
+                           ST%B(IC) = RDT * MGM%U(IW)
                         CASE(2)
-                           ST%B(IC) = RDT * MGM%VS(IW)
+                           ST%B(IC) = RDT * MGM%V(IW)
                         CASE(3)
-                           ST%B(IC) = RDT * MGM%WS(IW)
+                           ST%B(IC) = RDT * MGM%W(IW)
                      END SELECT
                   ENDDO
                ENDIF
@@ -11106,9 +11130,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       IC = WC%ICW
 
-      MGM%US(IC) = M%U(I,J,K) - DT*( M%FVX(I,J,K) + M%RDXN(I)*(M%H(I+1,J  ,K  ) - M%H(I,J,K)) )
-      MGM%VS(IC) = M%V(I,J,K) - DT*( M%FVY(I,J,K) + M%RDYN(J)*(M%H(I  ,J+1,K  ) - M%H(I,J,K)) )
-      MGM%WS(IC) = M%W(I,J,K) - DT*( M%FVZ(I,J,K) + M%RDZN(K)*(M%H(I  ,J  ,K+1) - M%H(I,J,K)) )
+      MGM%U(IC) = M%U(I,J,K) - DT*( M%FVX(I,J,K) + M%RDXN(I)*(M%H(I+1,J  ,K  ) - M%H(I,J,K)) )
+      MGM%V(IC) = M%V(I,J,K) - DT*( M%FVY(I,J,K) + M%RDYN(J)*(M%H(I  ,J+1,K  ) - M%H(I,J,K)) )
+      MGM%W(IC) = M%W(I,J,K) - DT*( M%FVZ(I,J,K) + M%RDZN(K)*(M%H(I  ,J  ,K+1) - M%H(I,J,K)) )
  
    ENDDO
 
@@ -11260,7 +11284,7 @@ IF (.NOT.ALLOCATED(WORKSPACE)) THEN
          WORKSPACE = NSCARC_ONE_INT
    END SELECT
 #ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) TRIM(CTEXT), NL1, NR1
+   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1
 #endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1) CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
@@ -11288,7 +11312,7 @@ IF (.NOT.ALLOCATED(WORKSPACE)) THEN
          WORKSPACE = NSCARC_ONE_INT
    END SELECT
 #ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) TRIM(CTEXT), NL1, NR1, NL2, NR2
+   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1, NL2, NR2
 #endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1 .OR. &
@@ -11319,7 +11343,7 @@ IF (.NOT.ALLOCATED(WORKSPACE)) THEN
          WORKSPACE = NSCARC_ONE_INT
    END SELECT
 #ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) TRIM(CTEXT), NL1, NR1, NL2, NR2, NL3, NR3
+   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1, NL2, NR2, NL3, NR3
 #endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1 .OR. &
@@ -11352,7 +11376,7 @@ IF (.NOT.ALLOCATED(WORKSPACE)) THEN
          WORKSPACE = NSCARC_ONE_REAL_EB
    END SELECT
 #ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) TRIM(CTEXT), NL1, NR1
+   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1
 #endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1) &
@@ -11384,7 +11408,7 @@ IF (.NOT.ALLOCATED(WORKSPACE)) THEN
          WORKSPACE = NSCARC_ONE_REAL_FB
    END SELECT
 #ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) TRIM(CTEXT), NL1, NR1
+   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1
 #endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1) &
@@ -11415,7 +11439,7 @@ IF (.NOT.ALLOCATED(WORKSPACE)) THEN
          WORKSPACE = NSCARC_ONE_REAL_EB
    END SELECT
 #ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) TRIM(CTEXT), NL1, NR1, NL2, NR2
+   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1, NL2, NR2
 #endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1 .OR. &
@@ -11447,7 +11471,7 @@ IF (.NOT.ALLOCATED(WORKSPACE)) THEN
          WORKSPACE = NSCARC_ONE_REAL_EB
    END SELECT
 #ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) TRIM(CTEXT), NL1, NR1, NL2, NR2, NL3, NR3
+   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1, NL2, NR2, NL3, NR3
 #endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1 .OR. &
@@ -11472,7 +11496,7 @@ CHARACTER(40) :: CINFO
 
 AC%CNAME = TRIM(CNAME)
 #ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,1000) TRIM(CNAME)
+WRITE(MSG%LU_VERBOSE,1000) CNAME
 #endif
 
 #ifdef WITH_MKL_FB
@@ -11511,7 +11535,7 @@ CHARACTER(*), INTENT(IN) :: CNAME1, CNAME2
 CHARACTER(40) :: CINFO
 
 #ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,1000) TRIM(CNAME1), TRIM(CNAME2)
+WRITE(MSG%LU_VERBOSE,1000) CNAME1, CNAME2
 #endif
 
 AC2%CNAME    = CNAME2
@@ -11582,7 +11606,7 @@ ENDIF
 #endif
 
 #ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,1000) TRIM(CNAME), AC1%CNAME, AC2%CNAME
+WRITE(MSG%LU_VERBOSE,1000) CNAME, AC1%CNAME, AC2%CNAME
 #endif
 
 1000 FORMAT('Copying    COMPACT matrix ',A20,' to matrix ',A20)
@@ -11612,7 +11636,7 @@ CALL SCARC_ALLOCATE_REAL2(AB%VAL, 1, AB%NSTENCIL , 1, AB%NDIAG, NINIT, CINFO)
 #endif
 
 #ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,1000) TRIM(CNAME), AB%NA, AB%NDIAG
+WRITE(MSG%LU_VERBOSE,1000) CNAME, AB%NA, AB%NDIAG
 #endif
 1000 FORMAT('Allocating BANDED  matrix ',A20,' with NA=',I8,' and NDIAG=',I8)
 END SUBROUTINE SCARC_ALLOCATE_MATRIX_BANDED
