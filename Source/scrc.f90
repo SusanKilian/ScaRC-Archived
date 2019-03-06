@@ -404,10 +404,10 @@ LOGICAL :: IS_FFT          = .FALSE.                      !> is FFT-method?
 LOGICAL :: IS_MKL          = .FALSE.                      !> is MKL-method?
 LOGICAL :: IS_MKL_LEVEL(NSCARC_LEVEL_MAX)  = .FALSE.      !> is level-dependent MKL method?
 
-LOGICAL :: HAS_CSV           = .FALSE.                    !> has CSV-file to be dumped out
+LOGICAL :: HAS_CSV            = .FALSE.                    !> has CSV-file to be dumped out
 LOGICAL :: HAS_TWO_LEVELS     = .FALSE.                    !> has two grid levels?
-LOGICAL :: HAS_MULTIPLE_LEVELS   = .FALSE.                    !> has multiple grid levels?
-LOGICAL :: HAS_MULTIPLE_DISCRETIZATIONS = .FALSE.                    !> has multiple discretization types?
+LOGICAL :: HAS_MULTI_LEVELS   = .FALSE.                    !> has multiple grid levels?
+LOGICAL :: HAS_MULTI_DISCRETS = .FALSE.                    !> has multiple discretization types?
 
 
 !> --------------------------------------------------------------------------------------------
@@ -991,7 +991,7 @@ CALL SCARC_SETUP_GLOBALS                 ; IF (STOP_STATUS==SETUP_STOP) RETURN
 CALL SCARC_SETUP_FACES                   ; IF (STOP_STATUS==SETUP_STOP) RETURN              
 
 !> Setup wall information according to specified discretization type/method
-IF (HAS_MULTIPLE_DISCRETIZATIONS) THEN
+IF (HAS_MULTI_DISCRETS) THEN
 
    CALL SCARC_SETUP_DISCRET_TYPE (NSCARC_DISCRET_UNSTRUCTURED)
    CALL SCARC_SETUP_WALLS                ; IF (STOP_STATUS==SETUP_STOP) RETURN       
@@ -1227,6 +1227,8 @@ SELECT CASE (TRIM(SCARC_METHOD))
    CASE ('MGM')
 
       !> Just preset some values for proof of concept
+      HAS_MULTI_DISCRETS = .TRUE.
+
       TYPE_METHOD       = NSCARC_METHOD_MGM
       TYPE_KRYLOV       = NSCARC_KRYLOV_CG
       TYPE_TWOLEVEL     = NSCARC_TWOLEVEL_NONE
@@ -1604,11 +1606,11 @@ IS_CG_MUL    = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MUL
 IS_CG_COARSE = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_COARSE
 
 HAS_TWO_LEVELS   = IS_CG .AND. TYPE_PRECON /= NSCARC_RELAX_GMG .AND.  TYPE_TWOLEVEL > NSCARC_TWOLEVEL_NONE
-HAS_MULTIPLE_LEVELS = IS_GMG .OR. IS_CG_GMG .OR. HAS_TWO_LEVELS
+HAS_MULTI_LEVELS = IS_GMG .OR. IS_CG_GMG .OR. HAS_TWO_LEVELS
 
 IS_FFT =  TYPE_PRECON == NSCARC_RELAX_FFT .OR.  TYPE_SMOOTH == NSCARC_RELAX_FFT
 IS_MKL = (TYPE_PRECON >= NSCARC_RELAX_MKL) .OR. (TYPE_SMOOTH >= NSCARC_RELAX_MKL) .OR. &
-         (HAS_MULTIPLE_LEVELS .AND. TYPE_COARSE == NSCARC_COARSE_DIRECT)
+         (HAS_MULTI_LEVELS .AND. TYPE_COARSE == NSCARC_COARSE_DIRECT)
 
 END SUBROUTINE SCARC_PARSE_INPUT
 
@@ -1838,7 +1840,7 @@ INTEGER FUNCTION SCARC_GET_MAX_LEVEL(NC, IOR0)
 INTEGER, INTENT(IN) :: NC, IOR0
 INTEGER :: NC0, NL
 
-IF (HAS_MULTIPLE_LEVELS .AND.  MOD(NC,2)/=0) THEN
+IF (HAS_MULTI_LEVELS .AND.  MOD(NC,2)/=0) THEN
    SELECT CASE (ABS(IOR0))
       CASE (1)
          CALL SCARC_SHUTDOWN(NSCARC_ERROR_GRID_NUMBERX, SCARC_NONE, NC)
@@ -2102,7 +2104,7 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    !> If both discretization types (structured/unstructured) must be administrated (MGM method only):
    !> Allocate all arrays which are related to a specific discretization type
    !>
-   IF (HAS_MULTIPLE_DISCRETIZATIONS) THEN
+   IF (HAS_MULTI_DISCRETS) THEN
 
       !> ---------------- First process structured discretization 
       D => L%STRUCTURED
@@ -2766,7 +2768,7 @@ ENDIF
 !> Only in case of Twolevel-CG- or GMG-method (as main solver or preconditioner):
 !> Determine WALL, FACE and OSCARC types for coarser levels
 !>
-MULTI_LEVEL_IF: IF (HAS_MULTIPLE_LEVELS) THEN
+MULTI_LEVEL_IF: IF (HAS_MULTI_LEVELS) THEN
 
    MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -9782,7 +9784,7 @@ TYPE (SCARC_DISCRET_TYPE), POINTER :: DF=>NULL(), DC=>NULL()
 !>
 !> ------------------ Twolevel-CG or Geometric multigrid (as main solver or preconditioner) --------------
 !>
-IF (HAS_MULTIPLE_LEVELS) THEN
+IF (HAS_MULTI_LEVELS) THEN
 
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -9982,7 +9984,7 @@ TYPE (SCARC_DISCRET_TYPE), POINTER :: DF=>NULL(), DC=>NULL()
 !>
 !> ------------------ Twolevel CG or Geometric Multigrid -------------------------------------------
 !>
-IF (HAS_MULTIPLE_LEVELS) THEN
+IF (HAS_MULTI_LEVELS) THEN
 
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
