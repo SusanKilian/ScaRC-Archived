@@ -5960,6 +5960,7 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
       NSTACK = NSTACK + 1
       STACK(NSTACK)%SOLVER => PRECON_FFT
       CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
+      CALL SCARC_SETUP_FFT(NLEVEL_MIN, NLEVEL_MIN)
 
       !> ------- Second part of method: Setup CG solver for homogeneous problem on unstructured discretization
       TYPE_DISCRET = NSCARC_DISCRET_UNSTRUCTURED
@@ -8255,6 +8256,12 @@ WRITE(MSG%LU_DEBUG,'(8E14.6)') V2
       DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
          L   => SCARC(NM)%LEVEL(NL)
+         SELECT CASE(TYPE_DISCRET)
+            CASE (NSCARC_DISCRET_STRUCTURED)
+               D => L%STRUCTURED
+            CASE (NSCARC_DISCRET_UNSTRUCTURED)
+               D => L%UNSTRUCTURED
+         END SELECT
          FFT => L%FFT
 
          V1  => POINT_TO_VECTOR(NM, NL, NV1)
