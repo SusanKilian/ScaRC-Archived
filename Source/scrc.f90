@@ -1,4 +1,4 @@
-!> --------------------------------------------------------------------------------------------------------
+ !> --------------------------------------------------------------------------------------------------------
 !> Use of different directives possible
 !>     - WITH_SCARC_VERBOSE : print more detailed information about ScaRC iterations
 !>     - WITH_SCARC_DEBUG   : print detaild debugging info (only for code development)
@@ -634,6 +634,7 @@ REAL(EB), DIMENSION (-3:3)           :: STENCIL            !> store basic stenci
 INTEGER,  ALLOCATABLE, DIMENSION (:) :: ROW                !> row pointer
 INTEGER,  ALLOCATABLE, DIMENSION (:) :: COL                !> column pointers
 INTEGER,  ALLOCATABLE, DIMENSION (:) :: COL_GLOBAL         !> column pointer for global numbering
+
 TYPE (SCARC_MATRIX_SWITCH_TYPE) :: SWITCH(NSCARC_MAX_STENCIL)
 END TYPE SCARC_MATRIX_COMPACT_TYPE
 
@@ -761,7 +762,11 @@ END TYPE SCARC_MULTIGRID_TYPE
 !> McKenney-Greengard-Mayo method
 !> --------------------------------------------------------------------------------------------
 TYPE SCARC_MGM_TYPE
-REAL(EB), DIMENSION(:), ALLOCATABLE :: U, V, W              !> velocity components along internal BC's
+REAL(EB), DIMENSION(:), ALLOCATABLE :: US, VS, WS      !> velocity components along internal BC's
+INTEGER,  ALLOCATABLE, DIMENSION (:)   :: PERM         !> permutation vector for reordering of matrix rows 
+REAL(EB), ALLOCATABLE, DIMENSION (:,:) :: A            !> lower part of LU-decomposition for unstructured AC
+REAL(EB), ALLOCATABLE, DIMENSION (:,:) :: L            !> lower part of LU-decomposition for unstructured AC
+REAL(EB), ALLOCATABLE, DIMENSION (:,:) :: U            !> upper part of LU-decomposition for unstructured AC
 END TYPE SCARC_MGM_TYPE
 
 !> --------------------------------------------------------------------------------------------
@@ -933,7 +938,7 @@ END TYPE SCARC_TYPE
 !> -----------------------------------------------------------------------------------------------
 !> Iteration parameters vectors and iteration parameters
 !> -----------------------------------------------------------------------------------------------
-REAL (EB) :: DT, RDT
+REAL (EB) :: DT, DTI
 REAL (EB) :: EPS, RES, RESIN, OMEGA, CAPPA, ERR
 INTEGER :: X, B, D, R, V, Y, Z
 #ifdef WITH_SCARC_DEBUG
@@ -5649,7 +5654,6 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
          !> with the last cell of last mesh;
          !> this can be a cell on the opposite side of the own mesh or on a different mesh
          !> if such a cell exists, store corresponding matrix entry
-WRITE(MSG%LU_DEBUG,*) 'WALL_CELLS_COMPACT: TYPE_DISCRET=',TYPE_DISCRET
          WALL_CELLS_COMPACT_LOOP1: DO IW = 1, NW
       
             IOR0 = D%WALL(IW)%IOR
@@ -5664,7 +5668,6 @@ WRITE(MSG%LU_DEBUG,*) 'WALL_CELLS_COMPACT: TYPE_DISCRET=',TYPE_DISCRET
             NOM = D%WALL(IW)%NOM
             IC  = D%CELL_NUMBER(I, J, K)
             D%WALL(IW)%ICW = IC
-WRITE(MSG%LU_DEBUG,*) 'WALL_CELLS_COMPACT: I,J,K,IW,IC, ICW=',I,J,K,IW,IC
       
             PERIODIC_NBR_COMPACT_IF1: IF (NOM == NMESHES) THEN
                ICE = D%WALL(IW)%ICE(1)                            !> adjacent ghost cell number
@@ -5694,6 +5697,7 @@ WRITE(MSG%LU_DEBUG,*) 'WALL_CELLS_COMPACT: I,J,K,IW,IC, ICW=',I,J,K,IW,IC
       !> Set correct boundary conditions for system matrix
       !> Take care of whether the structured or unstructured discretization is used
       !>
+WRITE(MSG%LU_DEBUG,*) 'WALL_CELLS_COMPACT: TYPE_DISCRET=',TYPE_DISCRET
       WALL_CELLS_COMPACT_LOOP2: DO IW = 1, NW
       
          IOR0 = D%WALL(IW)%IOR
@@ -5974,7 +5978,8 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
 
       !> for a first proof of concept only use SSOR-preconditioning (may be extended later to other preconditioners)
       NSTACK = NSTACK + 1
-      STACK(NSTACK)%SOLVER => PRECON_SSOR
+      STACK(NSTACK)%SOLVER => PRECON_ILU
+WRITE(MSG%LU_DEBUG, *) 'TRYING TO SETUP ILU'
       CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
 
    !>
@@ -6279,27 +6284,208 @@ END SUBROUTINE SCARC_SETUP_VECTORS
 !> ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_MGM(NLMIN, NLMAX)
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
-INTEGER :: NM, NL, NW1, NW2
+INTEGER :: NM, NL, NW1, NW2, IC, IW, IP
+LOGICAL, DIMENSION(:), ALLOCATABLE :: IS_PROCESSED
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
+TYPE (SCARC_DISCRET_TYPE), POINTER :: D=>NULL()
 TYPE (SCARC_MGM_TYPE), POINTER :: MGM=>NULL()
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    DO NL = NLMIN, NLMAX
 
-      L   => SCARC(NM)%LEVEL(NL)
+      L => SCARC(NM)%LEVEL(NL)
+      D => L%UNSTRUCTURED
       MGM => L%MGM
       
       NW1 = L%N_WALL_CELLS_EXT + 1
       NW2 = L%N_WALL_CELLS_EXT + L%N_WALL_CELLS_INT
 
-      CALL SCARC_ALLOCATE_REAL1(MGM%U, NW1, NW2, NSCARC_INIT_ZERO, 'UMGM') 
-      CALL SCARC_ALLOCATE_REAL1(MGM%V, NW1, NW2, NSCARC_INIT_ZERO, 'VMGM') 
-      CALL SCARC_ALLOCATE_REAL1(MGM%W, NW1, NW2, NSCARC_INIT_ZERO, 'WMGM') 
+      CALL SCARC_ALLOCATE_REAL1(MGM%US, NW1, NW2, NSCARC_INIT_ZERO, 'UMGM') 
+      CALL SCARC_ALLOCATE_REAL1(MGM%VS, NW1, NW2, NSCARC_INIT_ZERO, 'VMGM') 
+      CALL SCARC_ALLOCATE_REAL1(MGM%WS, NW1, NW2, NSCARC_INIT_ZERO, 'WMGM') 
+
+      CALL SCARC_ALLOCATE_INT1 (MGM%PERM , 1, D%NC, NSCARC_INIT_ZERO, 'PERMUTATION') 
+      CALL SCARC_ALLOCATE_REAL2(MGM%A, 1, D%NC, 1, D%NC, NSCARC_INIT_ZERO, 'PERMUTATION') 
+      CALL SCARC_ALLOCATE_REAL2(MGM%L, 1, D%NC, 1, D%NC, NSCARC_INIT_ZERO, 'PERMUTATION') 
+      CALL SCARC_ALLOCATE_REAL2(MGM%U, 1, D%NC, 1, D%NC, NSCARC_INIT_ZERO, 'PERMUTATION') 
+
+      CALL SCARC_ALLOCATE_LOG1(IS_PROCESSED, 1, D%NC, NSCARC_INIT_FALSE, 'IS_PROCESSED') 
+      AC => D%AC
+
+      IP = D%NC - L%N_WALL_CELLS_INT + 1
+      DO IW = NW1, NW2
+         IC = D%WALL(IW)%ICW
+WRITE(MSG%LU_DEBUG,*) 'A: IC=',IC,': IW=',IW
+         IS_PROCESSED(IC) = .TRUE.
+         MGM%PERM(IP) = IC
+         IP = IP + 1
+      ENDDO
+
+      IP = 1
+      DO IC = 1, D%NC
+         IF (IS_PROCESSED(IC)) CYCLE
+WRITE(MSG%LU_DEBUG,*) 'B: IC=',IC
+         IS_PROCESSED(IC) = .TRUE.
+         MGM%PERM(IP) = IC
+         IP = IP + 1
+      ENDDO
+ 
+      WRITE(MSG%LU_DEBUG,*) 'IS_PROCESSED:'
+      WRITE(MSG%LU_DEBUG,'(8L8)') IS_PROCESSED
+      WRITE(MSG%LU_DEBUG,*) 'MGM%PERM:'
+      WRITE(MSG%LU_DEBUG,'(8i8)') MGM%PERM
+
+      CALL SCARC_SETUP_MGM_LU(NM, NL)
+
+      DEALLOCATE (IS_PROCESSED)
 
    ENDDO
 ENDDO
 
 END SUBROUTINE SCARC_SETUP_MGM
+
+
+SUBROUTINE SCARC_SETUP_MGM_LU(NM, NL)
+INTEGER, INTENT(IN) :: NM, NL
+INTEGER :: I, J, K, IC, JC, ICOL, IP, IVERSION
+REAL (EB) :: SCAL
+REAL (EB), DIMENSION(:,:), POINTER :: A, L, U
+TYPE (SCARC_DISCRET_TYPE), POINTER :: D=>NULL()
+TYPE (SCARC_MGM_TYPE), POINTER :: MGM=>NULL()
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
+
+D   => SCARC(NM)%LEVEL(NL)%UNSTRUCTURED
+MGM => SCARC(NM)%LEVEL(NL)%MGM
+AC  => D%AC
+
+A => MGM%A
+L => MGM%L
+U => MGM%U
+
+!> Temporarily extract full matrix from compact storage technique - just for proof of concept
+!> Consider permutation in MGM%PERM
+DO JC = 1, D%NC
+   IC = MGM%PERM(JC)
+   IC = JC
+WRITE(MSG%LU_DEBUG,*) 'PERMUTATION  --- JC =', JC, '-----------> IC=',IC
+   DO IP = AC%ROW(IC), AC%ROW(IC+1)-1
+      ICOL = AC%COL(IP)
+WRITE(MSG%LU_DEBUG,*) 'PERMUTATION ICOL ', ICOL, AC%VAL(IP), ' TO ', JC, ICOL
+      MGM%A(JC,ICOL) = AC%VAL(IP)
+   ENDDO
+ENDDO
+
+WRITE(MSG%LU_DEBUG,*) '------- MGM%A - Copy (1:15)'
+DO IC = 1, D%NC
+   WRITE(MSG%LU_DEBUG,'(15F14.1)') (MGM%A(IC, JC), JC=1, 15)
+ENDDO
+WRITE(MSG%LU_DEBUG,*) '------- MGM%A - Copy (46:60)'
+DO IC = 1, D%NC
+   WRITE(MSG%LU_DEBUG,'(15F14.1)') (MGM%A(IC, JC), JC=1, 15)
+ENDDO
+
+IVERSION = 1
+
+!> Version 1
+IF (IVERSION == 1) THEN
+   DO I = 1, D%NC
+      U(I,I) = 1.0_EB
+   ENDDO
+   
+   DO J = 1, D%NC
+      DO I = J, D%NC
+         SCAL = 0.0_EB
+         DO K = 1, J-1
+            SCAL = SCAL + L(I,K) * U(K,J)
+         ENDDO
+         L(I,J) = A(I,J) - SCAL
+      ENDDO
+      DO I = J, D%NC
+         SCAL = 0.0_EB
+         DO K = 1, J-1
+            SCAL = SCAL + L(J,K) * U(K,I)
+         ENDDO
+         U(J,I) = (A(J,I) - SCAL) / L(J,J)
+      ENDDO
+   ENDDO
+   
+!> Version 2
+ELSE
+   
+   DO I = 1, D%NC
+
+      L(I,I) = 1.0_EB
+   
+      DO J = I, D%NC
+
+         SCAL = 0.0_EB
+         DO K = 1, I-1
+            SCAL = SCAL + L(I,K) * U(K,J)
+         ENDDO
+         U(I,J) = A(I,J) - SCAL
+
+         SCAL = 0.0_EB
+         DO K = 1, I-1
+           SCAL = SCAL + L(J,K) * U(K,I)
+         ENDDO
+         L(J,I) = (A(J,I) - SCAL)/U(I,I)
+
+      ENDDO
+   ENDDO
+   
+ENDIF
+
+!> Alternative code, don't use L and U, but store values back to A
+DO J = 1 , D%NC
+   DO I = J , D%NC
+      SCAL = A(I,J)
+      DO K = 1, J-1
+         SCAL = SCAL - A(I,K)*A(K,J)
+      ENDDO
+      A(I,J) = SCAL
+   ENDDO
+   DO I = J+1, D%NC
+      SCAL = A(I,J)
+      DO K = 1, I-1
+         SCAL = SCAL - A(J,K)*A(K,I)
+      ENDDO
+      A(J,I) = SCAL/A(J,J)
+   ENDDO
+ENDDO
+
+WRITE(MSG%LU_DEBUG,*) '=============================== MGM%A (1:15) '
+!DO IC = 1, D%NC
+!   WRITE(MSG%LU_DEBUG,'(15F14.1)') (MGM%A(IC, JC), JC=1, 15)
+!ENDDO
+WRITE(MSG%LU_DEBUG,*) 'MGM%L'
+DO IC = 1, D%NC
+   WRITE(MSG%LU_DEBUG,'(15F14.1)') (MGM%L(IC, JC), JC=1, 15)
+ENDDO
+WRITE(MSG%LU_DEBUG,*) 'MGM%U' 
+DO IC = 1, D%NC
+   WRITE(MSG%LU_DEBUG,'(15F14.1)') (MGM%U(IC, JC), JC=1, 15)
+ENDDO
+
+WRITE(MSG%LU_DEBUG,*) '=============================== MGM%A (46:60) '
+!DO IC = 1, D%NC
+!   WRITE(MSG%LU_DEBUG,'(15F14.1)') (MGM%A(IC, JC), JC=46, 60)
+!ENDDO
+WRITE(MSG%LU_DEBUG,*) 'MGM%L'
+DO IC = 1, D%NC
+   WRITE(MSG%LU_DEBUG,'(15F14.1)') (MGM%L(IC, JC), JC=46, 60)
+ENDDO
+WRITE(MSG%LU_DEBUG,*) 'MGM%U' 
+DO IC = 1, D%NC
+   WRITE(MSG%LU_DEBUG,'(15F14.1)') (MGM%U(IC, JC), JC=46, 60)
+ENDDO
+
+
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_MATRIX, NL, 'MGM-LU-Decomposition')
+#endif
+
+END SUBROUTINE SCARC_SETUP_MGM_LU
 
 !> ----------------------------------------------------------------------------------------------------
 !> Allocate and initialize vectors for Krylov method
@@ -6812,7 +6998,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       !> Allocate workspace for GSM decomposition of Poisson matrix 
       CALL SCARC_ALLOCATE_REAL1(AC%GSM, 1, AC%N_VAL, NSCARC_INIT_ZERO, 'ILU')
 
-      CELL_LOOP: DO IC = 1, L%NC
+      CELL_LOOP: DO IC = 1, D%NC
         
          DO IPTR = AC%ROW(IC), AC%ROW(IC+1)-1
             JC = AC%COL(IPTR)
@@ -6862,9 +7048,9 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       AC => D%AC
 
       !> Allocate workspace for SGSM decomposition of Poisson matrix 
-      CALL SCARC_ALLOCATE_REAL1(AC%SGSM, 1, AC%N_VAL, NSCARC_INIT_ZERO, 'ILU')
+      CALL SCARC_ALLOCATE_REAL1(AC%SGSM, 1, AC%N_VAL, NSCARC_INIT_ZERO, 'SGSM')
 
-      CELL_LOOP: DO IC = 1, L%NC
+      CELL_LOOP: DO IC = 1, D%NC
         
          DO IPTR = AC%ROW(IC), AC%ROW(IC+1)-1
             JC = AC%COL(IPTR)
@@ -6927,9 +7113,9 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       AC => D%AC
 
       !> Allocate workspace for SORM decomposition of Poisson matrix 
-      CALL SCARC_ALLOCATE_REAL1(AC%SORM, 1, AC%N_VAL, NSCARC_INIT_ZERO, 'ILU')
+      CALL SCARC_ALLOCATE_REAL1(AC%SORM, 1, AC%N_VAL, NSCARC_INIT_ZERO, 'SORM')
 
-      CELL_LOOP: DO IC = 1, L%NC
+      CELL_LOOP: DO IC = 1, D%NC
         
          DO IPTR = AC%ROW(IC), AC%ROW(IC+1)-1
             JC = AC%COL(IPTR)
@@ -6999,9 +7185,9 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       AC => D%AC
 
       !> Allocate workspace for SSORM decomposition of Poisson matrix 
-      CALL SCARC_ALLOCATE_REAL1(AC%SSORM, 1, AC%N_VAL, NSCARC_INIT_ZERO, 'ILU')
+      CALL SCARC_ALLOCATE_REAL1(AC%SSORM, 1, AC%N_VAL, NSCARC_INIT_ZERO, 'SSORM')
 
-      CELL_LOOP: DO IC = 1, L%NC
+      CELL_LOOP: DO IC = 1, D%NC
         
          DO IPTR = AC%ROW(IC), AC%ROW(IC+1)-1
 
@@ -7070,7 +7256,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CALL SCARC_ALLOCATE_REAL1(AC%ILU, 1, AC%N_VAL, NSCARC_INIT_ZERO, 'ILU')
       AC%ILU = AC%VAL
 
-      CELL_LOOP: DO IC = 2, L%NC
+      CELL_LOOP: DO IC = 2, D%NC
 
          COLUMN_LOOP: DO IPTR = AC%ROW(IC), AC%ROW(IC+1)-1
 
@@ -7100,6 +7286,8 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    ENDDO LEVEL_LOOP
 ENDDO MESHES_LOOP
+
+WRITE(MSG%LU_DEBUG,*) 'SETTING UP ILU decomposition'
 
 #ifdef WITH_SCARC_DEBUG
 DO NL = NLEVEL_MIN, NLEVEL_MAX
@@ -7565,7 +7753,7 @@ REAL (EB) :: TNOW
 TNOW = CURRENT_TIME()
 
 DT  = DT_CURRENT
-RDT = 1.0_EB/DT_CURRENT
+DTI = 1.0_EB/DT_CURRENT
 
 
 ITE_PRES = ITE_PRES + 1
@@ -9589,16 +9777,15 @@ SELECT CASE (SV%TYPE_SOLVER)
 
                   SELECT CASE (ABS(IOR0))
                      CASE(1)
-                        VAL = L%DXI * RDT * MGM%U(IW)
+                        ST%B(IC) = L%DXI * DTI * MGM%US(IW)
                      CASE(2)
-                        VAL = L%DYI * RDT * MGM%V(IW)
+                        ST%B(IC) = L%DYI * DTI * MGM%VS(IW)
                      CASE(3)
-                        VAL = L%DZI * RDT * MGM%W(IW)
+                        ST%B(IC) = L%DZI * DTI * MGM%WS(IW)
                   END SELECT
-               ENDDO
 
-               ST%B(IC) = ST%B(IC) + VAL
-WRITE(MSG%LU_DEBUG,*) 'SETTING HOM-BC: IW, I, J, K, IOR0, IC, VAL, B', IW, I, J, K, IOR0, IC, VAL, ST%B(IC)
+WRITE(MSG%LU_DEBUG,*) 'SETTING HOM-BC: IW, I, J, K, IC, VAL, B', IW, I, J, K, IC, ST%B(IC)
+               ENDDO
 
          END SELECT
 
@@ -9614,11 +9801,6 @@ WRITE(MSG%LU_DEBUG,*) 'SETTING HOM-BC: IW, I, J, K, IOR0, IC, VAL, B', IW, I, J,
             ST%V = 0.0_EB
             ST%Y = 0.0_EB
             ST%Z = 0.0_EB
-            !ST%D(D%NC+1:D%NC_TOTAL) = 0.0_EB
-            !ST%R(D%NC+1:D%NC_TOTAL) = 0.0_EB
-            !ST%V(D%NC+1:D%NC_TOTAL) = 0.0_EB
-            !ST%Y(D%NC+1:D%NC_TOTAL) = 0.0_EB
-            !ST%Z(D%NC+1:D%NC_TOTAL) = 0.0_EB
          ENDDO
       ENDIF
 
@@ -9630,8 +9812,6 @@ WRITE(MSG%LU_DEBUG,*) 'SETTING HOM-BC: IW, I, J, K, IOR0, IC, VAL, B', IW, I, J,
             ST => SCARC(NM)%LEVEL(NL)%STAGE(SV%TYPE_STAGE)
             ST%V = 0.0_EB
             ST%Z = 0.0_EB
-            !ST%V(D%NC+1:D%NC_TOTAL) = 0.0_EB
-            !ST%Z(D%NC+1:D%NC_TOTAL) = 0.0_EB
          ENDDO
       ENDIF
 
@@ -9664,8 +9844,6 @@ WRITE(MSG%LU_DEBUG,*) 'SETTING HOM-BC: IW, I, J, K, IOR0, IC, VAL, B', IW, I, J,
             ST%B = STP%R
             ST%V = 0.0_EB
             ST%Z = 0.0_EB
-            !ST%V(D%NC+1:D%NC_TOTAL) = 0.0_EB
-            !ST%Z(D%NC+1:D%NC_TOTAL) = 0.0_EB
          ENDDO
       ENDIF
 
@@ -11179,11 +11357,11 @@ WRITE(MSG%LU_DEBUG,*) 'VELOCITY_PREDICTOR: NWI, NWE=', L%N_WALL_CELLS_INT, L%N_W
 
       IC = WC%ICW
 
-      MGM%U(IW) = M%U(I,J,K) - DT*( M%FVX(I,J,K) + M%RDXN(I)*(M%H(I+1,J  ,K  ) - M%H(I,J,K)) )
-      MGM%V(IW) = M%V(I,J,K) - DT*( M%FVY(I,J,K) + M%RDYN(J)*(M%H(I  ,J+1,K  ) - M%H(I,J,K)) )
-      MGM%W(IW) = M%W(I,J,K) - DT*( M%FVZ(I,J,K) + M%RDZN(K)*(M%H(I  ,J  ,K+1) - M%H(I,J,K)) )
+      MGM%US(IW) = M%U(I,J,K) - DT*( M%FVX(I,J,K) + M%RDXN(I)*(M%H(I+1,J  ,K  ) - M%H(I,J,K)) )
+      MGM%VS(IW) = M%V(I,J,K) - DT*( M%FVY(I,J,K) + M%RDYN(J)*(M%H(I  ,J+1,K  ) - M%H(I,J,K)) )
+      MGM%WS(IW) = M%W(I,J,K) - DT*( M%FVZ(I,J,K) + M%RDZN(K)*(M%H(I  ,J  ,K+1) - M%H(I,J,K)) )
 WRITE(MSG%LU_DEBUG,'(a,5i5,3F16.6)') 'VELOCITY_PREDICTOR: I,J,K, IW, IC:', &
-    I, J, K, IW, IC, MGM%U(IW), MGM%V(IW), MGM%W(IW)
+    I, J, K, IW, IC, MGM%US(IW), MGM%VS(IW), MGM%WS(IW)
  
    ENDDO
 
@@ -11405,6 +11583,63 @@ ELSE
 ENDIF
 1000 FORMAT('Allocating INT3     array  ',A20,' in length (',I8,':',I8,' , ',I8,':',I8,' , ',I8,':',I8,')')
 END SUBROUTINE SCARC_ALLOCATE_INT3
+
+!> ------------------------------------------------------------------------------------------------
+!> Allocate and initialize Logical array of dimension 1
+!> ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_ALLOCATE_LOG1(WORKSPACE, NL1, NR1, NINIT, CTEXT)
+USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
+LOGICAL, DIMENSION(:), ALLOCATABLE, INTENT(INOUT) :: WORKSPACE
+INTEGER, INTENT(IN) :: NL1, NR1, NINIT
+CHARACTER(*), INTENT(IN) :: CTEXT
+IF (.NOT.ALLOCATED(WORKSPACE)) THEN
+   ALLOCATE (WORKSPACE(NL1:NR1), STAT=IERROR)
+   CALL CHKMEMERR ('SCARC_ALLOCATE_INT1', CTEXT, IERROR)
+   SELECT CASE (NINIT)
+      CASE (NSCARC_INIT_TRUE)
+         WORKSPACE = .TRUE.
+      CASE (NSCARC_INIT_FALSE)
+         WORKSPACE = .FALSE.
+   END SELECT
+#ifdef WITH_SCARC_VERBOSE
+   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1
+#endif
+ELSE
+   IF (SIZE(WORKSPACE,1) /= NR1-NL1+1) THEN
+      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
+   ENDIF
+ENDIF
+1000 FORMAT('Allocating LOG3     array  ',A20,' in length (',I8,':',I8,')')
+END SUBROUTINE SCARC_ALLOCATE_LOG1
+
+!> ------------------------------------------------------------------------------------------------
+!> Allocate and initialize Logical array of dimension 2
+!> ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_ALLOCATE_LOG2(WORKSPACE, NL1, NR1, NL2, NR2, NINIT, CTEXT)
+USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
+LOGICAL, DIMENSION(:,:), ALLOCATABLE, INTENT(INOUT) :: WORKSPACE
+INTEGER, INTENT(IN) :: NL1, NR1, NL2, NR2, NINIT
+CHARACTER(*), INTENT(IN) :: CTEXT
+IF (.NOT.ALLOCATED(WORKSPACE)) THEN
+   ALLOCATE (WORKSPACE(NL1:NR1, NL2:NR2), STAT=IERROR)
+   CALL CHKMEMERR ('SCARC_ALLOCATE_INT3', CTEXT, IERROR)
+   SELECT CASE (NINIT)
+      CASE (NSCARC_INIT_TRUE)
+         WORKSPACE = .TRUE.
+      CASE (NSCARC_INIT_FALSE)
+         WORKSPACE = .FALSE.
+   END SELECT
+#ifdef WITH_SCARC_VERBOSE
+   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1, NL2, NR2
+#endif
+ELSE
+   IF (SIZE(WORKSPACE,1) /= NR1-NL1+1 .OR. &
+       SIZE(WORKSPACE,2) /= NR2-NL2+1) THEN
+      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
+   ENDIF
+ENDIF
+1000 FORMAT('Allocating LOG3     array  ',A20,' in length (',I8,':',I8,' , ',I8,':',I8,')')
+END SUBROUTINE SCARC_ALLOCATE_LOG2
 
 !> ------------------------------------------------------------------------------------------------
 !> Allocate and initialize Logical array of dimension 3
@@ -12308,7 +12543,11 @@ SELECT CASE (NTYPE)
                !   ENDDO
                !ENDDO
 #endif
-               CALL SCARC_MATLAB_MATRIX(AC%VAL, AC%ROW, AC%COL, D%NC, D%NC, NM, NL, 'A')
+               IF (IS_STRUCTURED) THEN
+                  CALL SCARC_MATLAB_MATRIX(AC%VAL, AC%ROW, AC%COL, D%NC, D%NC, NM, NL, 'A_struct')
+               ELSE
+                  CALL SCARC_MATLAB_MATRIX(AC%VAL, AC%ROW, AC%COL, D%NC, D%NC, NM, NL, 'A_unstruct')
+               ENDIF
 
             ENDDO
 
@@ -12792,9 +13031,10 @@ INTEGER :: IC, JC, ICOL, MMATRIX
 CHARACTER(60) :: CFILE, CFORM
 REAL(EB) :: MATRIX_LINE(1000)
 
-WRITE (CFILE, '(A,A1,A,i2.2,A,i2.2,A)') 'matlab/',CNAME,'_mesh',NM,'_level',NL,'_mat.txt'
+WRITE (CFILE, '(A,A,A,i2.2,A,i2.2,A)') 'matlab/',TRIM(CNAME),'_mesh',NM,'_level',NL,'_mat.txt'
 !WRITE (CFORM, '(A,I3, 2A)' ) "(", NC2-1, "(F7.1,','),F7.1,';')" 
-WRITE (CFORM, '(A,I3, 2A)' ) "(", NC2-1, "(F7.1,' '),F7.1,' ')" 
+!WRITE (CFORM, '(A,I3, 2A)' ) "(", NC2-1, "(F7.1,' '),F7.1,' ')" 
+WRITE (CFORM, '(A,I3, 2A)' ) "(", NC2-1, "(F3.0,' '),F3.0,' ')" 
 MMATRIX=GET_FILE_NUMBER()
 OPEN(MMATRIX,FILE=CFILE)
 !WRITE(MMATRIX, *) CNAME, ' = ['
@@ -12802,7 +13042,7 @@ DO IC = 1, NC1
    MATRIX_LINE=0.0_EB
    DO JC = 1, NC2
       DO  ICOL= ROW(IC), ROW(IC+1)-1
-         IF (COL(ICOL)==JC) MATRIX_LINE(JC)=VAL(ICOL)
+         IF (COL(ICOL)==JC) MATRIX_LINE(JC)=VAL(ICOL)/100.0
       ENDDO
    ENDDO
    WRITE(MMATRIX, CFORM) (MATRIX_LINE(JC),JC=1,NC2)
