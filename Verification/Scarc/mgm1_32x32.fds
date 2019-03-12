@@ -1,23 +1,22 @@
-&HEAD CHID='ssor1',TITLE='Basic Poisson test of default ScaRC solver on 2D-pipe geometry with 4 meshes' /
+&HEAD CHID='mgm1_32x32',TITLE='ScaRC-GMG for 2D-square with obstruction on 8 meshes' /
 
-&MESH IJK=8,1,8  XB=0.0,0.8,-0.01,0.01,0.0,0.8 /
+&MESH IJK=32,1,32, XB=0.0,1.6,-0.01,0.01,0.0,1.6 /
 
 &MISC NOISE = .FALSE. 
       DNS   = .TRUE./
 
-&PRES SOLVER ='SCARC'
-      SCARC_ERROR_FILE = .TRUE.
-      SCARC_DISCRETIZATION = 'STRUCTURED'
-      SCARC_PRECON = 'SSOR'  /
+&PRES SOLVER                  = 'SCARC'
+      SCARC_ERROR_FILE        = .TRUE.
+      SCARC_METHOD            = 'MGM' /
 
 &TIME T_END=0.5, DT=0.002 /
 
 &SURF ID='INFLOW2',VEL=-2.0, RAMP_V='IN2' /
 
-&VENT XB=0.0,0.0,-0.01,0.01,0.3,0.5 SURF_ID='INFLOW2' /
+&VENT XB=0.0,0.0,-0.01,0.01,0.0,1.6 SURF_ID='INFLOW2' /
 &VENT MB='XMAX', SURF_ID='OPEN' /
 
-&OBST XB=0.3,0.5,-0.01,0.01,0.3,0.5, COLOR='BLUE' /
+&OBST XB=0.7,0.9,-0.01,0.01,0.7,0.9, COLOR='BLUE' /
 
 &SLCF PBY=0.0,QUANTITY='VELOCITY',VECTOR=.TRUE. /
 &SLCF PBY=0.0,QUANTITY='PRESSURE' /
