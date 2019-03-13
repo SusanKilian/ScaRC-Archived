@@ -2571,12 +2571,6 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 ENDDO MESHES_LOOP
 
-!> -------------------------------------------------------------------------------------------
-!> Debug FACE structures - only if directive SCARC_DEBUG is set
-!> -------------------------------------------------------------------------------------------
-#ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_FACE, NLEVEL_MIN, 'FACE')
-#endif
 
 END SUBROUTINE SCARC_SETUP_FACES
 
@@ -2946,6 +2940,14 @@ MULTI_LEVEL_IF: IF (HAS_MULTI_LEVELS) THEN
       ENDDO LEVEL_GMG_LEVEL_LOOP
    ENDDO MESHES_LOOP3
 ENDIF MULTI_LEVEL_IF
+
+!> -------------------------------------------------------------------------------------------
+!> Debug FACE structures - only if directive SCARC_DEBUG is set
+!> -------------------------------------------------------------------------------------------
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_FACE, NLEVEL_MIN, 'FACE')
+CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_WALL, NLEVEL_MIN, 'WALL')
+#endif
 
 END SUBROUTINE SCARC_SETUP_WALLS
 
