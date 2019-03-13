@@ -8,7 +8,7 @@ Test multiple mesh and parallel processing features.
 &MESH IJK=16,16,48, XB=7.0,8.0,3.0,4.0,1.0,4.0 /
 &MESH IJK=64,16,16, XB=3.0,7.0,3.0,4.0,3.0,4.0, RGB=230,50,43 /
 
-&PRES SOLVER = 'SCARC', SCARC_DEBUG = 'LESS' /
+&PRES SOLVER = 'SCARC' /
 
 &TIME T_END=60.0 /
 

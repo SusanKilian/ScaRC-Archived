@@ -7,7 +7,7 @@
 !>     - WITH_MKL_FB        : perform MKL routines for LU-decomposition only in single precision
 !> --------------------------------------------------------------------------------------------------------
 #define WITH_SCARC_VERBOSE
-#define WITH_SCARC_DEBUG
+#undef WITH_SCARC_DEBUG
 #undef WITH_SCARC_CGBARO
 #undef WITH_MKL_FB
 
@@ -2661,11 +2661,9 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          IF (ANY(IS_KNOWN)) THEN
             OD%NWL = OD%NWL + 1                                 !> increase own counter for local wall cells
             OD%NCG = OD%NCG + NCPL                              !> increase counter for local ghost cells
-WRITE(MSG%LU_DEBUG,*) 'A: OD%NCG=',OD%NCG
          ELSE
             OD%NWL = 1                                          !> initialize own counter for local wall cells
             OD%NCG = NCPL                                       !> initialize counter for local ghost cells
-WRITE(MSG%LU_DEBUG,*) 'B: OD%NCG=',OD%NCG
             D%NCPL_MAX  = MAX(D%NCPL_MAX, NCPL)                 !> get max NCPL ever used on this mesh
          ENDIF
 
@@ -4688,12 +4686,16 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
    !>
    CASE (NSCARC_METHOD_MGM)
 
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'Processing MGM-method: SETUP_SYSTEM: SETUP_MATRIX_SIZES: STRUCTURED'
+#endif
 
       CALL SCARC_SETUP_DISCRET_TYPE (NSCARC_DISCRET_STRUCTURED)              !> first process structured discretization
       CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)         !> setup size for fine grid
 
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'Processing MGM-method: SETUP_SYSTEM: SETUP_MATRIX_SIZES: UNSTRUCTURED'
+#endif
 
       CALL SCARC_SETUP_DISCRET_TYPE (NSCARC_DISCRET_UNSTRUCTURED)            !> then process unstructured discretization
       CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)         !> setup size for fine grid
@@ -4971,7 +4973,6 @@ SELECT_STORAGE_TYPE: SELECT CASE (TYPE_MATRIX)
       AC => D%AC
       CALL SCARC_ALLOCATE_MATRIX_COMPACT (AC, 'AC', NL, NSCARC_INIT_ZERO)
 
-WRITE(MSG%LU_DEBUG,*) 'TYPE_DISCRET =',TYPE_DISCRET
       IP  = 1
       DO IZ = 1, L%KBAR
          DO IY = 1, L%JBAR
@@ -5007,9 +5008,6 @@ WRITE(MSG%LU_DEBUG,*) 'TYPE_DISCRET =',TYPE_DISCRET
       
       AC%ROW(AC%N_ROW) = IP
       AC%N_VAL         = IP-1                         !> set correct number of matrix entries
-
-      WRITE(MSG%LU_DEBUG,*) 'SYSTEM: AC%N_VAL=',AC%N_VAL
-      WRITE(MSG%LU_DEBUG,*) 'SYSTEM: AC%N_ROW=',AC%N_ROW
 
       CALL SCARC_RESIZE_MATRIX_COMPACT(AC, AC%N_VAL, 'Resized System-Matrix')
 
@@ -5138,7 +5136,9 @@ SELECT CASE(TYPE_DISCRET)
       AC => L%UD%AC
 END SELECT
 
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'MATRIX_MAINDIAG_COMPACT: IC, IX, IY, IZ:', IC, IX, IY, IZ, TYPE_DISCRET
+#endif
 
 AC%VAL(IP) = - 2.0_EB/(L%DXL(IX-1)*L%DXL(IX))
 IF (.NOT.TWO_D) AC%VAL(IP) = AC%VAL(IP) - 2.0_EB/(L%DYL(IY-1)*L%DYL(IY))
@@ -5168,7 +5168,7 @@ INTEGER :: IW, IPTR
 INTEGER :: IX, IY, IZ
 #endif
 REAL(EB) :: DSCAL, DH1, DH2
-LOGICAL  :: BINTERNAL
+LOGICAL  :: IS_INTERNAL_CELL
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 TYPE (SCARC_DISCRET_TYPE), POINTER :: D=>NULL()
 TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
@@ -5196,15 +5196,15 @@ DH2 = L%FACE(IOR0)%DH(IPTR)
 
 !> set bounds and step sizes depending on orientation of face (lower or upper subdiagonal)
 IF (IOR0 > 0) THEN
-   BINTERNAL = IPTR > 1
+   IS_INTERNAL_CELL = IPTR > 1
    DSCAL = 2.0_EB/(DH1*(DH1+DH2))
 ELSE
-   BINTERNAL = IPTR < L%FACE(IOR0)%NFC
+   IS_INTERNAL_CELL = IPTR < L%FACE(IOR0)%NFC
    DSCAL = 2.0_EB/(DH2*(DH1+DH2))
 ENDIF
 
 !> if IC is an internal cell of the mesh, compute usual matrix contribution for corresponding subdiagonal
-IF (BINTERNAL) THEN
+IF (IS_INTERNAL_CELL) THEN
 
    IF (IS_STRUCTURED .OR. .NOT.L%IS_SOLID(IX2, IY2, IZ2)) THEN
       AC%VAL(IP) = AC%VAL(IP) + DSCAL
@@ -5224,16 +5224,20 @@ IF (BINTERNAL) THEN
 ELSE IF (L%FACE(IOR0)%N_NEIGHBORS /= 0) THEN
 
    IW = ASSIGN_SUBDIAG_TYPE (IC, IOR0, NM, NL)         !> get IW of a possibly suitable neighbor at face IOR0
-   IF (IW /= 0) then                                   !> if available, build corresponding subdiagonal entry
+WRITE(*,*) 'MATRIX_SUBDIAG: IC, IOR0, NM, NL, IW:', IC, IOR0, NM, NL, IW
+   IF (IW > 0) then                                   !> if available, build corresponding subdiagonal entry
 
       AC%VAL(IP) = AC%VAL(IP) + DSCAL
       AC%COL(IP) = D%WALL(IW)%ICE(1)                   !> store its extended number in matrix column pointers
+
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'MATRIX_SUBDIAG: IP, IW:', IP, IW, AC%COL(IP)
+#endif
 
       AC%STENCIL(-IOR0) = AC%VAL(IP)
 
 #ifdef WITH_MKL
-      IF (IS_MKL_LEVEL(NL)) THEN                         !> if MKL method used, also store its global number
+      IF (IS_MKL_LEVEL(NL)) THEN                       !> if MKL method used, also store its global number
          IX = D%WALL(IW)%IXG
          IY = D%WALL(IW)%IYG
          IZ = D%WALL(IW)%IZG
@@ -5329,7 +5333,7 @@ SUBROUTINE SCARC_SETUP_MATRIX_SUBDIAG_BANDED (IC, IX1, IY1, IZ1, IX2, IY2, IZ2, 
 INTEGER, INTENT(IN) :: IC, IX1, IY1, IZ1, IX2, IY2, IZ2, IOR0, NM, NL
 INTEGER :: IW, IPTR, ID
 REAL(EB) :: DSCAL, DH1, DH2
-LOGICAL  :: BINTERNAL
+LOGICAL  :: IS_INTERNAL_CELL
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 TYPE (SCARC_DISCRET_TYPE), POINTER :: D=>NULL()
 TYPE (SCARC_MATRIX_BANDED_TYPE), POINTER :: AB=>NULL()
@@ -5357,17 +5361,17 @@ DH2 = L%FACE(IOR0)%DH(IPTR)
 
 !> set bounds and step sizes depending on orientation of face (lower or upper subdiagonal)
 IF (IOR0 > 0) THEN
-   BINTERNAL = IPTR > 1
+   IS_INTERNAL_CELL = IPTR > 1
    DSCAL = 2.0_EB/(DH1*(DH1+DH2))
 ELSE
-   BINTERNAL = IPTR < L%FACE(IOR0)%NFC
+   IS_INTERNAL_CELL = IPTR < L%FACE(IOR0)%NFC
    DSCAL = 2.0_EB/(DH2*(DH1+DH2))
 ENDIF
 
 ID  = AB%POS(IOR0)                                !> get column vector corresponding to diagonal of IOR0
 
 !> if IC is an internal cell of the mesh, compute usual matrix contribution for corresponding subdiagonal
-IF (BINTERNAL) THEN
+IF (IS_INTERNAL_CELL) THEN
 
    IF (IS_STRUCTURED .OR. .NOT.L%IS_SOLID(IX2, IY2, IZ2)) THEN
       AB%VAL(ID, IC)   = AB%VAL(ID, IC) + DSCAL
@@ -5569,7 +5573,7 @@ END SUBROUTINE SCARC_SETUP_MATRIX_MKL
 !> ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_BOUNDARY (NM, NL)
 INTEGER, INTENT(IN) :: NM, NL
-INTEGER :: I, J, K, IOR0, IW, IC, NOM, IP, NW, NC, ICN, ICE, JC, ICOL, IS
+INTEGER :: I, J, K, IOR0, IW, IC, NOM, IP, NW, NC, ICN, ICE, JC, ICOL, IS=0
 REAL(EB) :: DBC
 TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()
 TYPE (SCARC_DISCRET_TYPE), POINTER :: D=>NULL()
@@ -5731,7 +5735,7 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
       !> Set correct boundary conditions for system matrix
       !> Take care of whether the structured or unstructured discretization is used
       !>
-WRITE(MSG%LU_DEBUG,*) 'WALL_CELLS_COMPACT: TYPE_DISCRET=',TYPE_DISCRET
+!WRITE(MSG%LU_DEBUG,*) 'WALL_CELLS_COMPACT: TYPE_DISCRET=',TYPE_DISCRET
       WALL_CELLS_COMPACT_LOOP2: DO IW = 1, NW
       
          IOR0 = D%WALL(IW)%IOR
@@ -5746,7 +5750,7 @@ WRITE(MSG%LU_DEBUG,*) 'WALL_CELLS_COMPACT: TYPE_DISCRET=',TYPE_DISCRET
          NOM = D%WALL(IW)%NOM
          IC  = D%CELL_NUMBER(I, J, K)
          D%WALL(IW)%ICW = IC
-WRITE(MSG%LU_DEBUG,*) 'WALL_CELLS_COMPACT_LOOP2: I,J,K,IW,IC, ICW=',I,J,K,IW,IC
+!WRITE(MSG%LU_DEBUG,*) 'WALL_CELLS_COMPACT_LOOP2: I,J,K,IW,IC, ICW=',I,J,K,IW,IC
       
          SELECT CASE (ABS(IOR0))
             CASE (1)
@@ -5952,18 +5956,21 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       DO IW = IWL, IWL + NWL - 1
 
+         IWG = OD%IWL_TO_IWG(IW)                          !> corresponding global wall cell number
          WC => D%WALL(IWG)
 
-         IWG = OD%IWL_TO_IWG(IW)                          !> corresponding global wall cell number
-         ICE = WC%ICE(1)                           !> adjacent ghost cell number
-         ICW = WC%ICW                              !> adjacent internal cell number
-         NOM = WC%NOM                              !> neighbor for that wall cell
+         ICE = WC%ICE(1)                                  !> adjacent ghost cell number
+         ICW = WC%ICW                                     !> adjacent internal cell number
+         NOM = WC%NOM                                     !> neighbor for that wall cell
 
          IF (NOM > 0) THEN
-            IF (NOM /= NMESHES) CYCLE                       !> only check for common matrix entries with last mesh
+
+            IF (NOM /= NMESHES) CYCLE                     !> only check for common matrix entries with last mesh
             ICN = D%ICE_TO_ICN(ICE)                       !> get column index of neighboring offdiagonal matrix entry
-            IF (ICN /= SCARC(NMESHES)%NC) CYCLE        !> if no relation to last cell in last mesh, cycle
-            VC(ICW) = VC(ICW) - D%ICE_TO_VAL(ICE)*SCARC(NM)%RHS_END
+            IF (ICN /= SCARC(NMESHES)%NC) CYCLE           !> if no relation to last cell in last mesh, cycle
+
+            VC(ICW) = VC(ICW) - D%ICE_TO_VAL(ICE) * SCARC(NM)%RHS_END
+
          ENDIF
 
       ENDDO
@@ -6010,7 +6017,7 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
       !> for a first proof of concept only use SSOR-preconditioning (may be extended later to other preconditioners)
       NSTACK = NSTACK + 1
       STACK(NSTACK)%SOLVER => PRECON_ILU
-WRITE(MSG%LU_DEBUG, *) 'TRYING TO SETUP ILU'
+!WRITE(MSG%LU_DEBUG, *) 'TRYING TO SETUP ILU'
       CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
 
    !>
@@ -6182,13 +6189,13 @@ WRITE(MSG%LU_DEBUG, *) 'TRYING TO SETUP ILU'
 
                !> GLOBALy acting - call global CLUSTER_SPARSE_SOLVER on MKL
                CASE (NSCARC_SCOPE_GLOBAL)
-WRITE(MSG%LU_VERBOSE,*) 'B: SELECT GLOBAL SMOOTHING'
+!WRITE(MSG%LU_VERBOSE,*) 'B: SELECT GLOBAL SMOOTHING'
                   STACK(NSTACK)%SOLVER => SMOOTH_MKL
                   CALL SCARC_SETUP_CLUSTER(NLEVEL_MIN, NLEVEL_MIN)
 
                !> locally acting - call local PARDISO solvers based on MKL
                CASE (NSCARC_SCOPE_LOCAL)
-WRITE(MSG%LU_VERBOSE,*) 'B: SELECT LOCAL SMOOTHING'
+!WRITE(MSG%LU_VERBOSE,*) 'B: SELECT LOCAL SMOOTHING'
                   STACK(NSTACK)%SOLVER => SMOOTH_MKL
                   CALL SCARC_SETUP_PARDISO(NLEVEL_MIN, NLEVEL_MIN)
    
@@ -7928,7 +7935,6 @@ TYPE (SCARC_DISCRET_TYPE), POINTER :: D=>NULL(), OD=>NULL()
 TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()
 TYPE (SCARC_MATRIX_BANDED_TYPE), POINTER :: AB=>NULL()
 
-WRITE(MSG%LU_DEBUG,*) 'IN SETUP_MATRIX_SIZES: TYPE_DISCRET =', TYPE_DISCRET, IS_STRUCTURED, IS_UNSTRUCTURED
 
 SELECT CASE (NTYPE)
 
@@ -8155,7 +8161,9 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
       CALL SCARC_METHOD_CG (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
 
       CALL SCARC_STORE_MGM(NLEVEL_MIN, 1)
+#ifdef WITH_SCARC_DEBUG
       CALL SCARC_DEBUG_LEVEL (X, 'MGM - Part1', NLEVEL_MIN)
+#endif
 
       CALL SCARC_MGM_INTERNAL_VELOCITY(NLEVEL_MIN)
       CALL SCARC_STORE_MGM(NLEVEL_MIN, 1)
@@ -8166,10 +8174,14 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
       CALL SCARC_METHOD_CG (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_HOMOGENEOUS, NLEVEL_MIN)
 
       CALL SCARC_STORE_MGM(NLEVEL_MIN, 2)
+#ifdef WITH_SCARC_DEBUG
       CALL SCARC_DEBUG_LEVEL (X, 'MGM - Part2', NLEVEL_MIN)
+#endif
          
       CALL SCARC_STORE_MGM(NLEVEL_MIN, 3)
+#ifdef WITH_SCARC_DEBUG
       CALL SCARC_DEBUG_LEVEL (X, 'MGM - Finish', NLEVEL_MIN)
+#endif
 
    !> ---------------- Krylov method (CG/BICG) --------------------------------
    CASE (NSCARC_METHOD_KRYLOV)
@@ -10152,7 +10164,9 @@ SELECT CASE (SV%TYPE_SOLVER)
                ST%B = 0.0_EB                                    !> set RHS to zero
                ST%X = 0.0_EB                                    !> use zero as initial vector
 
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'SETTING BOUNDARY CONDITIONS FOR HOMOGENEOUS MGM-PROBLEM'
+#endif
                MGM => L%MGM
                DO IW = L%N_WALL_CELLS_EXT+1, L%N_WALL_CELLS_EXT + L%N_WALL_CELLS_INT
 
@@ -10170,16 +10184,22 @@ WRITE(MSG%LU_DEBUG,*) 'SETTING BOUNDARY CONDITIONS FOR HOMOGENEOUS MGM-PROBLEM'
                   SELECT CASE (ABS(IOR0))
                      CASE(1)
                         ST%B(IC) = L%DXI * DTI * MGM%US(IW)
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5i5,4F12.4)') '---> IW, I, J, K, IC, DTI, DXI, US, B:', &
                                            IW, I, J, K, IC, DTI, L%DXI, MGM%US(IW), ST%B(IC)
+#endif
                      CASE(2)
                         ST%B(IC) = L%DYI * DTI * MGM%VS(IW)
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5i5,4F12.4)') '---> IW, I, J, K, IC, DTI, DYI, VS, B:', &
                                            IW, I, J, K, IC, DTI, L%DYI, MGM%VS(IW), ST%B(IC)
+#endif
                      CASE(3)
                         ST%B(IC) = L%DZI * DTI * MGM%WS(IW)
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5i5,4F12.4)') '---> IW, I, J, K, IC, DTI, DZI, WS, B:', &
                                            IW, I, J, K, IC, DTI, L%DZI, MGM%WS(IW), ST%B(IC)
+#endif
                   END SELECT
 
                ENDDO
@@ -10216,8 +10236,8 @@ WRITE(MSG%LU_DEBUG,'(A,5i5,4F12.4)') '---> IW, I, J, K, IC, DTI, DZI, WS, B:', &
       !> to all and store it on all meshes
       IF (N_DIRIC_GLOBAL(NLEVEL_MIN) == 0) THEN
          IF (UPPER_MESH_INDEX == NMESHES) THEN
-            L  => SCARC(NM)%LEVEL(NL)
-            ST => SCARC(NM)%LEVEL(NL)%STAGE(SV%TYPE_STAGE)
+            L  => SCARC(NMESHES)%LEVEL(NL)
+            ST => SCARC(NMESHES)%LEVEL(NL)%STAGE(SV%TYPE_STAGE)
             LOCAL_REAL = ST%B(D%NC)
          ELSE
             LOCAL_REAL = 0.0_EB
@@ -10796,8 +10816,8 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ENDDO
 ENDDO
 
-WRITE(MSG%LU_DEBUG,*) 'UPDATE_MAIN:'
-WRITE(MSG%LU_DEBUG,'(8E14.6)') ((HP(I, 1, K), I=1,8), K=1,8)
+!WRITE(MSG%LU_DEBUG,*) 'UPDATE_MAIN:'
+!WRITE(MSG%LU_DEBUG,'(8E14.6)') ((HP(I, 1, K), I=1,8), K=1,8)
 
 END SUBROUTINE SCARC_UPDATE_PRESSURE_MAINCELLS
 
@@ -10893,8 +10913,8 @@ ENDDO
 !> -----------------------------------------------------------------------------------------------
 CALL SCARC_EXCHANGE(NSCARC_EXCHANGE_PRESSURE, NL)
 
-WRITE(MSG%LU_DEBUG,*) 'UPDATE_GHOST:'
-WRITE(MSG%LU_DEBUG,'(8E14.6)') ((HP(IXW, 1, IZW), IXW=1,8), IZW=1,8)
+!WRITE(MSG%LU_DEBUG,*) 'UPDATE_GHOST:'
+!WRITE(MSG%LU_DEBUG,'(8E14.6)') ((HP(IXW, 1, IZW), IXW=1,8), IZW=1,8)
 
 END SUBROUTINE SCARC_UPDATE_PRESSURE_GHOSTCELLS
 
@@ -11055,7 +11075,7 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       OS => SCARC(NM)%OSCARC(NOM)
       IF (OS%NICMAX_S == 0 .AND. OS%NICMAX_R == 0) CYCLE OMESH_PACK_LOOP
 
-      OL   => SCARC(NM)%OSCARC(NOM)%LEVEL(NL)
+      OL => SCARC(NM)%OSCARC(NOM)%LEVEL(NL)
       SELECT CASE(TYPE_DISCRET)
          CASE (NSCARC_DISCRET_STRUCTURED)
             OD => OL%SD
@@ -11290,19 +11310,33 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !> ---------------------------------------------------------------------------------------
          CASE (NSCARC_EXCHANGE_MATRIX_VALUE)
 
+            AC => D%AC
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'MATRIX_VALUE: OD%NCG=',OD%NCG
+#endif
             LL = 1
             DO ICG= 1, OD%NCG
+
+
                IWG = OD%ICG_TO_IWG(ICG)
                WC => D%WALL(IWG)
                IX  = WC%IXW
                IY  = WC%IYW
                IZ  = WC%IZW
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'MATRIX_VALUE: ICG=',ICG, IWG, IX, IY, IZ
+#endif
+
                IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(IX, IY, IZ)) THEN
                   OS%SEND_REAL(LL) = NSCARC_HUGE_REAL
                ELSE
                   IC = D%CELL_NUMBER(IX, IY, IZ)
                   ICE = OD%ICG_TO_ICE(ICG)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'MATRIX_VALUE: IC=',IC, ICE
+#endif
                   DO ICOL = AC%ROW(IC)+1, AC%ROW(IC+1)-1
                      IF (AC%COL(ICOL) == ICE) THEN
                        OS%SEND_REAL(LL) = AC%VAL(ICOL)
@@ -11405,15 +11439,15 @@ MESH_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
                SELECT CASE (OL%IOR)
                   CASE ( 1)
-                     L%DXL(0)    = 0.5_EB*(OL%DH + L%DXL(0))
+                     L%DXL(0)      = 0.5_EB*(OL%DH + L%DXL(0))
                   CASE (-1)
                      L%DXL(L%IBAR) = 0.5_EB*(OL%DH + L%DXL(L%IBAR))
                   CASE ( 2)
-                     L%DYL(0)    = 0.5_EB*(OL%DH + L%DYL(0))
+                     L%DYL(0)      = 0.5_EB*(OL%DH + L%DYL(0))
                   CASE (-2)
                      L%DYL(L%JBAR) = 0.5_EB*(OL%DH + L%DYL(L%JBAR))
                   CASE ( 3)
-                     L%DZL(0)    = 0.5_EB*(OL%DH + L%DZL(0))
+                     L%DZL(0)      = 0.5_EB*(OL%DH + L%DZL(0))
                   CASE (-3)
                      L%DZL(L%KBAR) = 0.5_EB*(OL%DH + L%DZL(L%KBAR))
                END SELECT
@@ -11425,19 +11459,19 @@ MESH_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                IPTR=1
                DO ICG = 1, OD%NCG
                   WC => OD%WALL(ICG)
-                  WC%IXG    = RECV_INT(IPTR    )
-                  WC%IYG    = RECV_INT(IPTR + 1)
-                  WC%IZG    = RECV_INT(IPTR + 2)
-                  WC%IXW    = RECV_INT(IPTR + 3)
-                  WC%IYW    = RECV_INT(IPTR + 4)
-                  WC%IZW    = RECV_INT(IPTR + 5)
-                  WC%IXN(1) = RECV_INT(IPTR + 6)
-                  WC%IXN(2) = RECV_INT(IPTR + 7)
-                  WC%IYN(1) = RECV_INT(IPTR + 8)
-                  WC%IYN(2) = RECV_INT(IPTR + 9)
-                  WC%IZN(1) = RECV_INT(IPTR +10)
-                  WC%IZN(2) = RECV_INT(IPTR +11)
-                  WC%NOM    = RECV_INT(IPTR +12)
+                  WC%IXG    = RECV_INT(IPTR     )
+                  WC%IYG    = RECV_INT(IPTR +  1)
+                  WC%IZG    = RECV_INT(IPTR +  2)
+                  WC%IXW    = RECV_INT(IPTR +  3)
+                  WC%IYW    = RECV_INT(IPTR +  4)
+                  WC%IZW    = RECV_INT(IPTR +  5)
+                  WC%IXN(1) = RECV_INT(IPTR +  6)
+                  WC%IXN(2) = RECV_INT(IPTR +  7)
+                  WC%IYN(1) = RECV_INT(IPTR +  8)
+                  WC%IYN(2) = RECV_INT(IPTR +  9)
+                  WC%IZN(1) = RECV_INT(IPTR + 10)
+                  WC%IZN(2) = RECV_INT(IPTR + 11)
+                  WC%NOM    = RECV_INT(IPTR + 12)
                   IPTR = IPTR + 13
                   ALLOCATE (WC%ICE(OD%NCPL_RECV))
                   DO ICPL=1,OD%NCPL_RECV
@@ -11450,8 +11484,6 @@ MESH_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             !> unpack information about neighboring grids
             !> ------------------------------------------------------------------------------------
             CASE (NSCARC_EXCHANGE_DISCRET)
-
-  WRITE(MSG%LU_DEBUG,*) 'EXCHANGE_DISCRET: OD%NCG =',OD%NCG
 
                DO ICG = 1, OD%NCG
 
@@ -11470,7 +11502,7 @@ MESH_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                   IYW = WC%IYW
                   IZW = WC%IZW
 
-                  IF (OD%WALL(IC)%STATE == 1) THEN
+                  IF (OD%WALL(ICG)%STATE == 1) THEN
                      OD%WALL(ICG)%IS_SOLID = .TRUE.
                      L%IS_SOLID(IXG, IYG, IZG) = .TRUE.
                   ELSE
@@ -11480,7 +11512,6 @@ MESH_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                   ENDIF
 
                ENDDO
-
 
             !> ------------------------------------------------------------------------------------
             !> unpack information about neighboring cell numbers
@@ -13395,6 +13426,7 @@ INTEGER :: IC, JC, ICOL, MMATRIX
 CHARACTER(60) :: CFILE, CFORM
 REAL(EB) :: MATRIX_LINE(1000)
 
+RETURN
 WRITE (CFILE, '(A,A,A,i2.2,A,i2.2,A)') 'matlab/',TRIM(CNAME),'_mesh',NM,'_level',NL,'_mat.txt'
 !WRITE (CFORM, '(A,I3, 2A)' ) "(", NC2-1, "(F7.1,','),F7.1,';')" 
 !WRITE (CFORM, '(A,I3, 2A)' ) "(", NC2-1, "(F7.1,' '),F7.1,' ')" 
