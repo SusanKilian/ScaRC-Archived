@@ -699,6 +699,7 @@ TYPE SCARC_DISCRET_TYPE
 INTEGER :: NC  = NSCARC_ZERO_INT                            !> number of cells needed for matrix 
 INTEGER :: NCE = NSCARC_ZERO_INT                            !> number of extended cells 
 INTEGER :: NCG = NSCARC_ZERO_INT                            !> number of ghost cells
+INTEGER :: NWL = NSCARC_ZERO_INT                            !> number of local wall cells
 
 !> Cell numbers of all meshes and offsets between meshes
 INTEGER :: NC_GLOBAL = NSCARC_ZERO_INT                      !> global number of cells in all meshes
@@ -708,6 +709,12 @@ INTEGER, ALLOCATABLE, DIMENSION (:) :: NC_OFFSET            !> offset in cell nu
 !> Number of Dirichlet and Neumann boundary cells
 INTEGER :: N_DIRIC = NSCARC_ZERO_INT                        !> number of Dirichlet BCs
 INTEGER :: N_NEUMANN = NSCARC_ZERO_INT                      !> number of Neumann BCs
+
+!> Different lengths related to couplings of overlapping areas
+INTEGER :: NCPL = 1
+INTEGER :: NCPL_SEND                                        !> number of couplings to send and read
+INTEGER :: NCPL_RECV                                        !> number of couplings to send and read
+INTEGER :: NCPL_MAX = NSCARC_UNDEF_INT                      !> number of couplings
 
 !> number and state of single cells
 INTEGER, ALLOCATABLE, DIMENSION (:,:,:) :: CELL_NUMBER      !> numbering of single cells
@@ -781,10 +788,14 @@ TYPE (SCARC_DISCRET_TYPE) :: SD, UD                         !> Structured and un
 TYPE (SCARC_FACE_TYPE), ALLOCATABLE, DIMENSION(:) :: FACE   !> face information
 TYPE (SCARC_OBST_TYPE), ALLOCATABLE, DIMENSION(:) :: OBST   !> obstruction information
 
+!> Different cell related lengths
+INTEGER :: IBAR, JBAR, KBAR                                 !> number of grid cells in x-, y- and z-direction
+
 !> Number of discretizations and obstructions
 INTEGER :: N_DISCRET                                        !> number of discretization types used
 INTEGER :: N_OBST                                           !> number of obstructions
 INTEGER :: N_CELL_INDEX                                     !> number of entries in CELL_INDEX array
+INTEGER :: N_CELLS                                          !> number of cells in structured discretization
 
 !> Different wall related lengths
 INTEGER :: N_WALL_CELLS                                     !> number of wall cells
@@ -792,15 +803,6 @@ INTEGER :: N_WALL_CELLS_EXT                                 !> number of externa
 INTEGER :: N_WALL_CELLS_INT                                 !> number of internal wall cells
 INTEGER :: N_WALL_CELLS_LOCAL                               !> number of local wall cells 
 
-!> Different cell related lengths
-INTEGER :: NX, NY, NZ                                       !> number of grid cells in x-, y- and z-direction
-INTEGER :: NCS                                              !> number of cells in structured discretization
-
-!> Different lengths related to couplings of overlapping areas
-INTEGER :: NCPL=1
-INTEGER :: NCPL_SEND                                        !> number of couplings to send and read
-INTEGER :: NCPL_RECV                                        !> number of couplings to send and read
-INTEGER :: NCPL_MAX = NSCARC_UNDEF_INT                      !> number of couplings
 
 !> Cell and wall index information:
 !>    - on the finest level, the original arrays from FDS are used
@@ -1907,7 +1909,7 @@ END SUBROUTINE SCARC_SETUP_TYPES
 !> -----------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_DISCRET
 INTEGER :: NL, NM, IX, IY, IZ, IO, I, J, K
-INTEGER :: NX, NY, NZ
+INTEGER :: IBAR, JBAR, KBAR
 REAL(EB), DIMENSION(:), POINTER :: XCOR, YCOR, ZCOR
 REAL(EB), DIMENSION(:), POINTER :: XMID, YMID, ZMID
 TYPE (MESH_TYPE), POINTER :: M=>NULL()
@@ -1936,9 +1938,9 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    S%JBAR = M%JBAR
    S%KBAR = M%KBAR
 
-   NX = M%IBAR
-   NY = M%JBAR
-   NZ = M%KBAR
+   IBAR = M%IBAR
+   JBAR = M%JBAR
+   KBAR = M%KBAR
 
    LEVEL_LOOP1: DO NL = NLEVEL_MIN, NLEVEL_MAX
 
@@ -1950,20 +1952,20 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             D => L%UD
       END SELECT
 
-      L%NX = NX
-      L%NY = NY
-      L%NZ = NZ
+      L%IBAR = IBAR
+      L%JBAR = JBAR
+      L%KBAR = KBAR
 
-      L%NCS  = L%NX * L%NY * L%NZ
+      L%N_CELLS  = L%IBAR * L%JBAR * L%KBAR
 
       L%N_WALL_CELLS_EXT = M%N_EXTERNAL_WALL_CELLS
       L%N_WALL_CELLS_INT = M%N_INTERNAL_WALL_CELLS
       L%N_WALL_CELLS     = L%N_WALL_CELLS_EXT + L%N_WALL_CELLS_INT
 
       !> get coordination information
-      L%DX = (S%XF-S%XS)/REAL(L%NX,EB)
-      L%DY = (S%YF-S%YS)/REAL(L%NY,EB)
-      L%DZ = (S%ZF-S%ZS)/REAL(L%NZ,EB)
+      L%DX = (S%XF-S%XS)/REAL(L%IBAR,EB)
+      L%DY = (S%YF-S%YS)/REAL(L%JBAR,EB)
+      L%DZ = (S%ZF-S%ZS)/REAL(L%KBAR,EB)
 
       L%DXI = 1.0_EB/L%DX
       L%DYI = 1.0_EB/L%DY
@@ -1974,9 +1976,9 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       L%DZI2 = L%DZI**2
 
       !> needed in case of GMG with multiple grid levels
-      NX=NX/2
-      IF (.NOT.TWO_D) NY=NY/2
-      NZ=NZ/2
+      IBAR=IBAR/2
+      IF (.NOT.TWO_D) JBAR=JBAR/2
+      KBAR=KBAR/2
 
       IF (NL == NLEVEL_MIN) THEN
 
@@ -2006,42 +2008,42 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       ELSE
 
          !> Allocate and compute coordinate information for coarser levels
-         CALL SCARC_ALLOCATE_REAL1(L%XCOR, 0, L%NX, NSCARC_INIT_NONE, 'XCOR')
-         CALL SCARC_ALLOCATE_REAL1(L%YCOR, 0, L%NY, NSCARC_INIT_NONE, 'YCOR')
-         CALL SCARC_ALLOCATE_REAL1(L%ZCOR, 0, L%NZ, NSCARC_INIT_NONE, 'ZCOR')
+         CALL SCARC_ALLOCATE_REAL1(L%XCOR, 0, L%IBAR, NSCARC_INIT_NONE, 'XCOR')
+         CALL SCARC_ALLOCATE_REAL1(L%YCOR, 0, L%JBAR, NSCARC_INIT_NONE, 'YCOR')
+         CALL SCARC_ALLOCATE_REAL1(L%ZCOR, 0, L%KBAR, NSCARC_INIT_NONE, 'ZCOR')
 
-         DO IX = 0, L%NX
+         DO IX = 0, L%IBAR
             L%XCOR(IX) = S%XS + IX*L%DX
          ENDDO
-         DO IY = 0, L%NY
+         DO IY = 0, L%JBAR
             L%YCOR(IY) = S%YS + IY*L%DY
          ENDDO
-         DO IZ = 0, L%NZ
+         DO IZ = 0, L%KBAR
             L%ZCOR(IZ) = S%ZS + IZ*L%DZ
          ENDDO
 
          !> Allocate and compute midpoint information for coarser levels
-         CALL SCARC_ALLOCATE_REAL1(L%XMID, 0, L%NX+1, NSCARC_INIT_NONE, 'XMID')
-         CALL SCARC_ALLOCATE_REAL1(L%YMID, 0, L%NY+1, NSCARC_INIT_NONE, 'YMID')
-         CALL SCARC_ALLOCATE_REAL1(L%ZMID, 0, L%NZ+1, NSCARC_INIT_NONE, 'ZMID')
+         CALL SCARC_ALLOCATE_REAL1(L%XMID, 0, L%IBAR+1, NSCARC_INIT_NONE, 'XMID')
+         CALL SCARC_ALLOCATE_REAL1(L%YMID, 0, L%JBAR+1, NSCARC_INIT_NONE, 'YMID')
+         CALL SCARC_ALLOCATE_REAL1(L%ZMID, 0, L%KBAR+1, NSCARC_INIT_NONE, 'ZMID')
 
          L%XMID(0) = S%XS - 0.5_EB*L%DX
-         DO IX = 1, L%NX
+         DO IX = 1, L%IBAR
             L%XMID(IX) = 0.5_EB*(L%XCOR(IX-1) + L%XCOR(IX))
          ENDDO
-         L%XMID(L%NX+1) = S%XF + 0.5_EB*L%DX
+         L%XMID(L%IBAR+1) = S%XF + 0.5_EB*L%DX
 
          L%YMID(0) = S%YS - 0.5_EB*L%DY
-         DO IY = 1, L%NY
+         DO IY = 1, L%JBAR
             L%YMID(IY) = 0.5_EB*(L%YCOR(IY-1) + L%YCOR(IY))
          ENDDO
-         L%YMID(L%NY+1) = S%YF + 0.5_EB*L%DY
+         L%YMID(L%JBAR+1) = S%YF + 0.5_EB*L%DY
 
          L%ZMID(0) = S%ZS - 0.5_EB*L%DZ
-         DO IZ = 1, L%NZ
+         DO IZ = 1, L%KBAR
             L%ZMID(IZ) = 0.5_EB*(L%ZCOR(IZ-1) + L%ZCOR(IZ))
          ENDDO
-         L%ZMID(L%NZ+1) = S%ZF + 0.5_EB*L%DZ
+         L%ZMID(L%KBAR+1) = S%ZF + 0.5_EB*L%DZ
 
          XCOR => L%XCOR
          YCOR => L%YCOR
@@ -2054,29 +2056,29 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       ENDIF
 
       !> Allocate vectors for step sizes in different directions
-      CALL SCARC_ALLOCATE_REAL1(L%DXL, 0, L%NX, NSCARC_INIT_ZERO, 'DXL')
-      CALL SCARC_ALLOCATE_REAL1(L%DYL, 0, L%NY, NSCARC_INIT_ZERO, 'DYL')
-      CALL SCARC_ALLOCATE_REAL1(L%DZL, 0, L%NZ, NSCARC_INIT_ZERO, 'DZL')
+      CALL SCARC_ALLOCATE_REAL1(L%DXL, 0, L%IBAR, NSCARC_INIT_ZERO, 'DXL')
+      CALL SCARC_ALLOCATE_REAL1(L%DYL, 0, L%JBAR, NSCARC_INIT_ZERO, 'DYL')
+      CALL SCARC_ALLOCATE_REAL1(L%DZL, 0, L%KBAR, NSCARC_INIT_ZERO, 'DZL')
 
       !> set step sizes between cell midpoints, use interior step sizes for ghost cells as initial values
       !> correct sizes for ghost cells are exchanged later
-      DO IX = 1, L%NX-1
+      DO IX = 1, L%IBAR-1
          L%DXL(IX) = XMID(IX+1) - XMID(IX)
       ENDDO
       L%DXL(0)    = L%DXL(1)
-      L%DXL(L%NX) = L%DXL(L%NX-1)
+      L%DXL(L%IBAR) = L%DXL(L%IBAR-1)
 
-      DO IY = 1, L%NY-1
+      DO IY = 1, L%JBAR-1
          L%DYL(IY) = YMID(IY+1) - YMID(IY)
       ENDDO
       L%DYL(0)    = L%DYL(1)
-      L%DYL(L%NY) = L%DYL(L%NY-1)
+      L%DYL(L%JBAR) = L%DYL(L%JBAR-1)
 
-      DO IZ = 1, L%NZ-1
+      DO IZ = 1, L%KBAR-1
          L%DZL(IZ) = ZMID(IZ+1) - ZMID(IZ)
       ENDDO
       L%DZL(0)    = L%DZL(1)
-      L%DZL(L%NZ) = L%DZL(L%NZ-1)
+      L%DZL(L%KBAR) = L%DZL(L%KBAR-1)
 
    ENDDO LEVEL_LOOP1
 ENDDO MESHES_LOOP1
@@ -2096,13 +2098,13 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_SETUP_WALL_INDEX(NM, NLEVEL_MIN)
 
    !> Allocate and initialize IS_SOLID array which indicates the state of a cell (gasphase/solid)
-   CALL SCARC_ALLOCATE_LOG3(L%IS_SOLID, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_TRUE, 'IS_SOLID')
-   L%IS_SOLID (1:L%NX, 1:L%NY, 1:L%NZ) = .FALSE.
+   CALL SCARC_ALLOCATE_LOG3(L%IS_SOLID, 0, L%IBAR+1, 0, L%JBAR+1, 0, L%KBAR+1, NSCARC_INIT_TRUE, 'IS_SOLID')
+   L%IS_SOLID (1:L%IBAR, 1:L%JBAR, 1:L%KBAR) = .FALSE.
 
    !> Identify and mark solid obstruction cells in IS_SOLID-part of the discretization
-   DO K = 1, L%NZ
-      DO J = 1, L%NY
-         DO I = 1, L%NX
+   DO K = 1, L%KBAR
+      DO J = 1, L%JBAR
+         DO I = 1, L%IBAR
             IF (M%SOLID(M%CELL_INDEX(I, J, K))) L%IS_SOLID(I, J, K) = .TRUE.
          ENDDO
       ENDDO
@@ -2127,13 +2129,13 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CALL ChkMemErr('SCARC_SETUP_DISCRET','WALL',IERROR)
 
       !> Allocate and preset cell numbers array 
-      CALL SCARC_ALLOCATE_INT3(D%CELL_NUMBER, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_NONE, 'CELL_NUMBER')
+      CALL SCARC_ALLOCATE_INT3(D%CELL_NUMBER, 0, L%IBAR+1, 0, L%JBAR+1, 0, L%KBAR+1, NSCARC_INIT_NONE, 'CELL_NUMBER')
       D%CELL_NUMBER = NSCARC_UNDEF_INT
 
       !> Define local cell numbers for Poisson equation
-      DO K=1,L%NZ
-         DO J=1,L%NY
-            DO I=1,L%NX
+      DO K=1,L%KBAR
+         DO J=1,L%JBAR
+            DO I=1,L%IBAR
                D%NC_LOCAL(NM) = D%NC_LOCAL(NM) + 1
                D%CELL_NUMBER(I,J,K) = D%NC_LOCAL(NM)          
             ENDDO
@@ -2149,7 +2151,7 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_DISCRET: STRUCTURED PART : D%NC=',D%NC
       CALL SCARC_SETUP_DISCRET_TYPE(NSCARC_DISCRET_UNSTRUCTURED)
 
       !> Also allocate and preset cell numbers and state arrays for unstructured discretization
-      CALL SCARC_ALLOCATE_INT3(D%CELL_NUMBER, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_NONE, 'CELL_NUMBER')
+      CALL SCARC_ALLOCATE_INT3(D%CELL_NUMBER, 0, L%IBAR+1, 0, L%JBAR+1, 0, L%KBAR+1, NSCARC_INIT_NONE, 'CELL_NUMBER')
       D%CELL_NUMBER = NSCARC_UNDEF_INT
 
       !> Number of local cells per mesh
@@ -2161,9 +2163,9 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_DISCRET: STRUCTURED PART : D%NC=',D%NC
       CALL ChkMemErr('SCARC_SETUP_DISCRET','WALL',IERROR)
 
       !> Define local cell numbers for Poisson equation
-      DO K=1,L%NZ
-         DO J=1,L%NY
-            DO I=1,L%NX
+      DO K=1,L%KBAR
+         DO J=1,L%JBAR
+            DO I=1,L%IBAR
                IF (.NOT.L%IS_SOLID(I,J,K)) THEN
                   D%NC_LOCAL(NM) = D%NC_LOCAL(NM) + 1
                   D%CELL_NUMBER(I,J,K) = D%NC_LOCAL(NM)      
@@ -2191,7 +2193,7 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_DISCRET: UNSTRUCTURED PART : D%NC=',D%NC
       END SELECT
 
       !> Also allocate and preset cell numbers and state arrays for unstructured discretization
-      CALL SCARC_ALLOCATE_INT3(D%CELL_NUMBER, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_NONE, 'CELL_NUMBER')
+      CALL SCARC_ALLOCATE_INT3(D%CELL_NUMBER, 0, L%IBAR+1, 0, L%JBAR+1, 0, L%KBAR+1, NSCARC_INIT_NONE, 'CELL_NUMBER')
       D%CELL_NUMBER = NSCARC_UNDEF_INT
 
       !> Number of local cells per mesh
@@ -2203,9 +2205,9 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_DISCRET: UNSTRUCTURED PART : D%NC=',D%NC
       CALL ChkMemErr('SCARC_SETUP_DISCRET','WALL',IERROR)
 
       !> Define local cell numbers for Poisson equation
-      DO K=1,L%NZ
-         DO J=1,L%NY
-            DO I=1,L%NX
+      DO K=1,L%KBAR
+         DO J=1,L%JBAR
+            DO I=1,L%IBAR
                IF (IS_STRUCTURED .OR. .NOT.L%IS_SOLID(I,J,K)) THEN
                   D%NC_LOCAL(NM) = D%NC_LOCAL(NM) + 1
                   D%CELL_NUMBER(I,J,K) = D%NC_LOCAL(NM)      
@@ -2244,8 +2246,8 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    LF => SCARC(NM)%LEVEL(NLEVEL_MIN)
    LC => SCARC(NM)%LEVEL(NL)
 
-   CALL SCARC_ALLOCATE_LOG3(LC%IS_SOLID, 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, NSCARC_INIT_NONE, 'IS_SOLID')
-   LC%IS_SOLID (1:LC%NX, 1:LC%NY, 1:LC%NZ)  = .FALSE.
+   CALL SCARC_ALLOCATE_LOG3(LC%IS_SOLID, 0, LC%IBAR+1, 0, LC%JBAR+1, 0, LC%KBAR+1, NSCARC_INIT_NONE, 'IS_SOLID')
+   LC%IS_SOLID (1:LC%IBAR, 1:LC%JBAR, 1:LC%KBAR)  = .FALSE.
 
    NSTEP = 2**(NL - NLEVEL_MIN)
 
@@ -2256,15 +2258,15 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
          DC => LC%SD
 
-         CALL SCARC_ALLOCATE_INT3(DC%CELL_NUMBER, 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, &
+         CALL SCARC_ALLOCATE_INT3(DC%CELL_NUMBER, 0, LC%IBAR+1, 0, LC%JBAR+1, 0, LC%KBAR+1, &
                                   NSCARC_INIT_NONE, 'CELL_NUMBER')
          DC%CELL_NUMBER = NSCARC_UNDEF_INT
 
-         DO IZ = 1, LC%NZ
+         DO IZ = 1, LC%KBAR
             IZF = (IZ-1)*NSTEP + 1
-            DO IY = 1, LC%NY
+            DO IY = 1, LC%JBAR
                IYF = (IY-1)*NSTEP + 1
-               DO IX = 1, LC%NX
+               DO IX = 1, LC%IBAR
                   IXF = (IX-1)*NSTEP + 1
                   LC%IS_SOLID(IX,IY,IZ) = LF%IS_SOLID(IXF, IYF, IZF)
                   DC%NC_LOCAL(NM)  = DC%NC_LOCAL(NM) + 1
@@ -2280,15 +2282,15 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
          DC => LC%UD
 
-         CALL SCARC_ALLOCATE_INT3(DC%CELL_NUMBER, 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, &
+         CALL SCARC_ALLOCATE_INT3(DC%CELL_NUMBER, 0, LC%IBAR+1, 0, LC%JBAR+1, 0, LC%KBAR+1, &
                                   NSCARC_INIT_NONE, 'CELL_NUMBER')
          DC%CELL_NUMBER = NSCARC_UNDEF_INT
 
-         DO IZ = 1, LC%NZ
+         DO IZ = 1, LC%KBAR
             IZF = (IZ-1)*NSTEP + 1
-            DO IY = 1, LC%NY
+            DO IY = 1, LC%JBAR
                IYF = (IY-1)*NSTEP + 1
-               DO IX = 1, LC%NX
+               DO IX = 1, LC%IBAR
                   IXF = (IX-1)*NSTEP + 1
                   LC%IS_SOLID(IX,IY,IZ) = LF%IS_SOLID(IXF, IYF, IZF)
                   IF (.NOT.LF%IS_SOLID(IXF, IYF, IZF)) THEN
@@ -2365,16 +2367,16 @@ LEVEL_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
            ODF => OLF%UD
       END SELECT
 
-      OLF%NX = OM%IBAR                                                  !> number of cells in x-direction on other mesh
-      OLF%NY = OM%JBAR                                                  !> number of cells in y-direction on other mesh
-      OLF%NZ = OM%KBAR                                                  !> number of cells in z-direction on other mesh
+      OLF%IBAR = OM%IBAR                                                  !> number of cells in x-direction on other mesh
+      OLF%JBAR = OM%JBAR                                                  !> number of cells in y-direction on other mesh
+      OLF%KBAR = OM%KBAR                                                  !> number of cells in z-direction on other mesh
 
       OLF%N_WALL_CELLS_EXT = OM%N_EXTERNAL_WALL_CELLS                   !> number of external wall cells on other mesh
       OLF%N_WALL_CELLS_INT = OM%N_INTERNAL_WALL_CELLS                   !> number of external wall cells on other mesh
 
-      OLF%NCS = OLF%NX*OLF%NY*OLF%NZ                                    !> number of cells on other mesh (structured)
       OLF%N_WALL_CELLS  = OLF%N_WALL_CELLS_EXT + OLF%N_WALL_CELLS_INT   !> number of walls cell on other mesh
-      ODF%NCG = 0                                                       !> number of ghost cells on other mesh
+
+      OLF%N_CELLS = OLF%IBAR*OLF%JBAR*OLF%KBAR                                    !> number of cells on other mesh (structured)
 
       SELECT CASE (TYPE_MATRIX)
          CASE (NSCARC_MATRIX_COMPACT)
@@ -2394,20 +2396,19 @@ LEVEL_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
             OLC => SCARC(NM)%OSCARC(NOM)%LEVEL(NL)         !> Note: OLF points to finer, OLC to coarser level
             
-            OLC%NX = OLF%NX/2
+            OLC%IBAR = OLF%IBAR/2
             IF (TWO_D) THEN
-               OLC%NY = 1
+               OLC%JBAR = 1
             ELSE
-               OLC%NY = OLF%NY/2
+               OLC%JBAR = OLF%JBAR/2
             ENDIF
-            OLC%NZ = OLF%NZ/2
+            OLC%KBAR = OLF%KBAR/2
 
-            OLC%NCS = OLC%NX * OLC%NY * OLC%NZ           
-            ODC%NCG = 0
+            OLC%N_CELLS = OLC%IBAR * OLC%JBAR * OLC%KBAR           
 
-            OLC%N_WALL_CELLS_EXT = 4 * (OLC%NX * OLC%NZ + &
-                                        OLC%NX * OLC%NY + &
-                                        OLC%NY * OLC%NZ)   !> TOFIX : why * 4 ??
+            OLC%N_WALL_CELLS_EXT = 4 * (OLC%IBAR * OLC%KBAR + &
+                                        OLC%IBAR * OLC%JBAR + &
+                                        OLC%JBAR * OLC%KBAR)   !> TOFIX : why * 4 ??
 
             OLC%N_WALL_CELLS  = OLC%N_WALL_CELLS_EXT
 
@@ -2479,25 +2480,25 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       IF (IOR0 == 0) CYCLE FACES_OF_MESH_INDEX1
       SELECT CASE (ABS(IOR0))
          CASE (1)
-            L%FACE(IOR0)%NFC  =  L%NX                   !> number of cells between opposite mesh faces
+            L%FACE(IOR0)%NFC  =  L%IBAR                   !> number of cells between opposite mesh faces
             L%FACE(IOR0)%NFX  =  1                      !> number of cells in x-direction
-            L%FACE(IOR0)%NFY  =  L%NY                   !> number of cells in y-direction
-            L%FACE(IOR0)%NFZ  =  L%NZ                   !> number of cells in z-direction
-            L%FACE(IOR0)%NFW  =  L%NY*L%NZ              !> number of wall cells at that face
+            L%FACE(IOR0)%NFY  =  L%JBAR                   !> number of cells in y-direction
+            L%FACE(IOR0)%NFZ  =  L%KBAR                   !> number of cells in z-direction
+            L%FACE(IOR0)%NFW  =  L%JBAR*L%KBAR              !> number of wall cells at that face
             L%FACE(IOR0)%DH   => L%DXL                  !> step size vector between opposite mesh faces
          CASE (2)
-            L%FACE(IOR0)%NFC  =  L%NY                   !> dito
-            L%FACE(IOR0)%NFX  =  L%NX
+            L%FACE(IOR0)%NFC  =  L%JBAR                   !> dito
+            L%FACE(IOR0)%NFX  =  L%IBAR
             L%FACE(IOR0)%NFY  =  1
-            L%FACE(IOR0)%NFZ  =  L%NZ
-            L%FACE(IOR0)%NFW  =  L%NX*L%NZ
+            L%FACE(IOR0)%NFZ  =  L%KBAR
+            L%FACE(IOR0)%NFW  =  L%IBAR*L%KBAR
             L%FACE(IOR0)%DH   => L%DYL
          CASE (3)
-            L%FACE(IOR0)%NFC  =  L%NZ                   !> dito
-            L%FACE(IOR0)%NFX  =  L%NX
-            L%FACE(IOR0)%NFY  =  L%NY
+            L%FACE(IOR0)%NFC  =  L%KBAR                   !> dito
+            L%FACE(IOR0)%NFX  =  L%IBAR
+            L%FACE(IOR0)%NFY  =  L%JBAR
             L%FACE(IOR0)%NFZ  =  1
-            L%FACE(IOR0)%NFW  =  L%NX*L%NY
+            L%FACE(IOR0)%NFW  =  L%IBAR*L%JBAR
             L%FACE(IOR0)%DH   => L%DZL
       END SELECT
 
@@ -2655,15 +2656,17 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                OD => OL%UD
          END SELECT
 
-         OL%NCPL = NCPL                                         !> initialize own counter for local wall cells
+         OD%NCPL = NCPL                                         !> initialize own counter for local wall cells
          OL%IOR  = -IOR0                                        !> initialize own orientation variable
          IF (ANY(IS_KNOWN)) THEN
-            OL%N_WALL_CELLS = OL%N_WALL_CELLS + 1               !> increase own counter for local wall cells
+            OD%NWL = OD%NWL + 1                                 !> increase own counter for local wall cells
             OD%NCG = OD%NCG + NCPL                              !> increase counter for local ghost cells
+WRITE(MSG%LU_DEBUG,*) 'A: OD%NCG=',OD%NCG
          ELSE
-            OL%N_WALL_CELLS = 1                                 !> initialize own counter for local wall cells
+            OD%NWL = 1                                          !> initialize own counter for local wall cells
             OD%NCG = NCPL                                       !> initialize counter for local ghost cells
-            L%NCPL_MAX  = MAX(L%NCPL_MAX, NCPL)                 !> get max NCPL ever used on this mesh
+WRITE(MSG%LU_DEBUG,*) 'B: OD%NCG=',OD%NCG
+            D%NCPL_MAX  = MAX(D%NCPL_MAX, NCPL)                 !> get max NCPL ever used on this mesh
          ENDIF
 
       ELSE
@@ -2716,11 +2719,11 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             CASE (NSCARC_DISCRET_UNSTRUCTURED)
                OD => OL%UD
          END SELECT
-         CALL SCARC_ALLOCATE_INT1(OD%IWL_TO_IWG, 1, OL%N_WALL_CELLS, NSCARC_INIT_ZERO, 'IWL_TO_IWG')
-         CALL SCARC_ALLOCATE_INT1(OD%IWL_TO_ICO, 1, OL%N_WALL_CELLS, NSCARC_INIT_ZERO, 'IWL_TO_ICO')
-         CALL SCARC_ALLOCATE_INT1(OD%ICG_TO_IWG, 1, OD%NCG,          NSCARC_INIT_ZERO, 'ICG_TO_IWG')
-         CALL SCARC_ALLOCATE_INT1(OD%ICG_TO_ICO, 1, OD%NCG,          NSCARC_INIT_ZERO, 'ICG_TO_ICO')
-         CALL SCARC_ALLOCATE_INT1(OD%ICG_TO_ICE, 1, OD%NCG,          NSCARC_INIT_ZERO, 'ICG_TO_ICE')
+         CALL SCARC_ALLOCATE_INT1(OD%IWL_TO_IWG, 1, OD%NWL, NSCARC_INIT_ZERO, 'IWL_TO_IWG')
+         CALL SCARC_ALLOCATE_INT1(OD%IWL_TO_ICO, 1, OD%NWL, NSCARC_INIT_ZERO, 'IWL_TO_ICO')
+         CALL SCARC_ALLOCATE_INT1(OD%ICG_TO_IWG, 1, OD%NCG, NSCARC_INIT_ZERO, 'ICG_TO_IWG')
+         CALL SCARC_ALLOCATE_INT1(OD%ICG_TO_ICO, 1, OD%NCG, NSCARC_INIT_ZERO, 'ICG_TO_ICO')
+         CALL SCARC_ALLOCATE_INT1(OD%ICG_TO_ICE, 1, OD%NCG, NSCARC_INIT_ZERO, 'ICG_TO_ICE')
       ENDDO
 
    ENDDO FACE_NEIGHBORS_LOOP
@@ -2907,7 +2910,7 @@ MULTI_LEVEL_IF: IF (HAS_MULTI_LEVELS) THEN
                   CALL SCARC_CHECK_DIVISIBILITY(OLF%N_WALL_CELLS_LOCAL, 'OLF%N_WALL_CELLS_LOCAL')
                   CALL SCARC_CHECK_DIVISIBILITY(ODF%NCG, 'ODF%NCG')
 
-                  OLC%NCPL = OLF%NCPL
+                  ODC%NCPL = ODF%NCPL
                   IF (.NOT.TWO_D) THEN
                      OLC%N_WALL_CELLS_LOCAL = OLF%N_WALL_CELLS_LOCAL/4
                      ODC%NCG = ODF%NCG/4
@@ -2996,26 +2999,26 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       END SELECT
 
       !> allocate real buffers in maximum needed length
-      NLEN_SEND = NSCARC_MAX_STENCIL*MAX(OL%N_WALL_CELLS, OD%NCG)+10
+      NLEN_SEND = NSCARC_MAX_STENCIL*MAX(OD%NWL, OD%NCG)+10
       NLEN_RECV = NLEN_SEND
 
       CALL SCARC_ALLOCATE_REAL1(OS%SEND_REAL, 1, NLEN_SEND, NSCARC_INIT_ZERO, 'SEND_REAL')
       CALL SCARC_ALLOCATE_REAL1(OS%RECV_REAL, 1, NLEN_RECV, NSCARC_INIT_ZERO, 'RECV_REAL')
 
       !> allocate integer buffers in maximum needed length
-      OL%NCPL_SEND = OL%NCPL
-      IF (OD%NCG == OL%N_WALL_CELLS) THEN
-         NLEN_SEND = 15*OL%N_WALL_CELLS
+      OD%NCPL_SEND = OD%NCPL
+      IF (OD%NCG == OD%NWL) THEN
+         NLEN_SEND = 15*OD%NWL
          NLEN_RECV = 15*OD%NCG
-         OL%NCPL_RECV = OL%NCPL
-      ELSE IF (OD%NCG == 2*OL%N_WALL_CELLS) THEN
-         NLEN_SEND = 13*OL%N_WALL_CELLS + 2*OD%NCG
+         OD%NCPL_RECV = OD%NCPL
+      ELSE IF (OD%NCG == 2*OD%NWL) THEN
+         NLEN_SEND = 13*OD%NWL + 2*OD%NCG
          NLEN_RECV = 15*OD%NCG
-         OL%NCPL_RECV =  1
-      ELSE IF (OL%N_WALL_CELLS == 2*OD%NCG) THEN
-         NLEN_SEND = 15*OL%N_WALL_CELLS
-         NLEN_RECV = 13*OD%NCG + 2*OL%N_WALL_CELLS
-         OL%NCPL_RECV =  2
+         OD%NCPL_RECV =  1
+      ELSE IF (OD%NWL == 2*OD%NCG) THEN
+         NLEN_SEND = 15*OD%NWL
+         NLEN_RECV = 13*OD%NCG + 2*OD%NWL
+         OD%NCPL_RECV =  2
       ENDIF
 
       CALL SCARC_ALLOCATE_INT1(OS%SEND_INT, 1, NLEN_SEND, NSCARC_INIT_ZERO, 'SEND_INT')
@@ -3097,7 +3100,7 @@ IF (NL == NLEVEL_MIN) THEN
 !> on coarser levels, it must still be computed
 ELSE
 
-   CALL SCARC_ALLOCATE_INT3(L%CELL_INDEX, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_ZERO, 'CELL_INDEX')
+   CALL SCARC_ALLOCATE_INT3(L%CELL_INDEX, 0, L%IBAR+1, 0, L%JBAR+1, 0, L%KBAR+1, NSCARC_INIT_ZERO, 'CELL_INDEX')
    L%CELL_INDEX_PTR => L%CELL_INDEX              
 
    L%N_CELL_INDEX = 0
@@ -3105,15 +3108,15 @@ ELSE
    !>
    !> Preset it for all grid cells
    !>
-   DO K=0,L%NZ+1
-      DO J=0,L%NY+1
+   DO K=0,L%KBAR+1
+      DO J=0,L%JBAR+1
          DO I=0,1
             IF (L%CELL_INDEX(I,J,K)==0) THEN
                L%N_CELL_INDEX = L%N_CELL_INDEX + 1
                L%CELL_INDEX(I,J,K) = L%N_CELL_INDEX
             ENDIF
          ENDDO
-         DO I=L%NX,L%NX+1
+         DO I=L%IBAR,L%IBAR+1
             IF (L%CELL_INDEX(I,J,K)==0) THEN
                L%N_CELL_INDEX = L%N_CELL_INDEX + 1
                L%CELL_INDEX(I,J,K) = L%N_CELL_INDEX
@@ -3122,15 +3125,15 @@ ELSE
       ENDDO
    ENDDO
    
-   DO K=0,L%NZ+1
-      DO I=0,L%NX+1
+   DO K=0,L%KBAR+1
+      DO I=0,L%IBAR+1
          DO J=0,1
             IF (L%CELL_INDEX(I,J,K)==0) THEN
                L%N_CELL_INDEX = L%N_CELL_INDEX + 1
                L%CELL_INDEX(I,J,K) = L%N_CELL_INDEX
             ENDIF
          ENDDO
-         DO J=L%NY,L%NY+1
+         DO J=L%JBAR,L%JBAR+1
             IF (L%CELL_INDEX(I,J,K)==0) THEN
                L%N_CELL_INDEX = L%N_CELL_INDEX + 1
                L%CELL_INDEX(I,J,K) = L%N_CELL_INDEX
@@ -3139,15 +3142,15 @@ ELSE
       ENDDO
    ENDDO
    
-   DO J=0,L%NY+1
-      DO I=0,L%NX+1
+   DO J=0,L%JBAR+1
+      DO I=0,L%IBAR+1
          DO K=0,1
             IF (L%CELL_INDEX(I,J,K)==0) THEN
                L%N_CELL_INDEX = L%N_CELL_INDEX + 1
                L%CELL_INDEX(I,J,K) = L%N_CELL_INDEX
             ENDIF
          ENDDO
-         DO K=L%NZ,L%NZ+1
+         DO K=L%KBAR,L%KBAR+1
             IF (L%CELL_INDEX(I,J,K)==0) THEN
                L%N_CELL_INDEX = L%N_CELL_INDEX + 1
                L%CELL_INDEX(I,J,K) = L%N_CELL_INDEX
@@ -3447,7 +3450,7 @@ IF (TWO_D) THEN
 
    !> IOR = 1
    IOR0 = 1
-   DO IZC = 1, LC%NZ
+   DO IZC = 1, LC%KBAR
       IZF = 2*IZC - 1
       ICF(1) = LF%CELL_INDEX_PTR(1  , IYF  , IZF  )
       ICF(2) = LF%CELL_INDEX_PTR(1  , IYF  , IZF+1)
@@ -3456,18 +3459,18 @@ IF (TWO_D) THEN
 
    !> IOR = -1
    IOR0 = -1
-   DO IZC = 1, LC%NZ
+   DO IZC = 1, LC%KBAR
       IZF = 2*IZC - 1
-      ICF(1) = LF%CELL_INDEX_PTR(LF%NX, IYF  , IZF  )
-      ICF(2) = LF%CELL_INDEX_PTR(LF%NX, IYF  , IZF+1)
+      ICF(1) = LF%CELL_INDEX_PTR(LF%IBAR, IYF  , IZF  )
+      ICF(2) = LF%CELL_INDEX_PTR(LF%IBAR, IYF  , IZF+1)
       IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 2, NM, NLF)) IWC = IWC + 1
    ENDDO
 
    !> IOR = 2
    IOR0 = 2
-   DO IZC = 1, LC%NZ
+   DO IZC = 1, LC%KBAR
       IZF = 2*IZC - 1
-      DO IXC = 1, LC%NX
+      DO IXC = 1, LC%IBAR
          IXF = 2*IXC - 1
          ICF(1) = LF%CELL_INDEX_PTR(IXF  , IYF, IZF  )
          ICF(2) = LF%CELL_INDEX_PTR(IXF+1, IYF, IZF  )
@@ -3480,9 +3483,9 @@ IF (TWO_D) THEN
    !> IOR = -2
    IOR0 = -2
    IXF  = 1
-   DO IZC = 1, LC%NZ
+   DO IZC = 1, LC%KBAR
       IZF = 2*IZC - 1
-      DO IXC = 1, LC%NX
+      DO IXC = 1, LC%IBAR
          IXF = 2*IXC - 1
          ICF(1) = LF%CELL_INDEX_PTR(IXF    , IYF, IZF  )
          ICF(2) = LF%CELL_INDEX_PTR(IXF+1  , IYF, IZF  )
@@ -3494,7 +3497,7 @@ IF (TWO_D) THEN
 
    !> IOR = 3
    IOR0 = 3
-   DO IXC = 1, LC%NX
+   DO IXC = 1, LC%IBAR
       IXF = 2*IXC - 1
       ICF(1) = LF%CELL_INDEX_PTR(IXF    , IYF  , 1)
       ICF(2) = LF%CELL_INDEX_PTR(IXF+1  , IYF  , 1)
@@ -3503,10 +3506,10 @@ IF (TWO_D) THEN
 
    !> IOR = -3
    IOR0 = -3
-   DO IXC = 1, LC%NX
+   DO IXC = 1, LC%IBAR
       IXF = 2*IXC - 1
-      ICF(1) = LF%CELL_INDEX_PTR(IXF  , IYF  , LF%NZ)
-      ICF(2) = LF%CELL_INDEX_PTR(IXF+1, IYF  , LF%NZ)
+      ICF(1) = LF%CELL_INDEX_PTR(IXF  , IYF  , LF%KBAR)
+      ICF(2) = LF%CELL_INDEX_PTR(IXF+1, IYF  , LF%KBAR)
       IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 2, NM, NLF)) IWC = IWC + 1
    ENDDO
 
@@ -3514,9 +3517,9 @@ ELSE
 
    !> IOR = 1
    IOR0 = 1
-   DO IZC = 1, LC%NZ
+   DO IZC = 1, LC%KBAR
       IZF = 2*IZC - 1
-      DO IYC = 1, LC%NY
+      DO IYC = 1, LC%JBAR
          IYF = 2*IYC - 1
          ICF(1) = LF%CELL_INDEX_PTR(1  , IYF  , IZF  )
          ICF(2) = LF%CELL_INDEX_PTR(1  , IYF+1, IZF  )
@@ -3528,23 +3531,23 @@ ELSE
 
    !> IOR = -1
    IOR0 = -1
-   DO IZC = 1, LC%NZ
+   DO IZC = 1, LC%KBAR
       IZF = 2*IZC - 1
-      DO IYC = 1, LC%NY
+      DO IYC = 1, LC%JBAR
          IYF = 2*IYC - 1
-         ICF(1) = LF%CELL_INDEX_PTR(LF%NX, IYF  , IZF  )
-         ICF(2) = LF%CELL_INDEX_PTR(LF%NX, IYF+1, IZF  )
-         ICF(3) = LF%CELL_INDEX_PTR(LF%NX, IYF  , IZF+1)
-         ICF(4) = LF%CELL_INDEX_PTR(LF%NX, IYF+1, IZF+1)
+         ICF(1) = LF%CELL_INDEX_PTR(LF%IBAR, IYF  , IZF  )
+         ICF(2) = LF%CELL_INDEX_PTR(LF%IBAR, IYF+1, IZF  )
+         ICF(3) = LF%CELL_INDEX_PTR(LF%IBAR, IYF  , IZF+1)
+         ICF(4) = LF%CELL_INDEX_PTR(LF%IBAR, IYF+1, IZF+1)
          IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 4, NM, NLF)) IWC = IWC + 1
       ENDDO
    ENDDO
 
    !> IOR = 2
    IOR0 = 2
-   DO IZC = 1, LC%NZ
+   DO IZC = 1, LC%KBAR
       IZF = 2*IZC - 1
-      DO IXC = 1, LC%NX
+      DO IXC = 1, LC%IBAR
          IXF = 2*IXC - 1
          ICF(1) = LF%CELL_INDEX_PTR(IXF  , 1, IZF  )
          ICF(2) = LF%CELL_INDEX_PTR(IXF+1, 1, IZF  )
@@ -3557,23 +3560,23 @@ ELSE
    !> IOR = -2
    IOR0 = -2
    IXF  = 1
-   DO IZC = 1, LC%NZ
+   DO IZC = 1, LC%KBAR
       IZF = 2*IZC - 1
-      DO IXC = 1, LC%NX
+      DO IXC = 1, LC%IBAR
          IXF = 2*IXC - 1
-         ICF(1) = LF%CELL_INDEX_PTR(IXF    , LF%NY, IZF  )
-         ICF(2) = LF%CELL_INDEX_PTR(IXF+1  , LF%NY, IZF  )
-         ICF(3) = LF%CELL_INDEX_PTR(IXF    , LF%NY, IZF+1)
-         ICF(4) = LF%CELL_INDEX_PTR(IXF+1  , LF%NY, IZF+1)
+         ICF(1) = LF%CELL_INDEX_PTR(IXF    , LF%JBAR, IZF  )
+         ICF(2) = LF%CELL_INDEX_PTR(IXF+1  , LF%JBAR, IZF  )
+         ICF(3) = LF%CELL_INDEX_PTR(IXF    , LF%JBAR, IZF+1)
+         ICF(4) = LF%CELL_INDEX_PTR(IXF+1  , LF%JBAR, IZF+1)
          IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 4, NM, NLF)) IWC = IWC + 1
       ENDDO
    ENDDO
 
    !> IOR = 3
    IOR0 = 3
-   DO IYC = 1, LC%NY
+   DO IYC = 1, LC%JBAR
       IYF = 2*IYC - 1
-      DO IXC = 1, LC%NX
+      DO IXC = 1, LC%IBAR
          IXF = 2*IXC - 1
          ICF(1) = LF%CELL_INDEX_PTR(IXF    , IYF  , 1)
          ICF(2) = LF%CELL_INDEX_PTR(IXF+1  , IYF  , 1)
@@ -3585,14 +3588,14 @@ ELSE
 
    !> IOR = -3
    IOR0 = -3
-   DO IYC = 1, LC%NY
+   DO IYC = 1, LC%JBAR
       IYF = 2*IYC - 1
-      DO IXC = 1, LC%NX
+      DO IXC = 1, LC%IBAR
          IXF = 2*IXC - 1
-         ICF(1) = LF%CELL_INDEX_PTR(IXF  , IYF  , LF%NZ)
-         ICF(2) = LF%CELL_INDEX_PTR(IXF+1, IYF  , LF%NZ)
-         ICF(3) = LF%CELL_INDEX_PTR(IXF  , IYF+1, LF%NZ)
-         ICF(4) = LF%CELL_INDEX_PTR(IXF+1, IYF+1, LF%NZ)
+         ICF(1) = LF%CELL_INDEX_PTR(IXF  , IYF  , LF%KBAR)
+         ICF(2) = LF%CELL_INDEX_PTR(IXF+1, IYF  , LF%KBAR)
+         ICF(3) = LF%CELL_INDEX_PTR(IXF  , IYF+1, LF%KBAR)
+         ICF(4) = LF%CELL_INDEX_PTR(IXF+1, IYF+1, LF%KBAR)
          IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 4, NM, NLF)) IWC = IWC + 1
       ENDDO
    ENDDO
@@ -3785,10 +3788,10 @@ OL => OS%LEVEL(NL)
 
 SELECT CASE(TYPE_DISCRET)
    CASE (NSCARC_DISCRET_STRUCTURED)
-      D  => L%SD
+      D  =>  L%SD
       OD => OL%SD
    CASE (NSCARC_DISCRET_UNSTRUCTURED)
-      D =>  L%UD
+      D  =>  L%UD
       OD => OL%UD
 END SELECT
 
@@ -3801,13 +3804,13 @@ ICE  = D%ICE
 ICG  = OD%ICG
 IWL  = OD%IWL
 
-OL%NCPL_SEND = OL%NCPL
-IF (OD%NCG == OL%N_WALL_CELLS) THEN
-   OL%NCPL_RECV = OL%NCPL
-ELSE IF (OD%NCG == 2*OL%N_WALL_CELLS) THEN
-   OL%NCPL_RECV =  1
-ELSE IF (OL%N_WALL_CELLS == 2*OD%NCG) THEN
-   OL%NCPL_RECV =  2
+OD%NCPL_SEND = OD%NCPL
+IF (OD%NCG == OD%NWL) THEN
+   OD%NCPL_RECV = OD%NCPL
+ELSE IF (OD%NCG == 2*OD%NWL) THEN
+   OD%NCPL_RECV =  1
+ELSE IF (OD%NWL == 2*OD%NCG) THEN
+   OD%NCPL_RECV =  2
 ENDIF
 
 !> set neighboring coordinates
@@ -3821,8 +3824,8 @@ WC%IZN(1) = NZ1
 WC%IZN(2) = NZ2
 
 !> allocate pointer arrays for extended, ghost and neighboring cells
-CALL SCARC_ALLOCATE_INT1(WC%ICE, 1, OL%NCPL, NSCARC_INIT_UNDEF, 'ICE')
-CALL SCARC_ALLOCATE_INT1(WC%ICG, 1, OL%NCPL, NSCARC_INIT_UNDEF, 'ICG')
+CALL SCARC_ALLOCATE_INT1(WC%ICE, 1, OD%NCPL, NSCARC_INIT_UNDEF, 'ICE')
+CALL SCARC_ALLOCATE_INT1(WC%ICG, 1, OD%NCPL, NSCARC_INIT_UNDEF, 'ICG')
 
 IWL = IWL + 1
 ICO = ICO + 1
@@ -3934,7 +3937,7 @@ SELECT CASE (ABS(IOR0))
       ENDIF
       CALL SCARC_CHECK_DIVISIBILITY(FF%NFZ, 'Z')              !> number of z-cells divisible by 2?
       FC%NFZ = FF%NFZ/2
-      FC%NFC = LC%NX                                          !> number of cells between opposite faces
+      FC%NFC = LC%IBAR                                          !> number of cells between opposite faces
    CASE (2)
       FC%DH => LC%DYL
       CALL SCARC_CHECK_DIVISIBILITY(FF%NFX, 'X')              !> number of x-cells divisible by 2?
@@ -3942,7 +3945,7 @@ SELECT CASE (ABS(IOR0))
       FC%NFY = 1                                              !> no extension in y-direction
       CALL SCARC_CHECK_DIVISIBILITY(FF%NFZ, 'Z')              !> number of z-cells divisible by 2?
       FC%NFZ = FF%NFZ/2
-      FC%NFC = LC%NY                                          !> number of cells between opposite faces
+      FC%NFC = LC%JBAR                                          !> number of cells between opposite faces
    CASE (3)
       FC%DH => LC%DZL
       CALL SCARC_CHECK_DIVISIBILITY(FF%NFX, 'X')              !> number of x-cells divisible by 2?
@@ -3954,7 +3957,7 @@ SELECT CASE (ABS(IOR0))
          FC%NFY = FF%NFY
       ENDIF
       FC%NFZ = 1                                              !> no extension in y-direction
-      FC%NFC = LC%NZ                                          !> number of cells between opposite faces
+      FC%NFC = LC%KBAR                                          !> number of cells between opposite faces
 END SELECT
 
 FC%NFW = FC%NFX * FC%NFY * FC%NFZ                             !> get number of wall cells for that face
@@ -3980,7 +3983,7 @@ INTEGER :: IX2, IY2, IZ2
 INTEGER :: IDIFF, JDIFF, KDIFF
 TYPE (SCARC_LEVEL_TYPE), POINTER :: LF=>NULL(), LC=>NULL(), OLC=>NULL()
 TYPE (SCARC_FACE_TYPE), POINTER :: FF=>NULL(), FC=>NULL()
-TYPE (SCARC_DISCRET_TYPE), POINTER :: DF=>NULL(), DC=>NULL()
+TYPE (SCARC_DISCRET_TYPE), POINTER :: DF=>NULL(), DC=>NULL(), ODC=>NULL()
 TYPE (SCARC_WALL_TYPE), POINTER, DIMENSION(:) :: WC=>NULL(), WF=>NULL()
 
 !> reference coarse and fine LEVEL type
@@ -4011,36 +4014,36 @@ SELECT CASE (ABS(IOR0))
          NX1 = 0
          NX2 = 0
       ELSE
-         NX1 = LC%NX+1
-         NX2 = LC%NX+1
+         NX1 = LC%IBAR+1
+         NX2 = LC%IBAR+1
       ENDIF
       NY1 = 1
-      NY2 = LC%NY
+      NY2 = LC%JBAR
       NZ1 = 1
-      NZ2 = LC%NZ
+      NZ2 = LC%KBAR
    CASE (2)
       NX1 = 1                                                      !> set dimensions for wall cell counting
-      NX2 = LC%NX
+      NX2 = LC%IBAR
       IF (IOR0 > 0) THEN
          NY1 = 0
          NY2 = 0
       ELSE
-         NY1 = LC%NY+1
-         NY2 = LC%NY+1
+         NY1 = LC%JBAR+1
+         NY2 = LC%JBAR+1
       ENDIF
       NZ1 = 1
-      NZ2 = LC%NZ
+      NZ2 = LC%KBAR
    CASE (3)
       NX1 = 1                                                      !> set dimensions for wall cell counting
-      NX2 = LC%NX
+      NX2 = LC%IBAR
       NY1 = 1
-      NY2 = LC%NY
+      NY2 = LC%JBAR
       IF (IOR0 > 0) THEN
          NZ1 = 0
          NZ2 = 0
       ELSE
-         NZ1 =LC%NZ+1
-         NZ2 =LC%NZ+1
+         NZ1 =LC%KBAR+1
+         NZ2 =LC%KBAR+1
       ENDIF
 END SELECT
 
@@ -4056,17 +4059,17 @@ DO IZ = NZ1, NZ2
 
          SELECT CASE (IOR0)
             CASE (1)
-               WC(IWC)%ICW = (IZ-1)*LC%NX*LC%NY + (IY-1)*LC%NX + IX + 1
+               WC(IWC)%ICW = (IZ-1)*LC%IBAR*LC%JBAR + (IY-1)*LC%IBAR + IX + 1
             CASE (-1)
-               WC(IWC)%ICW = (IZ-1)*LC%NX*LC%NY + (IY-1)*LC%NX + IX - 1
+               WC(IWC)%ICW = (IZ-1)*LC%IBAR*LC%JBAR + (IY-1)*LC%IBAR + IX - 1
             CASE (2)
-               WC(IWC)%ICW = (IZ-1)*LC%NX*LC%NY +  IY   *LC%NX + IX
+               WC(IWC)%ICW = (IZ-1)*LC%IBAR*LC%JBAR +  IY   *LC%IBAR + IX
             CASE (-2)
-               WC(IWC)%ICW = (IZ-1)*LC%NX*LC%NY + (IY-2)*LC%NX + IX
+               WC(IWC)%ICW = (IZ-1)*LC%IBAR*LC%JBAR + (IY-2)*LC%IBAR + IX
             CASE (3)
-               WC(IWC)%ICW =  IZ   *LC%NX*LC%NY + (IY-1)*LC%NX + IX
+               WC(IWC)%ICW =  IZ   *LC%IBAR*LC%JBAR + (IY-1)*LC%IBAR + IX
             CASE (-3)
-               WC(IWC)%ICW = (IZ-2)*LC%NX*LC%NY + (IY-1)*LC%NX + IX
+               WC(IWC)%ICW = (IZ-2)*LC%IBAR*LC%JBAR + (IY-1)*LC%IBAR + IX
          END SELECT
 
          WC(IWC)%IOR = IOR0
@@ -4112,7 +4115,7 @@ DO IZ = NZ1, NZ2
                CASE ( 1)
                   IWF(1) = FF%IWG_PTR + 2*(IZ-1)
                CASE ( 2)
-                  IWF(1) = FF%IWG_PTR + 2*(IZ-1)*LF%NX + 2*(IX - 1)
+                  IWF(1) = FF%IWG_PTR + 2*(IZ-1)*LF%IBAR + 2*(IX - 1)
                CASE ( 3)
                   IWF(1) = FF%IWG_PTR + 2*(IX-1)
             END SELECT
@@ -4157,6 +4160,12 @@ DO IZ = NZ1, NZ2
             IF (NOMF(1) > 0) THEN
 
                OLC => SCARC(NM)%OSCARC(NOMF(1))%LEVEL(NL)
+               SELECT CASE(TYPE_DISCRET)
+                  CASE (NSCARC_DISCRET_STRUCTURED)
+                     ODC => OLC%SD
+                  CASE (NSCARC_DISCRET_UNSTRUCTURED)
+                     ODC => OLC%UD
+               END SELECT
 
                IY1 = 1
                IY2 = 1
@@ -4217,7 +4226,7 @@ DO IZ = NZ1, NZ2
                !> Allocate and specify ICN and ICE arrays for OC
                !>!
                NCPL = (IZ2-IZ1+1)*(IX2-IX1+1)
-               OLC%NCPL = NCPL
+               ODC%NCPL = NCPL
 
                CALL SCARC_SETUP_WALLCELL_NEIGHBOR(IX1, IX2, 1, 1, IZ1, IZ2, IWC, IOR0, NM, NOMF(1), NL)
 
@@ -4232,14 +4241,14 @@ DO IZ = NZ1, NZ2
             !> determine fine IW's, which must be merged to one coarse IW
             SELECT CASE (ABS(IOR0))
                CASE (1)
-                  IWF(1) = FF%IWG_PTR + (2*IZ-2)*LF%NY + 2*IY - 2
-                  IWF(3) = FF%IWG_PTR + (2*IZ-1)*LF%NY + 2*IY - 2
+                  IWF(1) = FF%IWG_PTR + (2*IZ-2)*LF%JBAR + 2*IY - 2
+                  IWF(3) = FF%IWG_PTR + (2*IZ-1)*LF%JBAR + 2*IY - 2
                CASE (2)
-                  IWF(1) = FF%IWG_PTR + (2*IZ-2)*LF%NX + 2*IX - 2
-                  IWF(3) = FF%IWG_PTR + (2*IZ-1)*LF%NX + 2*IX - 2
+                  IWF(1) = FF%IWG_PTR + (2*IZ-2)*LF%IBAR + 2*IX - 2
+                  IWF(3) = FF%IWG_PTR + (2*IZ-1)*LF%IBAR + 2*IX - 2
                CASE (3)
-                  IWF(1) = FF%IWG_PTR + (2*IY-2)*LF%NX + 2*IX - 2
-                  IWF(3) = FF%IWG_PTR + (2*IY-1)*LF%NX + 2*IX - 2
+                  IWF(1) = FF%IWG_PTR + (2*IY-2)*LF%IBAR + 2*IX - 2
+                  IWF(3) = FF%IWG_PTR + (2*IY-1)*LF%IBAR + 2*IX - 2
             END SELECT
             IWF(2) = IWF(1)+1
             IWF(4) = IWF(3)+1
@@ -4391,7 +4400,7 @@ DO IZ = NZ1, NZ2
 
                !> Allocate and specify ICN and ICE arrays for OLC
                NCPL = (IZ2-IZ1+1)*(IY2-IY1+1)*(IX2-IX1+1)
-               OLC%NCPL = NCPL
+               ODC%NCPL = NCPL
 
                CALL SCARC_SETUP_WALLCELL_NEIGHBOR(IX1, IX2, IY1, IY2, IZ1, IZ2, IWC, IOR0, NM, NOMF(1), NL)
 
@@ -4964,9 +4973,9 @@ SELECT_STORAGE_TYPE: SELECT CASE (TYPE_MATRIX)
 
 WRITE(MSG%LU_DEBUG,*) 'TYPE_DISCRET =',TYPE_DISCRET
       IP  = 1
-      DO IZ = 1, L%NZ
-         DO IY = 1, L%NY
-            DO IX = 1, L%NX
+      DO IZ = 1, L%KBAR
+         DO IY = 1, L%JBAR
+            DO IX = 1, L%IBAR
    
                IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(IX, IY, IZ)) CYCLE
 
@@ -5020,9 +5029,9 @@ WRITE(MSG%LU_DEBUG,*) 'TYPE_DISCRET =',TYPE_DISCRET
       CALL SCARC_ALLOCATE_MATRIX_BANDED(AB, 'AB', NL, NSCARC_INIT_ZERO)
 
       IP  = 1
-      DO IZ = 1, L%NZ
-         DO IY = 1, L%NY
-            DO IX = 1, L%NX
+      DO IZ = 1, L%KBAR
+         DO IY = 1, L%JBAR
+            DO IX = 1, L%IBAR
    
                IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(IX, IY, IZ)) CYCLE
 
@@ -5641,7 +5650,7 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
                ENDIF
             ENDDO
       
-            JC = NC - L%NX
+            JC = NC - L%IBAR
             DO IP = AC%ROW(JC)+1, AC%ROW(JC+1)-1
                IF (AC%COL(IP) == NC) THEN
                   IS = IS + 1
@@ -5657,7 +5666,7 @@ MATRIX_TYPE_SELECT: SELECT CASE (TYPE_MATRIX)
             ENDDO
       
             IF (.NOT.TWO_D) THEN
-               JC = NC - L%NX * L%NY
+               JC = NC - L%IBAR * L%JBAR
                DO IP = AC%ROW(JC)+1, AC%ROW(JC+1)-1
                   IF (AC%COL(IP) == NC) THEN
                      IS = IS + 1
@@ -6373,15 +6382,15 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 WRITE(MSG%LU_DEBUG,*) '================== MGM_INTERNAL_VELOCITY'
 WRITE(MSG%LU_DEBUG,*) '         U:'
-WRITE(MSG%LU_DEBUG, '(6E14.6)') ((UU(I,1,K), I=0, L%NX), K=1, L%NZ)
+WRITE(MSG%LU_DEBUG, '(6E14.6)') ((UU(I,1,K), I=0, L%IBAR), K=1, L%KBAR)
 WRITE(MSG%LU_DEBUG,*) '         W:'
-WRITE(MSG%LU_DEBUG, '(5E14.6)') ((WW(I,1,K), I=1, L%NX), K=0, L%NZ)
+WRITE(MSG%LU_DEBUG, '(5E14.6)') ((WW(I,1,K), I=1, L%IBAR), K=0, L%KBAR)
 WRITE(MSG%LU_DEBUG,*) '         FVX:'
-WRITE(MSG%LU_DEBUG, '(6E14.6)') ((M%FVX(I,1,K), I=0, L%NX), K=1, L%NZ)
+WRITE(MSG%LU_DEBUG, '(6E14.6)') ((M%FVX(I,1,K), I=0, L%IBAR), K=1, L%KBAR)
 WRITE(MSG%LU_DEBUG,*) '         FVZ:'
-WRITE(MSG%LU_DEBUG, '(5E14.6)') ((M%FVZ(I,1,K), I=1, L%NX), K=0, L%NZ)
+WRITE(MSG%LU_DEBUG, '(5E14.6)') ((M%FVZ(I,1,K), I=1, L%IBAR), K=0, L%KBAR)
 WRITE(MSG%LU_DEBUG,*) '         H:'
-WRITE(MSG%LU_DEBUG, '(5E14.6)') ((HP(I,1,K), I=1, L%NX), K=1, L%NZ)
+WRITE(MSG%LU_DEBUG, '(5E14.6)') ((HP(I,1,K), I=1, L%IBAR), K=1, L%KBAR)
 WRITE(MSG%LU_DEBUG,*) '-------------------------------'
 
    DO IW = L%N_WALL_CELLS_EXT+1, L%N_WALL_CELLS_EXT + L%N_WALL_CELLS_INT
@@ -7271,13 +7280,13 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 WRITE(MSG%LU_DEBUG,*) 'FFT: --------> NM, NL, LBC, MBC, NBC =',NM, NL, M%LBC, M%MBC, M%NBC
 
-      FFT%ITRN = L%NX+1
+      FFT%ITRN = L%IBAR+1
       IF (TWO_D) THEN
          FFT%JTRN = 1
       ELSE
-         FFT%JTRN = L%NY+1
+         FFT%JTRN = L%JBAR+1
       ENDIF
-      FFT%KTRN = L%NZ+1
+      FFT%KTRN = L%KBAR+1
 
       FFT%LSAVE = (FFT%ITRN+1)*FFT%JTRN*FFT%KTRN+7*FFT%ITRN+5*FFT%JTRN+6*FFT%KTRN+56
       FFT%LWORK = (FFT%ITRN+1)*FFT%JTRN*FFT%KTRN
@@ -7286,52 +7295,52 @@ WRITE(MSG%LU_DEBUG,*) 'FFT: --------> NM, NL, LBC, MBC, NBC =',NM, NL, M%LBC, M%
       CALL SCARC_ALLOCATE_REAL1(FFT%WORK ,  1, FFT%LWORK, NSCARC_INIT_ZERO, 'FFT')
 
       !> Allocate stretching vector (set to 1)
-      CALL SCARC_ALLOCATE_REAL1(FFT%HX, 1, L%NX+1, NSCARC_INIT_ONE, 'FFT')
+      CALL SCARC_ALLOCATE_REAL1(FFT%HX, 1, L%IBAR+1, NSCARC_INIT_ONE, 'FFT')
 
       !> Allocate RHS vector for FFT routine
-      IF (L%NY == 1) THEN
-         CALL SCARC_ALLOCATE_REAL3(FFT%PRHS, 1, L%NX+1, 1, 1,      1, L%NZ+1, NSCARC_INIT_ZERO, 'FFT')
+      IF (L%JBAR == 1) THEN
+         CALL SCARC_ALLOCATE_REAL3(FFT%PRHS, 1, L%IBAR+1, 1, 1,      1, L%KBAR+1, NSCARC_INIT_ZERO, 'FFT')
       ELSE
-         CALL SCARC_ALLOCATE_REAL3(FFT%PRHS, 1, L%NX+1, 1, L%NY+1, 1, L%NZ+1, NSCARC_INIT_ZERO, 'FFT')
+         CALL SCARC_ALLOCATE_REAL3(FFT%PRHS, 1, L%IBAR+1, 1, L%JBAR+1, 1, L%KBAR+1, NSCARC_INIT_ZERO, 'FFT')
       ENDIF
 
       !> Allocate boundary data vector for XS
-      IF (L%NZ>1) THEN
-         IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1, L%NY+1, 1, L%NZ+1, NSCARC_INIT_ZERO, 'BXS')
-         IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1,      1, 1, L%NZ+1, NSCARC_INIT_ZERO, 'BXS')
+      IF (L%KBAR>1) THEN
+         IF (L%JBAR  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1, L%JBAR+1, 1, L%KBAR+1, NSCARC_INIT_ZERO, 'BXS')
+         IF (L%JBAR == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1,      1, 1, L%KBAR+1, NSCARC_INIT_ZERO, 'BXS')
       ELSE
-         CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1, L%NY+1, 1, 1, NSCARC_INIT_ZERO, 'BXS')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1, L%JBAR+1, 1, 1, NSCARC_INIT_ZERO, 'BXS')
       ENDIF
 
       !> Allocate boundary data vector for XF
-      IF (L%NZ>1) THEN
-         IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1, L%NY+1, 1, L%NZ+1, NSCARC_INIT_ZERO, 'BXF')
-         IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1,      1, 1, L%NZ+1, NSCARC_INIT_ZERO, 'BXF')
+      IF (L%KBAR>1) THEN
+         IF (L%JBAR  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1, L%JBAR+1, 1, L%KBAR+1, NSCARC_INIT_ZERO, 'BXF')
+         IF (L%JBAR == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1,      1, 1, L%KBAR+1, NSCARC_INIT_ZERO, 'BXF')
       ELSE
-         CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1, L%NY+1, 1, 1, NSCARC_INIT_ZERO, 'BXF')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1, L%JBAR+1, 1, 1, NSCARC_INIT_ZERO, 'BXF')
       ENDIF
 
       !> Allocate boundary data vector for YS
-      IF (L%NZ > 1) THEN
-         CALL SCARC_ALLOCATE_REAL2(FFT%BYS, 1, L%NX+1,1, L%NZ+1, NSCARC_INIT_ZERO, 'BYS')
+      IF (L%KBAR > 1) THEN
+         CALL SCARC_ALLOCATE_REAL2(FFT%BYS, 1, L%IBAR+1,1, L%KBAR+1, NSCARC_INIT_ZERO, 'BYS')
       ELSE
-         CALL SCARC_ALLOCATE_REAL2(FFT%BYS, 1, L%NX+1,1,      1, NSCARC_INIT_ZERO, 'BYS')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BYS, 1, L%IBAR+1,1,      1, NSCARC_INIT_ZERO, 'BYS')
       ENDIF
 
       !> Allocate boundary data vector for YF
-      IF (L%NZ > 1) THEN
-         CALL SCARC_ALLOCATE_REAL2(FFT%BYF, 1, L%NX+1,1, L%NZ+1, NSCARC_INIT_ZERO, 'BYF')
+      IF (L%KBAR > 1) THEN
+         CALL SCARC_ALLOCATE_REAL2(FFT%BYF, 1, L%IBAR+1,1, L%KBAR+1, NSCARC_INIT_ZERO, 'BYF')
       ELSE
-         CALL SCARC_ALLOCATE_REAL2(FFT%BYF, 1, L%NX+1,1,      1, NSCARC_INIT_ZERO, 'BYF')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BYF, 1, L%IBAR+1,1,      1, NSCARC_INIT_ZERO, 'BYF')
       ENDIF
 
       !> Allocate boundary data vector for ZS
-      IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZS, 1, L%NX+1, 1, L%NY+1, NSCARC_INIT_ZERO, 'BZS')
-      IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZS, 1, L%NX+1, 1,      1, NSCARC_INIT_ZERO, 'BZS')
+      IF (L%JBAR  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZS, 1, L%IBAR+1, 1, L%JBAR+1, NSCARC_INIT_ZERO, 'BZS')
+      IF (L%JBAR == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZS, 1, L%IBAR+1, 1,      1, NSCARC_INIT_ZERO, 'BZS')
 
       !> Allocate boundary data vector for ZF
-      IF (L%NY  >1)  CALL SCARC_ALLOCATE_REAL2(FFT%BZF, 1, L%NX+1, 1, L%NY+1, NSCARC_INIT_ZERO, 'BZF')
-      IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZF, 1, L%NX+1, 1,      1, NSCARC_INIT_ZERO, 'BZF')
+      IF (L%JBAR  >1)  CALL SCARC_ALLOCATE_REAL2(FFT%BZF, 1, L%IBAR+1, 1, L%JBAR+1, NSCARC_INIT_ZERO, 'BZF')
+      IF (L%JBAR == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZF, 1, L%IBAR+1, 1,      1, NSCARC_INIT_ZERO, 'BZF')
 
       IF (TWO_D) THEN
          CALL H2CZIS(S%XS,S%XF,S%IBAR,FFT%LBC,S%ZS,S%ZF,S%KBAR,FFT%NBC,FFT%HX,FFT%XLM,FFT%ITRN,IERR,FFT%SAVE1)
@@ -7984,23 +7993,23 @@ WRITE(MSG%LU_DEBUG,*) 'MATRIX_SIZED: AC%N_VAL=',AC%N_VAL,': AC%N_ROW=',AC%N_ROW
                   AB%N_SUB_LOWER = 2                      !> number of lower diagonals
                   AB%N_SUB_UPPER = 2                      !> number of upper diagonals
                   AB%POS(-3:3)   = (/5,0,4,3,2,0,1/)      !> assignment of IOR settings to columns in matrix array
-                  AB%OFFSET( 3)  = -L%NX                !> lower z
+                  AB%OFFSET( 3)  = -L%IBAR                !> lower z
                   AB%OFFSET( 1)  = -1                     !> lower x
                   AB%OFFSET( 0)  =  0                     !> diag
                   AB%OFFSET(-1)  =  1                     !> upper x
-                  AB%OFFSET(-3)  =  L%NX                !> upper z
+                  AB%OFFSET(-3)  =  L%IBAR                !> upper z
                ELSE
                   AB%N_STENCIL   = 7                      !> 7-point Laplacian
                   AB%N_SUB_LOWER = 3                      !> number of lower diagonals
                   AB%N_SUB_UPPER = 3                      !> number of upper diagonals
                   AB%POS(-3:3)   = (/7,6,5,4,3,2,1/)      !> assignment of IOR settings to columns in matrix array
-                  AB%OFFSET( 3)  = -L%NX*L%NY         !> lower z
-                  AB%OFFSET( 2)  = -L%NX                !> lower y
+                  AB%OFFSET( 3)  = -L%IBAR*L%JBAR         !> lower z
+                  AB%OFFSET( 2)  = -L%IBAR                !> lower y
                   AB%OFFSET( 1)  = -1                     !> lower x
                   AB%OFFSET( 0)  =  0                     !> diag
                   AB%OFFSET(-1)  =  1                     !> upper x
-                  AB%OFFSET(-2)  =  L%NX                !> upper y
-                  AB%OFFSET(-3)  =  L%NX*L%NY         !> upper z
+                  AB%OFFSET(-2)  =  L%IBAR                !> upper y
+                  AB%OFFSET(-3)  =  L%IBAR*L%JBAR         !> upper z
                ENDIF
 
                AB%N_VAL    = D%NC * AB%N_STENCIL
@@ -8530,9 +8539,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    END SELECT
    VC => POINT_TO_VECTOR (NM, NL, NV)
 
-   DO K = 1, L%NZ
-      DO J = 1, L%NY
-         DO I = 1, L%NX
+   DO K = 1, L%KBAR
+      DO J = 1, L%JBAR
+         DO I = 1, L%IBAR
             IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I, J, K)) CYCLE
             IC = D%CELL_NUMBER(I,J,K)
             VC(IC) = VAL
@@ -8845,10 +8854,10 @@ WRITE(MSG%LU_DEBUG,'(8E14.6)') V2
          V1  => POINT_TO_VECTOR(NM, NL, NV1)
          V2  => POINT_TO_VECTOR(NM, NL, NV2)
 
-         DO K = 1, L%NZ
-            DO J = 1, L%NY
-               DO I = 1, L%NX
-                  IC = (K-1) * L%NX * L%NY + (J-1) * L%NX + I
+         DO K = 1, L%KBAR
+            DO J = 1, L%JBAR
+               DO I = 1, L%IBAR
+                  IC = (K-1) * L%IBAR * L%JBAR + (J-1) * L%IBAR + I
                   FFT%PRHS(I, J, K) = V1(IC)
                ENDDO
             ENDDO
@@ -8884,17 +8893,17 @@ WRITE(MSG%LU_DEBUG,*) 'FFT: IN: L%PRHS:'
 WRITE(MSG%LU_DEBUG,'(8E14.6)') FFT%PRHS
 
          IF (TWO_D) THEN
-            CALL H2CZSS (FFT%BXS,  FFT%BXF, FFT%BZS, FFT%BZF, L%NX+1, &
+            CALL H2CZSS (FFT%BXS,  FFT%BXF, FFT%BZS, FFT%BZF, L%IBAR+1, &
                          FFT%PRHS, FFT%POIS_PTB, FFT%SAVE1, FFT%WORK, FFT%HX)
          ELSE
-            CALL H3CZSS (FFT%BXS,  FFT%BXF, FFT%BYS, FFT%BYF, FFT%BZS, FFT%BZF, L%NX+1, L%NY+1, &
+            CALL H3CZSS (FFT%BXS,  FFT%BXF, FFT%BYS, FFT%BYF, FFT%BZS, FFT%BZF, L%IBAR+1, L%JBAR+1, &
                          FFT%PRHS, FFT%POIS_PTB, FFT%SAVE1, FFT%WORK, FFT%HX)
          ENDIF
 
-         DO K = 1, L%NZ
-            DO J = 1, L%NY
-               DO I = 1, L%NX
-                  IC = (K-1) * L%NX * L%NY + (J-1) * L%NX + I
+         DO K = 1, L%KBAR
+            DO J = 1, L%JBAR
+               DO I = 1, L%IBAR
+                  IC = (K-1) * L%IBAR * L%JBAR + (J-1) * L%IBAR + I
                   V2(IC) = FFT%PRHS(I, J, K)
                ENDDO
             ENDDO
@@ -10410,8 +10419,8 @@ IF (HAS_MULTI_LEVELS) THEN
             !> ---------- Constant Interpolation
             CASE (NSCARC_INTERPOL_CONSTANT)
 
-               DO IZC = 1, LC%NZ
-                  DO IXC = 1, LC%NX
+               DO IZC = 1, LC%KBAR
+                  DO IXC = 1, LC%IBAR
 
                      IF (IS_UNSTRUCTURED .AND. LC%IS_SOLID(IXC, 1, IZC)) CYCLE
 
@@ -10437,8 +10446,8 @@ IF (HAS_MULTI_LEVELS) THEN
 
                VC=0.0_EB
 
-               DO IZC = 1, LC%NZ
-                  DO IXC = 1, LC%NX
+               DO IZC = 1, LC%KBAR
+                  DO IXC = 1, LC%IBAR
 
                      IF (IS_UNSTRUCTURED .AND. LC%IS_SOLID(IXC, 1, IZC)) CYCLE
 
@@ -10472,17 +10481,17 @@ IF (HAS_MULTI_LEVELS) THEN
                                      W4 *VF(ICFB(-1, 2)) + W3 *VF(ICFB(1, 2)) + W1*VF(ICFB(2, 2)) + &
                                      W12*VF(ICFB(-1, 1)) + W9 *VF(ICFB(1, 1)) + W3*VF(ICFB(2, 1)) + &
                                      W16*VF(ICFB(-1,-1)) + W12*VF(ICFB(1,-1)) + W4*VF(ICFB(2,-1)) )
-                     ELSE IF (IXC==LC%NX.AND.IZC==  1) THEN
+                     ELSE IF (IXC==LC%IBAR.AND.IZC==  1) THEN
                         VC(ICC) = SCALR*( &
                                      W1 *VF(ICFB(-2, 2)) + W3 *VF(ICFB(-1, 2)) + W4 *VF(ICFB(1, 2)) + &
                                      W3 *VF(ICFB(-2, 1)) + W9 *VF(ICFB(-1, 1)) + W12*VF(ICFB(1, 1)) + &
                                      W4 *VF(ICFB(-2,-1)) + W12*VF(ICFB(-1,-1)) + W16*VF(ICFB(1,-1)) )
-                     ELSE IF (IXC==  1.AND.IZC==LC%NZ) THEN
+                     ELSE IF (IXC==  1.AND.IZC==LC%KBAR) THEN
                         VC(ICC) = SCALR*( &
                                      W16*VF(ICFB(-1, 1)) + W12*VF(ICFB(1, 1)) + W4*VF(ICFB(2, 1)) + &
                                      W12*VF(ICFB(-1,-1)) + W9 *VF(ICFB(1,-1)) + W3*VF(ICFB(2,-1)) + &
                                      W4 *VF(ICFB(-1,-2)) + W3 *VF(ICFB(1,-2)) + W1*VF(ICFB(2,-2)) )
-                     ELSE IF (IXC==LC%NX.AND.IZC==LC%NZ) THEN
+                     ELSE IF (IXC==LC%IBAR.AND.IZC==LC%KBAR) THEN
                         VC(ICC) = SCALR*( &
                                      W4 *VF(ICFB(-2, 1)) + W12*VF(ICFB(-1, 1)) + W16*VF(ICFB(1, 1)) + &
                                      W3 *VF(ICFB(-2,-1)) + W9 *VF(ICFB(-1,-1)) + W12*VF(ICFB(1,-1)) + &
@@ -10492,7 +10501,7 @@ IF (HAS_MULTI_LEVELS) THEN
                                      W1*VF(ICFB(-2, 2)) + W3 *VF(ICFB(-1, 2)) + W3 *VF(ICFB(1, 2)) + W1*VF(ICFB(2, 2)) + &
                                      W3*VF(ICFB(-2, 1)) + W9 *VF(ICFB(-1, 1)) + W9 *VF(ICFB(1, 1)) + W3*VF(ICFB(2, 1)) + &
                                      W4*VF(ICFB(-2,-1)) + W12*VF(ICFB(-1,-1)) + W12*VF(ICFB(1,-1)) + W4*VF(ICFB(2,-1)) )
-                     ELSE IF (IZC==LC%NZ) THEN
+                     ELSE IF (IZC==LC%KBAR) THEN
                         VC(ICC) = SCALR*( &
                                      W4*VF(ICFB(-2, 1)) + W12*VF(ICFB(-1, 1)) + W12*VF(ICFB(1, 1)) + W4*VF(ICFB(2, 1)) + &
                                      W3*VF(ICFB(-2,-1)) + W9 *VF(ICFB(-1,-1)) + W9 *VF(ICFB(1,-1)) + W3*VF(ICFB(2,-1)) + &
@@ -10503,7 +10512,7 @@ IF (HAS_MULTI_LEVELS) THEN
                                      W12*VF(ICFB(-1, 1)) + W9*VF(ICFB(1, 1)) + W3*VF(ICFB(2, 1)) +&
                                      W12*VF(ICFB(-1,-1)) + W9*VF(ICFB(1,-1)) + W3*VF(ICFB(2,-1)) +&
                                      W4 *VF(ICFB(-1,-2)) + W3*VF(ICFB(1,-2)) + W1*VF(ICFB(2,-2)) )
-                     ELSE IF (IXC==LC%NX) THEN
+                     ELSE IF (IXC==LC%IBAR) THEN
                         VC(ICC) = SCALR*( &
                                      W1*VF(ICFB(-2, 2)) + W3*VF(ICFB(-1, 2)) + W4 *VF(ICFB(1, 2)) + &
                                      W3*VF(ICFB(-2, 1)) + W9*VF(ICFB(-1, 1)) + W12*VF(ICFB(1, 1)) +&
@@ -10524,9 +10533,9 @@ IF (HAS_MULTI_LEVELS) THEN
       ELSE
 
          !> ---------- Constant Interpolation (Note: 3D-bilinear case is still missing)
-         DO IZC = 1, LC%NZ
-            DO IYC = 1, LC%NY
-               DO IXC = 1, LC%NX
+         DO IZC = 1, LC%KBAR
+            DO IYC = 1, LC%JBAR
+               DO IXC = 1, LC%IBAR
 
                   IF (IS_UNSTRUCTURED .AND. LC%IS_SOLID(IXC, IYC, IZC)) CYCLE
 
@@ -10609,8 +10618,8 @@ IF (HAS_MULTI_LEVELS) THEN
 
             CASE (NSCARC_INTERPOL_CONSTANT)
 
-               DO IZC = 1, LC%NZ
-                  DO IXC = 1, LC%NX
+               DO IZC = 1, LC%KBAR
+                  DO IXC = 1, LC%IBAR
 
                      IF (IS_UNSTRUCTURED .AND. LC%IS_SOLID(IXC, 1, IZC)) CYCLE
 
@@ -10632,8 +10641,8 @@ IF (HAS_MULTI_LEVELS) THEN
 
             CASE (NSCARC_INTERPOL_BILINEAR)
 
-               DO IZC = 1, LC%NZ
-                  DO IXC = 1, LC%NX
+               DO IZC = 1, LC%KBAR
+                  DO IXC = 1, LC%IBAR
 
                      IF (IS_UNSTRUCTURED .AND. LC%IS_SOLID(IXC, 1, IZC)) CYCLE
 
@@ -10649,49 +10658,49 @@ IF (HAS_MULTI_LEVELS) THEN
 
                      IF (IXC==1.AND.IZC==1) THEN
                         VF(ICFB(-1,-1)) = VC(ICC)
-                        VF(ICFB(-1, 1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC+LC%NX))
+                        VF(ICFB(-1, 1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC+LC%IBAR))
                         VF(ICFB( 1,-1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC+1))
-                        VF(ICFB( 1, 1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC+LC%NX)+W1*VC(ICC+LC%NX+1))
-                     ELSE IF (IXC==1 .AND. IZC==LC%NZ) THEN
-                        VF(ICFB(-1,-1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC-LC%NX))
+                        VF(ICFB( 1, 1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC+LC%IBAR)+W1*VC(ICC+LC%IBAR+1))
+                     ELSE IF (IXC==1 .AND. IZC==LC%KBAR) THEN
+                        VF(ICFB(-1,-1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC-LC%IBAR))
                         VF(ICFB(-1, 1)) = VC(ICC)
-                        VF(ICFB( 1,-1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC-LC%NX)+W1*VC(ICC-LC%NX+1))
+                        VF(ICFB( 1,-1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC-LC%IBAR)+W1*VC(ICC-LC%IBAR+1))
                         VF(ICFB( 1, 1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC+1))
-                     ELSE IF (IXC==LC%NX .AND. IZC==1) THEN
+                     ELSE IF (IXC==LC%IBAR .AND. IZC==1) THEN
                         VF(ICFB(-1,-1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC-1))
-                        VF(ICFB(-1, 1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC+LC%NX)+W1*VC(ICC+LC%NX-1))
+                        VF(ICFB(-1, 1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC+LC%IBAR)+W1*VC(ICC+LC%IBAR-1))
                         VF(ICFB( 1,-1)) = VC(ICC)
-                        VF(ICFB( 1, 1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC+LC%NX))
-                     ELSE IF (IXC==LC%NX .AND. IZC==LC%NZ) THEN
-                        VF(ICFB(-1,-1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC-LC%NX)+W1*VC(ICC-LC%NX-1))
+                        VF(ICFB( 1, 1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC+LC%IBAR))
+                     ELSE IF (IXC==LC%IBAR .AND. IZC==LC%KBAR) THEN
+                        VF(ICFB(-1,-1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC-LC%IBAR)+W1*VC(ICC-LC%IBAR-1))
                         VF(ICFB(-1, 1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC-1))
-                        VF(ICFB( 1,-1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC-LC%NX))
+                        VF(ICFB( 1,-1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC-LC%IBAR))
                         VF(ICFB( 1, 1)) = VC(ICC)
                      ELSE IF (IZC==1) THEN
                         VF(ICFB(-1,-1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC-1))
-                        VF(ICFB(-1, 1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC+LC%NX)+W1*VC(ICC+LC%NX-1))
+                        VF(ICFB(-1, 1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC+LC%IBAR)+W1*VC(ICC+LC%IBAR-1))
                         VF(ICFB( 1,-1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC+1))
-                        VF(ICFB( 1, 1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC+LC%NX)+W1*VC(ICC+LC%NX+1))
-                     ELSE IF (IZC==LC%NZ) THEN
-                        VF(ICFB(-1,-1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC-LC%NX)+W1*VC(ICC-LC%NX-1))
+                        VF(ICFB( 1, 1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC+LC%IBAR)+W1*VC(ICC+LC%IBAR+1))
+                     ELSE IF (IZC==LC%KBAR) THEN
+                        VF(ICFB(-1,-1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC-LC%IBAR)+W1*VC(ICC-LC%IBAR-1))
                         VF(ICFB(-1, 1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC-1))
-                        VF(ICFB( 1,-1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC-LC%NX)+W1*VC(ICC-LC%NX+1))
+                        VF(ICFB( 1,-1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC-LC%IBAR)+W1*VC(ICC-LC%IBAR+1))
                         VF(ICFB( 1, 1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC+1))
                      ELSE IF (IXC==1) THEN
-                        VF(ICFB(-1,-1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC-LC%NX))
-                        VF(ICFB(-1, 1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC+LC%NX))
-                        VF(ICFB( 1,-1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC-LC%NX)+W1*VC(ICC-LC%NX+1))
-                        VF(ICFB( 1, 1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC+LC%NX)+W1*VC(ICC+LC%NX+1))
-                     ELSE IF (IXC==LC%NX) THEN
-                        VF(ICFB(-1,-1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC-LC%NX)+W1*VC(ICC-LC%NX-1))
-                        VF(ICFB(-1, 1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC+LC%NX)+W1*VC(ICC+LC%NX-1))
-                        VF(ICFB( 1,-1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC-LC%NX))
-                        VF(ICFB( 1, 1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC+LC%NX))
+                        VF(ICFB(-1,-1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC-LC%IBAR))
+                        VF(ICFB(-1, 1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC+LC%IBAR))
+                        VF(ICFB( 1,-1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC-LC%IBAR)+W1*VC(ICC-LC%IBAR+1))
+                        VF(ICFB( 1, 1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC+LC%IBAR)+W1*VC(ICC+LC%IBAR+1))
+                     ELSE IF (IXC==LC%IBAR) THEN
+                        VF(ICFB(-1,-1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC-LC%IBAR)+W1*VC(ICC-LC%IBAR-1))
+                        VF(ICFB(-1, 1)) = SCALP*(W9 *VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC+LC%IBAR)+W1*VC(ICC+LC%IBAR-1))
+                        VF(ICFB( 1,-1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC-LC%IBAR))
+                        VF(ICFB( 1, 1)) = SCALP*(W12*VC(ICC)+W4*VC(ICC+LC%IBAR))
                      ELSE
-                        VF(ICFB(-1,-1)) = SCALP*(W9*VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC-LC%NX)+W1*VC(ICC-LC%NX-1))
-                        VF(ICFB(-1, 1)) = SCALP*(W9*VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC+LC%NX)+W1*VC(ICC+LC%NX-1))
-                        VF(ICFB( 1,-1)) = SCALP*(W9*VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC-LC%NX)+W1*VC(ICC-LC%NX+1))
-                        VF(ICFB( 1, 1)) = SCALP*(W9*VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC+LC%NX)+W1*VC(ICC+LC%NX+1))
+                        VF(ICFB(-1,-1)) = SCALP*(W9*VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC-LC%IBAR)+W1*VC(ICC-LC%IBAR-1))
+                        VF(ICFB(-1, 1)) = SCALP*(W9*VC(ICC)+W3*VC(ICC-1)+W3*VC(ICC+LC%IBAR)+W1*VC(ICC+LC%IBAR-1))
+                        VF(ICFB( 1,-1)) = SCALP*(W9*VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC-LC%IBAR)+W1*VC(ICC-LC%IBAR+1))
+                        VF(ICFB( 1, 1)) = SCALP*(W9*VC(ICC)+W3*VC(ICC+1)+W3*VC(ICC+LC%IBAR)+W1*VC(ICC+LC%IBAR+1))
                      ENDIF
                   ENDDO
                ENDDO
@@ -10701,9 +10710,9 @@ IF (HAS_MULTI_LEVELS) THEN
       ELSE
 
          !> ---------- Constant Interpolation (Note: 3D-bilinear case is still missing)
-         DO IZC = 1, LC%NZ
-            DO IYC = 1, LC%NY
-               DO IXC = 1, LC%NX
+         DO IZC = 1, LC%KBAR
+            DO IYC = 1, LC%JBAR
+               DO IXC = 1, LC%IBAR
 
                   IF (IS_UNSTRUCTURED .AND. LC%IS_SOLID(IXC, IYC, IZC)) CYCLE
 
@@ -10962,7 +10971,7 @@ RECEIVE_MESH_INDEX: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_EXCHANGE_CELL_NUMBER)
 
             N_REQ = N_REQ+1
-            CALL MPI_IRECV(OS%RECV_INT_BASIC(1),8,MPI_INTEGER,SNODE, &
+            CALL MPI_IRECV(OS%RECV_INT_BASIC(1),11,MPI_INTEGER,SNODE, &
                            TAG,MPI_COMM_WORLD,REQ(N_REQ),IERROR)
 
          !> ---------------------------------------------------------------------------------------
@@ -11064,7 +11073,7 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !> ---------------------------------------------------------------------------------------
          CASE (NSCARC_EXCHANGE_BASIC)
 
-            OS%SEND_INT_BASIC(1)=OL%N_WALL_CELLS
+            OS%SEND_INT_BASIC(1)=OD%NWL
 
             IF (RNODE /= SNODE) THEN
                N_REQ = N_REQ+1
@@ -11081,15 +11090,15 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                CASE (1)
                   OL%DH = L%DXL(0)
                CASE (-1)
-                  OL%DH = L%DXL(L%NX)
+                  OL%DH = L%DXL(L%IBAR)
                 CASE (2)
                   OL%DH = L%DYL(0)
                CASE (-2)
-                  OL%DH = L%DYL(L%NY)
+                  OL%DH = L%DYL(L%JBAR)
                CASE (3)
                   OL%DH = L%DZL(0)
                CASE (-3)
-                  OL%DH = L%DZL(L%NZ)
+                  OL%DH = L%DZL(L%KBAR)
             END SELECT
             OS%SEND_REAL_BASIC(1) = OL%DH
 
@@ -11103,18 +11112,21 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !> send overlapped parts of cell numbers
          !> ---------------------------------------------------------------------------------------
          CASE (NSCARC_EXCHANGE_CELL_NUMBER)
-
-            OS%SEND_INT_BASIC(1)=L%NX
-            OS%SEND_INT_BASIC(2)=L%NY
-            OS%SEND_INT_BASIC(3)=L%NZ
-            OS%SEND_INT_BASIC(4)=L%NCS
-            OS%SEND_INT_BASIC(6)=L%N_WALL_CELLS
-            OS%SEND_INT_BASIC(7)=L%N_WALL_CELLS_EXT
-            OS%SEND_INT_BASIC(8)=L%N_WALL_CELLS_INT
+ 
+            OS%SEND_INT_BASIC( 1)=L%IBAR
+            OS%SEND_INT_BASIC( 2)=L%JBAR
+            OS%SEND_INT_BASIC( 3)=L%KBAR
+            OS%SEND_INT_BASIC( 4)=L%N_CELLS
+            OS%SEND_INT_BASIC( 6)=L%N_WALL_CELLS
+            OS%SEND_INT_BASIC( 7)=L%N_WALL_CELLS_EXT
+            OS%SEND_INT_BASIC( 8)=L%N_WALL_CELLS_INT
+            OS%SEND_INT_BASIC( 9)=D%NC
+            OS%SEND_INT_BASIC(10)=D%NCE
+            OS%SEND_INT_BASIC(11)=D%NCG
 
             IF (RNODE /= SNODE) THEN
                N_REQ = N_REQ+1
-               CALL MPI_ISEND(OS%SEND_INT_BASIC(1),8,MPI_INTEGER,SNODE, &
+               CALL MPI_ISEND(OS%SEND_INT_BASIC(1),11,MPI_INTEGER,SNODE, &
                               TAG,MPI_COMM_WORLD,REQ(N_REQ),IERROR)
             ENDIF
 
@@ -11125,7 +11137,7 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_EXCHANGE_WALL_INFO)
 
             IPTR=1
-            DO IWL = 1, OL%N_WALL_CELLS
+            DO IWL = 1, OD%NWL
                IWG = OD%IWL_TO_IWG(IWL)
                WC => D%WALL(IWG)
                OS%SEND_INT(IPTR   ) = WC%IXG
@@ -11142,7 +11154,7 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                OS%SEND_INT(IPTR+11) = WC%IZN(2)
                OS%SEND_INT(IPTR+12) = WC%NOM
                IPTR = IPTR + 13
-               DO ICPL=1,OL%NCPL_SEND
+               DO ICPL=1,OD%NCPL_SEND
                   OS%SEND_INT(IPTR)=WC%ICE(ICPL)
                   IPTR = IPTR + 1
                ENDDO
@@ -11161,7 +11173,7 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
             IPTR=1
             OS%SEND_INT=0
-            DO IWL = 1, OL%N_WALL_CELLS
+            DO IWL = 1, OD%NWL
                IWG = OD%IWL_TO_IWG(IWL)
                WC => D%WALL(IWG)
                IF (L%IS_SOLID(WC%IXW, WC%IYW, WC%IZW)) THEN
@@ -11227,7 +11239,7 @@ MESH_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                IZ  = WC%IZW
 
                !ZSUM = VECTOR(D%CELL_NUMBER(IX, IY, IZ))
-               !OS%SEND_REAL(LL) = ZSUM/REAL(OL%NCPL_RECV,EB)
+               !OS%SEND_REAL(LL) = ZSUM/REAL(OD%NCPL_RECV,EB)
 
                IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(IX, IY, IZ)) THEN
                   OS%SEND_REAL(LL) = NSCARC_HUGE_REAL
@@ -11395,15 +11407,15 @@ MESH_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                   CASE ( 1)
                      L%DXL(0)    = 0.5_EB*(OL%DH + L%DXL(0))
                   CASE (-1)
-                     L%DXL(L%NX) = 0.5_EB*(OL%DH + L%DXL(L%NX))
+                     L%DXL(L%IBAR) = 0.5_EB*(OL%DH + L%DXL(L%IBAR))
                   CASE ( 2)
                      L%DYL(0)    = 0.5_EB*(OL%DH + L%DYL(0))
                   CASE (-2)
-                     L%DYL(L%NY) = 0.5_EB*(OL%DH + L%DYL(L%NY))
+                     L%DYL(L%JBAR) = 0.5_EB*(OL%DH + L%DYL(L%JBAR))
                   CASE ( 3)
                      L%DZL(0)    = 0.5_EB*(OL%DH + L%DZL(0))
                   CASE (-3)
-                     L%DZL(L%NZ) = 0.5_EB*(OL%DH + L%DZL(L%NZ))
+                     L%DZL(L%KBAR) = 0.5_EB*(OL%DH + L%DZL(L%KBAR))
                END SELECT
 
             !> ------------------------------------------------------------------------------------
@@ -11427,8 +11439,8 @@ MESH_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                   WC%IZN(2) = RECV_INT(IPTR +11)
                   WC%NOM    = RECV_INT(IPTR +12)
                   IPTR = IPTR + 13
-                  ALLOCATE (WC%ICE(OL%NCPL_RECV))
-                  DO ICPL=1,OL%NCPL_RECV
+                  ALLOCATE (WC%ICE(OD%NCPL_RECV))
+                  DO ICPL=1,OD%NCPL_RECV
                      WC%ICE(ICPL) = RECV_INT(IPTR)
                      IPTR = IPTR + 1
                   ENDDO
@@ -11438,6 +11450,8 @@ MESH_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             !> unpack information about neighboring grids
             !> ------------------------------------------------------------------------------------
             CASE (NSCARC_EXCHANGE_DISCRET)
+
+  WRITE(MSG%LU_DEBUG,*) 'EXCHANGE_DISCRET: OD%NCG =',OD%NCG
 
                DO ICG = 1, OD%NCG
 
@@ -11473,13 +11487,19 @@ MESH_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             !> ------------------------------------------------------------------------------------
             CASE (NSCARC_EXCHANGE_CELL_NUMBER)
 
-               OL%NX  = RECV_INT_BASIC(1)
-               OL%NY  = RECV_INT_BASIC(2)
-               OL%NZ  = RECV_INT_BASIC(3)
-               OL%NCS = RECV_INT_BASIC(4)
-               OL%N_WALL_CELLS     = RECV_INT_BASIC(6)
-               OL%N_WALL_CELLS_EXT = RECV_INT_BASIC(7)
-               OL%N_WALL_CELLS_INT = RECV_INT_BASIC(8)
+               OL%IBAR     = RECV_INT_BASIC(1)
+               OL%JBAR     = RECV_INT_BASIC(2)
+               OL%KBAR     = RECV_INT_BASIC(3)
+               OL%N_CELLS  = RECV_INT_BASIC(4)
+
+               OL%N_WALL_CELLS     = RECV_INT_BASIC(5)
+               OL%N_WALL_CELLS_EXT = RECV_INT_BASIC(6)
+               OL%N_WALL_CELLS_INT = RECV_INT_BASIC(7)
+
+               OD%NC     = RECV_INT_BASIC(8)
+               OD%NCE    = RECV_INT_BASIC(9)
+               OD%NCG    = RECV_INT_BASIC(10)
+               OD%NWL    = RECV_INT_BASIC(11)
 
             !> ------------------------------------------------------------------------------------
             !> unpack information about neighboring matrix sizes
@@ -11514,7 +11534,7 @@ MESH_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
                      ZSUM=0.0_EB
                      IWG = OD%IWL_TO_IWG(IW)
-                     DO ICPL = 1, OL%NCPL
+                     DO ICPL = 1, OD%NCPL
                         ZSUM=ZSUM+RECV_REAL(LL)
                         LL = LL+1
                      ENDDO
@@ -11524,7 +11544,7 @@ MESH_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                      J=WC%IYG
                      K=WC%IZG
 
-                     HVECTOR(I, J, K) = ZSUM/REAL(OL%NCPL,EB)
+                     HVECTOR(I, J, K) = ZSUM/REAL(OD%NCPL,EB)
 
                   ENDDO UNPACK_PRESSURE
                ENDDO
@@ -11674,9 +11694,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    END SELECT
 
    VC => POINT_TO_VECTOR(NM, NL, NV)
-   DO K = 1, L%NZ
-      DO J = 1, L%NY
-         DO I = 1, L%NX
+   DO K = 1, L%KBAR
+      DO J = 1, L%JBAR
+         DO I = 1, L%IBAR
             IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I, J, K)) CYCLE
             IC = D%CELL_NUMBER(I,J,K)
             LOCAL_REAL(NM) = LOCAL_REAL(NM) + VC(IC)
@@ -11702,9 +11722,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    END SELECT
    VC  => POINT_TO_VECTOR(NM, NL, NV)
 
-   DO K = 1, L%NZ
-      DO J = 1, L%NY
-         DO I = 1, L%NX
+   DO K = 1, L%KBAR
+      DO J = 1, L%JBAR
+         DO I = 1, L%IBAR
             IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I, J, K)) CYCLE
             IC = D%CELL_NUMBER(I,J,K)
             VC(IC) = VC(IC) - GLOBAL_REAL
@@ -12490,8 +12510,8 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    END SELECT
    VE => POINT_TO_VECTOR (NM, NL, NE)
 
-   DO K = 1, L%NZ
-      DO I = 1, L%NX
+   DO K = 1, L%KBAR
+      DO I = 1, L%IBAR
          IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I,1,K)) CYCLE
          IC = D%CELL_NUMBER(I,1,K)
          IF (NL == NLEVEL_MIN) THEN
@@ -12533,8 +12553,8 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    END SELECT
    VEC => POINT_TO_VECTOR (NM, NL, NV)
 
-   DO K = 1, L%NZ
-      DO I = 1, L%NX
+   DO K = 1, L%KBAR
+      DO I = 1, L%IBAR
          IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I,1,K)) CYCLE
          IC = D%CELL_NUMBER(I,1,K)
          IF (NL == NLEVEL_MIN) THEN
@@ -12584,8 +12604,8 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    END SELECT
    VC => POINT_TO_VECTOR (NM, NL, NV)
 
-   DO K = 1, L%NZ
-      DO I = 1, L%NX
+   DO K = 1, L%KBAR
+      DO I = 1, L%IBAR
          IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I,1,K)) CYCLE
          IC = D%CELL_NUMBER(I,1,K)
          X  = M%XC(I)
@@ -12703,9 +12723,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    END SELECT
    VC => POINT_TO_VECTOR (NM, NL, NV)
 
-   NX8=MIN(12,L%NX)
-   NY8=MIN(12,L%NY)
-   NZ8=MIN(12,L%NZ)
+   NX8=MIN(12,L%IBAR)
+   NY8=MIN(12,L%JBAR)
+   NZ8=MIN(12,L%KBAR)
 
    WRITE(MSG%LU_DEBUG,*) '=========================================================='
    WRITE(MSG%LU_DEBUG,2001) CVEC, NM, NL
@@ -13023,7 +13043,7 @@ SELECT CASE (NTYPE)
                   !IF (BAMG) WRITE(MSG%LU_DEBUG,*) 'SIZE(OD%IWL_TO_ICG)=',SIZE(OD%IWL_TO_ICG)
                   WRITE(MSG%LU_DEBUG,'(a,i8,a,2f12.6)') '---OC(',NOM,')%DH :',OL%DH
                   WRITE(MSG%LU_DEBUG,'(a,i8,a,2i8)') '---OL(',NOM,')%IOR   :',OL%IOR
-                  WRITE(MSG%LU_DEBUG,'(a,i8,a,2i8)') '---OL(',NOM,')%N_WALL_CELLS_LOCAL(.):',OL%N_WALL_CELLS
+                  WRITE(MSG%LU_DEBUG,'(a,i8,a,2i8)') '---OL(',NOM,')%N_WALL_CELLS_LOCAL(.):',OD%NWL
                   WRITE(MSG%LU_DEBUG,'(a,i8,a,2i8)') '---OL(',NOM,')%NCG(.):',OD%NCG
                   WRITE(MSG%LU_DEBUG,*)
                   WRITE(MSG%LU_DEBUG,'(a,i8,a)') '------OL(',NOM,')%ICG_TO_IWG:'
@@ -13043,17 +13063,17 @@ SELECT CASE (NTYPE)
                   WRITE(MSG%LU_DEBUG,*)
                   WRITE(MSG%LU_DEBUG,*)
                   WRITE(MSG%LU_DEBUG,'(a,i8,a)') '------OL(',NOM,')%IWL_TO_IWG:'
-                  DO IW = 1, OL%N_WALL_CELLS
+                  DO IW = 1, OD%NWL
                      WRITE(MSG%LU_DEBUG,'(16i8)') OD%IWL_TO_IWG(IW)
                   ENDDO
                   !WRITE(MSG%LU_DEBUG,*)
                   !WRITE(MSG%LU_DEBUG,'(a,i8,a)') '------OL(',NOM,')%IWL_TO_ICW:'
-                  !DO IW = 1, OL%N_WALL_CELLS
+                  !DO IW = 1, OD%NWL
                   !   WRITE(MSG%LU_DEBUG,'(16i8)') OD%IWL_TO_ICW(IW)
                   !ENDDO
                   WRITE(MSG%LU_DEBUG,*)
                   WRITE(MSG%LU_DEBUG,'(a,i8,a)') '------OL(',NOM,')%IWL_TO_ICO:'
-                  DO IW = 1, OL%N_WALL_CELLS
+                  DO IW = 1, OD%NWL
                      WRITE(MSG%LU_DEBUG,'(16i8)') OD%IWL_TO_ICO(IW)
                   ENDDO
                   !IF (BAMG) THEN
@@ -13238,10 +13258,10 @@ SELECT CASE (NTYPE)
          WRITE(MSG%LU_DEBUG,*) 'M%N_OBST=',M%N_OBST
          WRITE(MSG%LU_DEBUG,*) 'M%N_WALL_CELLS=',M%N_WALL_CELLS
          WRITE(MSG%LU_DEBUG,*) 'M%CELL_INDEX:'
-         DO JJJ = L%NY+1,0,-1
+         DO JJJ = L%JBAR+1,0,-1
             WRITE(MSG%LU_DEBUG,*) ' ------------- JJJ = ', JJJ
-            DO KKK = L%NZ+1,0,-1
-               WRITE(MSG%LU_DEBUG,*) (M%CELL_INDEX(III,JJJ,KKK), III=0,L%NX+1)
+            DO KKK = L%KBAR+1,0,-1
+               WRITE(MSG%LU_DEBUG,*) (M%CELL_INDEX(III,JJJ,KKK), III=0,L%IBAR+1)
             ENDDO
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'M%WALL(.)%BOUNDARY_TYPE:'
@@ -13263,24 +13283,24 @@ SELECT CASE (NTYPE)
                M%WALL(IWG)%BOUNDARY_TYPE, D%WALL(IWG)%BTYPE, M%WALL(IWG)%PRESSURE_BC_INDEX
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'GRID%CELL_NUMBER(...)'
-         DO JJJ=L%NY+1,0,-1
+         DO JJJ=L%JBAR+1,0,-1
             WRITE(MSG%LU_DEBUG,*) ' ------------- JJJ = ', JJJ
-            DO KKK = L%NZ+1,0,-1
-               WRITE(MSG%LU_DEBUG,*) (D%CELL_NUMBER(III,JJJ,KKK),III=0,L%NX+1)
+            DO KKK = L%KBAR+1,0,-1
+               WRITE(MSG%LU_DEBUG,*) (D%CELL_NUMBER(III,JJJ,KKK),III=0,L%IBAR+1)
             ENDDO
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'GRIL%IS_SOLID(...)'
-         DO JJJ=L%NY+1,0,-1
+         DO JJJ=L%JBAR+1,0,-1
             WRITE(MSG%LU_DEBUG,*) ' ------------- JJJ = ', JJJ
-            DO KKK = L%NZ+1,0,-1
-               WRITE(MSG%LU_DEBUG,*) (L%IS_SOLID(III,JJJ,KKK),III=0,L%NX+1)
+            DO KKK = L%KBAR+1,0,-1
+               WRITE(MSG%LU_DEBUG,*) (L%IS_SOLID(III,JJJ,KKK),III=0,L%IBAR+1)
             ENDDO
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'M%CELL_INDEX:'
-         DO JJJ=L%NY+1,0,-1
+         DO JJJ=L%JBAR+1,0,-1
             WRITE(MSG%LU_DEBUG,*) ' ------------- JJJ = ', JJJ
-            DO KKK = L%NZ+1,0,-1
-               WRITE(MSG%LU_DEBUG,*) (M%CELL_INDEX(III,JJJ,KKK),III=0,L%NX+1)
+            DO KKK = L%KBAR+1,0,-1
+               WRITE(MSG%LU_DEBUG,*) (M%CELL_INDEX(III,JJJ,KKK),III=0,L%IBAR+1)
             ENDDO
          ENDDO
       ENDDO
