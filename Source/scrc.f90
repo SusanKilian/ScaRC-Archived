@@ -2581,7 +2581,7 @@ END SUBROUTINE SCARC_SETUP_FACES
 SUBROUTINE SCARC_SETUP_WALLS
 USE GEOMETRY_FUNCTIONS, ONLY: SEARCH_OTHER_MESHES
 INTEGER :: NL, NM, NM2, NOM, NCPL
-INTEGER :: IREFINE, IFACE, IOR0, INBR, IWG, IWL, IWC
+INTEGER :: IREFINE, IFACE, IOR0, JOR0, INBR, IWG, IWL, IWC
 LOGICAL :: IS_KNOWN(-3:3), IS_BC_DIRICHLET, IS_OPEN_BOUNDARY
 TYPE (MESH_TYPE), POINTER :: M
 TYPE (SCARC_TYPE), POINTER :: S=>NULL()
@@ -2631,12 +2631,19 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       IWL = IWL + 1                                             !> count local wall cells for that face
 
       IF (NOM /= 0) THEN
-         D%WALL(IWG)%NCPL = NCPL                                !> store number of couplings for that cell
-      ELSE
-         D%WALL(IWG)%NCPL = 0                                   !> no couplings
-      ENDIF
 
-      IF (NOM /= 0) THEN
+         D%WALL(IWG)%NCPL = NCPL                        !> store number of couplings for that cell
+         IS_KNOWN = .FALSE.
+
+         DO JOR0 = -3, 3
+            IF (JOR0 == 0) CYCLE
+            DO INBR = 1, L%FACE(JOR0)%N_NEIGHBORS
+               IF (L%FACE(JOR0)%NEIGHBORS(INBR) == NOM) THEN
+                  IS_KNOWN(JOR0) = .TRUE.
+                  EXIT
+               ENDIF
+            ENDDO
+         ENDDO
 
          D%NCE = D%NCE + NCPL                                   !> increase number of extended grid cells
 
@@ -2659,6 +2666,8 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             L%NCPL_MAX  = MAX(L%NCPL_MAX, NCPL)                 !> get max NCPL ever used on this mesh
          ENDIF
 
+      ELSE
+         D%WALL(IWG)%NCPL = 0                           !> no couplings
       ENDIF
 
    ENDDO EXTERNAL_WALL_CELLS_LOOP1
