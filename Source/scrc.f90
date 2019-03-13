@@ -2608,8 +2608,10 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          D => L%UD
    END SELECT
 
+   !>
    !> First loop over external wall cells:
    !> Determine number of adajacent neighbors to each face with corresponding number of IW's
+   !>
    IWL = 0
    EXTERNAL_WALL_CELLS_LOOP1: DO IWG = 1, L%N_WALL_CELLS_EXT
 
@@ -2683,12 +2685,43 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    ENDDO INTERNAL_WALL_CELLS_LOOP1
 
+   !>
+   !> Allocate corresponding pointer arrays for data exchanges with neighbors
+   !>
+   IF (D%NCE > D%NC) THEN
+      CALL SCARC_ALLOCATE_INT1(D%ICE_TO_IWG, D%NC+1, D%NCE, NSCARC_INIT_ZERO, 'ICE_TO_IWG')
+      CALL SCARC_ALLOCATE_INT1(D%ICE_TO_IWL, D%NC+1, D%NCE, NSCARC_INIT_ZERO, 'ICL_TO_IWG')
+      CALL SCARC_ALLOCATE_INT1(D%ICE_TO_ICG, D%NC+1, D%NCE, NSCARC_INIT_ZERO, 'ICE_TO_ICG')
+   ENDIF
 
+   FACE_NEIGHBORS_LOOP: DO IOR0 = -3, 3
+
+      IF (IOR0 == 0) CYCLE FACE_NEIGHBORS_LOOP
+
+      DO INBR = 1, L%FACE(IOR0)%N_NEIGHBORS
+         NOM = L%FACE(IOR0)%NEIGHBORS(INBR) 
+         OL  => SCARC(NM)%OSCARC(NOM)%LEVEL(NLEVEL_MIN)
+         SELECT CASE(TYPE_DISCRET)
+            CASE (NSCARC_DISCRET_STRUCTURED)
+               OD => OL%SD
+            CASE (NSCARC_DISCRET_UNSTRUCTURED)
+               OD => OL%UD
+         END SELECT
+         CALL SCARC_ALLOCATE_INT1(OD%IWL_TO_IWG, 1, OL%N_WALL_CELLS, NSCARC_INIT_ZERO, 'IWL_TO_IWG')
+         CALL SCARC_ALLOCATE_INT1(OD%IWL_TO_ICO, 1, OL%N_WALL_CELLS, NSCARC_INIT_ZERO, 'IWL_TO_ICO')
+         CALL SCARC_ALLOCATE_INT1(OD%ICG_TO_IWG, 1, OD%NCG,          NSCARC_INIT_ZERO, 'ICG_TO_IWG')
+         CALL SCARC_ALLOCATE_INT1(OD%ICG_TO_ICO, 1, OD%NCG,          NSCARC_INIT_ZERO, 'ICG_TO_ICO')
+         CALL SCARC_ALLOCATE_INT1(OD%ICG_TO_ICE, 1, OD%NCG,          NSCARC_INIT_ZERO, 'ICG_TO_ICE')
+      ENDDO
+
+   ENDDO FACE_NEIGHBORS_LOOP
+
+   !>
    !> Second loop over external wall cells:
    !> Store detailed coordinate and cell data and get type of boundary condition
+   !>
    D%ICE = D%NC
    D%ICO = D%NC
-
    WALL_CELLS_LOOP2: DO IWG = 1, L%N_WALL_CELLS_EXT
 
       NOM  = D%WALL(IWG)%NOM
@@ -2743,57 +2776,13 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 ENDDO MESHES_LOOP1
 
-CALL SCARC_SETUP_SUBDIVISION(NLEVEL_MIN)
 
 !>
-!> Set dimensions on finest level for requested type(s) of discretization 
+!> Set subdivision and dimensions on finest level for requested type(s) of discretization 
 !>
+CALL SCARC_SETUP_SUBDIVISION(NLEVEL_MIN)
 CALL SCARC_SETUP_DIMENSIONS(NLEVEL_MIN)
 
-
-!> 
-!> -------- Allocate several pointers arrays for data exchanges with neighbors
-!> 
-MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-   L => SCARC(NM)%LEVEL(NLEVEL_MIN)
-   SELECT CASE(TYPE_DISCRET)
-      CASE (NSCARC_DISCRET_STRUCTURED)
-         D => L%SD
-      CASE (NSCARC_DISCRET_UNSTRUCTURED)
-         D => L%UD
-   END SELECT
-
-   !> Allocate corresponding pointer arrays in related OSCARC-structures
-   !> First allocate administrative mapping arrays for own mesh
-   IF (D%NCE > D%NC) THEN
-      CALL SCARC_ALLOCATE_INT1(D%ICE_TO_IWG, D%NC+1, D%NCE, NSCARC_INIT_ZERO, 'ICE_TO_IWG')
-      CALL SCARC_ALLOCATE_INT1(D%ICE_TO_IWL, D%NC+1, D%NCE, NSCARC_INIT_ZERO, 'ICL_TO_IWG')
-      CALL SCARC_ALLOCATE_INT1(D%ICE_TO_ICG, D%NC+1, D%NCE, NSCARC_INIT_ZERO, 'ICE_TO_ICG')
-   ENDIF
-
-   FACE_NEIGHBORS_LOOP: DO IOR0 = -3, 3
-
-      IF (IOR0 == 0) CYCLE FACE_NEIGHBORS_LOOP
-
-      DO INBR = 1, L%FACE(IOR0)%N_NEIGHBORS
-         NOM = L%FACE(IOR0)%NEIGHBORS(INBR) 
-         OL  => SCARC(NM)%OSCARC(NOM)%LEVEL(NLEVEL_MIN)
-         SELECT CASE(TYPE_DISCRET)
-            CASE (NSCARC_DISCRET_STRUCTURED)
-               OD => OL%SD
-            CASE (NSCARC_DISCRET_UNSTRUCTURED)
-               OD => OL%UD
-         END SELECT
-         CALL SCARC_ALLOCATE_INT1(OD%IWL_TO_IWG, 1, OL%N_WALL_CELLS, NSCARC_INIT_ZERO, 'IWL_TO_IWG')
-         CALL SCARC_ALLOCATE_INT1(OD%IWL_TO_ICO, 1, OL%N_WALL_CELLS, NSCARC_INIT_ZERO, 'IWL_TO_ICO')
-         CALL SCARC_ALLOCATE_INT1(OD%ICG_TO_IWG, 1, OD%NCG,          NSCARC_INIT_ZERO, 'ICG_TO_IWG')
-         CALL SCARC_ALLOCATE_INT1(OD%ICG_TO_ICO, 1, OD%NCG,          NSCARC_INIT_ZERO, 'ICG_TO_ICO')
-         CALL SCARC_ALLOCATE_INT1(OD%ICG_TO_ICE, 1, OD%NCG,          NSCARC_INIT_ZERO, 'ICG_TO_ICE')
-      ENDDO
-
-   ENDDO FACE_NEIGHBORS_LOOP
-ENDDO MESHES_LOOP2
 
 !> 
 !> -------- For multi-level variants get discretization information and dimensions on coarser levels
