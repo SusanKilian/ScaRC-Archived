@@ -2139,7 +2139,8 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             ENDDO
          ENDDO
       ENDDO
-      D%NC = D%NC_LOCAL(NM)
+      D%NC  = D%NC_LOCAL(NM)
+      D%NCE = D%NC_LOCAL(NM)
 WRITE(MSG%LU_DEBUG,*) 'SETUP_DISCRET: STRUCTURED PART : D%NC=',D%NC
 
 
@@ -2170,7 +2171,8 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_DISCRET: STRUCTURED PART : D%NC=',D%NC
             ENDDO
          ENDDO
       ENDDO
-      D%NC = D%NC_LOCAL(NM)
+      D%NC  = D%NC_LOCAL(NM)
+      D%NCE = D%NC_LOCAL(NM)
 WRITE(MSG%LU_DEBUG,*) 'SETUP_DISCRET: UNSTRUCTURED PART : D%NC=',D%NC
 
    !>
@@ -2211,7 +2213,8 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_DISCRET: UNSTRUCTURED PART : D%NC=',D%NC
             ENDDO
          ENDDO
       ENDDO
-      D%NC = D%NC_LOCAL(NM)
+      D%NC  = D%NC_LOCAL(NM)
+      D%NCE = D%NC_LOCAL(NM)
 
    ENDIF
 
@@ -2579,7 +2582,7 @@ END SUBROUTINE SCARC_SETUP_FACES
 
 
 !> ----------------------------------------------------------------------------------------------------
-!> Setup FACE and WALL related structures and boundary conditions
+!> Setup WALL related structures and boundary conditions
 !> ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_WALLS
 USE GEOMETRY_FUNCTIONS, ONLY: SEARCH_OTHER_MESHES
@@ -2596,6 +2599,9 @@ TYPE (SCARC_WALL_TYPE), POINTER :: DWC
 TYPE (WALL_TYPE), POINTER :: MWC
 TYPE (EXTERNAL_WALL_TYPE), POINTER :: EWC
 
+!> 
+!> -------- Get dimensionings for wall cells
+!> 
 MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    M => MESHES(NM)
@@ -2756,8 +2762,6 @@ CALL SCARC_SETUP_DIMENSIONS(NLEVEL_MIN)
 !> 
 MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   M => MESHES(NM)
-   S => SCARC(NM)
    L => SCARC(NM)%LEVEL(NLEVEL_MIN)
    SELECT CASE(TYPE_DISCRET)
       CASE (NSCARC_DISCRET_STRUCTURED)
@@ -2777,11 +2781,10 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    FACE_NEIGHBORS_LOOP: DO IOR0 = -3, 3
 
       IF (IOR0 == 0) CYCLE FACE_NEIGHBORS_LOOP
-      IF (L%FACE(IOR0)%N_NEIGHBORS == 0) CYCLE FACE_NEIGHBORS_LOOP
 
       DO INBR = 1, L%FACE(IOR0)%N_NEIGHBORS
          NOM = L%FACE(IOR0)%NEIGHBORS(INBR) 
-         OL   => SCARC(NM)%OSCARC(NOM)%LEVEL(NLEVEL_MIN)
+         OL  => SCARC(NM)%OSCARC(NOM)%LEVEL(NLEVEL_MIN)
          SELECT CASE(TYPE_DISCRET)
             CASE (NSCARC_DISCRET_STRUCTURED)
                OD => OL%SD
@@ -2799,15 +2802,16 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 ENDDO MESHES_LOOP2
 
 !> 
-!> If necessary (in case of MG-method) also get discretization information and dimensions on coarser levels
-!> 
+!> -------- For multi-level variants get discretization information and dimensions on coarser levels
 !> 
 DO NL = NLEVEL_MIN+1, NLEVEL_MAX
    CALL SCARC_SETUP_DISCRET_LEVEL(NL)
    CALL SCARC_SETUP_DIMENSIONS(NL)
 ENDDO
 
-!> Count number of Dirichlet BCs on finest level 
+!>
+!> -------- Check whether there are no Dirichlet BC's available
+!>
 LOCAL_INT = 0
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    DO NM2 = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -2835,7 +2839,7 @@ ENDIF
 
 
 !>
-!> Only in case of Twolevel-CG- or GMG-method (as main solver or preconditioner):
+!> -------- Only for multi-level variants (twolevel-CG or GMG-method as main solver or preconditioner):
 !> Determine WALL, FACE and OSCARC types for coarser levels
 !>
 MULTI_LEVEL_IF: IF (HAS_MULTI_LEVELS) THEN
