@@ -7967,12 +7967,14 @@ SELECT CASE(TRIM(SOLVER))
    CASE('USCARC')
       PRES_METHOD = 'USCARC'
       SCARC_DISCRETIZATION = 'UNSTRUCTURED'
+      PRES_ON_WHOLE_DOMAIN = .FALSE.
       IF (SCARC_METHOD == 'NONE') SCARC_METHOD = 'KRYLOV'    ! Use Krylov as default solver for USCARC
       IF (SCARC_PRECON == 'NONE') SCARC_PRECON = 'PARDISO'   ! Use PARDISO as default preconditioner for USCARC
 
    CASE('SCARC')
       PRES_METHOD = 'SCARC'
       SCARC_DISCRETIZATION = 'STRUCTURED'
+      PRES_ON_WHOLE_DOMAIN = .TRUE.
       IF (SCARC_METHOD == 'NONE') SCARC_METHOD = 'KRYLOV'    ! Use Krylov default solver for SCARC
       IF (SCARC_PRECON == 'NONE') SCARC_PRECON = 'FFT'       ! Use FFT as default preconditioner for SCARC
 

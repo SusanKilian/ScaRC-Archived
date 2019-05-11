@@ -46,3 +46,6 @@ Source/scrc3.f90
 Source/vv
 Utilities/Python/res.py
 Verification/Scarc/dump/*
+Source/ilu.f90
+Verification/Scarc/matlab/*
+Verification/Scarc/ssor

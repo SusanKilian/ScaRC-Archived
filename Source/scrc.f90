@@ -7,7 +7,7 @@
 !>     - WITH_MKL_FB        : perform MKL routines for LU-decomposition only in single precision
 !> --------------------------------------------------------------------------------------------------------
 #define WITH_SCARC_VERBOSE
-#undef WITH_SCARC_DEBUG
+#define WITH_SCARC_DEBUG
 #undef WITH_SCARC_CGBARO
 #undef WITH_MKL_FB
 
@@ -5224,7 +5224,6 @@ IF (IS_INTERNAL_CELL) THEN
 ELSE IF (L%FACE(IOR0)%N_NEIGHBORS /= 0) THEN
 
    IW = ASSIGN_SUBDIAG_TYPE (IC, IOR0, NM, NL)         !> get IW of a possibly suitable neighbor at face IOR0
-WRITE(*,*) 'MATRIX_SUBDIAG: IC, IOR0, NM, NL, IW:', IC, IOR0, NM, NL, IW
    IF (IW > 0) then                                   !> if available, build corresponding subdiagonal entry
 
       AC%VAL(IP) = AC%VAL(IP) + DSCAL
@@ -5272,7 +5271,7 @@ SELECT CASE(TYPE_DISCRET)
 END SELECT
 
 ASSIGN_SUBDIAG_TYPE = -1
-SEARCH_WALL_CELLS_LOOP: DO IW = L%FACE(IOR0)%IWG_PTR, L%FACE(IOR0)%IWG_PTR+L%FACE(IOR0)%NFW
+SEARCH_WALL_CELLS_LOOP: DO IW = L%FACE(IOR0)%IWG_PTR, L%FACE(IOR0)%IWG_PTR+L%FACE(IOR0)%NFW-1
 
   IF (D%WALL(IW)%NOM == 0) CYCLE
 
@@ -6345,12 +6344,14 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          MGM%H2 = ST%X
       CASE (3)
          ST%X = MGM%H1 + MGM%H2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '------------ STORE_MGM : H1'
 WRITE(MSG%LU_DEBUG, '(5E14.6)') MGM%H1
 WRITE(MSG%LU_DEBUG,*) '------------ STORE_MGM : H2'
 WRITE(MSG%LU_DEBUG, '(5E14.6)') MGM%H2
 WRITE(MSG%LU_DEBUG,*) '------------ STORE_MGM : X'
 WRITE(MSG%LU_DEBUG, '(5E14.6)') ST%X
+#endif
    END SELECT
 
 ENDDO
@@ -6387,6 +6388,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       HP => M%HS
    ENDIF
 
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '================== MGM_INTERNAL_VELOCITY'
 WRITE(MSG%LU_DEBUG,*) '         U:'
 WRITE(MSG%LU_DEBUG, '(6E14.6)') ((UU(I,1,K), I=0, L%IBAR), K=1, L%KBAR)
@@ -6399,6 +6401,7 @@ WRITE(MSG%LU_DEBUG, '(5E14.6)') ((M%FVZ(I,1,K), I=1, L%IBAR), K=0, L%KBAR)
 WRITE(MSG%LU_DEBUG,*) '         H:'
 WRITE(MSG%LU_DEBUG, '(5E14.6)') ((HP(I,1,K), I=1, L%IBAR), K=1, L%KBAR)
 WRITE(MSG%LU_DEBUG,*) '-------------------------------'
+#endif
 
    DO IW = L%N_WALL_CELLS_EXT+1, L%N_WALL_CELLS_EXT + L%N_WALL_CELLS_INT
    
@@ -8789,8 +8792,10 @@ SELECT CASE (ITYPE)
          V1 => POINT_TO_VECTOR(NM, NL, NV1)
          V2 => POINT_TO_VECTOR(NM, NL, NV2)
 
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'LU-SOLVE, IN: V1:'
 WRITE(MSG%LU_DEBUG,'(8E14.6)') V1
+#endif
 
          !> Forward solve: 
          !> Compute sol(i) = rhs(i) - sum L(i,j) x sol(j)
@@ -8800,7 +8805,7 @@ WRITE(MSG%LU_DEBUG,'(8E14.6)') V1
                JC = AC%COL(ICOL)
                IF (JC >= IC) CYCLE
                V2(IC) = V2(IC) - LU(ICOL) * V2(JC)
-WRITE(MSG%LU_DEBUG,*) 'A: V2(',IC,')=',V2(IC), JC
+!WRITE(MSG%LU_DEBUG,*) 'A: V2(',IC,')=',V2(IC), JC
             ENDDO
          ENDDO
 
@@ -8815,18 +8820,20 @@ WRITE(MSG%LU_DEBUG,*) 'A: V2(',IC,')=',V2(IC), JC
                JC = AC%COL(ICOL)
                IF (JC <= IC) CYCLE
                V2(IC) = V2(IC) - LU(ICOL) * V2(JC)
-WRITE(MSG%LU_DEBUG,*) 'B: V2(',IC,')=',V2(IC), JC
+!WRITE(MSG%LU_DEBUG,*) 'B: V2(',IC,')=',V2(IC), JC
             ENDDO
 
             !> Compute sol(i) = sol(i)/U(i,i)
             IDIAG = AC%ROW(IC)
             V2(IC) = V2(IC)/LU(IDIAG) 
 
-WRITE(MSG%LU_DEBUG,*) 'C: V2(',IC,')=',V2(IC), IDIAG
+!WRITE(MSG%LU_DEBUG,*) 'C: V2(',IC,')=',V2(IC), IDIAG
          ENDDO
 
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'LU-SOLVE: OUT: V2:'
 WRITE(MSG%LU_DEBUG,'(8E14.6)') V2
+#endif
 
       ENDDO LU_MESHES_LOOP
 
@@ -8901,8 +8908,10 @@ WRITE(MSG%LU_DEBUG,'(8E14.6)') V2
 
          ENDDO
 
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'FFT: IN: L%PRHS:'
 WRITE(MSG%LU_DEBUG,'(8E14.6)') FFT%PRHS
+#endif
 
          IF (TWO_D) THEN
             CALL H2CZSS (FFT%BXS,  FFT%BXF, FFT%BZS, FFT%BZF, L%IBAR+1, &
@@ -8921,8 +8930,10 @@ WRITE(MSG%LU_DEBUG,'(8E14.6)') FFT%PRHS
             ENDDO
          ENDDO
 
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'FFT: OUT: V2:'
 WRITE(MSG%LU_DEBUG,'(8E14.6)') V2
+#endif
 
       ENDDO
 
@@ -13426,7 +13437,7 @@ INTEGER :: IC, JC, ICOL, MMATRIX
 CHARACTER(60) :: CFILE, CFORM
 REAL(EB) :: MATRIX_LINE(1000)
 
-RETURN
+!RETURN
 WRITE (CFILE, '(A,A,A,i2.2,A,i2.2,A)') 'matlab/',TRIM(CNAME),'_mesh',NM,'_level',NL,'_mat.txt'
 !WRITE (CFORM, '(A,I3, 2A)' ) "(", NC2-1, "(F7.1,','),F7.1,';')" 
 !WRITE (CFORM, '(A,I3, 2A)' ) "(", NC2-1, "(F7.1,' '),F7.1,' ')" 
