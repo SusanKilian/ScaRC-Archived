@@ -7,7 +7,7 @@
 #
 # --------------------------------------------------------------------------
 CURDIR=`pwd`
-FDSDIR=`dirname $CURDIR`/../fds              # links to main FDS-repository
+FDSDIR=`dirname $CURDIR`              # links to main FDS-repository
 
 MPIPROC=$1
 CASEDIR=$2
