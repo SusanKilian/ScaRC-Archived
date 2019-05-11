@@ -4,7 +4,7 @@ Mesh 1 is assigned to MPI-process 0
 Mesh 1 also makes use of OpenMP (OMP_NUM_THREADS must be set correspondingly)
 Meshes 2, 3, 4 are assigned to MPI-process 1 and executed serially
 
-&HEAD CHID='hpc_2processes_openmp',TITLE='Simple 4-mesh test case assigned to 2 MPI-processes and with 4 OpenMP-threads on mesh 1'
+&HEAD CHID='hpc_2processes_openmp',TITLE='Simple 4-mesh case assigned to 2 MPI-processes and with 4 OpenMP-threads on mesh 1'
 
 &MESH ID = 'mesh1', IJK=16,1,16, XB=0.0,1.6,-0.01,0.01,0.0,1.6,  MPI_PROCESS = 0, N_THREADS=4 /
 &MESH ID = 'mesh2', IJK= 4,1,12, XB=1.6,2.4,-0.01,0.01,0.0,2.4,  MPI_PROCESS = 1/

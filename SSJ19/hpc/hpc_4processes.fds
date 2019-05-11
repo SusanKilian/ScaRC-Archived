@@ -2,7 +2,7 @@ Simple 4-mesh geometry from HPC-part of slides:
 Mesh 1 has a finer grid resolution then the others and thus more work load
 Every Mesh is assigned to an own MPI process
 
-&HEAD CHID='hpc_4processes',TITLE='Simple 4-mesh test case assigned to 4 MPI-processes'
+&HEAD CHID='hpc_4processes',TITLE='Simple 4-mesh case assigned to 4 MPI-processes'
 
 &MESH ID='mesh1', IJK=16,1,16, XB=0.0,1.6,-0.01,0.01,0.0,1.6 /
 &MESH ID='mesh2', IJK= 4,1,12, XB=1.6,2.4,-0.01,0.01,0.0,2.4 /

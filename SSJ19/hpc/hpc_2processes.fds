@@ -3,7 +3,7 @@ Mesh 1 has a finer grid resolution then the others and thus more work load
 Mesh 1 is assigned to MPI-process 0
 Meshes 2, 3, 4 are assigned to MPI-process 1 and executed serially
 
-&HEAD CHID='hpc_2processes',TITLE='Simple 4-mesh test case assigned to 2 MPI-processes'
+&HEAD CHID='hpc_2processes',TITLE='Simple 4-mesh case assigned to 2 MPI-processes'
 
 &MESH ID = 'mesh1', IJK=16,1,16, XB=0.0,1.6,-0.01,0.01,0.0,1.6,  MPI_PROCESS = 0 /
 &MESH ID = 'mesh2', IJK= 4,1,12, XB=1.6,2.4,-0.01,0.01,0.0,2.4,  MPI_PROCESS = 1/
