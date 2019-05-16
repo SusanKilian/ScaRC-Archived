@@ -1,1 +1,0 @@
-/Users/susanne/FDS/FDS6/bin/openmpi_64/bin/mpirun -np $1 -hostfile hostfile /Users/susanne/FDS/FDS6/bin/fds $2
