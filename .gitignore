@@ -14,6 +14,7 @@ tt
 *.bbl
 *.blg
 *.brf
+*.bnd
 *.sf
 *.bf
 *.s3d
