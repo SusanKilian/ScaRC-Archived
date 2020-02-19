@@ -2,14 +2,13 @@ An ISO 9701 compartment with a fan blowing into it, a small fire, and a crack un
 
 &HEAD CHID='door_crack_scarc', TITLE='Test of smoke leaking under a door' /
 
-&MESH IJK=25,10,8, XB=-2.4,2.6,-2.0,0.0,0.0,1.6, MULT_ID='mesh' /
-&MULT ID='mesh', DX=5.0, DY=2.0, DZ=1.6, I_UPPER=0, J_UPPER=1, K_UPPER=1 /
+&MESH IJK=25,20,16, XB=-2.4, 2.6,-2.0, 2.0, 0.0, 3.2 /
 
 &TIME T_END=1800.0 /
 
-&PRES SOLVER = 'SCARC' /
-
 &SURF ID='DOOR CRACK', LEAK_PATH=1,0/
+
+&PRES SOLVER = 'SCARC' /
 
 &DUMP DT_DEVC=15., DT_HRR=30. /
 
@@ -52,8 +51,5 @@ An ISO 9701 compartment with a fan blowing into it, a small fire, and a crack un
 &DEVC ID='Pressure Ambient', QUANTITY='NODE PRESSURE',NODE_ID='IN'/
 &DEVC ID='Pressure Compartment', QUANTITY='NODE PRESSURE',NODE_ID='OUT'/
 
-&DEVC XYZ=0,0,0, QUANTITY='SCARC ITERATIONS',ID='scarc-iter' /
-&DEVC XYZ=0,0,0, QUANTITY='SCARC CONVERGENCE RATE',ID='scarc-rate' /
-&DEVC XYZ=0,0,0, QUANTITY='SCARC RESIDUAL',ID='scarc-res' /
 
 &TAIL /

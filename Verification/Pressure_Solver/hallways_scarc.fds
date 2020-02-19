@@ -1,6 +1,6 @@
 Test multiple mesh and parallel processing features.
 
-&HEAD CHID='hallways_scarc', TITLE='Silly Multi-Mesh Test' /
+&HEAD CHID='hallways_scarc', TITLE='Silly Multi-Mesh Test with structured ScaRC solver' /
 
 &MESH IJK=48,16,16, XB=0.0,3.0,0.0,1.0,0.0,1.0, COLOR='RED' /
 &MESH IJK=16,64,16, XB=3.0,4.0,0.0,4.0,0.0,1.0, COLOR='GREEN' /
@@ -8,9 +8,9 @@ Test multiple mesh and parallel processing features.
 &MESH IJK=16,16,48, XB=7.0,8.0,3.0,4.0,1.0,4.0 /
 &MESH IJK=64,16,16, XB=3.0,7.0,3.0,4.0,3.0,4.0, RGB=230,50,43 /
 
-&PRES SOLVER = 'SCARC' /
-
 &TIME T_END=60.0 /
+
+&PRES SOLVER = 'SCARC' /
 
 &SURF ID='FIRE', HRRPUA=1000., PART_ID='smoke', COLOR='EMERALD GREEN' /
 &REAC SOOT_YIELD=0.01,FUEL='PROPANE'/
@@ -22,9 +22,5 @@ Test multiple mesh and parallel processing features.
 &SLCF PBY=0.5,QUANTITY='TEMPERATURE',VECTOR=.TRUE. /
 &SLCF PBX=3.5,QUANTITY='TEMPERATURE',VECTOR=.TRUE. /
 &SLCF PBY=3.5,QUANTITY='TEMPERATURE',VECTOR=.TRUE. /
-
-&DEVC XYZ=0,0,0, QUANTITY='SCARC ITERATIONS',ID='scarc-iter' /
-&DEVC XYZ=0,0,0, QUANTITY='SCARC CONVERGENCE RATE',ID='scarc-rate' /
-&DEVC XYZ=0,0,0, QUANTITY='SCARC RESIDUAL',ID='scarc-res' /
 
 &TAIL /

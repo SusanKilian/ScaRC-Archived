@@ -1,14 +1,16 @@
 Test pressure rise in a multiple mesh simulation.
 
-&HEAD CHID='pressure_rise_scarc', TITLE='Pressure Rise in a Sealed Tunnel' / 
+&HEAD CHID='pressure_rise_scarc', TITLE='Pressure Rise in a Sealed Tunnel with structured ScaRC solver' / 
 
 &MESH IJK=20,1,20, XB=0.0,1.0,-.001,0.001,0.0,1.0 /
 &MESH IJK=20,1,20, XB=1.0,2.0,-.001,0.001,0.0,1.0 /
 &MESH IJK=20,1,20, XB=2.0,3.0,-.001,0.001,0.0,1.0 /
 
+&ZONE XYZ=0.1,0.0,0.1 /
+
 &TIME T_END=600.0 / 
 
-&PRES SOLVER = 'SCARC' /
+&PRES SOLVER = 'SCARC', SCARC_MATRIX = 'COMPACT', SCARC_PRECON = 'PARDISO' /
 
 &MISC STRATIFICATION=.FALSE. /
 
@@ -38,10 +40,6 @@ Test pressure rise in a multiple mesh simulation.
 &DEVC ID='Dens 1', XYZ=0.5,0.0,0.5, QUANTITY='DENSITY' /
 &DEVC ID='Dens 2', XYZ=1.5,0.0,0.5, QUANTITY='DENSITY' /
 &DEVC ID='Dens 3', XYZ=2.5,0.0,0.5, QUANTITY='DENSITY' /
-
-&DEVC XYZ=0,0,0, QUANTITY='SCARC ITERATIONS',ID='scarc-iter' /
-&DEVC XYZ=0,0,0, QUANTITY='SCARC CONVERGENCE RATE',ID='scarc-rate' /
-&DEVC XYZ=0,0,0, QUANTITY='SCARC RESIDUAL',ID='scarc-res' /
 
 &TAIL /
 

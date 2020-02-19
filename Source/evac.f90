@@ -398,7 +398,7 @@ MODULE EVAC
        ALPHA_HAWK, DELTA_HAWK, EPSILON_HAWK, THETA_HAWK, A_HAWK_T_START, T_STOP_HD_GAME, &
        F_MIN_FALL, F_MAX_FALL, D_OVERLAP_FALL, TAU_FALL_DOWN, A_FAC_FALLEN, TIME_FALL_DOWN, PROB_FALL_DOWN, &
        T_ASET_HAWK, T_0_HAWK, T_ASET_TFAC_HAWK, MAX_INITIAL_OVERLAP, TIME_INIT_NERVOUSNESS, &
-       SMOKE_SPEED_ALPHA, SMOKE_SPEED_BETA, CROWBAR_DT_READ, NASH_CLOSE_ENOUGH
+       SMOKE_SPEED_ALPHA, SMOKE_SPEED_BETA, CROWBAR_DT_READ, NASH_CLOSE_ENOUGH, HERDING_TPRE_PROB
   INTEGER, DIMENSION(3) :: DEAD_RGB
   !
   REAL(EB), DIMENSION(:), ALLOCATABLE :: Tsteps
@@ -577,7 +577,7 @@ CONTAINS
          T_ASET_HAWK, T_0_HAWK, T_ASET_TFAC_HAWK, &
          MAXIMUM_V0_FACTOR, MAX_INITIAL_OVERLAP, TIME_INIT_NERVOUSNESS, &
          SMOKE_SPEED_ALPHA, SMOKE_SPEED_BETA, SMOKE_KS_SPEED_FUNCTION, FED_ACTIVITY, &
-         CROWBAR_DT_READ, MASS_OF_AGENT, DISCARD_SMOKE_INFO
+         CROWBAR_DT_READ, MASS_OF_AGENT, DISCARD_SMOKE_INFO, HERDING_TPRE_PROB
     !Issue1547: Added new output keyword for the PERS namelist, here the new output
     !Issue1547: keyword OUTPUT_NERVOUSNES is added to the namelist. Also the user input
     !Issue1547: for the social force MAXIMUM_V0_FACTOR is added to the namelist.
@@ -992,8 +992,21 @@ CONTAINS
        ! There are fire grids ==> save fed and evac flow fields
        ! Simple chemistry need always REAC line, non-simple chemistry does not need this
        I_EVAC = 16*1 + 8*0 + 4*0 + 2*1 + 1*1
+       WRITE(LU_ERR,    '(A,A)')  ' FDS+Evac pressure method : ', TRIM(PRES_METHOD)
+       IF (TRIM(PRES_METHOD) .NE. 'FFT') THEN
+          WRITE(LU_ERR,'(A)') ' FDS+Evac WARNING: FDS+Evac was developed for FFT solver'
+          WRITE(LU_ERR,'(A)') '                   Verify results for other pressure solvers'
+          WRITE(LU_ERR,'(A)') '                   The FED file is only saved for later use'
+          I_EVAC = 16*1 + 8*0 + 4*0 + 2*1 + 1*0  ! I_EVAC=16 => do only fire calculation, save fed info
+       END IF
     ELSE
        ! There are no fire meshes
+       WRITE(LU_ERR,'(A,A)')  ' FDS+Evac pressure method : ', TRIM(PRES_METHOD)
+       IF (TRIM(PRES_METHOD) .NE. 'FFT') THEN
+          WRITE(LU_ERR,    '(A)') ' FDS+Evac ERROR: FDS+Evac was developed for FFT solver'
+          WRITE(MESSAGE, '(A,A)') ' ERROR: Evacuation only and pressure solver is: ',TRIM(PRES_METHOD)
+          CALL SHUTDOWN(MESSAGE,PROCESS_0_ONLY=.FALSE.) ; RETURN
+       END IF
        IF (EVACUATION_MC_MODE) THEN
           ! MC-mode: Try to read EFF file if exists on the hard disk
           IF (EVACUATION_DRILL) THEN
@@ -1510,6 +1523,7 @@ CONTAINS
                              ! If =1.0 then this is done everytime, when the agents chooses a door
                              ! and this is done every TAU_CHANGE_DOOR second on the average.
       I_HERDING_TYPE  = 0    ! Herding agents: >1 do not move if no door (0 default ffield)
+      HERDING_TPRE_PROB = 0.0_EB
       ! Hawk - Dove game: Just an academic exercise at this moment, works only for a simple geometries.
       ! Hawk - Dove game parameters: If C_HAWK < 0 then no game is played, i.e., normal FDS+Evac
       ! Hawk - Dove game: Only rational agents play (AGENT_TYPE=1 on EVAC/ENTR namelist)
@@ -7323,7 +7337,7 @@ CONTAINS
     INTEGER, DIMENSION(10) :: HERDING_LIST_IHUMAN
     REAL(EB), DIMENSION(10) :: HERDING_LIST_P2PDIST
     INTEGER :: HERDING_LIST_N
-    REAL(EB) :: HERDING_LIST_P2PMAX, R_HERD_HR, DOT_HERD_HR
+    REAL(EB) :: HERDING_LIST_P2PMAX, R_HERD_HR, DOT_HERD_HR, Other_TPRE
     !
     REAL(EB) :: D_HUMANS_MIN, D_WALLS_MIN
     REAL(EB) :: TNOW
@@ -7813,6 +7827,14 @@ CONTAINS
                             HERDING_LIST_DOORS(ABS(HRE%I_Target)) = HERDING_LIST_DOORS(ABS(HRE%I_Target)) + &
                                  W0_HERDING -((W0_HERDING-WR_HERDING)/R_HERD_HR)*P2P_DIST
                          END DO Other_Agent_Loop_2
+                         
+                         Other_TPRE = 0.0_EB
+                         Other_Agent_Loop_3: DO IE = 1, HERDING_LIST_N
+                            HRE => HUMAN(HERDING_LIST_IHUMAN(IE))
+                            Other_TPRE = Other_TPRE + HRE%TPRE
+                         END DO Other_Agent_Loop_3
+                         Other_TPRE = Other_TPRE/REAL(MAX(1,HERDING_LIST_N))
+                         
                          DO II = 1, N_DOORS+N_EXITS
                             IF (HERDING_LIST_DOORS(II)>0.0_EB) THEN
                                ! Make it symmetrical with respect the doors.
@@ -7835,8 +7857,17 @@ CONTAINS
                             END IF
                          END DO
                          IF (I_TMP /= 0 .AND. HR%I_Door_Mode == 0) THEN
+                            ! I_Door_Mode: 0: default, has not found a door by the algorithm or is not moving (Tpre+Tdet)
+                            !              1: has selected the door by the door selection algorithm and is moving
+                            !             <0: came out of a door/entr (-inode) and did not find a new target on this floor
                             ! Found a door using herding algorithm, start to move after one second.
-                            HR%TPRE = DT_GROUP_DOOR
+                            ! Merge one's TPRE with others' TPRE
+                            IF (HERDING_TPRE_PROB > TWO_EPSILON_EB) THEN
+                               !HR%TPRE = 0.5_EB*HR%TPRE + 0.5_EB*Other_TPRE
+                               HR%TPRE = (1.0_EB-HERDING_TPRE_PROB)*HR%TPRE + HERDING_TPRE_PROB*Other_TPRE
+                            ELSE
+                               HR%TPRE = DT_GROUP_DOOR ! Original FDS+Evac
+                            END IF
                             HR%TDET = MIN(T,HR%TDET)
                          END IF
                          IF (HR%I_DoorAlgo == 4) THEN
@@ -14813,6 +14844,7 @@ CONTAINS
     REAL(FB), ALLOCATABLE, DIMENSION(:,:) :: QP, AP
     INTEGER, ALLOCATABLE, DIMENSION(:) :: TA
     TYPE (HUMAN_TYPE), POINTER :: HR =>NULL()
+    INTEGER, PARAMETER :: PART_BOUNDFILE_VERSION=1
     !
     IF (.NOT.ANY(EVACUATION_ONLY)) RETURN
     IF (.NOT.(EVACUATION_ONLY(NM) .AND. EMESH_INDEX(NM)>0)) RETURN
@@ -14822,6 +14854,8 @@ CONTAINS
 
     ! Write the current time to the prt5 file, then start looping through the particle classes
     WRITE(LU_PART(NM)) REAL(T,FB)
+
+    WRITE(LU_PART(NM+NMESHES),'(ES13.6,1X,I4,1X,I4)')T, N_EVAC, PART_BOUNDFILE_VERSION
 
     HUMAN_CLASS_LOOP: DO N = 1, N_EVAC
        ! Count the number of humans to dump out
@@ -14978,7 +15012,7 @@ CONTAINS
           WRITE(LU_PART(NM)) ((QP(I,NN),I=1,NPLIM),NN=1,EVAC_N_QUANTITIES)
        END IF
        !
-       WRITE(LU_PART(NM+NMESHES),'(ES13.6,1X,I4)')T, EVAC_N_QUANTITIES
+       WRITE(LU_PART(NM+NMESHES),'(I4,1X,I7)') EVAC_N_QUANTITIES, NPLIM
        IF (EVAC_N_QUANTITIES > 0) THEN
           DO NN = 1, EVAC_N_QUANTITIES
              IF (NPLIM > 0) THEN

@@ -1,14 +1,12 @@
 This example case demonstrates how to create pressure ZONEs that can be opened. 
 Each time a ZONE is opened, the pressure of the two connected ZONEs quickly equilibriates.
 
-&HEAD CHID='zone_shape_2mesh_scarc', TITLE='Test of opening pressure ZONEs' /
+&HEAD CHID='zone_shape', TITLE='Test of opening pressure ZONEs' /
 
 &MESH IJK=25,50,12, XB=0.0, 5.0,0.0,10.0,0.0,2.4 /
 &MESH IJK=25,50,12, XB=5.0,10.0,0.0,10.0,0.0,2.4 /
 
-&TIME T_END=25., DT=0.02 / 
-
-&PRES SOLVER = 'SCARC'  /
+&TIME T_END=25., DT=0.05 / 
 
 &DUMP DT_DEVC=0.1 /
 
@@ -40,10 +38,6 @@ Each time a ZONE is opened, the pressure of the two connected ZONEs quickly equi
 
 &DEVC XYZ=0.0,0.0,0.0, ID='door 2', SETPOINT= 5.0, QUANTITY='TIME', INITIAL_STATE=.FALSE. /
 &DEVC XYZ=0.0,0.0,0.0, ID='door 3', SETPOINT=15.0, QUANTITY='TIME', INITIAL_STATE=.TRUE. /
-
-&DEVC XYZ=0,0,0, QUANTITY='SCARC ITERATIONS',ID='scarc-iter' /
-&DEVC XYZ=0,0,0, QUANTITY='SCARC CONVERGENCE RATE',ID='scarc-rate' /
-&DEVC XYZ=0,0,0, QUANTITY='SCARC RESIDUAL',ID='scarc-res' /
 
 &SLCF PBZ=1.0,QUANTITY='TEMPERATURE',VECTOR=.TRUE. /
 &SLCF PBZ=1.0,QUANTITY='PRESSURE' /
