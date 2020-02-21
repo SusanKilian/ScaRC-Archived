@@ -1,0 +1,2 @@
+sbatch -J hallways run_avx5.sh hallways.fds
+sbatch -J hallways_scarc run_avx5.sh hallways_scarc.fds

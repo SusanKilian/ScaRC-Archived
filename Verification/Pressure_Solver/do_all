@@ -1,0 +1,6 @@
+sh do_poisson2d
+sh do_poisson3d
+sh do_dancing
+sh do_duct
+sh do_hallways
+sh do_tunnel

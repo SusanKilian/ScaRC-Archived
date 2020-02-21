@@ -1,0 +1,4 @@
+sbatch -J duct_flow run_avx8.sh duct_flow.fds
+sbatch -J duct_flow_scarc run_avx8.sh duct_flow_scarc.fds
+sbatch -J duct_flow_uglmat run_avx8.sh duct_flow_uglmat.fds
+sbatch -J duct_flow_uscarc run_avx8.sh duct_flow_uscarc.fds

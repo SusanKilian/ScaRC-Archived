@@ -1,0 +1,3 @@
+sbatch -J tunnel_demo run_avx8.sh tunnel_demo.fds
+sbatch -J tunnel_demo_glmat run_avx8.sh tunnel_demo_glmat.fds
+sbatch -J tunnel_demo_scarc run_avx8.sh tunnel_demo_scarc.fds

@@ -1,0 +1,5 @@
+sbatch -J poisson3d_fft run_avx4.sh poisson3d_fft.fds
+sbatch -J poisson3d_glmat run_avx4.sh poisson3d_glmat.fds
+sbatch -J poisson3d_scarc run_avx4.sh poisson3d_scarc.fds
+sbatch -J poisson3d_uglmat run_avx4.sh poisson3d_uglmat.fds
+sbatch -J poisson3d_uscarc run_avx4.sh poisson3d_uscarc.fds

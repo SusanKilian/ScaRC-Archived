@@ -1,0 +1,6 @@
+sbatch -J poisson2d_fft run_avx4_short4.sh poisson2d_fft.fds
+sbatch -J poisson2d_scarc run_avx4_short4.sh poisson2d_scarc.fds
+sbatch -J poisson2d_uglmat run_avx4_short4.sh poisson2d_uglmat.fds
+sbatch -J poisson2d_uscarc run_avx4_short4.sh poisson2d_uscarc.fds
+sbatch -J poisson2d_fft_tight run_avx4_short4.sh poisson2d_fft_tight.fds
+sbatch -J poisson2d_scarc_tight run_avx4_short4.sh poisson2d_scarc_tight.fds

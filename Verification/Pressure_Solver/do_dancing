@@ -1,0 +1,8 @@
+sbatch -J dancing_eddies_default run_avx4.sh dancing_eddies_default.fds
+sbatch -J dancing_eddies_scarc run_avx4.sh dancing_eddies_scarc.fds
+sbatch -J dancing_eddies_scarc_tight run_avx4.sh dancing_eddies_scarc_tight.fds
+sbatch -J dancing_eddies_tight run_avx4.sh dancing_eddies_tight.fds
+sbatch -J dancing_eddies_tight_overlap run_avx4.sh dancing_eddies_tight_overlap.fds
+sbatch -J dancing_eddies_uglmat run_avx4.sh dancing_eddies_uglmat.fds
+sbatch -J dancing_eddies_uscarc run_avx4.sh dancing_eddies_uscarc.fds
+sbatch -J dancing_eddies_1mesh run_avx1.sh dancing_eddies_1mesh.fds
