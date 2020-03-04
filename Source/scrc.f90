@@ -1545,13 +1545,16 @@ TNOW = CURRENT_TIME()
 !>
 !> Setup messaging/debugging mechanisms and time measurements
 !>
+WRITE(*,*) MYID,': SETUP :-5'
 CALL SCARC_SETUP_MESSAGING
 CALL SCARC_SETUP_TIMING
+WRITE(*,*) MYID,': SETUP :-4'
 
 !>
 !> Parse all ScaRC parameters which have been read in read.f90
 !>
 CALL SCARC_PARSE_INPUT                      ; IF (STOP_STATUS==SETUP_STOP) RETURN
+WRITE(*,*) MYID,': SETUP :-3'
 
 !>
 !> Setup different basic components of ScaRC solver
@@ -1559,10 +1562,12 @@ CALL SCARC_PARSE_INPUT                      ; IF (STOP_STATUS==SETUP_STOP) RETUR
 CALL SCARC_SETUP_LEVELS                     ; IF (STOP_STATUS==SETUP_STOP) RETURN
 CALL SCARC_SETUP_TYPES                      ; IF (STOP_STATUS==SETUP_STOP) RETURN
 CALL SCARC_SETUP_GRIDS                      ; IF (STOP_STATUS==SETUP_STOP) RETURN
+WRITE(*,*) MYID,': SETUP :-2'
 CALL SCARC_SETUP_NEIGHBORS                  ; IF (STOP_STATUS==SETUP_STOP) RETURN
 CALL SCARC_SETUP_GLOBALS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
 CALL SCARC_SETUP_FACES                      ; IF (STOP_STATUS==SETUP_STOP) RETURN
 
+WRITE(*,*) MYID,': SETUP :'
 !>
 !> Setup wall information according to specified discretization type/method
 !>
