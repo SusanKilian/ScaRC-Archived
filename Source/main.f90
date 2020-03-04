@@ -1246,6 +1246,7 @@ END SUBROUTINE MPI_INITIALIZATION_CHORES
 
 
 SUBROUTINE PRESSURE_ITERATION_SCHEME
+INTEGER :: III, KKK
 
 ! Iterate calls to pressure solver until velocity tolerance is satisfied
 
@@ -1291,6 +1292,15 @@ PRESSURE_ITERATION_LOOP: DO
       IF (PRESSURE_ITERATIONS==1) MESHES(NM)%WALL_WORK1 = 0._EB
       CALL PRESSURE_SOLVER_COMPUTE_RHS(T,NM)
    ENDDO
+
+IF (MYID == 0) THEN
+   WRITE(*,*) 'PRHS'
+   WRITE(*,'(I4,5E14.6)') (KKK, (MESHES(MYID+1)%PRHS(III, 1, KKK), III=1,5), KKK=9,1,-1)
+   WRITE(*,*) 'DDDT'
+   WRITE(*,'(I4,6E14.6)') (KKK, (MESHES(MYID+1)%DDDT(III, 1, KKK), III=0,5), KKK=9,0,-1)
+   WRITE(*,*) 'FVX'
+   WRITE(*,'(I4,6E14.6)') (KKK, (MESHES(MYID+1)%FVX(III, 1, KKK), III=0,5), KKK=9,0,-1)
+ENDIF
 
    ! Solve the Poission equation using either FFT, SCARC, or GLMAT
 
