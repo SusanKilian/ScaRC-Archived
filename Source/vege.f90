@@ -24,8 +24,9 @@ SUBROUTINE INITIALIZE_LEVEL_SET_FIRESPREAD_1(NM)
 ! Set up the major arrays, like the level set value PHI_LS, and determine terrain height on each 2D mesh, Z_LS(I,J).
 ! After this routine, go back to main, exchange Z_LS, and return for more initialization.
 
+USE COMPLEX_GEOMETRY, ONLY : IBM_IDCF
 INTEGER, INTENT(IN) :: NM
-INTEGER :: ICF,IW
+INTEGER :: ICF,IW,I,J
 TYPE (MESH_TYPE),    POINTER :: M
 TYPE (WALL_TYPE),    POINTER :: WC
 TYPE (CFACE_TYPE),   POINTER :: CFA
@@ -52,23 +53,29 @@ ALLOCATE(M%LS_SURF_INDEX(0:IBP1,0:JBP1),STAT=IZERO) ; CALL ChkMemErr('READ','LS_
 LS_SURF_INDEX => M%LS_SURF_INDEX ; LS_SURF_INDEX = 0
 
 IF (CC_IBM) THEN
+
    ALLOCATE(M%LS_KLO_TERRAIN(0:IBP1,0:JBP1),STAT=IZERO) ; CALL ChkMemErr('READ','LS_KLO_TERRAIN',IZERO)
-   M%LS_KLO_TERRAIN = 2*KBP1+1 ! Number larger that KBP1.
+   LS_KLO_TERRAIN => M%LS_KLO_TERRAIN ; LS_KLO_TERRAIN = 2*KBP1+1 ! Number larger that KBP1.
    DO ICF=1,M%N_CUTFACE_MESH
-      IF(CUT_FACE(ICF)%STATUS /= 2) CYCLE ! IBM_INBOUNDARY == 2
+      IF (CUT_FACE(ICF)%STATUS /= 2) CYCLE ! IBM_INBOUNDARY == 2
       ! Location of CFACE with largest AREA, to define SURF_INDEX:
       IW  = MAXLOC(CUT_FACE(ICF)%AREA(1:CUT_FACE(ICF)%NFACE),DIM=1)
       CFA => CFACE( CUT_FACE(ICF)%CFACE_INDEX(IW) )
-      IF(CFA%NVEC(KAXIS)>-TWO_EPSILON_EB .AND. CFA%BOUNDARY_TYPE==SOLID_BOUNDARY ) THEN
+      IF (CFA%NVEC(KAXIS)>-TWO_EPSILON_EB .AND. CFA%BOUNDARY_TYPE==SOLID_BOUNDARY) THEN
          ! Area averaged Z height of CFACES within this cut-cell (containing IBM_INBOUNDARY CFACES):
          Z_LS(CFA%ONE_D%IIG,CFA%ONE_D%JJG) = DOT_PRODUCT(CUT_FACE(ICF)%XYZCEN(KAXIS,1:CUT_FACE(ICF)%NFACE), &
                                                                    CUT_FACE(ICF)%  AREA(1:CUT_FACE(ICF)%NFACE))     / &
                                                                SUM(CUT_FACE(ICF)% AREA(1:CUT_FACE(ICF)%NFACE))
-         IF(CFA%ONE_D%KKG < M%LS_KLO_TERRAIN(CFA%ONE_D%IIG,CFA%ONE_D%JJG)) &
-         M%LS_KLO_TERRAIN(CFA%ONE_D%IIG,CFA%ONE_D%JJG) = CFA%ONE_D%KKG
+         IF (CFA%ONE_D%KKG < LS_KLO_TERRAIN(CFA%ONE_D%IIG,CFA%ONE_D%JJG)) & 
+            LS_KLO_TERRAIN(CFA%ONE_D%IIG,CFA%ONE_D%JJG) = CFA%ONE_D%KKG
          IF (CFA%ONE_D%KKG > K_LS(CFA%ONE_D%IIG,CFA%ONE_D%JJG)) K_LS(CFA%ONE_D%IIG,CFA%ONE_D%JJG) = CFA%ONE_D%KKG
-         LS_SURF_INDEX(CFA%ONE_D%IIG,CFA%ONE_D%JJG)= CFA%SURF_INDEX
+         LS_SURF_INDEX(CFA%ONE_D%IIG,CFA%ONE_D%JJG) = CFA%SURF_INDEX
       ENDIF
+   ENDDO
+   DO J=1,JBAR
+      DO I=1,IBAR
+         IF (K_LS(I,J)==KBAR .AND. FCVAR(I,J,K_LS(I,J),IBM_IDCF,KAXIS)>0) LS_SURF_INDEX(I,J) = 0
+      ENDDO
    ENDDO
 
 ELSE
@@ -494,7 +501,7 @@ IF (.NOT.PREDICTOR) THEN
    IF (CC_IBM) THEN
       DO JJG=1,JBAR
          DO IIG=1,IBAR
-            DO IKT=MESHES(NM)%LS_KLO_TERRAIN(IIG,JJG),K_LS(IIG,JJG)
+            DO IKT=LS_KLO_TERRAIN(IIG,JJG),K_LS(IIG,JJG)
                ! Loop over all CFACEs corresponding to IIG,JJG and set ONE_D%T_IGN and ONE_D%PHI_LS as below
                ICF = CCVAR(IIG,JJG,IKT,3); IF(ICF<1) CYCLE  ! IBM_IDCF = 3 CUT_FCE container for this cell.
                DO IW=1,CUT_FACE(ICF)%NFACE ! All IBM_INBOUNDARY CFACES on this cell.
@@ -549,7 +556,7 @@ DO JJ=1,JBAR
    CALL FILL_BOUNDARY_VALUES
 ENDDO
 DO JJ=1,JBAR
-   JJG=JJ  ; IOR=-1
+   JJG=JJ
    DO II=1,IBAR
       IIG=II
       IOR = -3
@@ -563,9 +570,11 @@ CONTAINS
 
 SUBROUTINE FILL_BOUNDARY_VALUES
 
+USE COMPLEX_GEOMETRY, ONLY : IBM_CGSC,IBM_SOLID,IBM_CUTCFE
 INTEGER :: IW,IIO,JJO,N_INT_CELLS,NOM,IC
 REAL(EB) :: PHI_LS_OTHER,U_LS_OTHER,V_LS_OTHER,Z_LS_OTHER
 TYPE (EXTERNAL_WALL_TYPE), POINTER :: EWC
+LOGICAL :: SOLID_CELL
 
 ! Grab boundary values of PHI_LS from MPI storage arrays
 
@@ -602,18 +611,30 @@ N_INT_CELLS = (EWC%IIO_MAX-EWC%IIO_MIN+1) * (EWC%JJO_MAX-EWC%JJO_MIN+1)
 SELECT CASE(IOR)
    CASE(-2:2) 
       PHI_LS_P(II,JJ) = PHI_LS_OTHER/REAL(N_INT_CELLS,EB)
-    ! U_LS(II,JJ) = U_LS_OTHER/REAL(N_INT_CELLS,EB)
-    ! V_LS(II,JJ) = V_LS_OTHER/REAL(N_INT_CELLS,EB)
-    ! Z_LS(II,JJ) = Z_LS_OTHER/REAL(N_INT_CELLS,EB)
+      U_LS(II,JJ)     = U_LS_OTHER/REAL(N_INT_CELLS,EB)
+      V_LS(II,JJ)     = V_LS_OTHER/REAL(N_INT_CELLS,EB)
+      Z_LS(II,JJ)     = Z_LS_OTHER/REAL(N_INT_CELLS,EB)
    CASE(3)  ! only grab a PHI_LS value from the other mesh if the (II,JJ) cell of the current mesh has no terrain surface
-      IF (.NOT.SURFACE(LS_SURF_INDEX(II,JJ))%VEG_LSET_SPREAD .AND. SOLID(CELL_INDEX(II,JJ,KBAR))) THEN
+      SOLID_CELL = .FALSE.
+      IF (CC_IBM) THEN
+         IF (CCVAR(II,JJ,KBAR,IBM_CGSC)==IBM_SOLID .OR. CCVAR(II,JJ,KBAR,IBM_CGSC)==IBM_CUTCFE) SOLID_CELL = .TRUE.
+      ELSE
+         IF (SOLID(CELL_INDEX(II,JJ,KBAR))) SOLID_CELL = .TRUE.
+      ENDIF
+      IF (.NOT.SURFACE(LS_SURF_INDEX(II,JJ))%VEG_LSET_SPREAD .AND. SOLID_CELL) THEN
          PHI_LS_P(II,JJ) = PHI_LS_OTHER/REAL(N_INT_CELLS,EB)
          U_LS(II,JJ) = U_LS_OTHER/REAL(N_INT_CELLS,EB)
          V_LS(II,JJ) = V_LS_OTHER/REAL(N_INT_CELLS,EB)
          Z_LS(II,JJ) = Z_LS_OTHER/REAL(N_INT_CELLS,EB)
       ENDIF
    CASE(-3)  ! only grab a PHI_LS value from the other mesh if the (II,JJ) cell of the current mesh has no terrain surface
-      IF (.NOT.SURFACE(LS_SURF_INDEX(II,JJ))%VEG_LSET_SPREAD .AND. .NOT.SOLID(CELL_INDEX(II,JJ,1))) THEN
+      SOLID_CELL = .FALSE.
+      IF (CC_IBM) THEN
+         IF (CCVAR(II,JJ,1,IBM_CGSC)==IBM_SOLID .OR. CCVAR(II,JJ,1,IBM_CGSC)==IBM_CUTCFE) SOLID_CELL = .TRUE.
+      ELSE
+         IF (SOLID(CELL_INDEX(II,JJ,1))) SOLID_CELL = .TRUE.
+      ENDIF
+      IF (.NOT.SURFACE(LS_SURF_INDEX(II,JJ))%VEG_LSET_SPREAD .AND. .NOT.SOLID_CELL) THEN
          PHI_LS_P(II,JJ) = PHI_LS_OTHER/REAL(N_INT_CELLS,EB)
          U_LS(II,JJ) = U_LS_OTHER/REAL(N_INT_CELLS,EB)
          V_LS(II,JJ) = V_LS_OTHER/REAL(N_INT_CELLS,EB)
@@ -637,7 +658,7 @@ REAL(EB) :: COS_THETA_WIND,COS_THETA_SLOPE,COS_THETA_WIND_H,COS_THETA_WIND_B, &
 REAL(EB) :: ROS_BACKS,ROS_HEADS
 REAL(EB) :: RAD_TO_DEGREE,DEGREES_SLOPE,SLOPE_FACTOR
 REAL(EB) :: COS_THETA,SIN_THETA,XSF,YSF,UMF_DUM
-REAL(EB) :: A_ELPS,A_ELPS2,B_ELPS2,B_ELPS,C_ELPS,DENOM,ROS_TMP,LB,LBD,HB
+REAL(EB) :: AROS,A_ELPS,A_ELPS2,BROS,B_ELPS2,B_ELPS,C_ELPS,DENOM,ROS_TMP,LB,LBD,HB
 REAL(EB), DIMENSION(:) :: NORMAL_FIRELINE(2)
 
 RAD_TO_DEGREE = 90._EB/ASIN(1._EB)
@@ -673,10 +694,8 @@ FLUX_ILOOP: DO I=1,IBAR
       IF (MAG_F > 0._EB) THEN   !components of unit vector normal to PHI contours
          NORMAL_FIRELINE(1) = -DPHIDX/MAG_F
          NORMAL_FIRELINE(2) = -DPHIDY/MAG_F
-         ! Lagrangian normal approximation from Rehm and Mcdermott 2009
-         ! For elliptical front calculation
-         XSF = (DPHIDY / MAG_F )
-         YSF = (-DPHIDX / MAG_F)
+         XSF =  DPHIDY
+         YSF = -DPHIDX
          GRAD_SLOPE_DOT_NORMAL_FIRELINE = DZTDX(I,J)*(DPHIDY/MAG_F) + DZTDY(I,J)*(-DPHIDY/MAG_F)
       ELSE
         NORMAL_FIRELINE = 0._EB
@@ -712,16 +731,18 @@ FLUX_ILOOP: DO I=1,IBAR
          ! Head to back ratio based on LB
          HB = (LB + LBD) / (LB - LBD)
 
-         ! A_ELPS and B_ELPS are *opposite* in notation from Farsite and Richards
-         A_ELPS =  0.5_EB * (ROS_TMP + ROS_TMP/HB)
-         A_ELPS2 = A_ELPS**2
-         B_ELPS =  A_ELPS / LB !0.5_EB * (ROS_TMP + ROS_TMP/HB) / LB
-         B_ELPS2=  B_ELPS**2
-         C_ELPS =  A_ELPS - (ROS_TMP/HB)
+         ! A_ELPS and B_ELPS notation is consistent with Farsite and Richards 
+         B_ELPS =  0.5_EB * (ROS_TMP + ROS_TMP/HB)
+         B_ELPS2 = B_ELPS**2
+         A_ELPS =  B_ELPS / LB
+         A_ELPS2=  A_ELPS**2
+         C_ELPS =  B_ELPS - (ROS_TMP/HB)
 
-         ! Denominator used in spread rate equation from Richards 1990 (also in Farsite)
-         DENOM = B_ELPS2 * (YSF * COS_THETA + XSF * SIN_THETA)**2 + &
-                 A_ELPS2 * (XSF * COS_THETA - YSF * SIN_THETA)**2
+         ! Denominator used in spread rate equation from Richards, Intnl. J. Num. Methods Eng. 1990 
+         ! and in LS vs Farsite paper, Bova et al., Intnl. J. Wildland Fire, 25(2):229-241, 2015  
+         AROS  = XSF*COS_THETA - YSF*SIN_THETA
+         BROS  = XSF*SIN_THETA + YSF*COS_THETA
+         DENOM = A_ELPS2*BROS**2 + B_ELPS2*AROS**2
 
          IF (DENOM > 0._EB) THEN
             DENOM = 1._EB / SQRT(DENOM)
@@ -729,11 +750,10 @@ FLUX_ILOOP: DO I=1,IBAR
             DENOM = 0._EB
          ENDIF
 
-         SR_X_LS(I,J) = DENOM * (B_ELPS2 * COS_THETA * (XSF * SIN_THETA + YSF * COS_THETA) -&
-                        A_ELPS2 * SIN_THETA * (XSF * COS_THETA - YSF * SIN_THETA)) + C_ELPS * SIN_THETA
-
-         SR_Y_LS(I,J) = DENOM * (-B_ELPS2 * SIN_THETA * (XSF * SIN_THETA + YSF * COS_THETA) -&
-                        A_ELPS2 * COS_THETA * (XSF * COS_THETA - YSF * SIN_THETA)) + C_ELPS * COS_THETA
+!        This is with A_ELPS2 and B_ELPS2 notation consistent with Finney and Richards and in 
+!        Bova et al. 2015 IJWF 2015
+         SR_X_LS(I,J) = DENOM * ( A_ELPS2*COS_THETA*BROS - B_ELPS2*SIN_THETA*AROS) + C_ELPS*SIN_THETA
+         SR_Y_LS(I,J) = DENOM * (-A_ELPS2*SIN_THETA*BROS - B_ELPS2*COS_THETA*AROS) + C_ELPS*COS_THETA
 
          ! Project spread rates from slope to horizontal plane
 
