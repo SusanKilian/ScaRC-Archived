@@ -11593,15 +11593,12 @@ MESHES_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
                IF (OL%NCG(IOR0) == 0) CYCLE
 
-WRITE(MSG%LU_DEBUG,*) 'EX:CELL_NUMBER: IOR0, NCG:', IOR0, OL%NCG(IOR0)
-
                !$OMP PARALLEL DO PRIVATE(ICG, IWG, IXW, IYW, IZW) SCHEDULE(STATIC)
                DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
                   IWG = OG%ICG_TO_IWG(ICG)
                   IXW = G%WALL(IWG)%IXW
                   IYW = G%WALL(IWG)%IYW
                   IZW = G%WALL(IWG)%IZW
-WRITE(MSG%LU_DEBUG,*) 'ICG, IWG, IXW, IYW, IZW:', ICG, IWG, IXW, IYW, IZW
 
                   IF (L%IS_SOLID(IXW, IYW, IZW)) THEN
                      OS%SEND_INT1(ICG) = -G%CELL_NUMBER(IXW, IYW, IZW)
