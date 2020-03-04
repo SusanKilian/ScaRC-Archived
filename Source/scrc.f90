@@ -4,14 +4,12 @@
 !>  - WITH_SCARC_VERBOSE      : print more detailed information about ScaRC iterations and workspace allocation
 !>  - WITH_SCARC_DEBUG        : print detaild debugging info (only for debugging purposes)
 !>  - WITH_SCARC_MGM          : experimental tests for McKeeney-Greengard-Mayo method
-!>  - WITH_SCARC_BAROCLINIC   : experimental tests for  modified CG-routine which considers baroclinic effect
 !>  - WITH_SCARC_STANDALONE   : dump environment for ScaRC standalone version
 !> ================================================================================================================
 !#undef WITH_MKL
-#define WITH_SCARC_VERBOSE
-#define WITH_SCARC_DEBUG
+#undef WITH_SCARC_VERBOSE
+#undef WITH_SCARC_DEBUG
 #undef WITH_SCARC_MGM
-#undef WITH_SCARC_BAROCLINIC
 #undef WITH_SCARC_STANDALONE
 
 
@@ -148,7 +146,6 @@ INTEGER, PARAMETER :: NSCARC_INTERPOL_STANDARD       =  1, &    !> standard inte
                       NSCARC_INTERPOL_DIRECT_BDRY    =  7       !> direct interpolation with special boundary
 
 INTEGER, PARAMETER :: NSCARC_KRYLOV_CG               =  1, &    !> CG   as Krylov solver
-                      NSCARC_KRYLOV_CGBARO           =  2, &    !> CGBARO (Krylov with baroclinic effect), only testwise
                       NSCARC_KRYLOV_BICG             =  3, &    !> BICG as Krylov solver
                       NSCARC_KRYLOV_MAIN             =  1, &    !> Krylov solver as main solver
                       NSCARC_KRYLOV_COARSE           =  2       !> Krylov solver as coarse grid solver
@@ -369,6 +366,9 @@ CHARACTER(6)  :: SCARC_MKL_PRECISION  = 'DOUBLE'            !> Single/double pre
 LOGICAL :: SCARC_ERROR_FILE = .FALSE.                       !> Print ScaRC statistics into chid_scarc.csv (TRUE/FALSE)
 INTEGER :: IERROR = 0                                       !> general error flag - used at different positions
 
+#ifdef WITH_SCARC_STANDALONE
+LOGICAL :: SCARC_DUMP = .FALSE.                             !> Dump out several arrays for standalone use of ScaRC
+#endif
 
 !> 
 !> ---------- Logical indicators for different methods and mechanisms
@@ -1435,10 +1435,6 @@ SELECT CASE (TRIM(SCARC_METHOD))
       SELECT CASE (TRIM(SCARC_KRYLOV))
          CASE ('CG')
             TYPE_KRYLOV = NSCARC_KRYLOV_CG
-#ifdef WITH_SCARC_BAROCLINIC
-         CASE ('BAROCLINIC')
-            TYPE_KRYLOV = NSCARC_KRYLOV_CGBARO
-#endif
          CASE ('BICG')
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_BICG_DISABLED, SCARC_KRYLOV, NSCARC_NONE)    !> only temporarily
             TYPE_KRYLOV = NSCARC_KRYLOV_BICG
@@ -7234,11 +7230,11 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       FFT%LSAVE = (FFT%ITRN+1)*FFT%JTRN*FFT%KTRN+7*FFT%ITRN+5*FFT%JTRN+6*FFT%KTRN+56
       FFT%LWORK = (FFT%ITRN+1)*FFT%JTRN*FFT%KTRN
 
-      CALL SCARC_ALLOCATE_REAL1(FFT%SAVE1, -3, FFT%LSAVE, NSCARC_INIT_ZERO, 'FFT')
-      CALL SCARC_ALLOCATE_REAL1(FFT%WORK ,  1, FFT%LWORK, NSCARC_INIT_ZERO, 'FFT')
+      CALL SCARC_ALLOCATE_REAL1(FFT%SAVE1, -3, FFT%LSAVE, NSCARC_INIT_ZERO, 'FFT%SAVE1')
+      CALL SCARC_ALLOCATE_REAL1(FFT%WORK ,  1, FFT%LWORK, NSCARC_INIT_ZERO, 'FFT%WORK')
 
       !> Allocate stretching vector (set to 1)
-      CALL SCARC_ALLOCATE_REAL1(FFT%HX, 0, FFT%ITRN, NSCARC_INIT_ONE, 'FFT')
+      CALL SCARC_ALLOCATE_REAL1(FFT%HX, 0, FFT%ITRN, NSCARC_INIT_ONE, 'FFT%HX')
 
       !> Allocate RHS vector for FFT routine
       IF (L%NY == 1) THEN
@@ -8271,14 +8267,9 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
       SELECT_KRYLOV: SELECT CASE (TYPE_KRYLOV)
          CASE (NSCARC_KRYLOV_CG)
             CALL SCARC_METHOD_CG (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
-#ifdef WITH_SCARC_BAROCLINIC
-         CASE (NSCARC_KRYLOV_CGBARO)
-            CALL SCARC_METHOD_BAROCLINIC (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
-#endif
          CASE (NSCARC_KRYLOV_BICG)
-            CALL SCARC_METHOD_CG (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)  ! temporarily
-            !CALL SCARC_SHUTDOWN(NSCARC_ERROR_BICG_DISABLED, SCARC_KRYLOV, NSCARC_NONE)
-            !            CALL SCARC_METHOD_BICG(NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
+            CALL SCARC_SHUTDOWN(NSCARC_ERROR_BICG_DISABLED, SCARC_KRYLOV, NSCARC_NONE)
+            !CALL SCARC_METHOD_BICG(NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
       END SELECT SELECT_KRYLOV
    
    !>
@@ -8297,11 +8288,9 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
    
       !> first solve inhomogeneous Poisson problem on structured grid with ScaRC (with Block-FFT)
       CALL SCARC_ASSIGN_GRID_TYPE(NSCARC_GRID_STRUCTURED)
-
       CALL SCARC_METHOD_CG (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
    
       CALL SCARC_STORE_MGM(NLEVEL_MIN, 1)
-   
       CALL SCARC_MGM_INTERNAL_VELOCITY(NLEVEL_MIN)
       CALL SCARC_STORE_MGM(NLEVEL_MIN, 1)
    
@@ -8423,106 +8412,6 @@ ENDDO MESHES_LOOP
 
 END SUBROUTINE SCARC_METHOD_FFT
 
-
-!> ------------------------------------------------------------------------------------------------------
-!> Check of the accuracy of the separable pressure solution, del^2 H = -del dot F - dD/dt
-!> ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_CHECK_POISSON
-USE MESH_POINTERS
-REAL(EB), POINTER, DIMENSION(:,:,:) :: HP, RESIDUAL
-REAL(EB) :: LHSS, RHSS
-INTEGER :: NM, I, J, K
-
-MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-   CALL POINT_TO_MESH(NM)
-   
-   IF (PREDICTOR) THEN
-      HP => H
-   ELSE
-      HP => HS
-   ENDIF
-   RESIDUAL => WORK8(1:IBAR,1:JBAR,1:KBAR)
-   
-   !$OMP PARALLEL DO PRIVATE(I,J,K,RHSS,LHSS) SCHEDULE(STATIC)
-   DO K=1,KBAR
-      DO J=1,JBAR
-         DO I=1,IBAR
-            RHSS = ( R(I-1)*FVX(I-1,J,K) - R(I)*FVX(I,J,K) )*RDX(I)*RRN(I) &
-                 + (        FVY(I,J-1,K) -      FVY(I,J,K) )*RDY(J)        &    
-                 + (        FVZ(I,J,K-1) -      FVZ(I,J,K) )*RDZ(K)        &    
-                 - DDDT(I,J,K)
-            LHSS = ((HP(I+1,J,K)-HP(I,J,K))*RDXN(I)*R(I) - (HP(I,J,K)-HP(I-1,J,K))*RDXN(I-1)*R(I-1) )*RDX(I)*RRN(I) &
-                 + ((HP(I,J+1,K)-HP(I,J,K))*RDYN(J)      - (HP(I,J,K)-HP(I,J-1,K))*RDYN(J-1)        )*RDY(J)        &    
-                 + ((HP(I,J,K+1)-HP(I,J,K))*RDZN(K)      - (HP(I,J,K)-HP(I,J,K-1))*RDZN(K-1)        )*RDZ(K)
-            RESIDUAL(I,J,K) = ABS(RHSS-LHSS)
-         ENDDO
-      ENDDO
-   ENDDO
-   !$OMP END PARALLEL DO
-   POIS_ERR = MAXVAL(RESIDUAL)
-
-ENDDO MESHES_LOOP
-   
-END SUBROUTINE SCARC_CHECK_POISSON
-
-!> ------------------------------------------------------------------------------------------------------
-!> Check of how well the computed pressure satisfies the inseparable Poisson equation:
-!> LHSS = del dot (1/rho) del p + del K = -del dot F - dD/dt = RHSS
-!> ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_ITERATE_BAROCLINIC
-USE MESH_POINTERS
-REAL(EB), POINTER, DIMENSION(:,:,:) :: PPP, RESIDUAL, RHOP, HP
-REAL(EB) :: LHSS, RHSS
-INTEGER :: NM, I, J, K
-
-MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-   CALL POINT_TO_MESH(NM)
-   
-   IF (PREDICTOR) THEN
-      HP => H
-      RHOP => RHO
-   ELSE
-      HP => HS
-      RHOP => RHOS
-   ENDIF
-
-   PPP => WORK7
-   PPP = RHOP*(HP-KRES)
-   RESIDUAL => WORK8(1:IBAR,1:JBAR,1:KBAR)
-
-   !$OMP PARALLEL PRIVATE(I,J,K,RHSS,LHSS,NM)
-   !$OMP DO COLLAPSE(3) SCHEDULE(STATIC)
-   DO K=1,KBAR
-      DO J=1,JBAR
-         DO I=1,IBAR
-            RHSS = ( R(I-1)*(FVX(I-1,J,K)-FVX_B(I-1,J,K)) - R(I)*(FVX(I,J,K)-FVX_B(I,J,K)) )*RDX(I)*RRN(I) &
-                 + (        (FVY(I,J-1,K)-FVY_B(I,J-1,K)) -      (FVY(I,J,K)-FVY_B(I,J,K)) )*RDY(J)        &
-                 + (        (FVZ(I,J,K-1)-FVZ_B(I,J,K-1)) -      (FVZ(I,J,K)-FVZ_B(I,J,K)) )*RDZ(K)        &
-                 - DDDT(I,J,K)
-            LHSS = ((PPP(I+1,J,K)-PPP(I,J,K))*RDXN(I)*R(I)    *2._EB/(RHOP(I+1,J,K)+RHOP(I,J,K)) - &
-                    (PPP(I,J,K)-PPP(I-1,J,K))*RDXN(I-1)*R(I-1)*2._EB/(RHOP(I-1,J,K)+RHOP(I,J,K)))*RDX(I)*RRN(I) &
-                 + ((PPP(I,J+1,K)-PPP(I,J,K))*RDYN(J)         *2._EB/(RHOP(I,J+1,K)+RHOP(I,J,K)) - &
-                    (PPP(I,J,K)-PPP(I,J-1,K))*RDYN(J-1)       *2._EB/(RHOP(I,J-1,K)+RHOP(I,J,K)))*RDY(J)        &
-                 + ((PPP(I,J,K+1)-PPP(I,J,K))*RDZN(K)         *2._EB/(RHOP(I,J,K+1)+RHOP(I,J,K)) - &
-                    (PPP(I,J,K)-PPP(I,J,K-1))*RDZN(K-1)       *2._EB/(RHOP(I,J,K-1)+RHOP(I,J,K)))*RDZ(K)        &
-                 + ((KRES(I+1,J,K)-KRES(I,J,K))*RDXN(I)*R(I) - (KRES(I,J,K)-KRES(I-1,J,K))*RDXN(I-1)*R(I-1) )*RDX(I)*RRN(I) &
-                 + ((KRES(I,J+1,K)-KRES(I,J,K))*RDYN(J)      - (KRES(I,J,K)-KRES(I,J-1,K))*RDYN(J-1)        )*RDY(J)        &
-                 + ((KRES(I,J,K+1)-KRES(I,J,K))*RDZN(K)      - (KRES(I,J,K)-KRES(I,J,K-1))*RDZN(K-1)        )*RDZ(K)
-            RESIDUAL(I,J,K) = ABS(RHSS-LHSS)
-         ENDDO
-      ENDDO
-   ENDDO
-   !$OMP END DO
-   !$OMP END PARALLEL
-
-   PRESSURE_ERROR_MAX(NM) = MAXVAL(RESIDUAL)
-   PRESSURE_ERROR_MAX_LOC(:,NM) = MAXLOC(RESIDUAL)
-
-ENDDO MESHES_LOOP
-
-END SUBROUTINE SCARC_ITERATE_BAROCLINIC
 
 !> ------------------------------------------------------------------------------------------------
 !> Compute global matrix-vector product on grid level NL
@@ -9821,11 +9710,6 @@ IF (N_DIRIC_GLOBAL(NLEVEL_MIN) == 0) THEN
    CALL SCARC_SETUP_SYSTEM_CONDENSED (B, NL, 1)            
 ENDIF
 
-#ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_LEVEL (X, 'CG-METHOD: X INIT1 ', NL)
-CALL SCARC_DEBUG_LEVEL (B, 'CG-METHOD: B INIT1 ', NL)
-#endif
-
 !> Compute initial residual 
 TYPE_MATVEC = NSCARC_MATVEC_GLOBAL
 CALL SCARC_MATVEC_PRODUCT (X, R, NL)                         !>  r^0 := A*x^0
@@ -9841,11 +9725,6 @@ IF (NSTATE /= NSCARC_STATE_CONV0) THEN                       !>  if no convergen
    SIGMA0 = SCARC_SCALAR_PRODUCT(R, V, NL)                   !>  SIGMA0 := (r^0,v^0)
    CALL SCARC_VECTOR_COPY (V, D, -1.0_EB, NL)                !>  d^0 := -v^0
 ENDIF
-
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'RESIN, RES, ITE, SIGMA0:', RESIN, RES, ITE, SIGMA0
-CALL SCARC_DEBUG_LEVEL (D, 'CG-METHOD: D INIT1 ', NL)
-#endif
 
 !> ------------------------------------------------------------------------------------------------
 !> Perform conjugate gradient looping
@@ -9864,13 +9743,6 @@ CG_LOOP: DO ITE = 1, NIT
    CALL SCARC_VECTOR_SUM (D, X, ALPHA, 1.0_EB, NL)           !>  x^{k+1} := x^k + alpha * d^k
    CALL SCARC_VECTOR_SUM (Y, R, ALPHA, 1.0_EB, NL)           !>  r^{k+1} := r^k + alpha * y^k   ~  r^k + alpha * A * d^k
 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'ITE, ITE_CG=', ITE, ITE_CG
-CALL SCARC_DEBUG_LEVEL (X, 'CG-METHOD: X ITE ', NL)
-CALL SCARC_DEBUG_LEVEL (Y, 'CG-METHOD: Y ITE ', NL)
-CALL SCARC_DEBUG_LEVEL (R, 'CG-METHOD: R ITE ', NL)
-#endif
-
    RES = SCARC_L2NORM (R, NL)                                !>  res := ||r^{k+1}||
    NSTATE = SCARC_CONVERGENCE_STATE (0, NS, NL)              !>  res < tolerance ??
    IF (NSTATE /= NSCARC_STATE_PROCEED) EXIT CG_LOOP
@@ -9882,11 +9754,6 @@ CALL SCARC_DEBUG_LEVEL (R, 'CG-METHOD: R ITE ', NL)
    SIGMA0 = SIGMA                                            !>  save last sigma
 
    CALL SCARC_VECTOR_SUM (V, D, -1.0_EB, BETA, NL)           !>  d^{k+1} := -v^{k+1} + beta * d^{k+1}
-
-#ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_LEVEL (V, 'CG-METHOD: V ITE ', NL)
-CALL SCARC_DEBUG_LEVEL (D, 'CG-METHOD: D ITE ', NL)
-#endif
 
    CPU(MYID)%ITERATION=MAX(CPU(MYID)%ITERATION,CURRENT_TIME()-TNOWI)
 
@@ -9905,10 +9772,6 @@ IF (N_DIRIC_GLOBAL(NLEVEL_MIN) == 0) THEN
    CALL SCARC_RESTORE_LAST_CELL(X, NL)
    CALL SCARC_FILTER_MEANVALUE(X, NL)
 ENDIF
-
-#ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_LEVEL (X, 'CG-METHOD: X FINAL', NL)
-#endif
 
 IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) THEN
    CALL SCARC_UPDATE_MAINCELLS(NLEVEL_MIN)
@@ -12625,7 +12488,7 @@ ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1) CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
 ENDIF
 #ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating INT1     array  ',A20,' in length (',I8,':',I8,')')
+1000 FORMAT('Allocating INT1     array  ',A20,'(',I8,':',I8,')')
 #endif
 END SUBROUTINE SCARC_ALLOCATE_INT1
 
@@ -12659,7 +12522,7 @@ ELSE
    ENDIF
 ENDIF
 #ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating INT2     array  ',A20,' in length (',I8,':',I8,' , ',I8,':',I8,')')
+1000 FORMAT('Allocating INT2     array  ',A20,'(',I8,':',I8,' , ',I8,':',I8,')')
 #endif
 END SUBROUTINE SCARC_ALLOCATE_INT2
 
@@ -12694,7 +12557,7 @@ ELSE
    ENDIF
 ENDIF
 #ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating INT3     array  ',A20,' in length (',I8,':',I8,' , ',I8,':',I8,' , ',I8,':',I8,')')
+1000 FORMAT('Allocating INT3     array  ',A20,'(',I8,':',I8,' , ',I8,':',I8,' , ',I8,':',I8,')')
 #endif
 END SUBROUTINE SCARC_ALLOCATE_INT3
 
@@ -12725,7 +12588,7 @@ ELSE
    ENDIF
 ENDIF
 #ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating LOG3     array  ',A20,' in length (',I8,':',I8,')')
+1000 FORMAT('Allocating LOG3     array  ',A20,'(',I8,':',I8,')')
 #endif
 END SUBROUTINE SCARC_ALLOCATE_LOG1
 
@@ -12757,7 +12620,7 @@ ELSE
    ENDIF
 ENDIF
 #ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating LOG3     array  ',A20,' in length (',I8,':',I8,' , ',I8,':',I8,')')
+1000 FORMAT('Allocating LOG3     array  ',A20,'(',I8,':',I8,' , ',I8,':',I8,')')
 #endif
 END SUBROUTINE SCARC_ALLOCATE_LOG2
 
@@ -12790,7 +12653,7 @@ ELSE
    ENDIF
 ENDIF
 #ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating LOG3     array  ',A20,' in length (',I8,':',I8,' , ',I8,':',I8,' , ',I8,':',I8,')')
+1000 FORMAT('Allocating LOG3     array  ',A20,'(',I8,':',I8,' , ',I8,':',I8,' , ',I8,':',I8,')')
 #endif
 END SUBROUTINE SCARC_ALLOCATE_LOG3
 
@@ -12828,7 +12691,7 @@ ELSE
 ENDIF
 
 #ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating REAL1    array  ',A20,' in length (',I8,':',I8,')')
+1000 FORMAT('Allocating REAL1    array  ',A20,'(',I8,':',I8,')')
 #endif
 END SUBROUTINE SCARC_ALLOCATE_REAL1
 
@@ -12861,7 +12724,7 @@ ELSE
       CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
 ENDIF
 #ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating REAL1_FB array  ',A20,' in length (',I8,':',I8,')')
+1000 FORMAT('Allocating REAL1_FB array  ',A20,'(',I8,':',I8,')')
 #endif
 END SUBROUTINE SCARC_ALLOCATE_REAL1_FB
 
@@ -12896,7 +12759,7 @@ ELSE
    ENDIF
 ENDIF
 #ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating REAL2    array    ',A20,' in length (',I8,':',I8,' , ',I8,':',I8,')')
+1000 FORMAT('Allocating REAL2    array  ',A20,'(',I8,':',I8,' , ',I8,':',I8,')')
 #endif
 END SUBROUTINE SCARC_ALLOCATE_REAL2
 
@@ -12932,7 +12795,7 @@ ELSE
    ENDIF
 ENDIF
 #ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating REAL3    array    ',A20,' in length (',I8,':',I8,' , ',I8,':',I8,' , ',I8,':',I8,')')
+1000 FORMAT('Allocating REAL3    array  ',A20,'(',I8,':',I8,' , ',I8,':',I8,' , ',I8,':',I8,')')
 #endif
 END SUBROUTINE SCARC_ALLOCATE_REAL3
 
@@ -12955,25 +12818,25 @@ WRITE(MSG%LU_VERBOSE,1000) CNAME
 IF (NPREC == NSCARC_PRECISION_SINGLE) THEN
 
    WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.VAL'
-   CALL SCARC_ALLOCATE_REAL1_FB(A%VAL_FB, 1, A%N_VAL, NINIT, CINFO)
+   CALL SCARC_ALLOCATE_REAL1_FB(A%VAL_FB, 1, A%N_VAL, NINIT, TRIM(CINFO))
 
 ELSE
 
    WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.VAL'
-   CALL SCARC_ALLOCATE_REAL1(A%VAL, 1, A%N_VAL, NINIT, CINFO)
+   CALL SCARC_ALLOCATE_REAL1(A%VAL, 1, A%N_VAL, NINIT, TRIM(CINFO))
 
 ENDIF
 
 WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.ROW'
-CALL SCARC_ALLOCATE_INT1(A%ROW, 1, A%N_ROW, NINIT, CINFO)
+CALL SCARC_ALLOCATE_INT1(A%ROW, 1, A%N_ROW, NINIT, TRIM(CINFO))
 
 WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.COL'
-CALL SCARC_ALLOCATE_INT1(A%COL, 1, A%N_VAL, NINIT, CINFO)
+CALL SCARC_ALLOCATE_INT1(A%COL, 1, A%N_VAL, NINIT, TRIM(CINFO))
 
 #ifdef WITH_MKL
 IF (IS_MKL_LEVEL(NL)) THEN
    WRITE(CINFO,'(A,A)') CNAME,'.COL_GLOBAL'
-   CALL SCARC_ALLOCATE_INT1 (A%COL_GLOBAL, 1, A%N_VAL, NINIT, CINFO)
+   CALL SCARC_ALLOCATE_INT1 (A%COL_GLOBAL, 1, A%N_VAL, NINIT, TRIM(CINFO))
 ENDIF
 #endif
 
@@ -13032,21 +12895,21 @@ ELSE IF (A%N_VAL > NSIZE) THEN
 
    WRITE(CINFO,'(A,A)') TRIM(CNAME),'.VAL'
 
-   CALL SCARC_ALLOCATE_REAL1(VAL, 1, NSIZE, NSCARC_INIT_NONE, CINFO)
+   CALL SCARC_ALLOCATE_REAL1(VAL, 1, NSIZE, NSCARC_INIT_NONE, TRIM(CINFO))
    VAL(1:NSIZE) = A%VAL(1:NSIZE)
    DEALLOCATE(A%VAL)
 
-   CALL SCARC_ALLOCATE_REAL1(A%VAL, 1, NSIZE, NSCARC_INIT_NONE, CINFO)
+   CALL SCARC_ALLOCATE_REAL1(A%VAL, 1, NSIZE, NSCARC_INIT_NONE, TRIM(CINFO))
    A%VAL(1:NSIZE) = VAL(1:NSIZE)
    DEALLOCATE(VAL)
 
    WRITE(CINFO,'(A,A)') TRIM(CNAME),'.COL'
 
-   CALL SCARC_ALLOCATE_INT1(COL, 1, NSIZE, NSCARC_INIT_NONE, CINFO)
+   CALL SCARC_ALLOCATE_INT1(COL, 1, NSIZE, NSCARC_INIT_NONE, TRIM(CINFO))
    COL(1:NSIZE) = A%COL(1:NSIZE)
    DEALLOCATE(A%COL)
 
-   CALL SCARC_ALLOCATE_INT1(A%COL, 1, NSIZE, NSCARC_INIT_NONE, CINFO)
+   CALL SCARC_ALLOCATE_INT1(A%COL, 1, NSIZE, NSCARC_INIT_NONE, TRIM(CINFO))
    A%COL(1:NSIZE) = COL(1:NSIZE)
    DEALLOCATE(COL)
 
