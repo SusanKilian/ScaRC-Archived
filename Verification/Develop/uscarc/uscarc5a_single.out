@@ -1,7 +1,7 @@
 
  Fire Dynamics Simulator
 
- Current Date     : March  3, 2020  20:43:29
+ Current Date     : March  4, 2020  13:24:02
  Revision         : FDS6.7.4-28-gc609011-master
  Revision Date    : Tue Mar 3 16:52:24 2020 +0100
  Compiler         : Intel ifort 18.0.1
@@ -99,7 +99,7 @@ Total Number of Grid Cells        108000
  Miscellaneous Parameters
 
    Simulation Start Time (s)         48.0
-   Simulation End Time (s)           60.0
+   Simulation End Time (s)           50.0
    LES Calculation
    Eddy Viscosity:           Deardorff Model (C_DEARDORFF = 0.10)
    Near-wall Eddy Viscosity: WALE Model (C_WALE = 0.60)
@@ -705,7 +705,7 @@ Total Number of Grid Cells        108000
 
  Run Time Diagnostics
 
-       Time Step       1   March  3, 2020  20:43:32
+       Time Step       1   March  4, 2020  13:24:05
        Step Size:    0.289E-01 s, Total Time:      48.03 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.17E-17 on Mesh   2 at (   1   8   2)
@@ -738,7 +738,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.12E-05 at (  22,   8,  29)
        Max VN number:   0.11E+00 at (  17,  13,   1)
  
-       Time Step       2   March  3, 2020  20:43:35
+       Time Step       2   March  4, 2020  13:24:07
        Step Size:    0.289E-01 s, Total Time:      48.06 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.11E-16 on Mesh   2 at (  25  10  17)
@@ -772,7 +772,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.12E-05 at (  22,   8,  29)
        Max VN number:   0.11E+00 at (  17,  13,   1)
  
-       Time Step       3   March  3, 2020  20:43:37
+       Time Step       3   March  4, 2020  13:24:10
        Step Size:    0.289E-01 s, Total Time:      48.09 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.42E-16 on Mesh   2 at (  25  10  15)
@@ -807,7 +807,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.12E-05 at (  22,   8,  29)
        Max VN number:   0.98E-01 at (  13,  14,   1)
  
-       Time Step       4   March  3, 2020  20:43:40
+       Time Step       4   March  4, 2020  13:24:13
        Step Size:    0.289E-01 s, Total Time:      48.12 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.21E-16 on Mesh   2 at (  25  19  15)
@@ -842,7 +842,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.12E-05 at (  22,   8,  29)
        Max VN number:   0.11E+00 at (   9,   7,  30)
  
-       Time Step       5   March  3, 2020  20:43:43
+       Time Step       5   March  4, 2020  13:24:15
        Step Size:    0.289E-01 s, Total Time:      48.14 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.21E-16 on Mesh   2 at (  25  16  18)
@@ -877,7 +877,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.11E-05 at (  22,   8,  29)
        Max VN number:   0.88E-01 at (   9,   7,  30)
  
-       Time Step       6   March  3, 2020  20:43:45
+       Time Step       6   March  4, 2020  13:24:18
        Step Size:    0.289E-01 s, Total Time:      48.17 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.10E-16 on Mesh   3 at (   0   3  13)
@@ -912,7 +912,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.11E-05 at (  22,   8,  29)
        Max VN number:   0.79E-01 at (  14,  30,  12)
  
-       Time Step       7   March  3, 2020  20:43:49
+       Time Step       7   March  4, 2020  13:24:22
        Step Size:    0.222E-01 s, Total Time:      48.20 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.21E-16 on Mesh   2 at (  25  11  16)
@@ -947,7 +947,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.11E-05 at (  15,  27,  29)
        Max VN number:   0.57E-01 at (  14,  30,  12)
  
-       Time Step       8   March  3, 2020  20:43:52
+       Time Step       8   March  4, 2020  13:24:25
        Step Size:    0.222E-01 s, Total Time:      48.22 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.31E-16 on Mesh   2 at (  25  20  16)
@@ -982,7 +982,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.11E-05 at (   8,  26,   6)
        Max VN number:   0.64E-01 at (   9,   7,  30)
  
-       Time Step       9   March  3, 2020  20:43:55
+       Time Step       9   March  4, 2020  13:24:28
        Step Size:    0.222E-01 s, Total Time:      48.24 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.52E-17 on Mesh   2 at (  25  12   3)
@@ -1017,7 +1017,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.11E-05 at (   8,  26,   6)
        Max VN number:   0.82E-01 at (  16,   1,  12)
  
-       Time Step      10   March  3, 2020  20:43:58
+       Time Step      10   March  4, 2020  13:24:31
        Step Size:    0.222E-01 s, Total Time:      48.26 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.52E-16 on Mesh   2 at (  25  15  15)
@@ -1052,7 +1052,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.11E-05 at (  22,   8,  29)
        Max VN number:   0.79E-01 at (  16,   1,  12)
  
-       Time Step      20   March  3, 2020  20:44:31
+       Time Step      20   March  4, 2020  13:25:04
        Step Size:    0.121E-01 s, Total Time:      48.44 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.14E-16 on Mesh   2 at (  25  17  16)
@@ -1087,7 +1087,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.98E-06 at (   8,  26,   6)
        Max VN number:   0.36E-01 at (  16,   1,  12)
  
-       Time Step      30   March  3, 2020  20:45:03
+       Time Step      30   March  4, 2020  13:25:37
        Step Size:    0.666E-02 s, Total Time:      48.53 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.69E-17 on Mesh   2 at (  25   9  14)
@@ -1122,7 +1122,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.78E-06 at (   2,   4,  17)
        Max VN number:   0.14E-01 at (  23,   3,  30)
  
-       Time Step      40   March  3, 2020  20:45:32
+       Time Step      40   March  4, 2020  13:26:06
        Step Size:    0.580E-02 s, Total Time:      48.59 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.14E-16 on Mesh   2 at (  25  11  19)
@@ -1157,7 +1157,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.73E-06 at (   2,   4,  17)
        Max VN number:   0.11E-01 at (  20,   4,   3)
  
-       Time Step      50   March  3, 2020  20:46:01
+       Time Step      50   March  4, 2020  13:26:36
        Step Size:    0.580E-02 s, Total Time:      48.65 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.14E-16 on Mesh   2 at (  25  12  20)
@@ -1192,7 +1192,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.68E-06 at (   2,   4,  17)
        Max VN number:   0.11E-01 at (  20,   4,   3)
  
-       Time Step      60   March  3, 2020  20:46:32
+       Time Step      60   March  4, 2020  13:27:08
        Step Size:    0.452E-02 s, Total Time:      48.70 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.14E-16 on Mesh   2 at (  25   5  20)
@@ -1227,7 +1227,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.63E-06 at (   8,  17,  11)
        Max VN number:   0.87E-02 at (  20,   4,   3)
  
-       Time Step      70   March  3, 2020  20:47:03
+       Time Step      70   March  4, 2020  13:27:38
        Step Size:    0.401E-02 s, Total Time:      48.75 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.28E-16 on Mesh   2 at (  25  13  22)
@@ -1262,7 +1262,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.59E-06 at (   5,   5,  11)
        Max VN number:   0.77E-02 at (  20,   4,   3)
  
-       Time Step      80   March  3, 2020  20:47:33
+       Time Step      80   March  4, 2020  13:28:09
        Step Size:    0.356E-02 s, Total Time:      48.78 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.28E-16 on Mesh   2 at (  25  18  24)
@@ -1297,7 +1297,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.56E-06 at (   6,  19,  13)
        Max VN number:   0.67E-02 at (  20,   4,   3)
  
-       Time Step      90   March  3, 2020  20:48:05
+       Time Step      90   March  4, 2020  13:28:42
        Step Size:    0.261E-02 s, Total Time:      48.81 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.56E-16 on Mesh   3 at (   0  14  30)
@@ -1333,7 +1333,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.53E-06 at (  12,  14,  10)
        Max VN number:   0.49E-02 at (  20,   4,   3)
  
-       Time Step     100   March  3, 2020  20:48:35
+       Time Step     100   March  4, 2020  13:29:12
        Step Size:    0.261E-02 s, Total Time:      48.84 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.56E-16 on Mesh   2 at (  25  11  24)
@@ -1370,7 +1370,7 @@ Total Number of Grid Cells        108000
        Min divergence: -0.45E-06 at (  14,  11,  11)
        Max VN number:   0.48E-02 at (  20,   4,   3)
  
-       Time Step     200   March  3, 2020  20:53:49
+       Time Step     200   March  4, 2020  13:34:31
        Step Size:    0.203E-02 s, Total Time:      49.03 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.44E-15 on Mesh   3 at (   0  16  30)
@@ -1407,7 +1407,7 @@ Total Number of Grid Cells        108000
        Min divergence:  0.22E-06 at (  21,  15,  11)
        Max VN number:   0.37E-02 at (  13,  29,  29)
  
-       Time Step     300   March  3, 2020  20:58:59
+       Time Step     300   March  4, 2020  13:39:46
        Step Size:    0.198E-02 s, Total Time:      49.24 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.22E-15 on Mesh   1 at (  25  10  30)
@@ -1444,7 +1444,7 @@ Total Number of Grid Cells        108000
        Min divergence:  0.15E-05 at (  24,  14,  17)
        Max VN number:   0.38E-02 at (  14,  29,  29)
  
-       Time Step     400   March  3, 2020  21:04:14
+       Time Step     400   March  4, 2020  13:45:03
        Step Size:    0.196E-02 s, Total Time:      49.43 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.22E-15 on Mesh   1 at (  25  11  30)
@@ -1482,7 +1482,7 @@ Total Number of Grid Cells        108000
        Min divergence:  0.28E-05 at (  24,  13,  17)
        Max VN number:   0.39E-02 at (  17,  29,  29)
  
-       Time Step     500   March  3, 2020  21:09:27
+       Time Step     500   March  4, 2020  13:50:20
        Step Size:    0.190E-02 s, Total Time:      49.63 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.44E-15 on Mesh   2 at (  25  20  29)
@@ -1520,7 +1520,7 @@ Total Number of Grid Cells        108000
        Min divergence:  0.14E-05 at (  19,  30,  16)
        Max VN number:   0.39E-02 at (   1,  29,  29)
  
-       Time Step     600   March  3, 2020  21:14:47
+       Time Step     600   March  4, 2020  13:55:49
        Step Size:    0.178E-02 s, Total Time:      49.83 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.22E-15 on Mesh   1 at (  25  10  30)
@@ -1558,1545 +1558,59 @@ Total Number of Grid Cells        108000
        Min divergence: -0.69E+00 at (   3,  20,  29)
        Max VN number:   0.44E-01 at (   3,  21,  29)
  
-       Time Step     700   March  3, 2020  21:20:08
-       Step Size:    0.176E-02 s, Total Time:      50.00 s
+       Time Step     700   March  4, 2020  14:01:05
+       Step Size:    0.263E-03 s, Total Time:      50.00 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.44E-15 on Mesh   1 at (  25   9  30)
-       Maximum Pressure Error:  0.89E+05 on Mesh   2 at (   3  18  18)
-       ScaRC: iterations   103, residual  0.99E-08, convergence rate   0.74E+00
+       Maximum Velocity Error:  0.44E-15 on Mesh   1 at (  25  14  30)
+       Maximum Pressure Error:  0.14E+07 on Mesh   2 at (   3  18  18)
+       ScaRC: iterations   111, residual  0.63E-08, convergence rate   0.75E+00
        ---------------------------------------------------------------
        Mesh    1
-       Max CFL number:  0.71E+00 at (  22,  13,  30)
-       Max divergence:  0.46E+01 at (  21,  13,  30)
-       Min divergence: -0.38E+01 at (  24,   6,  30)
-       Max VN number:   0.20E+00 at (  12,   5,  30)
+       Max CFL number:  0.10E+00 at (  22,  12,  30)
+       Max divergence:  0.34E+01 at (  21,  13,  30)
+       Min divergence: -0.32E+01 at (  24,   6,  30)
+       Max VN number:   0.30E-01 at (  12,   5,  30)
        Total Heat Release Rate:              0.003 kW
        Radiation Loss to Boundaries:        -0.013 kW
        Mesh    2
-       Max CFL number:  0.79E+00 at (   2,   8,  30)
-       Max divergence:  0.62E+02 at (   7,  15,   9)
+       Max CFL number:  0.12E+00 at (   2,   8,  30)
+       Max divergence:  0.65E+02 at (   7,  15,   9)
        Min divergence: -0.15E+02 at (   9,   8,   9)
-       Max VN number:   0.19E+00 at (   9,  22,  30)
-       Total Heat Release Rate:              4.454 kW
-       Radiation Loss to Boundaries:        -1.441 kW
+       Max VN number:   0.29E-01 at (   9,  22,  30)
+       Total Heat Release Rate:              4.709 kW
+       Radiation Loss to Boundaries:        -1.453 kW
        Mesh    3
-       Max CFL number:  0.84E+00 at (   4,  13,  30)
+       Max CFL number:  0.12E+00 at (   4,  13,  30)
        Max divergence:  0.38E+01 at (   7,  12,  29)
-       Min divergence: -0.45E+01 at (   2,  12,  30)
-       Max VN number:   0.29E+00 at (   6,  15,  30)
+       Min divergence: -0.42E+01 at (   1,   5,  30)
+       Max VN number:   0.44E-01 at (   6,  15,  30)
        Total Heat Release Rate:              0.010 kW
        Radiation Loss to Boundaries:        -0.019 kW
        Mesh    4
-       Max CFL number:  0.35E+00 at (   7,   5,  30)
-       Max divergence:  0.79E+00 at (   5,   3,  29)
-       Min divergence: -0.95E+00 at (   4,   4,  29)
-       Max VN number:   0.10E+00 at (  12,  30,  20)
+       Max CFL number:  0.52E-01 at (   7,   5,  30)
+       Max divergence:  0.84E+00 at (   4,   3,  29)
+       Min divergence: -0.98E+00 at (   4,   4,  29)
+       Max VN number:   0.15E-01 at (  12,  30,  20)
        Radiation Loss to Boundaries:        -0.003 kW
        Mesh    5
-       Max CFL number:  0.29E+00 at (   9,  15,  27)
+       Max CFL number:  0.43E-01 at (   9,  15,  27)
        Max divergence:  0.45E+00 at (  12,  15,  29)
-       Min divergence: -0.74E+00 at (  13,  21,  28)
-       Max VN number:   0.70E-01 at (  10,   9,  30)
+       Min divergence: -0.76E+00 at (  13,  21,  28)
+       Max VN number:   0.10E-01 at (  10,   9,  30)
  
-       Time Step     800   March  3, 2020  21:25:44
-       Step Size:    0.521E-03 s, Total Time:      50.13 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.13E-14 on Mesh   3 at (   0  20  10)
-       Maximum Pressure Error:  0.11E+07 on Mesh   2 at (  15   6   9)
-       ScaRC: iterations   114, residual  0.86E-08, convergence rate   0.75E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.34E+00 at (  24,  29,   3)
-       Max divergence:  0.13E+01 at (  24,  12,  17)
-       Min divergence: -0.19E+01 at (  22,  28,  30)
-       Max VN number:   0.63E-01 at (  24,   5,   3)
-       No. of Lagrangian Particles:          2000
-       Radiation Loss to Boundaries:         0.007 kW
-       Mesh    2
-       Max CFL number:  0.94E+00 at (  16,   7,  10)
-       Max divergence:  0.32E+03 at (  16,  25,  11)
-       Min divergence: -0.22E+02 at (  13,  24,   9)
-       Max VN number:   0.27E+00 at (  15,  20,   9)
-       Total Heat Release Rate:             22.425 kW
-       Radiation Loss to Boundaries:        -6.823 kW
-       Mesh    3
-       Max CFL number:  0.48E+00 at (   1,  20,  25)
-       Max divergence:  0.60E+02 at (   2,  18,  13)
-       Min divergence: -0.14E+02 at (   1,  20,  10)
-       Max VN number:   0.11E+00 at (   3,  26,  14)
-       Total Heat Release Rate:              0.530 kW
-       Radiation Loss to Boundaries:        -0.160 kW
-       Mesh    4
-       Max CFL number:  0.32E+00 at (   8,   1,  30)
-       Max divergence:  0.16E+01 at (   9,   4,  29)
-       Min divergence: -0.42E+01 at (   5,   1,  30)
-       Max VN number:   0.27E-01 at (   4,   5,  29)
-       Radiation Loss to Boundaries:        -0.004 kW
-       Mesh    5
-       Max CFL number:  0.24E+00 at (   4,   3,  30)
-       Max divergence:  0.76E+00 at (   3,  16,  29)
-       Min divergence: -0.85E+00 at (   6,  11,  30)
-       Max VN number:   0.15E-01 at (   2,  10,  29)
-       Radiation Loss to Boundaries:        -0.002 kW
- 
-       Time Step     900   March  3, 2020  21:31:21
-       Step Size:    0.110E-02 s, Total Time:      50.21 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25   8   3)
-       Maximum Pressure Error:  0.19E+06 on Mesh   2 at (   2  13  15)
-       ScaRC: iterations   107, residual  0.81E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.83E+00 at (  24,  29,   3)
-       Max divergence:  0.12E+01 at (  22,  28,  28)
-       Min divergence: -0.11E+01 at (  23,   1,  29)
-       Max VN number:   0.14E+00 at (  24,  29,   3)
-       No. of Lagrangian Particles:         10574
-       Radiation Loss to Boundaries:         0.002 kW
-       Mesh    2
-       Max CFL number:  0.91E+00 at (   5,  10,   4)
-       Max divergence:  0.55E+02 at (  12,  20,  11)
-       Min divergence: -0.16E+02 at (   5,  12,  12)
-       Max VN number:   0.50E+00 at (   6,  27,   7)
-       No. of Lagrangian Particles:           426
-       Total Heat Release Rate:              3.296 kW
-       Radiation Loss to Boundaries:        -1.145 kW
-       Mesh    3
-       Max CFL number:  0.73E+00 at (  23,  17,  30)
-       Max divergence:  0.90E+01 at (   1,  20,  10)
-       Min divergence: -0.10E+02 at (   2,  15,   9)
-       Max VN number:   0.33E+00 at (   2,  14,  13)
-       Total Heat Release Rate:              0.124 kW
-       Radiation Loss to Boundaries:        -0.098 kW
-       Mesh    4
-       Max CFL number:  0.72E+00 at (   3,  26,  30)
-       Max divergence:  0.28E+01 at (   5,  15,  28)
-       Min divergence: -0.38E+01 at (   3,  14,  30)
-       Max VN number:   0.69E-01 at (   6,  18,  28)
-       Total Heat Release Rate:              0.009 kW
-       Radiation Loss to Boundaries:        -0.016 kW
-       Mesh    5
-       Max CFL number:  0.53E+00 at (  13,   7,  29)
-       Max divergence:  0.12E+01 at (  11,   1,  29)
-       Min divergence: -0.20E+01 at (  18,   6,  30)
-       Max VN number:   0.58E-01 at (   7,   9,  29)
-       Radiation Loss to Boundaries:        -0.007 kW
- 
-       Time Step    1000   March  3, 2020  21:36:46
-       Step Size:    0.110E-02 s, Total Time:      50.32 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   2 at (   0  30   3)
-       Maximum Pressure Error:  0.20E+06 on Mesh   2 at (  16  25   9)
-       ScaRC: iterations   105, residual  0.85E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.72E+00 at (  24,  29,   3)
-       Max divergence:  0.74E-02 at (  24,  16,  12)
-       Min divergence: -0.36E-03 at (  24,  28,   1)
-       Max VN number:   0.13E+00 at (  24,   5,   3)
-       No. of Lagrangian Particles:         11044
-       Radiation Loss to Boundaries:         0.002 kW
-       Mesh    2
-       Max CFL number:  0.82E+00 at (   5,   5,   8)
-       Max divergence:  0.74E+02 at (   7,  10,  11)
-       Min divergence: -0.13E+02 at (   5,  14,  12)
-       Max VN number:   0.74E+00 at (   6,   5,   4)
-       No. of Lagrangian Particles:          8984
-       Total Heat Release Rate:              2.492 kW
-       Radiation Loss to Boundaries:        -0.875 kW
-       Mesh    3
-       Max CFL number:  0.76E+00 at (   2,   5,  11)
-       Max divergence:  0.56E+01 at (   2,   7,  11)
-       Min divergence: -0.79E+01 at (   1,   7,  11)
-       Max VN number:   0.29E+00 at (   4,  24,  11)
-       No. of Lagrangian Particles:          1971
-       Total Heat Release Rate:              0.006 kW
-       Radiation Loss to Boundaries:        -0.011 kW
-       Mesh    4
-       Max CFL number:  0.53E+00 at (   2,   8,  15)
-       Max divergence:  0.25E+01 at (   1,  13,  17)
-       Min divergence: -0.23E+01 at (  12,  16,  29)
-       Max VN number:   0.78E-01 at (  10,  13,  18)
-       Total Heat Release Rate:              0.003 kW
-       Radiation Loss to Boundaries:        -0.020 kW
-       Mesh    5
-       Max CFL number:  0.54E+00 at (   5,  24,  30)
-       Max divergence:  0.16E+01 at (  11,   1,  26)
-       Min divergence: -0.20E+01 at (   3,  16,  18)
-       Max VN number:   0.59E-01 at (   1,  13,  20)
-       Total Heat Release Rate:              0.002 kW
-       Radiation Loss to Boundaries:        -0.013 kW
- 
-       Time Step    1100   March  3, 2020  21:42:13
-       Step Size:    0.110E-02 s, Total Time:      50.43 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   2 at (  25   2   7)
-       Maximum Pressure Error:  0.21E+06 on Mesh   2 at (  16  25   9)
-       ScaRC: iterations   106, residual  0.97E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.73E+00 at (  24,  29,   3)
-       Max divergence:  0.61E-02 at (  24,  21,  14)
-       Min divergence: -0.81E-04 at (  24,  23,   1)
-       Max VN number:   0.13E+00 at (  24,  17,   1)
-       No. of Lagrangian Particles:         11113
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.88E+00 at (   5,   5,   5)
-       Max divergence:  0.40E+02 at (   7,  19,  10)
-       Min divergence: -0.21E+02 at (   6,  13,  11)
-       Max VN number:   0.72E+00 at (   7,  20,   4)
-       No. of Lagrangian Particles:          9502
-       Total Heat Release Rate:              2.154 kW
-       Radiation Loss to Boundaries:        -0.743 kW
-       Mesh    3
-       Max CFL number:  0.70E+00 at (   2,   4,  12)
-       Max divergence:  0.57E+01 at (   2,  10,   9)
-       Min divergence: -0.10E+02 at (   1,  11,   7)
-       Max VN number:   0.39E+00 at (   4,  30,  10)
-       No. of Lagrangian Particles:          9029
-       Total Heat Release Rate:              0.006 kW
-       Radiation Loss to Boundaries:        -0.004 kW
-       Mesh    4
-       Max CFL number:  0.58E+00 at (  23,  23,  19)
-       Max divergence:  0.13E+01 at (  13,   2,  24)
-       Min divergence: -0.17E+01 at (   6,  29,  25)
-       Max VN number:   0.13E+00 at (   2,   1,   5)
-       No. of Lagrangian Particles:          3353
-       Radiation Loss to Boundaries:        -0.008 kW
-       Mesh    5
-       Max CFL number:  0.60E+00 at (   1,  21,  25)
-       Max divergence:  0.10E+01 at (   5,  13,  23)
-       Min divergence: -0.11E+01 at (  17,   1,  23)
-       Max VN number:   0.66E-01 at (   5,  13,  23)
-       Radiation Loss to Boundaries:        -0.016 kW
- 
-       Time Step    1200   March  3, 2020  21:47:41
-       Step Size:    0.110E-02 s, Total Time:      50.54 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   2 at (  25   2   8)
-       Maximum Pressure Error:  0.23E+06 on Mesh   1 at (  10  13  15)
-       ScaRC: iterations   111, residual  0.64E-08, convergence rate   0.75E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.71E+00 at (  24,  29,   3)
-       Max divergence:  0.54E-02 at (  23,  30,  14)
-       Min divergence: -0.14E-03 at (  23,  23,   1)
-       Max VN number:   0.13E+00 at (  24,   4,   3)
-       No. of Lagrangian Particles:         11138
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.86E+00 at (   5,   5,   5)
-       Max divergence:  0.64E+02 at (   6,  11,  11)
-       Min divergence: -0.16E+02 at (   5,  14,  12)
-       Max VN number:   0.69E+00 at (   8,  23,   4)
-       No. of Lagrangian Particles:          9474
-       Total Heat Release Rate:              2.142 kW
-       Radiation Loss to Boundaries:        -0.704 kW
-       Mesh    3
-       Max CFL number:  0.73E+00 at (   3,   6,  11)
-       Max divergence:  0.39E+01 at (   2,   7,  13)
-       Min divergence: -0.43E+01 at (   1,  27,  11)
-       Max VN number:   0.56E+00 at (   4,   5,  11)
-       No. of Lagrangian Particles:         10651
-       Total Heat Release Rate:              0.002 kW
-       Radiation Loss to Boundaries:        -0.002 kW
-       Mesh    4
-       Max CFL number:  0.52E+00 at (  17,  22,  13)
-       Max divergence:  0.11E+01 at (  24,  29,  27)
-       Min divergence: -0.14E+01 at (   3,  19,   9)
-       Max VN number:   0.11E+00 at (   6,   4,   1)
-       No. of Lagrangian Particles:          8607
-       Radiation Loss to Boundaries:        -0.001 kW
-       Mesh    5
-       Max CFL number:  0.56E+00 at (  23,  25,  21)
-       Max divergence:  0.10E+01 at (   5,  28,  26)
-       Min divergence: -0.15E+01 at (   6,   2,  22)
-       Max VN number:   0.69E-01 at (  18,   2,  11)
-       No. of Lagrangian Particles:          4113
-       Radiation Loss to Boundaries:        -0.006 kW
- 
-       Time Step    1300   March  3, 2020  21:53:06
-       Step Size:    0.110E-02 s, Total Time:      50.65 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   2 at (   0  22   3)
-       Maximum Pressure Error:  0.20E+06 on Mesh   2 at (  16  25   9)
-       ScaRC: iterations   109, residual  0.58E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.72E+00 at (  24,  29,   3)
-       Max divergence:  0.48E-02 at (  24,  16,  30)
-       Min divergence: -0.73E-04 at (  24,  16,   1)
-       Max VN number:   0.12E+00 at (  24,   6,   3)
-       No. of Lagrangian Particles:         11176
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.82E+00 at (   5,   5,   8)
-       Max divergence:  0.61E+02 at (   6,  10,  11)
-       Min divergence: -0.22E+02 at (   7,  10,  11)
-       Max VN number:   0.60E+00 at (   7,   6,   4)
-       No. of Lagrangian Particles:          9585
-       Total Heat Release Rate:              2.262 kW
-       Radiation Loss to Boundaries:        -0.741 kW
-       Mesh    3
-       Max CFL number:  0.75E+00 at (   2,   5,  12)
-       Max divergence:  0.35E+01 at (   1,  14,   4)
-       Min divergence: -0.42E+01 at (   1,  27,  11)
-       Max VN number:   0.36E+00 at (  19,   1,   4)
-       No. of Lagrangian Particles:         10586
-       Radiation Loss to Boundaries:        -0.001 kW
-       Mesh    4
-       Max CFL number:  0.54E+00 at (  16,   5,   5)
-       Max divergence:  0.66E+00 at (   1,   1,  15)
-       Min divergence: -0.82E+00 at (   5,   6,  13)
-       Max VN number:   0.45E+00 at (   1,   1,  15)
-       No. of Lagrangian Particles:         10870
-       Mesh    5
-       Max CFL number:  0.51E+00 at (   8,  26,  12)
-       Max divergence:  0.97E+00 at (  20,  29,  27)
-       Min divergence: -0.10E+01 at (   7,  12,  29)
-       Max VN number:   0.15E+00 at (  23,  30,   6)
-       No. of Lagrangian Particles:          8181
-       Radiation Loss to Boundaries:        -0.002 kW
- 
-       Time Step    1400   March  3, 2020  21:58:33
-       Step Size:    0.110E-02 s, Total Time:      50.76 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   3 at (   0   2  30)
-       Maximum Pressure Error:  0.36E+06 on Mesh   1 at (  10  13  15)
-       ScaRC: iterations   110, residual  0.86E-08, convergence rate   0.75E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.71E+00 at (  24,  29,   3)
-       Max divergence:  0.43E-02 at (  22,  19,  14)
-       Min divergence: -0.69E-04 at (  24,  16,   1)
-       Max VN number:   0.15E+00 at (  24,   2,   1)
-       No. of Lagrangian Particles:         11238
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.90E+00 at (   5,   5,   5)
-       Max divergence:  0.11E+03 at (   6,  11,  11)
-       Min divergence: -0.14E+02 at (   5,  14,  12)
-       Max VN number:   0.75E+00 at (   7,   6,   4)
-       No. of Lagrangian Particles:          9500
-       Total Heat Release Rate:              2.422 kW
-       Radiation Loss to Boundaries:        -0.750 kW
-       Mesh    3
-       Max CFL number:  0.68E+00 at (   2,   4,  12)
-       Max divergence:  0.31E+01 at (   1,   8,  10)
-       Min divergence: -0.38E+01 at (   1,   5,  11)
-       Max VN number:   0.37E+00 at (   4,  26,  11)
-       No. of Lagrangian Particles:         10698
-       Total Heat Release Rate:              0.001 kW
-       Radiation Loss to Boundaries:        -0.001 kW
-       Mesh    4
-       Max CFL number:  0.54E+00 at (  13,   5,  16)
-       Max divergence:  0.13E+01 at (   9,  18,  16)
-       Min divergence: -0.14E+01 at (   2,  15,  18)
-       Max VN number:   0.20E+00 at (  14,   1,  18)
-       No. of Lagrangian Particles:         11498
-       Mesh    5
-       Max CFL number:  0.48E+00 at (   7,   1,   5)
-       Max divergence:  0.98E+00 at (  23,  19,  29)
-       Min divergence: -0.89E+00 at (  23,  20,  29)
-       Max VN number:   0.66E-01 at (   9,   1,   4)
-       No. of Lagrangian Particles:          9903
- 
-       Time Step    1500   March  3, 2020  22:04:00
-       Step Size:    0.110E-02 s, Total Time:      50.87 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25  25   3)
-       Maximum Pressure Error:  0.18E+06 on Mesh   2 at (  16   6   9)
-       ScaRC: iterations   109, residual  0.99E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.70E+00 at (  24,  29,   3)
-       Max divergence:  0.65E-02 at (  23,   7,  13)
-       Min divergence: -0.97E-04 at (  24,  19,   2)
-       Max VN number:   0.14E+00 at (  24,   5,   3)
-       No. of Lagrangian Particles:         11169
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.86E+00 at (   5,   5,   5)
-       Max divergence:  0.68E+02 at (   6,  10,  11)
-       Min divergence: -0.14E+02 at (   5,  14,  12)
-       Max VN number:   0.84E+00 at (   7,   8,   4)
-       No. of Lagrangian Particles:          9651
-       Total Heat Release Rate:              2.588 kW
-       Radiation Loss to Boundaries:        -0.829 kW
-       Mesh    3
-       Max CFL number:  0.75E+00 at (   2,   4,  12)
-       Max divergence:  0.29E+01 at (   3,   5,  11)
-       Min divergence: -0.53E+01 at (   1,   5,  11)
-       Max VN number:   0.36E+00 at (   4,  29,  11)
-       No. of Lagrangian Particles:         10694
-       Total Heat Release Rate:              0.003 kW
-       Radiation Loss to Boundaries:        -0.002 kW
-       Mesh    4
-       Max CFL number:  0.54E+00 at (   4,   2,  14)
-       Max divergence:  0.94E+00 at (   3,  16,  12)
-       Min divergence: -0.11E+01 at (   2,  12,  19)
-       Max VN number:   0.11E+00 at (  18,   1,   7)
-       No. of Lagrangian Particles:         11563
-       Mesh    5
-       Max CFL number:  0.49E+00 at (   7,  24,   9)
-       Max divergence:  0.38E+00 at (   9,  18,  16)
-       Min divergence: -0.37E+00 at (   6,  22,  14)
-       Max VN number:   0.89E-01 at (  17,  30,  16)
-       No. of Lagrangian Particles:         11262
- 
-       Time Step    1600   March  3, 2020  22:09:31
-       Step Size:    0.110E-02 s, Total Time:      50.98 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25  27   3)
-       Maximum Pressure Error:  0.16E+06 on Mesh   2 at (  16  25   9)
-       ScaRC: iterations   105, residual  0.90E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.70E+00 at (  24,   2,   3)
-       Max divergence:  0.56E-02 at (  23,  22,  12)
-       Min divergence: -0.92E-04 at (  24,  19,   1)
-       Max VN number:   0.14E+00 at (  24,   2,   3)
-       No. of Lagrangian Particles:         11203
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.85E+00 at (   5,   5,   5)
-       Max divergence:  0.69E+02 at (   6,  10,  11)
-       Min divergence: -0.14E+02 at (   5,  14,  12)
-       Max VN number:   0.54E+00 at (   5,   4,  10)
-       No. of Lagrangian Particles:          9634
-       Total Heat Release Rate:              2.532 kW
-       Radiation Loss to Boundaries:        -0.824 kW
-       Mesh    3
-       Max CFL number:  0.72E+00 at (   2,   4,  12)
-       Max divergence:  0.33E+01 at (   1,  12,   6)
-       Min divergence: -0.39E+01 at (   1,   6,  13)
-       Max VN number:   0.27E+00 at (  17,   1,  10)
-       No. of Lagrangian Particles:         10709
-       Total Heat Release Rate:              0.001 kW
-       Radiation Loss to Boundaries:        -0.001 kW
-       Mesh    4
-       Max CFL number:  0.59E+00 at (  22,   1,  10)
-       Max divergence:  0.11E+01 at (  10,   7,   8)
-       Min divergence: -0.12E+01 at (   4,  10,   7)
-       Max VN number:   0.21E+00 at (   2,   1,  16)
-       No. of Lagrangian Particles:         11441
-       Mesh    5
-       Max CFL number:  0.51E+00 at (  16,   1,  17)
-       Max divergence:  0.67E+00 at (   1,   9,  19)
-       Min divergence: -0.48E+00 at (   1,  10,  19)
-       Max VN number:   0.97E-01 at (   4,  20,   1)
-       No. of Lagrangian Particles:         11780
- 
-       Time Step    1700   March  3, 2020  22:15:03
-       Step Size:    0.108E-02 s, Total Time:      51.10 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   2 at (   0  13   3)
-       Maximum Pressure Error:  0.15E+06 on Mesh   1 at (  10  13  15)
-       ScaRC: iterations   105, residual  0.70E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.70E+00 at (  24,  29,   3)
-       Max divergence:  0.44E-02 at (  24,   9,  14)
-       Min divergence: -0.15E-03 at (  24,  17,   3)
-       Max VN number:   0.14E+00 at (  23,  16,   1)
-       No. of Lagrangian Particles:         10750
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.86E+00 at (   5,   5,   5)
-       Max divergence:  0.74E+02 at (   7,  10,  11)
-       Min divergence: -0.10E+02 at (   7,  12,  13)
-       Max VN number:   0.59E+00 at (   7,   6,   4)
-       No. of Lagrangian Particles:          9619
-       Total Heat Release Rate:              2.327 kW
-       Radiation Loss to Boundaries:        -0.754 kW
-       Mesh    3
-       Max CFL number:  0.69E+00 at (   2,   5,  12)
-       Max divergence:  0.30E+01 at (   7,   1,  11)
-       Min divergence: -0.31E+01 at (   1,  27,  11)
-       Max VN number:   0.24E+00 at (   3,   2,  14)
-       No. of Lagrangian Particles:         10600
-       Total Heat Release Rate:              0.002 kW
-       Radiation Loss to Boundaries:        -0.002 kW
-       Mesh    4
-       Max CFL number:  0.48E+00 at (   1,  10,  16)
-       Max divergence:  0.99E+00 at (   4,   5,  16)
-       Min divergence: -0.15E+01 at (   1,   6,  15)
-       Max VN number:   0.21E+00 at (   4,  30,  15)
-       No. of Lagrangian Particles:         11596
-       Mesh    5
-       Max CFL number:  0.50E+00 at (  17,  30,  12)
-       Max divergence:  0.38E+00 at (   9,  28,   8)
-       Min divergence: -0.40E+00 at (  11,   9,  16)
-       Max VN number:   0.12E+00 at (  15,   1,   3)
-       No. of Lagrangian Particles:         11657
- 
-       Time Step    1800   March  3, 2020  22:20:31
-       Step Size:    0.108E-02 s, Total Time:      51.21 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25  14   3)
-       Maximum Pressure Error:  0.26E+06 on Mesh   1 at (  10  13  15)
-       ScaRC: iterations   104, residual  0.97E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.70E+00 at (  24,  29,   3)
-       Max divergence:  0.47E-02 at (  23,  25,  15)
-       Min divergence: -0.26E-03 at (  23,  20,   1)
-       Max VN number:   0.16E+00 at (  24,  28,   1)
-       No. of Lagrangian Particles:         10982
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.85E+00 at (   5,   5,   5)
-       Max divergence:  0.70E+02 at (   7,  11,  11)
-       Min divergence: -0.21E+02 at (   5,  14,  12)
-       Max VN number:   0.56E+00 at (   5,   4,  10)
-       No. of Lagrangian Particles:          9625
-       Total Heat Release Rate:              2.211 kW
-       Radiation Loss to Boundaries:        -0.707 kW
-       Mesh    3
-       Max CFL number:  0.73E+00 at (   2,   4,  12)
-       Max divergence:  0.26E+01 at (   4,   5,  11)
-       Min divergence: -0.35E+01 at (   1,  26,  11)
-       Max VN number:   0.29E+00 at (   3,   2,  14)
-       No. of Lagrangian Particles:         10719
-       Radiation Loss to Boundaries:        -0.001 kW
-       Mesh    4
-       Max CFL number:  0.55E+00 at (  14,  23,  13)
-       Max divergence:  0.10E+01 at (   9,   6,   8)
-       Min divergence: -0.13E+01 at (   1,  12,  11)
-       Max VN number:   0.17E+00 at (   4,   1,   2)
-       No. of Lagrangian Particles:         11457
-       Mesh    5
-       Max CFL number:  0.52E+00 at (   2,  22,  14)
-       Max divergence:  0.63E+00 at (   2,  10,  15)
-       Min divergence: -0.48E+00 at (   2,  13,  20)
-       Max VN number:   0.11E+00 at (  20,  30,  15)
-       No. of Lagrangian Particles:         11661
- 
-       Time Step    1900   March  3, 2020  22:25:59
-       Step Size:    0.119E-02 s, Total Time:      51.32 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25  15   3)
-       Maximum Pressure Error:  0.31E+06 on Mesh   1 at (  10  13  15)
-       ScaRC: iterations   109, residual  0.88E-08, convergence rate   0.75E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.76E+00 at (  24,  29,   3)
-       Max divergence:  0.57E-02 at (  24,  17,  13)
-       Min divergence: -0.27E-03 at (  24,  20,   3)
-       Max VN number:   0.14E+00 at (  24,   5,   3)
-       No. of Lagrangian Particles:         10771
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.94E+00 at (   5,   5,   5)
-       Max divergence:  0.62E+02 at (   6,  10,  11)
-       Min divergence: -0.18E+02 at (   5,  12,  13)
-       Max VN number:   0.62E+00 at (   5,   4,  10)
-       No. of Lagrangian Particles:          9609
-       Total Heat Release Rate:              2.238 kW
-       Radiation Loss to Boundaries:        -0.711 kW
-       Mesh    3
-       Max CFL number:  0.82E+00 at (   2,   4,  12)
-       Max divergence:  0.26E+01 at (   3,   5,  11)
-       Min divergence: -0.37E+01 at (   1,   5,  11)
-       Max VN number:   0.38E+00 at (  15,  30,  14)
-       No. of Lagrangian Particles:         10780
-       Total Heat Release Rate:              0.001 kW
-       Radiation Loss to Boundaries:        -0.002 kW
-       Mesh    4
-       Max CFL number:  0.59E+00 at (   4,   4,  13)
-       Max divergence:  0.82E+00 at (  11,  19,  16)
-       Min divergence: -0.12E+01 at (   8,  16,  17)
-       Max VN number:   0.16E+00 at (   5,  30,   4)
-       No. of Lagrangian Particles:         11458
-       Mesh    5
-       Max CFL number:  0.57E+00 at (  14,  22,  15)
-       Max divergence:  0.53E+00 at (  22,  14,  19)
-       Min divergence: -0.50E+00 at (  23,  15,  23)
-       Max VN number:   0.97E-01 at (   9,  30,  15)
-       No. of Lagrangian Particles:         11668
- 
-       Time Step    2000   March  3, 2020  22:31:26
-       Step Size:    0.119E-02 s, Total Time:      51.44 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25   5   3)
-       Maximum Pressure Error:  0.21E+06 on Mesh   2 at (   7   6   9)
-       ScaRC: iterations   105, residual  0.80E-08, convergence rate   0.73E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.76E+00 at (  24,  29,   3)
-       Max divergence:  0.44E-02 at (  23,  19,  30)
-       Min divergence: -0.33E-03 at (  24,  21,   3)
-       Max VN number:   0.17E+00 at (  24,  19,   1)
-       No. of Lagrangian Particles:         10855
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.91E+00 at (   5,   5,   5)
-       Max divergence:  0.65E+02 at (   7,  24,  10)
-       Min divergence: -0.10E+02 at (   8,   9,  10)
-       Max VN number:   0.88E+00 at (   7,   8,   4)
-       No. of Lagrangian Particles:          9647
-       Total Heat Release Rate:              2.179 kW
-       Radiation Loss to Boundaries:        -0.697 kW
-       Mesh    3
-       Max CFL number:  0.80E+00 at (   2,   4,  12)
-       Max divergence:  0.21E+01 at (   4,   4,  11)
-       Min divergence: -0.35E+01 at (   2,  12,   5)
-       Max VN number:   0.31E+00 at (  16,   1,  12)
-       No. of Lagrangian Particles:         10695
-       Radiation Loss to Boundaries:        -0.001 kW
-       Mesh    4
-       Max CFL number:  0.57E+00 at (   3,   7,   7)
-       Max divergence:  0.10E+01 at (   4,   5,  12)
-       Min divergence: -0.11E+01 at (   1,  27,  13)
-       Max VN number:   0.23E+00 at (   1,  30,   5)
-       No. of Lagrangian Particles:         11659
-       Mesh    5
-       Max CFL number:  0.53E+00 at (  22,  26,  10)
-       Max divergence:  0.46E+00 at (  13,  19,  19)
-       Min divergence: -0.49E+00 at (   4,  11,  17)
-       Max VN number:   0.97E-01 at (   4,   1,  10)
-       No. of Lagrangian Particles:         11566
- 
-       Time Step    2100   March  3, 2020  22:36:54
-       Step Size:    0.119E-02 s, Total Time:      51.56 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   2 at (  25  30  28)
-       Maximum Pressure Error:  0.22E+06 on Mesh   1 at (  10  13  15)
-       ScaRC: iterations   105, residual  0.57E-08, convergence rate   0.73E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.73E+00 at (  24,  29,   3)
-       Max divergence:  0.48E-02 at (  24,   8,  17)
-       Min divergence: -0.11E-03 at (  24,  19,   1)
-       Max VN number:   0.14E+00 at (  24,   6,   3)
-       No. of Lagrangian Particles:         11002
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.94E+00 at (   5,   5,   5)
-       Max divergence:  0.62E+02 at (   7,  10,  11)
-       Min divergence: -0.18E+02 at (   5,  14,  11)
-       Max VN number:   0.80E+00 at (   6,  11,   4)
-       No. of Lagrangian Particles:          9608
-       Total Heat Release Rate:              2.456 kW
-       Radiation Loss to Boundaries:        -0.781 kW
-       Mesh    3
-       Max CFL number:  0.77E+00 at (   2,  28,  12)
-       Max divergence:  0.26E+01 at (   2,   7,  13)
-       Min divergence: -0.32E+01 at (   5,  26,  11)
-       Max VN number:   0.37E+00 at (   5,  27,  11)
-       No. of Lagrangian Particles:         10674
-       Mesh    4
-       Max CFL number:  0.55E+00 at (   5,   3,  14)
-       Max divergence:  0.88E+00 at (   9,  30,   7)
-       Min divergence: -0.13E+01 at (  10,  19,   5)
-       Max VN number:   0.17E+00 at (   9,  30,   7)
-       No. of Lagrangian Particles:         11618
-       Mesh    5
-       Max CFL number:  0.53E+00 at (   2,   5,   9)
-       Max divergence:  0.51E+00 at (   5,   8,  18)
-       Min divergence: -0.49E+00 at (   7,   9,  19)
-       Max VN number:   0.16E+00 at (  23,  30,  11)
-       No. of Lagrangian Particles:         11841
- 
-       Time Step    2200   March  3, 2020  22:42:26
-       Step Size:    0.119E-02 s, Total Time:      51.68 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25  30   3)
-       Maximum Pressure Error:  0.24E+06 on Mesh   1 at (  10  13  15)
-       ScaRC: iterations   109, residual  0.96E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.76E+00 at (  24,   1,   3)
-       Max divergence:  0.49E-02 at (  24,  17,  30)
-       Min divergence: -0.15E-03 at (  22,   6,   1)
-       Max VN number:   0.20E+00 at (  23,   5,   1)
-       No. of Lagrangian Particles:         11121
-       Radiation Loss to Boundaries:         0.002 kW
-       Mesh    2
-       Max CFL number:  0.93E+00 at (   5,   5,   5)
-       Max divergence:  0.58E+02 at (   6,  10,  11)
-       Min divergence: -0.13E+02 at (   9,   8,  11)
-       Max VN number:   0.81E+00 at (   7,  21,   4)
-       No. of Lagrangian Particles:          9692
-       Total Heat Release Rate:              2.907 kW
-       Radiation Loss to Boundaries:        -0.930 kW
-       Mesh    3
-       Max CFL number:  0.76E+00 at (   2,   4,  12)
-       Max divergence:  0.34E+01 at (   2,   8,   8)
-       Min divergence: -0.48E+01 at (   1,   5,  11)
-       Max VN number:   0.33E+00 at (  21,  30,   7)
-       No. of Lagrangian Particles:         10545
-       Total Heat Release Rate:              0.009 kW
-       Radiation Loss to Boundaries:        -0.004 kW
-       Mesh    4
-       Max CFL number:  0.62E+00 at (  10,   4,  12)
-       Max divergence:  0.93E+00 at (   5,   1,  16)
-       Min divergence: -0.12E+01 at (   4,  20,   5)
-       Max VN number:   0.32E+00 at (   1,   1,   3)
-       No. of Lagrangian Particles:         11568
-       Mesh    5
-       Max CFL number:  0.53E+00 at (  23,  25,  10)
-       Max divergence:  0.56E+00 at (   3,   9,  16)
-       Min divergence: -0.76E+00 at (  16,  17,  16)
-       Max VN number:   0.81E-01 at (  15,  28,   9)
-       No. of Lagrangian Particles:         11806
- 
-       Time Step    2300   March  3, 2020  22:47:53
-       Step Size:    0.119E-02 s, Total Time:      51.80 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   2 at (   0   1   3)
-       Maximum Pressure Error:  0.22E+06 on Mesh   1 at (  10  13  15)
-       ScaRC: iterations   109, residual  0.74E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.76E+00 at (  24,  29,   3)
-       Max divergence:  0.52E-02 at (  24,  30,  16)
-       Min divergence: -0.44E-03 at (  23,  19,   2)
-       Max VN number:   0.22E+00 at (  23,   8,   1)
-       No. of Lagrangian Particles:         11241
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.91E+00 at (   5,   5,   5)
-       Max divergence:  0.75E+02 at (   6,  10,  11)
-       Min divergence: -0.12E+02 at (   9,  20,  12)
-       Max VN number:   0.56E+00 at (   5,   4,  10)
-       No. of Lagrangian Particles:          9594
-       Total Heat Release Rate:              2.543 kW
-       Radiation Loss to Boundaries:        -0.810 kW
-       Mesh    3
-       Max CFL number:  0.78E+00 at (   2,   5,  12)
-       Max divergence:  0.34E+01 at (   2,  25,  10)
-       Min divergence: -0.44E+01 at (   1,   7,  12)
-       Max VN number:   0.39E+00 at (   7,   1,  10)
-       No. of Lagrangian Particles:         10645
-       Total Heat Release Rate:              0.006 kW
-       Radiation Loss to Boundaries:        -0.004 kW
-       Mesh    4
-       Max CFL number:  0.59E+00 at (   4,   5,   8)
-       Max divergence:  0.12E+01 at (   3,   7,  11)
-       Min divergence: -0.16E+01 at (   4,  12,  12)
-       Max VN number:   0.21E+00 at (   4,  30,   6)
-       No. of Lagrangian Particles:         11458
-       Mesh    5
-       Max CFL number:  0.55E+00 at (  10,  25,  14)
-       Max divergence:  0.57E+00 at (   9,  14,  20)
-       Min divergence: -0.58E+00 at (   3,  12,  11)
-       Max VN number:   0.14E+00 at (  17,  19,   1)
-       No. of Lagrangian Particles:         11678
- 
-       Time Step    2400   March  3, 2020  22:53:18
-       Step Size:    0.119E-02 s, Total Time:      51.91 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25  30   3)
-       Maximum Pressure Error:  0.12E+06 on Mesh   2 at (  16   6   9)
-       ScaRC: iterations   105, residual  0.94E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.76E+00 at (  24,  29,   3)
-       Max divergence:  0.60E-02 at (  24,  10,  14)
-       Min divergence: -0.49E-03 at (  23,  19,   1)
-       Max VN number:   0.17E+00 at (  23,   2,   1)
-       No. of Lagrangian Particles:         11302
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.94E+00 at (   5,   5,   5)
-       Max divergence:  0.54E+02 at (   6,  12,  11)
-       Min divergence: -0.17E+02 at (  11,  10,  13)
-       Max VN number:   0.71E+00 at (   7,   6,   4)
-       No. of Lagrangian Particles:          9632
-       Total Heat Release Rate:              2.209 kW
-       Radiation Loss to Boundaries:        -0.721 kW
-       Mesh    3
-       Max CFL number:  0.79E+00 at (   2,   5,  12)
-       Max divergence:  0.27E+01 at (   2,  13,   6)
-       Min divergence: -0.41E+01 at (   1,   6,  11)
-       Max VN number:   0.38E+00 at (   5,  29,  11)
-       No. of Lagrangian Particles:         10702
-       Total Heat Release Rate:              0.003 kW
-       Radiation Loss to Boundaries:        -0.002 kW
-       Mesh    4
-       Max CFL number:  0.55E+00 at (   1,   3,  14)
-       Max divergence:  0.14E+01 at (   3,   6,  16)
-       Min divergence: -0.15E+01 at (   4,   5,  15)
-       Max VN number:   0.18E+00 at (   1,   1,   5)
-       No. of Lagrangian Particles:         11468
-       Mesh    5
-       Max CFL number:  0.52E+00 at (  15,  25,  15)
-       Max divergence:  0.44E+00 at (  13,  29,  14)
-       Min divergence: -0.53E+00 at (   8,  23,  15)
-       Max VN number:   0.10E+00 at (  16,  30,  18)
-       No. of Lagrangian Particles:         11651
- 
-       Time Step    2500   March  3, 2020  22:58:47
-       Step Size:    0.119E-02 s, Total Time:      52.03 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25   6   4)
-       Maximum Pressure Error:  0.15E+06 on Mesh   1 at (  10  13  15)
-       ScaRC: iterations   109, residual  0.96E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.75E+00 at (  24,   1,   3)
-       Max divergence:  0.52E-02 at (  24,   1,  15)
-       Min divergence: -0.42E-03 at (  23,  23,   1)
-       Max VN number:   0.21E+00 at (  23,   2,   1)
-       No. of Lagrangian Particles:         11408
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.92E+00 at (   5,   5,   5)
-       Max divergence:  0.67E+02 at (   7,  22,  10)
-       Min divergence: -0.13E+02 at (   8,  21,  11)
-       Max VN number:   0.62E+00 at (   5,   4,  10)
-       No. of Lagrangian Particles:          9724
-       Total Heat Release Rate:              2.393 kW
-       Radiation Loss to Boundaries:        -0.757 kW
-       Mesh    3
-       Max CFL number:  0.71E+00 at (   2,   6,  11)
-       Max divergence:  0.45E+01 at (   1,  12,   4)
-       Min divergence: -0.39E+01 at (   1,   6,  14)
-       Max VN number:   0.65E+00 at (   4,   5,  11)
-       No. of Lagrangian Particles:         10655
-       Total Heat Release Rate:              0.002 kW
-       Radiation Loss to Boundaries:        -0.002 kW
-       Mesh    4
-       Max CFL number:  0.59E+00 at (  12,   5,  14)
-       Max divergence:  0.10E+01 at (   7,   2,  14)
-       Min divergence: -0.12E+01 at (   2,  22,  15)
-       Max VN number:   0.18E+00 at (   4,  30,   9)
-       No. of Lagrangian Particles:         11469
-       Mesh    5
-       Max CFL number:  0.55E+00 at (  10,  25,   8)
-       Max divergence:  0.59E+00 at (  11,  14,  18)
-       Min divergence: -0.61E+00 at (   7,  15,  16)
-       Max VN number:   0.81E-01 at (  18,  30,  19)
-       No. of Lagrangian Particles:         11680
- 
-       Time Step    2600   March  3, 2020  23:04:17
-       Step Size:    0.119E-02 s, Total Time:      52.15 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25   6   4)
-       Maximum Pressure Error:  0.17E+06 on Mesh   2 at (   5  12  12)
-       ScaRC: iterations   110, residual  0.93E-08, convergence rate   0.75E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.75E+00 at (  24,   1,   3)
-       Max divergence:  0.51E-02 at (  24,  17,  13)
-       Min divergence: -0.43E-03 at (  23,  23,   1)
-       Max VN number:   0.20E+00 at (  23,   5,   1)
-       No. of Lagrangian Particles:         11508
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.91E+00 at (   5,   5,   5)
-       Max divergence:  0.96E+02 at (   7,   9,  11)
-       Min divergence: -0.98E+01 at (   5,  12,  11)
-       Max VN number:   0.73E+00 at (   6,   7,   4)
-       No. of Lagrangian Particles:          9613
-       Total Heat Release Rate:              2.387 kW
-       Radiation Loss to Boundaries:        -0.757 kW
-       Mesh    3
-       Max CFL number:  0.80E+00 at (   2,  27,  12)
-       Max divergence:  0.43E+01 at (   2,   9,  13)
-       Min divergence: -0.57E+01 at (   2,  13,   7)
-       Max VN number:   0.31E+00 at (   3,   2,  14)
-       No. of Lagrangian Particles:         10743
-       Mesh    4
-       Max CFL number:  0.62E+00 at (  12,  24,  10)
-       Max divergence:  0.76E+00 at (   2,   5,  15)
-       Min divergence: -0.11E+01 at (   3,  20,   6)
-       Max VN number:   0.16E+00 at (   5,   1,  10)
-       No. of Lagrangian Particles:         11665
-       Mesh    5
-       Max CFL number:  0.52E+00 at (  19,  11,  15)
-       Max divergence:  0.72E+00 at (   3,   2,  12)
-       Min divergence: -0.64E+00 at (   6,   2,  15)
-       Max VN number:   0.12E+00 at (   5,   1,  20)
-       No. of Lagrangian Particles:         11513
- 
-       Time Step    2700   March  3, 2020  23:09:47
-       Step Size:    0.119E-02 s, Total Time:      52.27 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.44E-15 on Mesh   1 at (  25   1   3)
-       Maximum Pressure Error:  0.15E+06 on Mesh   2 at (  16  25   9)
-       ScaRC: iterations   107, residual  0.10E-07, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.75E+00 at (  24,  29,   3)
-       Max divergence:  0.49E-02 at (  24,  18,  30)
-       Min divergence: -0.34E-03 at (  24,   8,   3)
-       Max VN number:   0.15E+00 at (  23,   2,   1)
-       No. of Lagrangian Particles:         11647
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.84E+00 at (   5,   5,   8)
-       Max divergence:  0.41E+02 at (  16,   9,  10)
-       Min divergence: -0.16E+02 at (   7,  20,  11)
-       Max VN number:   0.61E+00 at (   8,  21,   4)
-       No. of Lagrangian Particles:          9635
-       Total Heat Release Rate:              2.304 kW
-       Radiation Loss to Boundaries:        -0.746 kW
-       Mesh    3
-       Max CFL number:  0.77E+00 at (   2,   5,  12)
-       Max divergence:  0.29E+01 at (   3,  10,  11)
-       Min divergence: -0.35E+01 at (   1,  26,  11)
-       Max VN number:   0.29E+00 at (   3,   2,  11)
-       No. of Lagrangian Particles:         10632
-       Total Heat Release Rate:              0.001 kW
-       Radiation Loss to Boundaries:        -0.001 kW
-       Mesh    4
-       Max CFL number:  0.59E+00 at (   1,  26,  14)
-       Max divergence:  0.12E+01 at (   6,  17,  15)
-       Min divergence: -0.11E+01 at (   3,  21,  16)
-       Max VN number:   0.16E+00 at (   1,   1,  12)
-       No. of Lagrangian Particles:         11631
-       Mesh    5
-       Max CFL number:  0.58E+00 at (  23,  24,  22)
-       Max divergence:  0.42E+00 at (  10,  14,  18)
-       Min divergence: -0.44E+00 at (  20,   2,  14)
-       Max VN number:   0.88E-01 at (   2,   1,  18)
-       No. of Lagrangian Particles:         11849
- 
-       Time Step    2800   March  3, 2020  23:15:17
-       Step Size:    0.119E-02 s, Total Time:      52.39 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   2 at (  25  21   4)
-       Maximum Pressure Error:  0.22E+06 on Mesh   2 at (  16  25   9)
-       ScaRC: iterations   109, residual  0.84E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.78E+00 at (  24,  29,   3)
-       Max divergence:  0.62E-02 at (  24,   6,  16)
-       Min divergence: -0.37E-03 at (  23,   7,   2)
-       Max VN number:   0.18E+00 at (  23,   2,   1)
-       No. of Lagrangian Particles:         11788
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.93E+00 at (   5,   5,   5)
-       Max divergence:  0.48E+02 at (   6,  12,  11)
-       Min divergence: -0.11E+02 at (  12,  14,  14)
-       Max VN number:   0.90E+00 at (   7,  21,   4)
-       No. of Lagrangian Particles:          9658
-       Total Heat Release Rate:              2.285 kW
-       Radiation Loss to Boundaries:        -0.739 kW
-       Mesh    3
-       Max CFL number:  0.79E+00 at (   2,   4,  12)
-       Max divergence:  0.25E+01 at (   3,  12,   7)
-       Min divergence: -0.76E+01 at (   2,  11,   7)
-       Max VN number:   0.46E+00 at (   4,  27,  11)
-       No. of Lagrangian Particles:         10586
-       Total Heat Release Rate:              0.003 kW
-       Radiation Loss to Boundaries:        -0.002 kW
-       Mesh    4
-       Max CFL number:  0.58E+00 at (   1,  18,   8)
-       Max divergence:  0.10E+01 at (  10,   8,   7)
-       Min divergence: -0.12E+01 at (  10,   4,   5)
-       Max VN number:   0.14E+00 at (   6,  30,   4)
-       No. of Lagrangian Particles:         11551
-       Mesh    5
-       Max CFL number:  0.55E+00 at (  10,   5,  12)
-       Max divergence:  0.61E+00 at (   5,  16,  17)
-       Min divergence: -0.69E+00 at (   2,  13,  18)
-       Max VN number:   0.10E+00 at (   5,   1,   3)
-       No. of Lagrangian Particles:         11747
- 
-       Time Step    2900   March  3, 2020  23:20:48
-       Step Size:    0.119E-02 s, Total Time:      52.51 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   3 at (   0  30   3)
-       Maximum Pressure Error:  0.24E+06 on Mesh   1 at (  10  13  15)
-       ScaRC: iterations   105, residual  0.76E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.75E+00 at (  24,  29,   3)
-       Max divergence:  0.52E-02 at (  24,   5,  14)
-       Min divergence: -0.22E-02 at (  23,   7,   1)
-       Max VN number:   0.19E+00 at (  23,  21,   1)
-       No. of Lagrangian Particles:         11921
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.92E+00 at (   5,   5,   5)
-       Max divergence:  0.52E+02 at (   7,   9,  11)
-       Min divergence: -0.15E+02 at (   9,  18,  12)
-       Max VN number:   0.80E+00 at (   7,   8,   4)
-       No. of Lagrangian Particles:          9604
-       Total Heat Release Rate:              2.369 kW
-       Radiation Loss to Boundaries:        -0.769 kW
-       Mesh    3
-       Max CFL number:  0.78E+00 at (   2,   4,  12)
-       Max divergence:  0.26E+01 at (   2,  25,  11)
-       Min divergence: -0.41E+01 at (   2,  11,   5)
-       Max VN number:   0.45E+00 at (   5,  26,  11)
-       No. of Lagrangian Particles:         10796
-       Total Heat Release Rate:              0.005 kW
-       Radiation Loss to Boundaries:        -0.003 kW
-       Mesh    4
-       Max CFL number:  0.61E+00 at (   3,   3,  14)
-       Max divergence:  0.97E+00 at (   8,   9,   7)
-       Min divergence: -0.11E+01 at (   4,  14,   8)
-       Max VN number:   0.21E+00 at (  13,  30,  14)
-       No. of Lagrangian Particles:         11357
-       Mesh    5
-       Max CFL number:  0.52E+00 at (  23,  29,  11)
-       Max divergence:  0.67E+00 at (   1,  19,  16)
-       Min divergence: -0.70E+00 at (   2,  24,  15)
-       Max VN number:   0.13E+00 at (  13,   9,   1)
-       No. of Lagrangian Particles:         11751
- 
-       Time Step    3000   March  3, 2020  23:26:19
-       Step Size:    0.119E-02 s, Total Time:      52.63 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   2 at (  25   6   1)
-       Maximum Pressure Error:  0.15E+06 on Mesh   1 at (  10  13  15)
-       ScaRC: iterations   111, residual  0.67E-08, convergence rate   0.75E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.76E+00 at (  24,   1,   3)
-       Max divergence:  0.53E-02 at (  22,   2,  15)
-       Min divergence: -0.44E-03 at (  23,   7,   1)
-       Max VN number:   0.21E+00 at (  23,   2,   1)
-       No. of Lagrangian Particles:         11011
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.89E+00 at (   5,   5,   5)
-       Max divergence:  0.60E+02 at (   6,  10,  11)
-       Min divergence: -0.12E+02 at (   8,  14,  13)
-       Max VN number:   0.66E+00 at (   7,   8,   4)
-       No. of Lagrangian Particles:          9635
-       Total Heat Release Rate:              2.293 kW
-       Radiation Loss to Boundaries:        -0.739 kW
-       Mesh    3
-       Max CFL number:  0.78E+00 at (   2,  28,  12)
-       Max divergence:  0.33E+01 at (   5,  25,  11)
-       Min divergence: -0.48E+01 at (   1,  27,  11)
-       Max VN number:   0.32E+00 at (   3,   2,  14)
-       No. of Lagrangian Particles:         10630
-       Total Heat Release Rate:              0.002 kW
-       Radiation Loss to Boundaries:        -0.002 kW
-       Mesh    4
-       Max CFL number:  0.62E+00 at (   3,  23,  13)
-       Max divergence:  0.11E+01 at (   5,   6,  15)
-       Min divergence: -0.14E+01 at (   5,   7,  14)
-       Max VN number:   0.25E+00 at (   6,  30,  12)
-       No. of Lagrangian Particles:         11687
-       Mesh    5
-       Max CFL number:  0.54E+00 at (  17,  21,  15)
-       Max divergence:  0.72E+00 at (   1,  18,  19)
-       Min divergence: -0.53E+00 at (  10,  20,  19)
-       Max VN number:   0.18E+00 at (  16,  17,   1)
-       No. of Lagrangian Particles:         11521
- 
-       Time Step    3100   March  3, 2020  23:32:00
-       Step Size:    0.119E-02 s, Total Time:      52.75 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   3 at (   0   6   3)
-       Maximum Pressure Error:  0.17E+06 on Mesh   1 at (  10  13  15)
-       ScaRC: iterations   105, residual  0.68E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.75E+00 at (  24,  29,   3)
-       Max divergence:  0.18E+01 at (  23,   7,   1)
-       Min divergence: -0.33E-02 at (  22,   7,   1)
-       Max VN number:   0.22E+00 at (  23,   2,   1)
-       No. of Lagrangian Particles:         11153
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.91E+00 at (   5,   5,   5)
-       Max divergence:  0.78E+02 at (   7,  17,  11)
-       Min divergence: -0.11E+02 at (   5,  14,  12)
-       Max VN number:   0.60E+00 at (   7,  21,   4)
-       No. of Lagrangian Particles:          9615
-       Total Heat Release Rate:              2.417 kW
-       Radiation Loss to Boundaries:        -0.752 kW
-       Mesh    3
-       Max CFL number:  0.78E+00 at (   2,   4,  12)
-       Max divergence:  0.23E+01 at (   9,   1,  13)
-       Min divergence: -0.35E+01 at (   2,  11,   7)
-       Max VN number:   0.47E+00 at (   4,  30,  10)
-       No. of Lagrangian Particles:         10510
-       Total Heat Release Rate:              0.002 kW
-       Radiation Loss to Boundaries:        -0.002 kW
-       Mesh    4
-       Max CFL number:  0.59E+00 at (   1,  18,   6)
-       Max divergence:  0.11E+01 at (   1,   8,  11)
-       Min divergence: -0.15E+01 at (   1,  22,  14)
-       Max VN number:   0.15E+00 at (  18,  30,  10)
-       No. of Lagrangian Particles:         11641
-       Mesh    5
-       Max CFL number:  0.55E+00 at (   1,  23,  12)
-       Max divergence:  0.50E+00 at (  20,  16,  22)
-       Min divergence: -0.59E+00 at (  21,  17,  22)
-       Max VN number:   0.11E+00 at (  15,   1,   8)
-       No. of Lagrangian Particles:         11780
- 
-       Time Step    3200   March  3, 2020  23:37:49
-       Step Size:    0.105E-02 s, Total Time:      52.86 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.44E-15 on Mesh   1 at (  25   3   3)
-       Maximum Pressure Error:  0.19E+06 on Mesh   2 at (   1  30   1)
-       ScaRC: iterations   115, residual  0.87E-08, convergence rate   0.75E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.67E+00 at (  24,  29,   3)
-       Max divergence:  0.52E+00 at (  23,  30,   2)
-       Min divergence: -0.10E+03 at (  23,  30,   1)
-       Max VN number:   0.19E+00 at (  23,   2,   1)
-       No. of Lagrangian Particles:         11386
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.82E+00 at (   5,   5,   5)
-       Max divergence:  0.65E+02 at (   7,   9,  11)
-       Min divergence: -0.11E+02 at (   7,   7,  10)
-       Max VN number:   0.72E+00 at (   7,  19,   4)
-       No. of Lagrangian Particles:          9665
-       Total Heat Release Rate:              2.414 kW
-       Radiation Loss to Boundaries:        -0.770 kW
-       Mesh    3
-       Max CFL number:  0.70E+00 at (   2,   4,  12)
-       Max divergence:  0.28E+01 at (   3,  12,  10)
-       Min divergence: -0.42E+01 at (   1,   5,  12)
-       Max VN number:   0.28E+00 at (   3,   3,  14)
-       No. of Lagrangian Particles:         10495
-       Total Heat Release Rate:              0.002 kW
-       Radiation Loss to Boundaries:        -0.002 kW
-       Mesh    4
-       Max CFL number:  0.49E+00 at (  16,  25,  10)
-       Max divergence:  0.87E+00 at (   2,   6,  13)
-       Min divergence: -0.11E+01 at (   1,   2,  15)
-       Max VN number:   0.17E+00 at (   2,  30,   4)
-       No. of Lagrangian Particles:         11574
-       Mesh    5
-       Max CFL number:  0.45E+00 at (  20,  25,   7)
-       Max divergence:  0.43E+00 at (   5,  14,  16)
-       Min divergence: -0.44E+00 at (  11,   3,   8)
-       Max VN number:   0.65E-01 at (   1,  30,   6)
-       No. of Lagrangian Particles:         11654
- 
-       Time Step    3300   March  3, 2020  23:44:02
-       Step Size:    0.850E-03 s, Total Time:      52.95 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25  19   3)
-       Maximum Pressure Error:  0.36E+07 on Mesh   1 at (  23  30   1)
-       ScaRC: iterations   119, residual  0.74E-08, convergence rate   0.75E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.85E+00 at (  23,  30,   1)
-       Max divergence:  0.16E+01 at (  22,  30,   1)
-       Min divergence: -0.47E+03 at (  23,  30,   1)
-       Max VN number:   0.18E+00 at (  23,  15,   1)
-       No. of Lagrangian Particles:         11735
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.63E+00 at (   5,   5,   5)
-       Max divergence:  0.10E+03 at (   6,  10,  11)
-       Min divergence: -0.11E+02 at (   5,  14,  12)
-       Max VN number:   0.46E+00 at (   5,   4,  10)
-       No. of Lagrangian Particles:          9682
-       Total Heat Release Rate:              2.566 kW
-       Radiation Loss to Boundaries:        -0.802 kW
-       Mesh    3
-       Max CFL number:  0.56E+00 at (   2,   4,  12)
-       Max divergence:  0.34E+01 at (   3,   5,  11)
-       Min divergence: -0.47E+01 at (   1,  27,  11)
-       Max VN number:   0.24E+00 at (   3,   4,  14)
-       No. of Lagrangian Particles:         10610
-       Total Heat Release Rate:              0.004 kW
-       Radiation Loss to Boundaries:        -0.003 kW
-       Mesh    4
-       Max CFL number:  0.44E+00 at (   2,  26,  14)
-       Max divergence:  0.12E+01 at (   7,   9,  16)
-       Min divergence: -0.11E+01 at (   8,   8,  17)
-       Max VN number:   0.12E+00 at (  12,  30,  17)
-       No. of Lagrangian Particles:         11344
-       Mesh    5
-       Max CFL number:  0.38E+00 at (   7,  23,  11)
-       Max divergence:  0.56E+00 at (   1,  28,  11)
-       Min divergence: -0.53E+00 at (   3,  17,  18)
-       Max VN number:   0.57E-01 at (   8,  30,   2)
-       No. of Lagrangian Particles:         11721
- 
-       Time Step    3400   March  3, 2020  23:50:14
-       Step Size:    0.915E-03 s, Total Time:      53.05 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25   5   3)
-       Maximum Pressure Error:  0.69E+07 on Mesh   1 at (  23  30   1)
-       ScaRC: iterations   119, residual  0.75E-08, convergence rate   0.75E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.10E+01 at (  23,  30,   1)
-       Max divergence:  0.22E+01 at (  22,  30,   1)
-       Min divergence: -0.70E+03 at (  23,  30,   1)
-       Max VN number:   0.25E+00 at (  23,  30,   1)
-       No. of Lagrangian Particles:         11478
-       Radiation Loss to Boundaries:         0.002 kW
-       Mesh    2
-       Max CFL number:  0.72E+00 at (   5,   5,   5)
-       Max divergence:  0.69E+02 at (   7,  11,  11)
-       Min divergence: -0.14E+02 at (   5,  14,  12)
-       Max VN number:   0.47E+00 at (   5,   4,  10)
-       No. of Lagrangian Particles:          9574
-       Total Heat Release Rate:              2.782 kW
-       Radiation Loss to Boundaries:        -0.878 kW
-       Mesh    3
-       Max CFL number:  0.60E+00 at (   2,  28,  11)
-       Max divergence:  0.30E+01 at (   1,  12,  15)
-       Min divergence: -0.42E+01 at (   1,  26,  11)
-       Max VN number:   0.25E+00 at (   4,   1,  11)
-       No. of Lagrangian Particles:         10672
-       Total Heat Release Rate:              0.005 kW
-       Radiation Loss to Boundaries:        -0.003 kW
-       Mesh    4
-       Max CFL number:  0.44E+00 at (  19,  27,  11)
-       Max divergence:  0.85E+00 at (  20,  14,  17)
-       Min divergence: -0.13E+01 at (   1,   6,  15)
-       Max VN number:   0.13E+00 at (   1,  30,   5)
-       No. of Lagrangian Particles:         11411
-       Mesh    5
-       Max CFL number:  0.42E+00 at (   2,   8,  16)
-       Max divergence:  0.43E+00 at (  20,  18,  17)
-       Min divergence: -0.40E+00 at (   4,   6,  15)
-       Max VN number:   0.62E-01 at (  11,  26,   9)
-       No. of Lagrangian Particles:         11519
- 
-       Time Step    3500   March  3, 2020  23:56:31
-       Step Size:    0.827E-03 s, Total Time:      53.14 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   3 at (   0  30  19)
-       Maximum Pressure Error:  0.51E+07 on Mesh   1 at (  23  30   1)
-       ScaRC: iterations   119, residual  0.80E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.87E+00 at (  23,  30,   1)
-       Max divergence:  0.19E+01 at (  22,  30,   1)
-       Min divergence: -0.56E+03 at (  23,  30,   1)
-       Max VN number:   0.17E+00 at (  23,  30,   1)
-       No. of Lagrangian Particles:         11610
-       Radiation Loss to Boundaries:         0.002 kW
-       Mesh    2
-       Max CFL number:  0.63E+00 at (   5,   5,   5)
-       Max divergence:  0.70E+02 at (   7,  11,  11)
-       Min divergence: -0.99E+01 at (  13,  17,   9)
-       Max VN number:   0.54E+00 at (   7,  19,   4)
-       No. of Lagrangian Particles:          9734
-       Total Heat Release Rate:              2.838 kW
-       Radiation Loss to Boundaries:        -0.911 kW
-       Mesh    3
-       Max CFL number:  0.56E+00 at (   2,   5,  12)
-       Max divergence:  0.29E+01 at (   4,  10,  11)
-       Min divergence: -0.45E+01 at (   1,   6,  13)
-       Max VN number:   0.21E+00 at (   3,  29,  14)
-       No. of Lagrangian Particles:         10605
-       Total Heat Release Rate:              0.003 kW
-       Radiation Loss to Boundaries:        -0.003 kW
-       Mesh    4
-       Max CFL number:  0.41E+00 at (   2,  24,  12)
-       Max divergence:  0.11E+01 at (   5,  20,  16)
-       Min divergence: -0.91E+00 at (   2,   7,   9)
-       Max VN number:   0.14E+00 at (   8,  30,   5)
-       No. of Lagrangian Particles:         11441
-       Mesh    5
-       Max CFL number:  0.38E+00 at (  20,  22,  15)
-       Max divergence:  0.53E+00 at (  15,  15,  18)
-       Min divergence: -0.53E+00 at (   5,  10,   7)
-       Max VN number:   0.70E-01 at (  17,   1,   7)
-       No. of Lagrangian Particles:         11531
- 
-       Time Step    3600   March  4, 2020  00:02:49
-       Step Size:    0.108E-02 s, Total Time:      53.23 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25   4   3)
-       Maximum Pressure Error:  0.34E+07 on Mesh   1 at (  23  30   1)
-       ScaRC: iterations   116, residual  0.92E-08, convergence rate   0.75E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.96E+00 at (  23,  30,   1)
-       Max divergence:  0.27E+03 at (  23,   7,   1)
-       Min divergence: -0.60E+03 at (  23,  30,   1)
-       Max VN number:   0.19E+00 at (  23,  30,   1)
-       No. of Lagrangian Particles:         11343
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.83E+00 at (   5,   5,   5)
-       Max divergence:  0.82E+02 at (   7,  24,  10)
-       Min divergence: -0.17E+02 at (   9,  10,  12)
-       Max VN number:   0.82E+00 at (   7,   8,   4)
-       No. of Lagrangian Particles:          9771
-       Total Heat Release Rate:              2.465 kW
-       Radiation Loss to Boundaries:        -0.767 kW
-       Mesh    3
-       Max CFL number:  0.70E+00 at (   2,  28,  12)
-       Max divergence:  0.34E+01 at (   3,  26,  11)
-       Min divergence: -0.81E+01 at (   1,  27,  11)
-       Max VN number:   0.50E+00 at (   5,   6,  11)
-       No. of Lagrangian Particles:         10657
-       Total Heat Release Rate:              0.007 kW
-       Radiation Loss to Boundaries:        -0.003 kW
-       Mesh    4
-       Max CFL number:  0.54E+00 at (  10,   4,  11)
-       Max divergence:  0.18E+01 at (   3,   2,  14)
-       Min divergence: -0.16E+01 at (   2,   1,  17)
-       Max VN number:   0.19E+00 at (   9,  30,  14)
-       No. of Lagrangian Particles:         11243
-       Mesh    5
-       Max CFL number:  0.46E+00 at (   2,   1,   8)
-       Max divergence:  0.61E+00 at (   7,   9,  17)
-       Min divergence: -0.54E+00 at (   5,  11,  18)
-       Max VN number:   0.89E-01 at (   7,  30,  13)
-       No. of Lagrangian Particles:         11759
- 
-       Time Step    3700   March  4, 2020  00:08:56
-       Step Size:    0.897E-03 s, Total Time:      53.32 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25  10   3)
-       Maximum Pressure Error:  0.30E+07 on Mesh   1 at (  23   8   1)
-       ScaRC: iterations   118, residual  0.85E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.82E+00 at (  23,   8,   1)
-       Max divergence:  0.12E+01 at (  23,   7,   1)
-       Min divergence: -0.59E+03 at (  23,   8,   1)
-       Max VN number:   0.19E+00 at (  23,   8,   1)
-       No. of Lagrangian Particles:         11348
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.69E+00 at (   5,   5,   5)
-       Max divergence:  0.85E+02 at (   7,  19,  10)
-       Min divergence: -0.88E+01 at (  17,   6,  12)
-       Max VN number:   0.49E+00 at (   6,  16,   4)
-       No. of Lagrangian Particles:          9731
-       Total Heat Release Rate:              2.675 kW
-       Radiation Loss to Boundaries:        -0.847 kW
-       Mesh    3
-       Max CFL number:  0.60E+00 at (   2,  28,  11)
-       Max divergence:  0.32E+01 at (   2,   8,  13)
-       Min divergence: -0.46E+01 at (   1,   6,  11)
-       Max VN number:   0.30E+00 at (  20,   1,   5)
-       No. of Lagrangian Particles:         10685
-       Total Heat Release Rate:              0.005 kW
-       Radiation Loss to Boundaries:        -0.003 kW
-       Mesh    4
-       Max CFL number:  0.42E+00 at (   5,  24,  15)
-       Max divergence:  0.15E+01 at (   2,   8,   5)
-       Min divergence: -0.15E+01 at (   1,   8,   7)
-       Max VN number:   0.40E+00 at (   2,  30,  15)
-       No. of Lagrangian Particles:         11468
-       Mesh    5
-       Max CFL number:  0.42E+00 at (  14,  25,  13)
-       Max divergence:  0.44E+00 at (   2,   2,   8)
-       Min divergence: -0.59E+00 at (   4,  13,  22)
-       Max VN number:   0.62E-01 at (   5,  11,  15)
-       No. of Lagrangian Particles:         11529
- 
-       Time Step    3800   March  4, 2020  00:15:04
-       Step Size:    0.780E-03 s, Total Time:      53.40 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   1 at (  25  29   3)
-       Maximum Pressure Error:  0.47E+07 on Mesh   1 at (  23   8   1)
-       ScaRC: iterations   119, residual  0.66E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.84E+00 at (  23,   8,   1)
-       Max divergence:  0.13E+01 at (  22,   8,   1)
-       Min divergence: -0.69E+03 at (  23,   8,   1)
-       Max VN number:   0.20E+00 at (  23,   8,   1)
-       No. of Lagrangian Particles:         11415
-       Radiation Loss to Boundaries:         0.002 kW
-       Mesh    2
-       Max CFL number:  0.59E+00 at (   5,   5,   5)
-       Max divergence:  0.93E+02 at (   6,  14,  11)
-       Min divergence: -0.94E+01 at (   6,  12,  13)
-       Max VN number:   0.43E+00 at (   5,   4,  10)
-       No. of Lagrangian Particles:          9687
-       Total Heat Release Rate:              2.728 kW
-       Radiation Loss to Boundaries:        -0.883 kW
-       Mesh    3
-       Max CFL number:  0.53E+00 at (   2,   4,  12)
-       Max divergence:  0.28E+01 at (   1,  10,   7)
-       Min divergence: -0.39E+01 at (   1,   6,  12)
-       Max VN number:   0.28E+00 at (  20,  30,   8)
-       No. of Lagrangian Particles:         10873
-       Total Heat Release Rate:              0.003 kW
-       Radiation Loss to Boundaries:        -0.002 kW
-       Mesh    4
-       Max CFL number:  0.37E+00 at (  16,  26,  13)
-       Max divergence:  0.12E+01 at (  14,   6,   7)
-       Min divergence: -0.13E+01 at (   1,  17,  16)
-       Max VN number:   0.14E+00 at (   4,  30,   3)
-       No. of Lagrangian Particles:         11345
-       Mesh    5
-       Max CFL number:  0.34E+00 at (  23,  12,  18)
-       Max divergence:  0.82E+00 at (   9,  23,  14)
-       Min divergence: -0.60E+00 at (   8,  25,  14)
-       Max VN number:   0.59E-01 at (  13,  29,  17)
-       No. of Lagrangian Particles:         11530
- 
-       Time Step    3900   March  4, 2020  00:21:10
-       Step Size:    0.743E-03 s, Total Time:      53.47 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   2 at (  25   7  24)
-       Maximum Pressure Error:  0.50E+07 on Mesh   1 at (  23   8   1)
-       ScaRC: iterations   119, residual  0.70E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.86E+00 at (  23,   8,   1)
-       Max divergence:  0.17E+01 at (  22,   8,   1)
-       Min divergence: -0.73E+03 at (  23,   8,   1)
-       Max VN number:   0.20E+00 at (  23,   8,   1)
-       No. of Lagrangian Particles:         11871
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.56E+00 at (   5,   5,   5)
-       Max divergence:  0.68E+02 at (   6,  10,  11)
-       Min divergence: -0.15E+02 at (   7,  16,  11)
-       Max VN number:   0.51E+00 at (   7,  18,   4)
-       No. of Lagrangian Particles:          9698
-       Total Heat Release Rate:              2.635 kW
-       Radiation Loss to Boundaries:        -0.833 kW
-       Mesh    3
-       Max CFL number:  0.53E+00 at (   2,   4,  12)
-       Max divergence:  0.40E+01 at (   4,  14,  11)
-       Min divergence: -0.55E+01 at (   1,  26,  11)
-       Max VN number:   0.33E+00 at (   4,   7,  11)
-       No. of Lagrangian Particles:         10738
-       Total Heat Release Rate:              0.005 kW
-       Radiation Loss to Boundaries:        -0.003 kW
-       Mesh    4
-       Max CFL number:  0.36E+00 at (  14,   4,   9)
-       Max divergence:  0.81E+00 at (   3,   8,  16)
-       Min divergence: -0.13E+01 at (   2,   6,  15)
-       Max VN number:   0.73E-01 at (  11,  30,   3)
-       No. of Lagrangian Particles:         11553
-       Mesh    5
-       Max CFL number:  0.32E+00 at (   8,  28,  13)
-       Max divergence:  0.60E+00 at (   2,   5,  16)
-       Min divergence: -0.57E+00 at (  19,  15,  19)
-       Max VN number:   0.58E-01 at (   7,  30,  15)
-       No. of Lagrangian Particles:         11575
- 
-       Time Step    4000   March  4, 2020  00:27:03
-       Step Size:    0.743E-03 s, Total Time:      53.55 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   2 at (  25  16  15)
-       Maximum Pressure Error:  0.66E+07 on Mesh   1 at (  23   8   1)
-       ScaRC: iterations   119, residual  0.78E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.91E+00 at (  23,   8,   1)
-       Max divergence:  0.18E+01 at (  22,   8,   1)
-       Min divergence: -0.78E+03 at (  23,   8,   1)
-       Max VN number:   0.25E+00 at (  23,   8,   1)
-       No. of Lagrangian Particles:         11499
-       Radiation Loss to Boundaries:         0.001 kW
-       Mesh    2
-       Max CFL number:  0.55E+00 at (   5,   5,   5)
-       Max divergence:  0.68E+02 at (   6,  14,  11)
-       Min divergence: -0.13E+02 at (   9,  17,  12)
-       Max VN number:   0.39E+00 at (   7,   8,   4)
-       No. of Lagrangian Particles:          9661
-       Total Heat Release Rate:              2.633 kW
-       Radiation Loss to Boundaries:        -0.836 kW
-       Mesh    3
-       Max CFL number:  0.49E+00 at (   2,   5,  12)
-       Max divergence:  0.41E+01 at (   1,  23,   8)
-       Min divergence: -0.50E+01 at (   1,   6,  11)
-       Max VN number:   0.23E+00 at (   4,  30,  11)
-       No. of Lagrangian Particles:         10691
-       Total Heat Release Rate:              0.006 kW
-       Radiation Loss to Boundaries:        -0.003 kW
-       Mesh    4
-       Max CFL number:  0.34E+00 at (   8,   5,  12)
-       Max divergence:  0.71E+00 at (   1,   3,  12)
-       Min divergence: -0.11E+01 at (   8,   7,  14)
-       Max VN number:   0.59E-01 at (   3,  30,   2)
-       No. of Lagrangian Particles:         11723
-       Mesh    5
-       Max CFL number:  0.32E+00 at (   5,  26,  14)
-       Max divergence:  0.54E+00 at (  10,  22,  17)
-       Min divergence: -0.64E+00 at (   6,  17,  21)
-       Max VN number:   0.11E+00 at (  15,  30,   3)
-       No. of Lagrangian Particles:         11347
- 
-       Time Step    4100   March  4, 2020  00:32:58
-       Step Size:    0.743E-03 s, Total Time:      53.62 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   2 at (   0   8   4)
-       Maximum Pressure Error:  0.88E+07 on Mesh   1 at (  23   8   1)
-       ScaRC: iterations   119, residual  0.87E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.92E+00 at (  23,   8,   1)
-       Max divergence:  0.11E+01 at (  23,   7,   2)
-       Min divergence: -0.86E+03 at (  23,   8,   1)
-       Max VN number:   0.33E+00 at (  23,   8,   1)
-       No. of Lagrangian Particles:         12003
-       Radiation Loss to Boundaries:         0.002 kW
-       Mesh    2
-       Max CFL number:  0.57E+00 at (   5,   5,   5)
-       Max divergence:  0.61E+02 at (   7,  10,  12)
-       Min divergence: -0.16E+02 at (   5,  12,  11)
-       Max VN number:   0.42E+00 at (   5,   4,  10)
-       No. of Lagrangian Particles:          9662
-       Total Heat Release Rate:              2.657 kW
-       Radiation Loss to Boundaries:        -0.859 kW
-       Mesh    3
-       Max CFL number:  0.48E+00 at (   2,   5,  12)
-       Max divergence:  0.46E+01 at (   3,  14,   4)
-       Min divergence: -0.34E+01 at (   6,   6,  11)
-       Max VN number:   0.43E+00 at (   4,   5,  11)
-       No. of Lagrangian Particles:         10750
-       Total Heat Release Rate:              0.008 kW
-       Radiation Loss to Boundaries:        -0.004 kW
-       Mesh    4
-       Max CFL number:  0.37E+00 at (   6,   3,  14)
-       Max divergence:  0.12E+01 at (   7,  20,  16)
-       Min divergence: -0.17E+01 at (   8,  21,  16)
-       Max VN number:   0.11E+00 at (   6,  30,   6)
-       No. of Lagrangian Particles:         11585
-       Mesh    5
-       Max CFL number:  0.32E+00 at (  17,  27,  13)
-       Max divergence:  0.63E+00 at (  21,  18,  18)
-       Min divergence: -0.44E+00 at (  24,   3,  14)
-       Max VN number:   0.62E-01 at (  22,  15,   1)
-       No. of Lagrangian Particles:         11738
- 
-       Time Step    4200   March  4, 2020  00:39:12
-       Step Size:    0.638E-03 s, Total Time:      53.69 s
-       Pressure Iterations:      1
-       Maximum Velocity Error:  0.89E-15 on Mesh   2 at (  25  24  18)
-       Maximum Pressure Error:  0.29E+07 on Mesh   1 at (  23   8   1)
-       ScaRC: iterations   119, residual  0.81E-08, convergence rate   0.74E+00
-       ---------------------------------------------------------------
-       Mesh    1
-       Max CFL number:  0.59E+00 at (  23,   8,   1)
-       Max divergence:  0.11E+01 at (  22,   8,   1)
-       Min divergence: -0.57E+03 at (  23,   8,   1)
-       Max VN number:   0.97E-01 at (  23,   8,   1)
-       No. of Lagrangian Particles:         11464
-       Radiation Loss to Boundaries:         0.002 kW
-       Mesh    2
-       Max CFL number:  0.50E+00 at (   5,   5,   5)
-       Max divergence:  0.77E+02 at (   7,  11,  11)
-       Min divergence: -0.11E+02 at (  16,  22,   9)
-       Max VN number:   0.37E+00 at (   7,   6,   4)
-       No. of Lagrangian Particles:          9731
-       Total Heat Release Rate:              2.737 kW
-       Radiation Loss to Boundaries:        -0.876 kW
-       Mesh    3
-       Max CFL number:  0.43E+00 at (   2,   4,  12)
-       Max divergence:  0.63E+01 at (   2,   9,   9)
-       Min divergence: -0.54E+01 at (   1,   5,  11)
-       Max VN number:   0.19E+00 at (  19,  30,   8)
-       No. of Lagrangian Particles:         10488
-       Total Heat Release Rate:              0.010 kW
-       Radiation Loss to Boundaries:        -0.004 kW
-       Mesh    4
-       Max CFL number:  0.32E+00 at (  21,  27,   9)
-       Max divergence:  0.11E+01 at (  10,   8,  10)
-       Min divergence: -0.19E+01 at (   1,  22,  15)
-       Max VN number:   0.78E-01 at (   7,  30,   4)
-       No. of Lagrangian Particles:         11604
-       Mesh    5
-       Max CFL number:  0.28E+00 at (   1,  28,   9)
-       Max divergence:  0.65E+00 at (   5,  23,  17)
-       Min divergence: -0.48E+00 at (   3,  25,  15)
-       Max VN number:   0.57E-01 at (   5,   1,  15)
-       No. of Lagrangian Particles:         11827
- 
+
+
+ DEVICE Activation Times
+
+   1  active05                                                    No Activation
+
+
+ CONTROL Activation Times
+
+   1  MY PID                                                      F No Activation
+
+
+ Time Stepping Wall Clock Time (s):     2223.885
+ Total Elapsed Wall Clock Time (s):     2229.229
+
+STOP: FDS completed successfully (CHID: uscarc5a_single)
