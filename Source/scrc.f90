@@ -492,6 +492,12 @@ REAL(EB), PARAMETER :: W12    = 12.0_EB
 REAL(EB), PARAMETER :: W16    = 16.0_EB                  
 
 
+!> 
+!> ---------- MPI communicator for ScaRC slave processes
+!> 
+INTEGER :: MPI_SLAVE_WORLD
+
+
 END MODULE SCARC_VARIABLES
 
 
@@ -787,11 +793,15 @@ TYPE SCARC_GRID_TYPE
 
    !> Cell numbers of all meshes and offsets between meshes
    INTEGER, ALLOCATABLE, DIMENSION (:) :: NC_LOCAL             !> number of cells in local meshes
+   INTEGER, ALLOCATABLE, DIMENSION (:) :: NA_LOCAL             !> number of matrix entries (sym) in local meshes
    INTEGER, ALLOCATABLE, DIMENSION (:) :: NC_OFFSET            !> offset in cell numbering between meshes
+   INTEGER, ALLOCATABLE, DIMENSION (:) :: NA_OFFSET            !> offset in matrix entry numbering between meshes
    INTEGER :: NC_GLOBAL = NSCARC_ZERO_INT                      !> global number of cells in all meshes
+   INTEGER :: NA_GLOBAL = NSCARC_ZERO_INT                      !> global number of matrix entries (sym) in all meshes
 
    !> Local numbers of internal, extended and ghost cells
    INTEGER :: NA  = NSCARC_ZERO_INT                            !> number of matrix entries 
+   INTEGER :: NAS = NSCARC_ZERO_INT                            !> number of matrix entries (sym)
    INTEGER :: NC  = NSCARC_ZERO_INT                            !> number of cells 
    INTEGER :: NW  = NSCARC_ZERO_INT                            !> number of wall cells
    INTEGER :: NCE = NSCARC_ZERO_INT                            !> number of extended cells
@@ -1007,6 +1017,7 @@ TYPE SCARC_TYPE
    INTEGER, ALLOCATABLE, DIMENSION(:) :: NEIGHBORS                       !> List of adjacent neighbors of whole mesh
    INTEGER :: N_NEIGHBORS = 0                                            !> Number of adjacent neighbors of whole mesh
    INTEGER :: NC = 0                                                     !> Total number of cells on that mesh
+   INTEGER :: NA = 0                                                     !> Total number of matrix entries on that mesh
    INTEGER :: IBAR, JBAR, KBAR                                           !> Number of cells (corresponding to main prg)
 
 END TYPE SCARC_TYPE
@@ -1521,6 +1532,8 @@ CALL MPI_GATHERV(REAL_BUFFER_SEND3, COUNTS_NA(MYID), MPI_DOUBLE_PRECISION, &
 
 
 END SUBROUTINE SCARC_EXCHANGE_MASTER_MATRIX
+
+
 !> ------------------------------------------------------------------------------------------------
 !> Initialize ScaRC structures based on SCARC-input parameters from &PRES namelist
 !> ------------------------------------------------------------------------------------------------
@@ -1566,10 +1579,15 @@ ENDIF
 !>
 !> Setup information for data exchanges, matrix systems, used solvers and vectors
 !>
+WRITE(*,*) MYID,': SETUP :A'
 CALL SCARC_SETUP_EXCHANGES                  ; IF (STOP_STATUS==SETUP_STOP) RETURN
+WRITE(*,*) MYID,': SETUP :B'
 CALL SCARC_SETUP_SYSTEMS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
+WRITE(*,*) MYID,': SETUP :C'
 CALL SCARC_SETUP_METHODS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
+WRITE(*,*) MYID,': SETUP :D'
 CALL SCARC_SETUP_VECTORS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
+WRITE(*,*) MYID,': SETUP :D'
 #ifdef WITH_SCARC_STANDALONE
 CALL SCARC_SETUP_PRESSURE                   ; IF (STOP_STATUS==SETUP_STOP) RETURN
 #endif
@@ -3455,14 +3473,14 @@ ENDDO MESHES_LOOP1
 !>
 !> Set dimensions on finest level for requested type(s) of discretization
 !>
-CALL SCARC_SETUP_DIMENSIONS(NLEVEL_MIN)
+CALL SCARC_SETUP_GRID_DIMENSIONS(NLEVEL_MIN)
 
 !>
 !> -------- For multi-level variants get discretization information and dimensions on coarser levels
 !>
 DO NL = NLEVEL_MIN+1, NLEVEL_MAX
    CALL SCARC_SETUP_GRID_LEVEL(NL)
-   CALL SCARC_SETUP_DIMENSIONS(NL)
+   CALL SCARC_SETUP_GRID_DIMENSIONS(NL)
 ENDDO
 
 !>
@@ -4978,7 +4996,7 @@ ENDIF
 CALL SCARC_ALLOCATE_INT1 (MESH_INT , 1, NMESHES, NSCARC_INIT_ZERO, 'MESH_INT')
 CALL SCARC_ALLOCATE_REAL1(MESH_REAL, 1, NMESHES, NSCARC_INIT_ZERO, 'MESH_REAL')
 
-CALL SCARC_SETUP_DIMENSIONS(NLEVEL_MIN)
+CALL SCARC_SETUP_GRID_DIMENSIONS(NLEVEL_MIN)
 
 END SUBROUTINE SCARC_SETUP_GLOBALS
 
@@ -4986,7 +5004,7 @@ END SUBROUTINE SCARC_SETUP_GLOBALS
 !> -----------------------------------------------------------------------------
 !> Get information about global numbers of unknowns for unstructured case
 !> -----------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_DIMENSIONS(NL)
+SUBROUTINE SCARC_SETUP_GRID_DIMENSIONS(NL)
 USE SCARC_POINTERS, ONLY: G
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, NM2
@@ -5030,7 +5048,64 @@ IF (NL == NLEVEL_MIN) THEN
    ENDDO
 ENDIF
 
-END SUBROUTINE SCARC_SETUP_DIMENSIONS
+END SUBROUTINE SCARC_SETUP_GRID_DIMENSIONS
+
+!> -----------------------------------------------------------------------------------------
+!> Get information about global numbers of matrix entries (only used on NLEVEL_MAX)
+!> -----------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_MATRIX_DIMENSIONS(NL)
+USE SCARC_POINTERS, ONLY: G
+INTEGER, INTENT(IN) :: NL
+INTEGER :: NM, NM2
+
+!> Preset communication array MESH_INT with local numbers of matrix entries for all meshes depending on type of discretization
+MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   DO NM2 = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+      MESH_INT(NM2) = NA_LOCAL(NM2)
+   ENDDO
+ENDDO MESHES_LOOP1
+
+!> Broadcast number of local mesh cells on level NL to all and build global sum
+IF (N_MPI_PROCESSES > 1) &
+   CALL MPI_ALLGATHERV(MPI_IN_PLACE,1,MPI_INTEGER,MESH_INT,COUNTS,DISPLS, MPI_INTEGER,MPI_SLAVE_WORLD,IERROR)
+
+IF (NL == NLEVEL_MAX) NA_LOCAL(1:NMESHES) = MESH_INT(1:NMESHES)
+NA_GLOBAL(NL) = SUM(MESH_INT(1:NMESHES))
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'Allocating NA_LOCAL'
+#endif
+!> Store information on local and global cells numbers on data structure of corresponding discretization type
+MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+   CALL SCARC_POINT_TO_GRID(NM, NL)
+
+   CALL SCARC_ALLOCATE_INT1(G%NA_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'NA_LOCAL')
+   CALL SCARC_ALLOCATE_INT1(G%NA_OFFSET, 1, NMESHES, NSCARC_INIT_ZERO, 'NA_OFFSET')
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'ALLOCATED NA_LOCAL?', ALLOCATED(G%NA_LOCAL)
+#endif
+   G%NA_LOCAL(1:NMESHES) = MESH_INT(1:NMESHES)
+   G%NA_GLOBAL = SUM(MESH_INT(1:NMESHES))
+
+   !> compute offset between local matrix numberings
+   IF (NMESHES > 1) THEN
+      DO NM2=2,NMESHES
+         G%NA_OFFSET(NM2) = G%NA_OFFSET(NM2-1) + G%NA_LOCAL(NM2-1)
+      ENDDO
+   ENDIF
+
+ENDDO MESHES_LOOP2
+
+IF (NL == NLEVEL_MIN) THEN
+   DO NM = 1, NMESHES
+      SCARC(NM)%NA = MESH_INT(NM)
+   ENDDO
+ENDIF
+
+END SUBROUTINE SCARC_SETUP_MATRIX_DIMENSIONS
+
 
 
 !> ----------------------------------------------------------------------------------------------------
@@ -5326,6 +5401,13 @@ IF (NMESHES > 1) THEN
       CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_STENCIL, NL)
    ENDDO
 ENDIF
+
+WRITE(*,*) MYID ,': SETUP_SYSTEM: BEFORE EXCHANGE'
+IF (SCARC_MASTER_SLAVE) THEN
+   CALL SCARC_SETUP_MATRIX_DIMENSIONS(NLEVEL_MAX)
+   CALL SCARC_EXCHANGE_MASTER_MATRIX(NLEVEL_MAX)
+ENDIF
+WRITE(*,*) MYID ,': SETUP_SYSTEM: AFTER EXCHANGE'
 
 !> -------------------------------------------------------------------------------------------
 !> Debug matrix and wall structures - only if directive SCARC_DEBUG is set
@@ -8469,14 +8551,33 @@ MESHES_LOOP: DO NM = ILOWER, IUPPER
       ELSE
 
          MKL%IPARM(28) = 0         ! double precision
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SETTING UP PARDISO: G%NC=',G%NC
+WRITE(MSG%LU_DEBUG,*) 'SETTING UP PARDISO: ACS%ROW='
+WRITE(MSG%LU_DEBUG,'(8I6)') ACS%ROW
+WRITE(MSG%LU_DEBUG,*) 'SETTING UP PARDISO: ACS%COL='
+WRITE(MSG%LU_DEBUG,'(8I6)') ACS%COL
+WRITE(MSG%LU_DEBUG,*) 'SETTING UP PARDISO: ACS%VAL='
+WRITE(MSG%LU_DEBUG,'(8E14.6)') ACS%VAL
+WRITE(MSG%LU_DEBUG,*) 'SETTING UP PARDISO: NC = ', G%NC
+#endif
+
          MKL%PHASE = 11
          CALL PARDISO_D(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC, &
                         ACS%VAL, ACS%ROW, ACS%COL, IDUMMY, &
                         MKL%NRHS, MKL%IPARM, MKL%MSGLVL, DUMMY, DUMMY, MKL%ERROR)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SETTING UP PARDISO: done 1'
+#endif
          MKL%PHASE = 22
          CALL PARDISO_D(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC, &
                         ACS%VAL, ACS%ROW, ACS%COL, IDUMMY, &
                         MKL%NRHS, MKL%IPARM, MKL%MSGLVL, DUMMY, DUMMY, MKL%ERROR)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SETTING UP PARDISO: done 2'
+#endif
+
       ENDIF
 
    ENDDO LEVEL_LOOP
