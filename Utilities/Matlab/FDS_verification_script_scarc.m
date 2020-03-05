@@ -23,7 +23,7 @@ Manuals_Dir = '../../Manuals/';
 
 % Run dataplot and scatplot scripts
 
-[saved_data,drange] = dataplot(Dataplot_Inputs_File, Working_Dir, Working_Dir, Manuals_Dir); %, [99:123]);
+[saved_data,drange] = dataplot(Dataplot_Inputs_File, Working_Dir, Working_Dir, Manuals_Dir , [2:3]);
 
 % Special cases
 
