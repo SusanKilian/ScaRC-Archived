@@ -22,6 +22,8 @@
 
 &TIME T_END=0.5, DT=0.002 /
 
+&RADI RADIATION = .FALSE. /
+
 &PRES SOLVER                  = 'SCARC'
       VELOCITY_TOLERANCE      = 0.00001
       MAX_PRESSURE_ITERATIONS = 1000    /
