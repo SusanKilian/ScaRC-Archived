@@ -242,7 +242,8 @@ INTEGER, PARAMETER :: NSCARC_TWOLEVEL_NONE           =  0, &    !> no two levels
                       NSCARC_TWOLEVEL_ADD            =  1, &    !> additive 2-level method
                       NSCARC_TWOLEVEL_MUL            =  2, &    !> multiplicative 2-level method
                       NSCARC_TWOLEVEL_MUL2           =  3, &    !> multiplicative 2-level method
-                      NSCARC_TWOLEVEL_COARSE         =  4       !> only coarse grid
+                      NSCARC_TWOLEVEL_COARSE         =  4, &    !> only coarse grid
+                      NSCARC_TWOLEVEL_MACRO          =  5       !> coarse grid is macro grid
 
 INTEGER, PARAMETER :: NSCARC_VECTOR_ONE_X            =  1, &    !> selection parameter for 1-stage vector X
                       NSCARC_VECTOR_ONE_B            =  2, &    !>       ...                              F
@@ -383,6 +384,7 @@ LOGICAL :: IS_CG_GMG          = .FALSE.                     !> is Krylov-method 
 LOGICAL :: IS_CG_ADD          = .FALSE.                     !> is additive twolevel-Krylov-method?
 LOGICAL :: IS_CG_MUL          = .FALSE.                     !> is multiplicative Twolevel-Krylov-method ?
 LOGICAL :: IS_CG_COARSE       = .FALSE.                     !> is only coarse grid preconditiner?
+LOGICAL :: IS_CG_MACRO        = .FALSE.                     !> is macro preconditioner
 LOGICAL :: IS_MG              = .FALSE.                     !> is Multigrid-method?
 LOGICAL :: IS_GMG             = .FALSE.                     !> is Geometric Multigrid-method?
 LOGICAL :: IS_FFT             = .FALSE.                     !> is FFT-method?
@@ -980,9 +982,11 @@ TYPE SCARC_TYPE
 
    TYPE (SCARC_NEIGHBOR_TYPE), ALLOCATABLE, DIMENSION(:) :: OSCARC    !> ScaRC type on other mesh
    TYPE (SCARC_LEVEL_TYPE),    ALLOCATABLE, DIMENSION(:) :: LEVEL     !> Level related information
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: AC_COARSE                      !> Coarse grid matrix on macro decomposition
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: ACS_COARSE                     !> Symmetric coarse grid matrix on macro decomposition
+   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: AC_MACRO                       !> Coarse grid matrix on macro decomposition
+   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: ACS_MACRO                      !> Symmetric coarse grid matrix on macro decomposition
 
+   REAL(EB), ALLOCATABLE, DIMENSION(:) :: X_MACRO, B_MACRO            !> solution vector and RHS for macro solver
+   REAL(FB), ALLOCATABLE, DIMENSION(:) :: X_MACRO_FB, B_MACRO_FB      !> solution vector and RHS for macro solver in single prec.
    REAL(EB) :: XS, XF, YS, YF, ZS, ZF                                 !> x-, y- and z-bounds (corresponding to main prg)
    REAL(EB) :: DXH, DYH, DZH
    REAL(EB) :: RHS_END = 0.0_EB                                       !> Very last RHS entry, needed for matrix condensing
@@ -990,7 +994,7 @@ TYPE SCARC_TYPE
    INTEGER, ALLOCATABLE, DIMENSION(:) :: NEIGHBORS                    !> List of adjacent neighbors of whole mesh
    INTEGER :: N_NEIGHBORS = 0                                         !> Number of adjacent neighbors of whole mesh
    INTEGER :: NC = 0                                                  !> Total number of cells on that mesh
-   INTEGER :: NC_COARSE = 0, NA_COARSE = 0                            !> Number of cells and matrix entries for coarse grid
+   INTEGER :: NC_MACRO = 0, NA_MACRO = 0                              !> Number of cells and matrix entries for coarse grid
    INTEGER :: IBAR, JBAR, KBAR                                        !> Number of cells (corresponding to main prg)
 
 END TYPE SCARC_TYPE
@@ -1043,6 +1047,8 @@ REAL(EB), DIMENSION(:), POINTER :: XMID=>NULL(), YMID=>NULL(), ZMID=>NULL()
 
 REAL(EB), DIMENSION(:), POINTER :: VC=>NULL(), VF=>NULL()
 REAL(EB), DIMENSION(:), POINTER :: V1=>NULL(), V2=>NULL()
+REAL(EB), DIMENSION(:), POINTER :: XM=>NULL(), BM=>NULL()
+REAL(FB), DIMENSION(:), POINTER :: XM_FB=>NULL(), BM_FB=>NULL()
 
 REAL(EB), DIMENSION(:,:,:), POINTER :: HP=>NULL(), HVC=>NULL(), PRHS=>NULL()
 REAL(EB), DIMENSION(:,:,:), POINTER :: UU=>NULL(), VV=>NULL(), WW=>NULL()
@@ -1463,6 +1469,8 @@ SELECT CASE (TRIM(SCARC_METHOD))
             TYPE_TWOLEVEL = NSCARC_TWOLEVEL_MUL2
          CASE ('COARSE')
             TYPE_TWOLEVEL = NSCARC_TWOLEVEL_COARSE
+         CASE ('MACRO')
+            TYPE_TWOLEVEL = NSCARC_TWOLEVEL_MACRO
          CASE DEFAULT
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_TWOLEVEL, NSCARC_NONE)
       END SELECT
@@ -1819,6 +1827,7 @@ IS_GMG = IS_MG .AND. TYPE_MULTIGRID == NSCARC_MULTIGRID_GEOMETRIC
 IS_CG_ADD    = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_ADD
 IS_CG_MUL    = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MUL
 IS_CG_COARSE = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_COARSE
+IS_CG_MACRO  = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MACRO
 
 HAS_TWO_LEVELS   = IS_CG .AND. TYPE_PRECON /= NSCARC_RELAX_GMG .AND. TYPE_TWOLEVEL > NSCARC_TWOLEVEL_NONE
 HAS_MULTI_LEVELS = IS_GMG .OR. IS_CG_GMG .OR. HAS_TWO_LEVELS
@@ -5401,8 +5410,8 @@ IF (NTYPE == NSCARC_COARSE_LEVEL) THEN
    NCP => G%NC
    NCP_OFFSET => G%NC_OFFSET
 ELSE
-   AC  => SCARC(NM)%AC_COARSE
-   ACS => SCARC(NM)%ACS_COARSE
+   AC  => SCARC(NM)%AC_MACRO
+   ACS => SCARC(NM)%ACS_MACRO
 ENDIF
 
 !> 
@@ -5567,8 +5576,8 @@ IF (NTYPE == NSCARC_COARSE_LEVEL) THEN
    NCP => G%NC
    NCP_OFFSET => G%NC_OFFSET
 ELSE
-   AC  => SCARC(NM)%AC_COARSE
-   ACS => SCARC(NM)%ACS_COARSE
+   AC  => SCARC(NM)%AC_MACRO
+   ACS => SCARC(NM)%ACS_MACRO
 ENDIF
 
 !> 
@@ -6248,7 +6257,7 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
       STACK(NSTACK)%SOLVER => MAIN_CG
       CALL SCARC_SETUP_KRYLOV(NSCARC_SOLVER_MAIN, NSCARC_SCOPE_GLOBAL, NSCARC_STAGE_ONE, NSTACK, NLEVEL_MIN, NLEVEL_MIN)
 
-      CALL SCARC_SETUP_COARSE_GRID
+      CALL SCARC_SETUP_MACRO
 
       !>
       !> Setup preconditioner for Krylov solver
@@ -6889,9 +6898,9 @@ END SUBROUTINE SCARC_SETUP_MULTIGRID
 !> ----------------------------------------------------------------------------------------------------
 !> Experimental version of coarse grid setup consisting of simply the macro decompostion
 !> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_COARSE_GRID
-USE SCARC_POINTERS, ONLY: AC, ACS
-INTEGER :: NM, NOM, IC, IA, NC_COARSE, NA_COARSE
+SUBROUTINE SCARC_SETUP_MACRO
+USE SCARC_POINTERS, ONLY: S, AC, ACS
+INTEGER :: NM, NOM, IC, IA, NC_MACRO, NA_MACRO, INBR
 REAL(EB) :: SCAL1, SCAL4
 
 IS_MKL_LEVEL(NLEVEL_MAX) = .FALSE.
@@ -6899,26 +6908,38 @@ IS_MKL_LEVEL(NLEVEL_MAX) = .FALSE.
 IS_MKL_LEVEL(NLEVEL_MAX) = .TRUE.
 #endif
 
-NC_COARSE = NMESHES
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+NC_MACRO = NMESHES
+DO NM = 1, NMESHES
 
-   SCARC(NM)%DXH = SCARC(NM)%XF - SCARC(NM)%XS
-   SCARC(NM)%DYH = SCARC(NM)%YF - SCARC(NM)%YS
-   SCARC(NM)%DZH = SCARC(NM)%ZF - SCARC(NM)%ZS
+   S => SCARC(NM)
+
+   S%DXH = S%XF - S%XS
+   S%DYH = S%YF - S%YS
+   S%DZH = S%ZF - S%ZS
 
    !> Only temporarily for proof of concept assume that all meshes have same size
-   IF (SCARC(NM)%DXH /= SCARC(NM)%DZH) THEN
+   IF (S%DXH /= S%DZH) THEN
       WRITE(*,*) 'CAUTION, DIFFERENT COARSE GRID WIDTHS'
       STOP
    ENDIF
 
-   NA_COARSE = 1
-   DO NOM = 1, NMESHES
-      IF (ARE_NEIGHBORS(NM, NOM)) NA_COARSE = NA_COARSE + 1
-   ENDDO 
+   NA_MACRO = 1
+   DO INBR = 1, S%N_NEIGHBORS
+      NOM = S%NEIGHBORS(INBR)
+      NA_MACRO = NA_MACRO + 1
+   ENDDO
 
-   SCARC(NM)%NC_COARSE = NC_COARSE
-   SCARC(NM)%NA_COARSE = NA_COARSE
+   S%NC_MACRO = NC_MACRO
+   S%NA_MACRO = NA_MACRO
+
+   !> Temporarily keep coarse grid on every mesh
+   IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
+      CALL SCARC_ALLOCATE_REAL1_FB(S%X_MACRO_FB, 1, NC_MACRO, NSCARC_INIT_ZERO, 'X_MACRO_FB')
+      CALL SCARC_ALLOCATE_REAL1_FB(S%B_MACRO_FB, 1, NC_MACRO, NSCARC_INIT_ZERO, 'B_MACRO_FB')
+   ELSE
+      CALL SCARC_ALLOCATE_REAL1(S%X_MACRO, 1, NC_MACRO, NSCARC_INIT_ZERO, 'X_MACRO')
+      CALL SCARC_ALLOCATE_REAL1(S%B_MACRO, 1, NC_MACRO, NSCARC_INIT_ZERO, 'B_MACRO')
+   ENDIF
 
 ENDDO 
 
@@ -6929,54 +6950,52 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_COARSE_GRID: SCARC(.)%DYH:'
 WRITE(MSG%LU_DEBUG,*) (SCARC(NM)%DYH, NM=1, NMESHES)
 WRITE(MSG%LU_DEBUG,*) 'SETUP_COARSE_GRID: SCARC(.)%DZH:'
 WRITE(MSG%LU_DEBUG,*) (SCARC(NM)%DZH, NM=1, NMESHES)
-WRITE(MSG%LU_DEBUG,*) 'SETUP_COARSE_GRID: SCARC(.)%NC_COARSE:'
-WRITE(MSG%LU_DEBUG,*) (SCARC(NM)%NC_COARSE, NM=1, NMESHES)
-WRITE(MSG%LU_DEBUG,*) 'SETUP_COARSE_GRID: SCARC(.)%NA_COARSE:'
-WRITE(MSG%LU_DEBUG,*) (SCARC(NM)%NA_COARSE, NM=1, NMESHES)
+WRITE(MSG%LU_DEBUG,*) 'SETUP_COARSE_GRID: SCARC(.)%NC_MACRO:'
+WRITE(MSG%LU_DEBUG,*) (SCARC(NM)%NC_MACRO, NM=1, NMESHES)
+WRITE(MSG%LU_DEBUG,*) 'SETUP_COARSE_GRID: SCARC(.)%NA_MACRO:'
+WRITE(MSG%LU_DEBUG,*) (SCARC(NM)%NA_MACRO, NM=1, NMESHES)
 #endif
 
-AC => SCARC(NM)%AC_COARSE
-AC%N_VAL = NA_COARSE
-AC%N_ROW = NC_COARSE + 1
-CALL SCARC_ALLOCATE_MATRIX_COMPACT (AC, NLEVEL_MAX, NSCARC_PRECISION_DOUBLE, NSCARC_INIT_ZERO, 'AC_COARSE')
+!> Only assemble macro matrix for LOWER_MESH_INDEX
+S => SCARC(LOWER_MESH_INDEX)
+AC => S%AC_MACRO
+AC%N_VAL = NA_MACRO
+AC%N_ROW = NC_MACRO + 1
+CALL SCARC_ALLOCATE_MATRIX_COMPACT (AC, NLEVEL_MAX, NSCARC_PRECISION_DOUBLE, NSCARC_INIT_ZERO, 'AC_MACRO')
+
 
 IC = 1
 IA = 1
 
 !> Only temporarily for POC
-SCAL1 = 1.0_EB/ SCARC(1)%DXH**2
-SCAL4 = 4.0_EB/ SCARC(1)%DXH**2
+SCAL1 = 1.0_EB/ SCARC(LOWER_MESH_INDEX)%DXH**2
+SCAL4 = 4.0_EB/ SCARC(LOWER_MESH_INDEX)%DXH**2
 
-DO NM = 1, NMESHES
-   AC%ROW(IC) = IA
-   AC%COL(IA) = NM
-   AC%VAL(IA) = SCAL4
+AC%ROW(IC) = IA
+AC%COL(IA) = NM
+AC%VAL(IA) = SCAL4
+IA = IA + 1
+IC = IC + 1
+DO INBR = 1, S%N_NEIGHBORS
+   NOM = S%NEIGHBORS(INBR)
+   AC%COL(IA) = NOM
+   AC%VAL(IA) = SCAL1
    IA = IA + 1
-   IC = IC + 1
-   DO NOM = 1, NMESHES
-      IF (ARE_NEIGHBORS(NM, NOM))THEN
-         AC%COL(IA) = NOM
-         AC%VAL(IA) = SCAL1
-         IA = IA + 1
-      ENDIF
-   ENDDO 
-ENDDO 
+ENDDO
 AC%ROW(IC) = IA
 
 #ifdef WITH_MKL
-DO NM = 1, NMESHES
-   IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
-      CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NLEVEL_MAX, NSCARC_COARSE_MACRO)
-   ELSE
-      CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NLEVEL_MAX, NSCARC_COARSE_MACRO)
-   ENDIF
-ENDDO
+IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
+   CALL SCARC_SETUP_MATRIX_MKL_SINGLE(LOWER_MESH_INDEX, NLEVEL_MAX, NSCARC_COARSE_MACRO)
+ELSE
+   CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(LOWER_MESH_INDEX, NLEVEL_MAX, NSCARC_COARSE_MACRO)
+ENDIF
 #endif
 
 #ifdef WITH_SCARC_DEBUG
 DO NM = 1, NMESHES
-   AC  => SCARC(NM)%AC_COARSE
-   ACS => SCARC(NM)%ACS_COARSE
+   AC  => SCARC(NM)%AC_MACRO
+   ACS => SCARC(NM)%ACS_MACRO
    WRITE(MSG%LU_DEBUG,*) '=============== ON MESH ', NM
    WRITE(MSG%LU_DEBUG,*) 'AC%ROW'
    WRITE(MSG%LU_DEBUG,*) (AC%ROW(IC), IC=1, AC%N_ROW + 1)
@@ -6993,7 +7012,7 @@ DO NM = 1, NMESHES
 ENDDO
 #endif
 
-END SUBROUTINE SCARC_SETUP_COARSE_GRID
+END SUBROUTINE SCARC_SETUP_MACRO
 
 !> ----------------------------------------------------------------------------------------------------
 !> Allocate and initialize vectors for MKL-methods
@@ -10021,10 +10040,53 @@ SELECT_PRECON_TYPE: SELECT CASE (TYPE_TWOLEVEL)
       ENDDO
       CALL SCARC_VECTOR_COPY (Y, V, 1.0_EB, NL)                   !>  v^l := y^l
 
+   !> 
+   !> ---------- Additive two-level preconditioning with macro decomposition
+   !> 
+   CASE (NSCARC_TWOLEVEL_MACRO)
+
+      CALL SCARC_VECTOR_COPY (R, B, 1.0_EB, NL)                   !>  Use r^l as right hand side for preconditioner
+      CALL SCARC_RESTRICTION_MACRO(B, NL)
+      CALL SCARC_METHOD_MACRO                                     !>  solve A^L * x^L := b^L on coarsest level
+      CALL SCARC_PROLONGATION_MACRO(Z, NL)
+
+      CALL SCARC_VECTOR_COPY (R, V, 1.0_EB, NL)                   !>  v^l := r^l
+      CALL SCARC_RELAXATION (R, V, NS+1, NP, NL)                  !>  v^l := Relax(r^l)
+      CALL SCARC_VECTOR_SUM (Z, V, 1.0_EB, 1.0_EB, NL)            !>  v^l := z^l + v^l
+
 END SELECT SELECT_PRECON_TYPE
 
 END SUBROUTINE SCARC_PRECONDITIONER
 
+!> ------------------------------------------------------------------------------------------------
+!> Call requested coarse grid solver (iterative/direct)
+!> ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_METHOD_MACRO
+USE SCARC_POINTERS, ONLY: S, MKL, ACS, XM, BM, XM_FB, BM_FB
+
+MKL => L%MKL
+MKL%PHASE  = 33         ! only solving
+
+S => SCARC(LOWER_MESH_INDEX)      ! only solve on one mesh if multiple meshes are performed on one processor
+
+ACS => S%ACS_MACRO
+
+IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
+   XM_FB  => S%X_MACRO_FB
+   BM_FB  => S%B_MACRO_FB
+   CALL PARDISO_S(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, S%NC_MACRO, &
+                  ACS%VAL_FB, ACS%ROW, ACS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
+                  MKL%MSGLVL, BM_FB, XM_FB, MKL%ERROR)
+ELSE
+   CALL PARDISO_D(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, S%NC_MACRO, &
+                  ACS%VAL, ACS%ROW, ACS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
+                  MKL%MSGLVL, BM, XM, MKL%ERROR)
+ENDIF
+
+IF (MKL%ERROR /= 0) CALL SCARC_SHUTDOWN(NSCARC_ERROR_MKL_INTERNAL, SCARC_NONE, MKL%ERROR)
+
+        
+END SUBROUTINE SCARC_METHOD_MACRO
 
 !> ------------------------------------------------------------------------------------------------
 !> Call requested coarse grid solver (iterative/direct)
@@ -10872,6 +10934,55 @@ IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) &
 #endif
 
 END SUBROUTINE SCARC_CONVERGENCE_RATE
+
+!> ------------------------------------------------------------------------------------------------
+!> Perform restriction from finer to macro coarse grid 
+!> ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_RESTRICTION_MACRO (NV, NL)
+USE SCARC_POINTERS, ONLY: VF, BM
+INTEGER, INTENT(IN) :: NV, NL
+INTEGER :: NM
+
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+   CALL SCARC_POINT_TO_GRID(NM, NL)
+
+   VF => SCARC_POINT_TO_VECTOR(NM, NL, NV)
+   IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
+      BM_FB => SCARC(NM)%B_MACRO_FB
+      BM_FB(NM) = REAL(SUM(VF)/REAL(G%NC,EB),FB)
+   ELSE
+      BM => SCARC(NM)%B_MACRO
+      BM(NM) = SUM(VF)/REAL(G%NC,EB)
+   ENDIF
+
+ENDDO
+
+END SUBROUTINE SCARC_RESTRICTION_MACRO
+
+
+!> ------------------------------------------------------------------------------------------------
+!> Perform prolongation from macro coarse grid to fine grid
+!> ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PROLONGATION_MACRO (NV, NL)
+USE SCARC_POINTERS, ONLY: VF
+INTEGER, INTENT(IN) :: NV, NL
+INTEGER :: NM
+
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+   CALL SCARC_POINT_TO_GRID(NM, NL)
+
+   VF => SCARC_POINT_TO_VECTOR(NM, NL, NV)
+   IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
+      VF = REAL(SCARC(NM)%X_MACRO_FB,EB)
+   ELSE
+      VF = SCARC(NM)%X_MACRO
+   ENDIF
+
+ENDDO
+
+END SUBROUTINE SCARC_PROLONGATION_MACRO
 
 
 !> ------------------------------------------------------------------------------------------------
@@ -12399,7 +12510,6 @@ USE SCARC_POINTERS, ONLY: OM
 INTEGER, INTENT(IN) :: NM, NOM
 
 ARE_NEIGHBORS = .TRUE.
-
 OM => MESHES(NM)%OMESH(NOM)
 IF (OM%NIC_R == 0 .AND. OM%NIC_S == 0) ARE_NEIGHBORS = .FALSE.
 
