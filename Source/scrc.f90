@@ -992,6 +992,7 @@ TYPE SCARC_TYPE
    REAL(EB) :: RHS_END = 0.0_EB                                       !> Very last RHS entry, needed for matrix condensing
 
    INTEGER, ALLOCATABLE, DIMENSION(:) :: NEIGHBORS                    !> List of adjacent neighbors of whole mesh
+   INTEGER, ALLOCATABLE, DIMENSION(:) :: NC_OFFSET                    !> Offset between meshes
    INTEGER :: N_NEIGHBORS = 0                                         !> Number of adjacent neighbors of whole mesh
    INTEGER :: NC = 0                                                  !> Total number of cells on that mesh
    INTEGER :: NC_MACRO = 0, NA_MACRO = 0                              !> Number of cells and matrix entries for coarse grid
@@ -5408,6 +5409,7 @@ IF (NTYPE == NSCARC_COARSE_MACRO) THEN
    ACS => SCARC(NM)%ACS_MACRO
    NCP => AC%NC_COARSE
    NCP => AC%NC_COARSE
+   NCP_OFFSET => AC%NC_OFFSET
 WRITE(*,*) MYID,': AC%N_VAL =', AC%N_VAL, SIZE(AC%VAL)
 ELSE
    CALL SCARC_POINT_TO_GRID(NM, NL)
@@ -5582,15 +5584,18 @@ REAL(EB) :: VAL = 0.0_EB, VALS = 0.0_EB, DIFF
 LOGICAL  :: BSYM
 INTEGER, DIMENSION(:), ALLOCATABLE :: KCOL_AUX, KC_AUX
 
-IF (NTYPE == NSCARC_COARSE_LEVEL) THEN
+IF (NTYPE == NSCARC_COARSE_MACRO) THEN
+   AC  => SCARC(NM)%AC_MACRO
+   ACS => SCARC(NM)%ACS_MACRO
+   NCP => AC%NC_COARSE
+   NCP => AC%NC_COARSE
+   NCP_OFFSET => AC%NC_OFFSET
+ELSE
    CALL SCARC_POINT_TO_GRID(NM, NL)
    AC  => G%AC
    ACS => G%ACS
    NCP => G%NC
    NCP_OFFSET => G%NC_OFFSET
-ELSE
-   AC  => SCARC(NM)%AC_MACRO
-   ACS => SCARC(NM)%ACS_MACRO
 ENDIF
 
 !> 
@@ -7004,6 +7009,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    WRITE(*,*) MYID, ': NM=',NM,NC_MACRO,NA_MACRO, S%DXH, S%DZH, S%NC_MACRO, S%NA_MACRO
 
    !> Temporarily keep coarse grid on every mesh
+   CALL SCARC_ALLOCATE_INT1(S%NC_OFFSET, 1, NC_MACRO, NSCARC_INIT_ZERO, 'NC_MACRO')
    IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
       CALL SCARC_ALLOCATE_REAL1_FB(S%X_MACRO_FB, 1, NC_MACRO, NSCARC_INIT_ZERO, 'X_MACRO_FB')
       CALL SCARC_ALLOCATE_REAL1_FB(S%B_MACRO_FB, 1, NC_MACRO, NSCARC_INIT_ZERO, 'B_MACRO_FB')
