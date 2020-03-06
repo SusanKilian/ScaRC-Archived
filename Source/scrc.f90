@@ -6973,50 +6973,23 @@ IF (N_MPI_PROCESSES > 1) &
    CALL MPI_ALLGATHERV(MPI_IN_PLACE,COUNTS_NBR(MYID),MPI_INTEGER,INT_BUFFER,&
                        COUNTS_NBR,DISPLS_NBR, MPI_INTEGER,MPI_COMM_WORLD, IERROR)
 
-#ifdef WITH_SCARC_DEBUG
-WRITE(*,*) MYID,': INT_BUFFER2:', INT_BUFFER
-WRITE(*,*) MYID,': MAX_VAL:', MAXVAL(N_NEIGHBORS)
-#endif
-
-CALL SCARC_ALLOCATE_INT2 (NEIGHBORS, 1, NMESHES, 1, MAXVAL(N_NEIGHBORS), NSCARC_INIT_ZERO, 'NEIGHBORS')
+CALL SCARC_ALLOCATE_INT2 (NEIGHBORS, 1, MAXVAL(N_NEIGHBORS), 1, NMESHES, NSCARC_INIT_ZERO, 'NEIGHBORS')
 DO NM = 1, NMESHES
-#ifdef WITH_SCARC_DEBUG
-WRITE(*,*) MYID,': ------------- NM=',NM
-#endif
    N = 1
    DO INBR = 1, N_NEIGHBORS(NM)
-WRITE(*,*) MYID,': ------------- N =',N
-      NEIGHBORS(NM, INBR) = INT_BUFFER(N)
+      NEIGHBORS(INBR, NM) = INT_BUFFER(N)
       N = N + 1
-#ifdef WITH_SCARC_DEBUG
-WRITE(*,*) MYID,': NEIGHBORS(',NM,',',INBR,'):', NEIGHBORS(NM, INBR)
-#endif
    ENDDO
 ENDDO
 
-WRITE(*,*) MYID, ':E'
 NC_MACRO = NMESHES
-NA_MACRO = 0
+NA_MACRO = NMESHES + SUM(N_NEIGHBORS) 
+
 DO NM = 1, NMESHES
-
    S => SCARC(NM)
-
    S%DXH = M%XF - M%XS
    S%DYH = M%YF - M%YS
    S%DZH = M%ZF - M%ZS
-
-   !> Only temporarily for proof of concept assume that all meshes have same size
-   !IF (S%DXH /= S%DZH) THEN
-   !   WRITE(*,*) 'CAUTION, DIFFERENT COARSE GRID WIDTHS'
-   !   STOP
-   !ENDIF
-
-   NA_MACRO = NA_MACRO + 1                     !> main diagonal entry
-   DO INBR = 1, N_NEIGHBORS(NM)                !> subdiagonal entries
-      NOM = NEIGHBORS(NM, INBR)
-      NA_MACRO = NA_MACRO + 1
-   ENDDO
-
 ENDDO 
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -7063,7 +7036,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       IA = IA + 1
       IC = IC + 1
       DO INBR = 1, N_NEIGHBORS(NM2)
-         NOM = NEIGHBORS(NM2, INBR)
+         NOM = NEIGHBORS(INBR, NM2)
          AC%COL(IA) = NOM
          AC%VAL(IA) = SCAL1
          IA = IA + 1
