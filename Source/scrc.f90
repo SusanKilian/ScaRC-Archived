@@ -7,13 +7,8 @@
 !>  - WITH_SCARC_STANDALONE   : dump environment for ScaRC standalone version
 !> ================================================================================================================
 !#undef WITH_MKL
-<<<<<<< Updated upstream
 #define WITH_SCARC_VERBOSE
 #define WITH_SCARC_DEBUG
-=======
-#undef WITH_SCARC_VERBOSE
-#undef WITH_SCARC_DEBUG                                                                                                               
->>>>>>> Stashed changes
 #undef WITH_SCARC_MGM
 #undef WITH_SCARC_STANDALONE
 
