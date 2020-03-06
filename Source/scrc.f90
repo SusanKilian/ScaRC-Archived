@@ -6983,11 +6983,13 @@ DO NM = 1, NMESHES
 #ifdef WITH_SCARC_DEBUG
 WRITE(*,*) MYID,': ------------- NM=',NM
 #endif
-   DO N = 1, N_NEIGHBORS(NM)
+   N = 1
+   DO INBR = 1, N_NEIGHBORS(NM)
 WRITE(*,*) MYID,': ------------- N =',N
-      NEIGHBORS(NM, N) = INT_BUFFER(DISPLS_NBR(NM-1)+N)
+      NEIGHBORS(NM, INBR) = INT_BUFFER(N)
+      N = N + 1
 #ifdef WITH_SCARC_DEBUG
-WRITE(*,*) MYID,': NEIGHBORS(',NM,',',N,'):', NEIGHBORS(NM, N)
+WRITE(*,*) MYID,': NEIGHBORS(',NM,',',INBR,'):', NEIGHBORS(NM, INBR)
 #endif
    ENDDO
 ENDDO
