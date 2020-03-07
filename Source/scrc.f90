@@ -5409,7 +5409,6 @@ IF (NTYPE == NSCARC_COARSE_MACRO) THEN
    ACS => SCARC(NM)%ACS_MACRO
    NCP => SCARC(NM)%NC_MACRO
    NCP_OFFSET => SCARC(NM)%NC_OFFSET
-   TYPE_MKL(NL) = NSCARC_MKL_GLOBAL
 WRITE(*,*) MYID,': AC%N_VAL =', AC%N_VAL, SIZE(AC%VAL)
 ELSE
    CALL SCARC_POINT_TO_GRID(NM, NL)
@@ -5462,12 +5461,12 @@ IF (SCARC_MKL_MTYPE == 'SYMMETRIC') THEN
    ACS%N_VAL = 0
    DO IC = 1, NCP
       DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1
-         IF (TYPE_MKL(NL) == NSCARC_MKL_LOCAL) THEN
-            JC = AC%COL(ICOL)
-            IF (JC >= IC .AND. JC <= NCP) ACS%N_VAL = ACS%N_VAL+1
-         ELSE IF (TYPE_MKL(NL) == NSCARC_MKL_GLOBAL) THEN
+         IF (TYPE_MKL(NL) == NSCARC_MKL_GLOBAL .OR. NTYPE == NSCARC_COARSE_MACRO) THEN
             JC = AC%COL_GLOBAL(ICOL)
             IF (JC >= IC + NCP_OFFSET(NM)) ACS%N_VAL = ACS%N_VAL+1
+         ELSE IF (TYPE_MKL(NL) == NSCARC_MKL_LOCAL) THEN
+            JC = AC%COL(ICOL)
+            IF (JC >= IC .AND. JC <= NCP) ACS%N_VAL = ACS%N_VAL+1
          ELSE
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_MATRIX_SETUP, SCARC_NONE, TYPE_MKL(NL))
          ENDIF
@@ -5498,21 +5497,8 @@ DO IC = 1, NCP
    ACS%ROW(IC) = IAS
 
 
-   !> blockwise use of local MKL solvers - no global numbering required
-   IF (TYPE_MKL(NL) == NSCARC_MKL_LOCAL) THEN
-
-      DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1
-         JC = AC%COL(ICOL)
-
-         IF (JC >= IC .AND. JC <= NCP) THEN
-            ACS%COL(IAS) = AC%COL(ICOL)
-            ACS%VAL(IAS) = AC%VAL(ICOL)
-            IAS = IAS + 1
-         ENDIF
-      ENDDO
-
    !> global use of MKL solver - get global numbering of matrix elements
-   ELSE IF (TYPE_MKL(NL) == NSCARC_MKL_GLOBAL) THEN
+   IF (TYPE_MKL(NL) == NSCARC_MKL_GLOBAL .OR. NTYPE == NSCARC_COARSE_MACRO) THEN
 
       !> store indices of all diagonal and upper-diagonal entries
       KCOL_AUX = 0
@@ -5553,6 +5539,20 @@ DO IC = 1, NCP
          ENDDO
          JSYM = JSYM + 1
       ENDDO SORT_LOOP
+
+   !> blockwise use of local MKL solvers - no global numbering required
+   ELSE IF (TYPE_MKL(NL) == NSCARC_MKL_LOCAL) THEN
+
+      DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1
+         JC = AC%COL(ICOL)
+
+         IF (JC >= IC .AND. JC <= NCP) THEN
+            ACS%COL(IAS) = AC%COL(ICOL)
+            ACS%VAL(IAS) = AC%VAL(ICOL)
+            IAS = IAS + 1
+         ENDIF
+      ENDDO
+
    ENDIF
 ENDDO
 
@@ -6913,7 +6913,7 @@ END SUBROUTINE SCARC_SETUP_MULTIGRID
 !> Experimental version of coarse grid setup consisting of simply the macro decompostion
 !> ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_MACRO
-USE SCARC_POINTERS, ONLY: M, S, AC, ACS
+USE SCARC_POINTERS, ONLY: M, S, AC
 INTEGER :: NM, NM2, IC, IA, NC_MACRO, NA_MACRO, INBR, N,  N_TOTAL
 INTEGER, ALLOCATABLE, DIMENSION (:) :: COUNTS_NBR
 INTEGER, ALLOCATABLE, DIMENSION (:) :: DISPLS_NBR
@@ -6925,6 +6925,7 @@ REAL(EB) :: SCAL1, SCAL4
 IS_MKL_LEVEL(NLEVEL_MAX) = .FALSE.
 #ifdef WITH_MKL
 IS_MKL_LEVEL(NLEVEL_MAX) = .TRUE.
+TYPE_MKL(0) = NSCARC_MKL_GLOBAL
 #endif
 
 CALL SCARC_ALLOCATE_INT1 (N_NEIGHBORS, 1, NMESHES, NSCARC_INIT_ZERO, 'N_NEIGHBORS')
@@ -7038,9 +7039,9 @@ ENDDO
 
 #ifdef WITH_MKL
 IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
-   CALL SCARC_SETUP_MATRIX_MKL_SINGLE(LOWER_MESH_INDEX, NLEVEL_MAX, NSCARC_COARSE_MACRO)
+   CALL SCARC_SETUP_MATRIX_MKL_SINGLE(LOWER_MESH_INDEX, 0, NSCARC_COARSE_MACRO)
 ELSE
-   CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(LOWER_MESH_INDEX, NLEVEL_MAX, NSCARC_COARSE_MACRO)
+   CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(LOWER_MESH_INDEX, 0, NSCARC_COARSE_MACRO)
 ENDIF
 #endif
 
