@@ -7,8 +7,8 @@
 !>  - WITH_SCARC_STANDALONE   : dump environment for ScaRC standalone version
 !> ================================================================================================================
 !#undef WITH_MKL
-#define WITH_SCARC_VERBOSE
-#define WITH_SCARC_DEBUG
+#undef WITH_SCARC_VERBOSE
+#undef WITH_SCARC_DEBUG
 #undef WITH_SCARC_MGM
 #undef WITH_SCARC_STANDALONE
 
@@ -35,9 +35,7 @@ INTEGER, PARAMETER :: NSCARC_CELL_GASPHASE           =  1, &    !> gasphase cell
                       NSCARC_CELL_SOLID              =  2       !> solid cell
 
 INTEGER, PARAMETER :: NSCARC_COARSE_ITERATIVE        =  1, &    !> iterative coarse grid solution
-                      NSCARC_COARSE_DIRECT           =  2, &    !> direct coarse grid solution
-                      NSCARC_COARSE_LEVEL            =  3, &    !> Coarse grid on specified grid level
-                      NSCARC_COARSE_MACRO            =  4       !> Coarse grid on macro decomposition
+                      NSCARC_COARSE_DIRECT           =  2       !> direct coarse grid solution
 
 INTEGER, PARAMETER :: NSCARC_COARSENING_BASIC        =  1, &    !> basic coarsening
                       NSCARC_COARSENING_FALGOUT      =  2, &    !> parallel Falgout
@@ -242,8 +240,7 @@ INTEGER, PARAMETER :: NSCARC_TWOLEVEL_NONE           =  0, &    !> no two levels
                       NSCARC_TWOLEVEL_ADD            =  1, &    !> additive 2-level method
                       NSCARC_TWOLEVEL_MUL            =  2, &    !> multiplicative 2-level method
                       NSCARC_TWOLEVEL_MUL2           =  3, &    !> multiplicative 2-level method
-                      NSCARC_TWOLEVEL_COARSE         =  4, &    !> only coarse grid
-                      NSCARC_TWOLEVEL_MACRO          =  5       !> coarse grid is macro grid
+                      NSCARC_TWOLEVEL_COARSE         =  4       !> only coarse grid
 
 INTEGER, PARAMETER :: NSCARC_VECTOR_ONE_X            =  1, &    !> selection parameter for 1-stage vector X
                       NSCARC_VECTOR_ONE_B            =  2, &    !>       ...                              F
@@ -384,7 +381,6 @@ LOGICAL :: IS_CG_GMG          = .FALSE.                     !> is Krylov-method 
 LOGICAL :: IS_CG_ADD          = .FALSE.                     !> is additive twolevel-Krylov-method?
 LOGICAL :: IS_CG_MUL          = .FALSE.                     !> is multiplicative Twolevel-Krylov-method ?
 LOGICAL :: IS_CG_COARSE       = .FALSE.                     !> is only coarse grid preconditiner?
-LOGICAL :: IS_CG_MACRO        = .FALSE.                     !> is macro preconditioner
 LOGICAL :: IS_MG              = .FALSE.                     !> is Multigrid-method?
 LOGICAL :: IS_GMG             = .FALSE.                     !> is Geometric Multigrid-method?
 LOGICAL :: IS_FFT             = .FALSE.                     !> is FFT-method?
@@ -980,16 +976,11 @@ END TYPE SCARC_CPU_TYPE
 !>
 TYPE SCARC_TYPE
 
-   TYPE (SCARC_NEIGHBOR_TYPE), ALLOCATABLE, DIMENSION(:) :: OSCARC    !> ScaRC type on other mesh
-   TYPE (SCARC_LEVEL_TYPE),    ALLOCATABLE, DIMENSION(:) :: LEVEL     !> Level related information
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: AC_MACRO                       !> Coarse grid matrix on macro decomposition
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: ACS_MACRO                      !> Symmetric coarse grid matrix on macro decomposition
+   TYPE (SCARC_NEIGHBOR_TYPE) , ALLOCATABLE, DIMENSION(:)   :: OSCARC    !> ScaRC type on other mesh
+   TYPE (SCARC_LEVEL_TYPE)    , ALLOCATABLE, DIMENSION(:)   :: LEVEL     !> Level related information
 
-   REAL(EB), ALLOCATABLE, DIMENSION(:) :: X_MACRO, B_MACRO            !> solution vector and RHS for macro solver
-   REAL(FB), ALLOCATABLE, DIMENSION(:) :: X_MACRO_FB, B_MACRO_FB      !> solution vector and RHS for macro solver in single prec.
-   REAL(EB) :: XS, XF, YS, YF, ZS, ZF                                 !> x-, y- and z-bounds (corresponding to main prg)
-   REAL(EB) :: DXH, DYH, DZH
-   REAL(EB) :: RHS_END = 0.0_EB                                       !> Very last RHS entry, needed for matrix condensing
+   REAL(EB) :: XS, XF, YS, YF, ZS, ZF                                    !> x-, y- and z-bounds (corresponding to main prg)
+   REAL(EB) :: RHS_END = 0.0_EB                                          !> Very last RHS entry, needed for matrix condensing
 
    INTEGER, ALLOCATABLE, DIMENSION(:) :: NEIGHBORS                    !> List of adjacent neighbors of whole mesh
    INTEGER, ALLOCATABLE, DIMENSION(:) :: NC_OFFSET                    !> Offset between meshes
@@ -1052,17 +1043,12 @@ REAL(EB), DIMENSION(:), POINTER :: XMID=>NULL(), YMID=>NULL(), ZMID=>NULL()
 
 REAL(EB), DIMENSION(:), POINTER :: VC=>NULL(), VF=>NULL()
 REAL(EB), DIMENSION(:), POINTER :: V1=>NULL(), V2=>NULL()
-REAL(EB), DIMENSION(:), POINTER :: XM=>NULL(), BM=>NULL()
-REAL(FB), DIMENSION(:), POINTER :: XM_FB=>NULL(), BM_FB=>NULL()
 
 REAL(EB), DIMENSION(:,:,:), POINTER :: HP=>NULL(), HVC=>NULL(), PRHS=>NULL()
 REAL(EB), DIMENSION(:,:,:), POINTER :: UU=>NULL(), VV=>NULL(), WW=>NULL()
 
 REAL(EB), DIMENSION(:), POINTER ::  RECV_REAL0, RECV_REAL1, RECV_REAL2, RECV_REAL7
 INTEGER,  DIMENSION(:), POINTER ::  RECV_INT0, RECV_INT1
-
-INTEGER, POINTER :: NCP
-INTEGER, POINTER, DIMENSION(:) :: NCP_OFFSET
 
 INTEGER, POINTER :: I_MIN_R, I_MAX_R, I_MIN_S, I_MAX_S
 INTEGER, POINTER :: J_MIN_R, J_MAX_R, J_MIN_S, J_MAX_S
@@ -1474,8 +1460,6 @@ SELECT CASE (TRIM(SCARC_METHOD))
             TYPE_TWOLEVEL = NSCARC_TWOLEVEL_MUL2
          CASE ('COARSE')
             TYPE_TWOLEVEL = NSCARC_TWOLEVEL_COARSE
-         CASE ('MACRO')
-            TYPE_TWOLEVEL = NSCARC_TWOLEVEL_MACRO
          CASE DEFAULT
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_TWOLEVEL, NSCARC_NONE)
       END SELECT
@@ -1832,7 +1816,6 @@ IS_GMG = IS_MG .AND. TYPE_MULTIGRID == NSCARC_MULTIGRID_GEOMETRIC
 IS_CG_ADD    = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_ADD
 IS_CG_MUL    = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MUL
 IS_CG_COARSE = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_COARSE
-IS_CG_MACRO  = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MACRO
 
 HAS_TWO_LEVELS   = IS_CG .AND. TYPE_PRECON /= NSCARC_RELAX_GMG .AND. TYPE_TWOLEVEL > NSCARC_TWOLEVEL_NONE
 HAS_MULTI_LEVELS = IS_GMG .OR. IS_CG_GMG .OR. HAS_TWO_LEVELS
@@ -4767,9 +4750,9 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 #ifdef WITH_MKL
                         IF (TYPE_MKL(NL) == NSCARC_MKL_LOCAL .OR. TYPE_MKL(NL) == NSCARC_MKL_GLOBAL) THEN
                            IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
-                              CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NL, NSCARC_COARSE_LEVEL)
+                              CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NL)
                            ELSE
-                              CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NL, NSCARC_COARSE_LEVEL)
+                              CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NL)
                            ENDIF
                         ENDIF
 #endif
@@ -4802,9 +4785,9 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                      CALL SCARC_SETUP_MATRIX  (NM, NLEVEL_MIN)
                      CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
                      IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
-                        CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NLEVEL_MIN, NSCARC_COARSE_LEVEL)
+                        CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NLEVEL_MIN)
                      ELSE
-                        CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NLEVEL_MIN, NSCARC_COARSE_LEVEL)
+                        CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NLEVEL_MIN)
                      ENDIF
    
                      IF (HAS_TWO_LEVELS) THEN
@@ -4812,9 +4795,9 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                         CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MAX)
                         IF (TYPE_COARSE == NSCARC_COARSE_DIRECT) THEN
                            IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
-                              CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NLEVEL_MAX, NSCARC_COARSE_LEVEL)
+                              CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NLEVEL_MAX)
                            ELSE
-                              CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NLEVEL_MAX, NSCARC_COARSE_LEVEL)
+                              CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NLEVEL_MAX)
                            ENDIF
                         ENDIF
                      ENDIF
@@ -4825,9 +4808,9 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                      CALL SCARC_SETUP_MATRIX  (NM, NLEVEL_MIN)
                      CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
                      IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
-                        CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NLEVEL_MIN, NSCARC_COARSE_LEVEL)
+                        CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NLEVEL_MIN)
                      ELSE
-                        CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NLEVEL_MIN, NSCARC_COARSE_LEVEL)
+                        CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NLEVEL_MIN)
                      ENDIF
    
                END SELECT SELECT_KRYLOV_PRECON_MKL
@@ -4889,17 +4872,15 @@ WRITE(MSG%LU_DEBUG, *) 'CALLING SETUP_MAX_LEVEL'
                IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
                   DO NL = NLEVEL_MIN, NLEVEL_MAX-1
                      IF (TYPE_MKL(NL) == NSCARC_MKL_LOCAL .OR. TYPE_MKL(NL) == NSCARC_MKL_GLOBAL) &
-                        CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NL, NSCARC_COARSE_LEVEL)
+                        CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NL)
                   ENDDO
-                  IF (TYPE_COARSE == NSCARC_COARSE_DIRECT) &
-                     CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NLEVEL_MAX, NSCARC_COARSE_LEVEL)
+                  IF (TYPE_COARSE == NSCARC_COARSE_DIRECT) CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NLEVEL_MAX)
                ELSE
                   DO NL = NLEVEL_MIN, NLEVEL_MAX-1
                      IF (TYPE_MKL(NL) == NSCARC_MKL_LOCAL .OR. TYPE_MKL(NL) == NSCARC_MKL_GLOBAL) &
-                        CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NL, NSCARC_COARSE_LEVEL)
+                        CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NL)
                   ENDDO
-                  IF (TYPE_COARSE == NSCARC_COARSE_DIRECT) &
-                     CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NLEVEL_MAX, NSCARC_COARSE_LEVEL)
+                  IF (TYPE_COARSE == NSCARC_COARSE_DIRECT) CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NLEVEL_MAX)
                ENDIF
 #endif
 
@@ -4925,9 +4906,9 @@ WRITE(MSG%LU_DEBUG, *) 'CALLING SETUP_MAX_LEVEL'
          CALL SCARC_SETUP_MATRIX(NM, NLEVEL_MIN)
          CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
          IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
-            CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NLEVEL_MIN, NSCARC_COARSE_LEVEL)
+            CALL SCARC_SETUP_MATRIX_MKL_SINGLE(NM, NLEVEL_MIN)
          ELSE
-            CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NLEVEL_MIN, NSCARC_COARSE_LEVEL)
+            CALL SCARC_SETUP_MATRIX_MKL_DOUBLE(NM, NLEVEL_MIN)
          ENDIF
 #endif
 
@@ -5410,9 +5391,9 @@ END SUBROUTINE SCARC_SETUP_MATRIX_SUBDIAG_BANDED
 !> ------------------------------------------------------------------------------------------------
 !> Build system matrix for MKL solver in double precision
 !> ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_MATRIX_MKL_DOUBLE (NM, NL, NTYPE)
-USE SCARC_POINTERS, ONLY: G, AC, ACS, NCP, NCP_OFFSET
-INTEGER, INTENT(IN) :: NM, NL, NTYPE
+SUBROUTINE SCARC_SETUP_MATRIX_MKL_DOUBLE (NM, NL)
+USE SCARC_POINTERS, ONLY: G, AC, ACS
+INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: IC, JC, JC0
 INTEGER :: ICS, JCS
 INTEGER :: ICOL, JCOL, IAS
@@ -5421,6 +5402,7 @@ REAL(EB) :: VAL = 0.0_EB, VALS = 0.0_EB, DIFF
 LOGICAL  :: BSYM
 INTEGER, DIMENSION(:), ALLOCATABLE :: KCOL_AUX, KC_AUX
 
+CALL SCARC_POINT_TO_GRID(NM, NL)
 
 IF (NTYPE == NSCARC_COARSE_MACRO) THEN
    AC  => SCARC(NM)%AC_MACRO
@@ -5455,12 +5437,12 @@ WRITE(MSG%LU_DEBUG,'(8E12.4)') AC%VAL
 IF (SCARC_MKL_MTYPE == 'SYMMETRIC') THEN
 
    !> First check whether symmetry of system matrix is guaranteed
-   DO IC = 1, NCP
+   DO IC = 1, G%NC
 
       COLUMN_LOOP: DO ICOL = AC%ROW(IC)+1, AC%ROW(IC+1)-1
          ICS = AC%COL(ICOL)
          VAL = AC%VAL(ICOL)
-         IF (ICS > IC .AND. ICS <= NCP) THEN
+         IF (ICS > IC .AND. ICS <= G%NC) THEN
             BSYM = .FALSE.
             DO JCOL = AC%ROW(ICS)+1, AC%ROW(ICS+1)-1
                JCS = AC%COL(JCOL)
@@ -5483,7 +5465,7 @@ IF (SCARC_MKL_MTYPE == 'SYMMETRIC') THEN
    !> Compute number of entries in symmetric matrix
    !>
    ACS%N_VAL = 0
-   DO IC = 1, NCP
+   DO IC = 1, G%NC
       DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1
          IF (TYPE_MKL(NL) == NSCARC_MKL_GLOBAL .OR. NTYPE == NSCARC_COARSE_MACRO) THEN
             JC = AC%COL_GLOBAL(ICOL)
@@ -5520,7 +5502,7 @@ ENDIF
 !> extract symmetric matrix part from usual system matrix
 !> 
 IAS = 1
-DO IC = 1, NCP
+DO IC = 1, G%NC
    ACS%ROW(IC) = IAS
 
    !> global use of MKL solver - get global numbering of matrix elements
@@ -5585,7 +5567,7 @@ WRITE(MSG%LU_DEBUG,*) 'IC=',IC,': ICOL=',ICOL,': JC=',JC,': JC0=', JC0
    ENDIF
 ENDDO
 
-ACS%ROW(NCP+1) = IAS
+ACS%ROW(G%NC+1) = IAS
 
 IF (IS_MKL_LEVEL(NL)) THEN
    DEALLOCATE (KCOL_AUX, STAT=IERROR)
@@ -5610,9 +5592,9 @@ END SUBROUTINE SCARC_SETUP_MATRIX_MKL_DOUBLE
 !> ------------------------------------------------------------------------------------------------
 !> Build system matrix for MKL solver in single precision
 !> ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_MATRIX_MKL_SINGLE (NM, NL, NTYPE)
-USE SCARC_POINTERS, ONLY: G, AC, ACS, NCP, NCP_OFFSET
-INTEGER, INTENT(IN) :: NM, NL, NTYPE
+SUBROUTINE SCARC_SETUP_MATRIX_MKL_SINGLE (NM, NL)
+USE SCARC_POINTERS, ONLY: G, AC, ACS
+INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: IC, JC, JC0
 INTEGER :: ICS, JCS
 INTEGER :: ICOL, JCOL, IAS
@@ -5655,7 +5637,7 @@ WRITE(MSG%LU_DEBUG,'(8E12.4)') AC%VAL_FB
 IF (SCARC_MKL_MTYPE == 'SYMMETRIC') THEN
 
    !> First check whether symmetry of system matrix is guaranteed
-   DO IC = 1, NCP
+   DO IC = 1, G%NC
 
       COLUMN_LOOP: DO ICOL = AC%ROW(IC)+1, AC%ROW(IC+1)-1
          ICS = AC%COL(ICOL)
@@ -5683,7 +5665,7 @@ IF (SCARC_MKL_MTYPE == 'SYMMETRIC') THEN
    !> Compute number of entries in symmetric matrix
    !>
    ACS%N_VAL = 0
-   DO IC = 1, NCP
+   DO IC = 1, G%NC
       DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1
          IF (TYPE_MKL(NL) == NSCARC_MKL_GLOBAL .OR. NTYPE == NSCARC_COARSE_MACRO) THEN
             JC = AC%COL_GLOBAL(ICOL)
@@ -5720,7 +5702,7 @@ ENDIF
 !> extract symmetric matrix part from usual system matrix
 !> 
 IAS = 1
-DO IC = 1, NCP
+DO IC = 1, G%NC
    ACS%ROW(IC) = IAS
 
    !> global use of MKL solver - get global numbering of matrix elements
@@ -5785,7 +5767,7 @@ WRITE(MSG%LU_DEBUG,*) 'IC=',IC,': ICOL=',ICOL,': JC=',JC,': JC0=', JC0
    ENDIF
 ENDDO
 
-ACS%ROW(NCP+1) = IAS
+ACS%ROW(G%NC+1) = IAS
 
 IF (IS_MKL_LEVEL(NL)) THEN
    DEALLOCATE (KCOL_AUX, STAT=IERROR)
@@ -9984,6 +9966,10 @@ NS  = NSTACK
 NP  = NPARENT
 NL  = NLEVEL
 
+#ifdef WITH_SCARC_STANDALONE
+IF (ITE_PRES == 1) CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_AB)
+#endif
+
 !> ------------------------------------------------------------------------------------------------
 !> Initialization:
 !>   - Get parameters for current scope (note: NL denotes the finest level)
@@ -9998,6 +9984,18 @@ IF (N_DIRIC_GLOBAL(NLEVEL_MIN) == 0) THEN
    CALL SCARC_FILTER_MEANVALUE(B, NL)                       
    CALL SCARC_SETUP_SYSTEM_CONDENSED (B, NL, 1)            
 ENDIF
+
+#ifdef WITH_SCARC_STANDALONE
+IF (ITE_PRES > 2) THEN
+   CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_B_OLD)
+   CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_B_NEW)
+   IF (PREDICTOR) THEN
+      CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_H_OLD)
+   ELSE
+      CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_HS_OLD)
+   ENDIF
+ENDIF
+#endif
 
 !> Compute initial residual 
 TYPE_MATVEC = NSCARC_MATVEC_GLOBAL
@@ -10067,6 +10065,11 @@ IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) THEN
    CALL SCARC_UPDATE_GHOSTCELLS(NLEVEL_MIN)
 #ifdef WITH_SCARC_STANDALONE
    CALL SCARC_PRESSURE_DIFFERENCE(NLEVEL_MIN)
+   IF (ITE_PRES > 2) THEN
+      CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_H_NEW)
+   ELSE
+      CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_HS_NEW)
+   ENDIF
 #endif
 ENDIF
 
@@ -10793,7 +10796,7 @@ SELECT_SOLVER_TYPE: SELECT CASE (SV%TYPE_SOLVER)
          IF (PREDICTOR) THEN
             P%H_OLD = P%H_NEW
          ELSE
-            P%H_OLD = P%HS_NEW
+            P%HS_OLD = P%HS_NEW
          ENDIF
          P%B_OLD = ST%B
 #endif
@@ -12623,24 +12626,6 @@ P => SCARC(NM)%LEVEL(NL)%PRES
 
 END SUBROUTINE SCARC_POINT_TO_GRID
 
-!> ----------------------------------------------------------------------------------------------------
-!> This routine sets the requested combination of mesh, level and discretization for the master process
-!> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_POINT_TO_MASTER(NM, NL)
-USE SCARC_POINTERS, ONLY: S, L, G
-INTEGER, INTENT(IN) ::  NM, NL
-
-S => SCARC(NM)
-L => S%LEVEL(NL)
-SELECT CASE(TYPE_GRID)
-   CASE (NSCARC_GRID_STRUCTURED)
-      G => L%STRUCTURED
-   CASE (NSCARC_GRID_UNSTRUCTURED)
-      G => L%UNSTRUCTURED
-END SELECT
-
-END SUBROUTINE SCARC_POINT_TO_MASTER
-
 
 !> -----------------------------------------------------------------------------
 !> Point to requested receive buffer
@@ -12699,6 +12684,7 @@ USE SCARC_POINTERS, ONLY: OM
 INTEGER, INTENT(IN) :: NM, NOM
 
 ARE_NEIGHBORS = .TRUE.
+
 OM => MESHES(NM)%OMESH(NOM)
 IF (OM%NIC_R == 0 .AND. OM%NIC_S == 0) ARE_NEIGHBORS = .FALSE.
 

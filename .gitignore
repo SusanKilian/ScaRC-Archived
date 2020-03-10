@@ -49,3 +49,10 @@ Verification/Scarc/dump/*
 Source/ilu.f90
 Verification/Scarc/matlab/*
 Verification/Scarc/ssor
+/Verification/Pressure_Solver/cnn_dancing0
+/Verification/Pressure_Solver/duct0.fds~
+/Verification/Pressure_Solver/duct0.fds
+/Verification/Pressure_Solver/dancing0.fds~
+/Verification/Pressure_Solver/dancing0.fds
+/Verification/Pressure_Solver/.duct0.fds.un~
+/Verification/Pressure_Solver/.dancing0.fds.un~
