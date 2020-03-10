@@ -6534,6 +6534,7 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
       CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
       CALL SCARC_SETUP_FFT(NLEVEL_MIN, NLEVEL_MIN)
 
+
       !> ------- Second part of method: Setup CG solver for homogeneous problem on unstructured discretization
       !>         and use SSOR-preconditioning for first tests
       TYPE_GRID = NSCARC_GRID_UNSTRUCTURED
