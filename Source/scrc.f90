@@ -7018,9 +7018,8 @@ WRITE(MSG%LU_DEBUG,*) 'DISPLS_NBR=',DISPLS_NBR
 WRITE(MSG%LU_DEBUG,*) 'N_TOTAL=', N_TOTAL
 #endif
 
-N = 1
+N = DISPLS_NBR(LOWER_MESH_INDEX - 1) + 1
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   !N = DISPLS_NBR(NM-1) + 1
    DO INBR = 1, N_NEIGHBORS(NM)
       INT_BUFFER(N) = SCARC(NM)%NEIGHBORS(INBR)
 #ifdef WITH_SCARC_DEBUG
@@ -7035,6 +7034,9 @@ IF (N_MPI_PROCESSES > 1) &
                        COUNTS_NBR,DISPLS_NBR, MPI_INTEGER,MPI_COMM_WORLD, IERROR)
 
 CALL SCARC_ALLOCATE_INT2 (NEIGHBORS, 1, MAXVAL(N_NEIGHBORS), 1, NMESHES, NSCARC_INIT_ZERO, 'NEIGHBORS')
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'READY1: INT_BUFFER:', INT_BUFFER
+#endif
 N = 1
 DO NM = 1, NMESHES
    DO INBR = 1, N_NEIGHBORS(NM)
@@ -10137,7 +10139,7 @@ SELECT_PRECON_TYPE: SELECT CASE (TYPE_TWOLEVEL)
       CALL SCARC_VECTOR_SUM (R, Z, 1.0_EB, -1.0_EB, NL)           !>  z^l := r^l - z^l
       CALL SCARC_VECTOR_COPY (Z, V, 1.0_EB, NL)                   !>  v^l := z^l
       CALL SCARC_RELAXATION (Z, V, NS+1, NP, NL)                  !>  v^l := Relax(z^l)
-      CALL SCARC_VECTOR_SUM (Y, V, 1.0_EB, 1.0_EB, NL)            !>  v^l := y^l - z^l
+      CALL SCARC_VECTOR_SUM (Y, V, 1.0_EB, 1.0_EB, NL)            !>  v^l := y^l + z^l
 
    !> 
    !> ---------- Multiplicative two-level preconditioning (fine first, coarse second):
@@ -10179,26 +10181,38 @@ SELECT_PRECON_TYPE: SELECT CASE (TYPE_TWOLEVEL)
    !> 
    CASE (NSCARC_TWOLEVEL_MACRO)
 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'IN LEVEL_MACRO'
-#endif
-      CALL SCARC_VECTOR_COPY (R, B, 1.0_EB, NL)                   !>  Use r^l as right hand side for preconditioner
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'IN LEVEL_MACRO: RESTRICT'
-#endif
-      CALL SCARC_RESTRICTION_MACRO(B, NL)
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'IN LEVEL_MACRO: SOLVE'
-#endif
-      CALL SCARC_METHOD_MACRO                                     !>  solve A^L * x^L := b^L on coarsest level
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'IN LEVEL_MACRO: PROLONG'
-#endif
-      CALL SCARC_PROLONGATION_MACRO(Z, NL)
+      !> Additive
+      !CALL SCARC_RESTRICTION_MACRO(R, NL)
+      !CALL SCARC_METHOD_MACRO                                     !>  solve A^L * x^L := b^L on coarsest level
+      !CALL SCARC_PROLONGATION_MACRO(Z, NL)
 
-      CALL SCARC_VECTOR_COPY (R, V, 1.0_EB, NL)                   !>  v^l := r^l
-      CALL SCARC_RELAXATION (R, V, NS+1, NP, NL)                  !>  v^l := Relax(r^l)
-      CALL SCARC_VECTOR_SUM (Z, V, 1.0_EB, 1.0_EB, NL)            !>  v^l := z^l + v^l
+      !CALL SCARC_VECTOR_COPY (R, V, 1.0_EB, NL)                   !>  v^l := r^l
+      !CALL SCARC_RELAXATION (R, V, NS+1, NP, NL)                  !>  v^l := Relax(r^l)
+      !CALL SCARC_VECTOR_SUM (Z, V, 1.0_EB, 1.0_EB, NL)            !>  v^l := z^l + v^l
+
+      !> Multiplicative
+      CALL SCARC_RESTRICTION_MACRO(R, NL)
+      CALL SCARC_METHOD_MACRO                                     !>  solve A^L * x^L := b^L on coarsest level
+      CALL SCARC_PROLONGATION_MACRO(Y, NL)
+
+      CALL SCARC_MATVEC_PRODUCT (Y, Z, NL)                        !>  z^l := A^l * y^l
+      CALL SCARC_VECTOR_SUM (R, Z, 1.0_EB, -1.0_EB, NL)           !>  z^l := r^l - z^l
+
+      CALL SCARC_VECTOR_COPY (Z, V, 1.0_EB, NL)                   !>  v^l := z^l
+      CALL SCARC_RELAXATION (Z, V, NS+1, NP, NL)                  !>  v^l := Relax(z^l)
+      CALL SCARC_VECTOR_SUM (Y, V, 1.0_EB, 1.0_EB, NL)            !>  v^l := y^l + z^l
+
+      !> Multiplicative2
+      !CALL SCARC_VECTOR_COPY (R, V, 1.0_EB, NL)                   !>  v^l := r^l
+      !CALL SCARC_RELAXATION (R, V, NS+1, NP, NL)                  !>  v^l := Relax(r^l)
+      !CALL SCARC_MATVEC_PRODUCT (V, Z, NL)                        !>  z^l := A^{l} * v^l
+      !CALL SCARC_VECTOR_SUM (R, Z, 1.0_EB, -1.0_EB, NL)           !>  z^l := r^l - z^l
+
+      !CALL SCARC_RESTRICTION_MACRO(Z, NL)
+      !CALL SCARC_METHOD_MACRO                                     !>  solve A^L * x^L := b^L on coarsest level
+      !CALL SCARC_PROLONGATION_MACRO(Z, NL)
+      !CALL SCARC_VECTOR_SUM (Z, V, 1.0_EB, 1.0_EB, NL)            !>  z^l := r^l - z^l
+
 
 END SELECT SELECT_PRECON_TYPE
 
@@ -10220,33 +10234,29 @@ IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
    XM_FB  => S%X_MACRO_FB
    BM_FB  => S%B_MACRO_FB
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'METHOD_MACRO: XM_FB'
-WRITE(MSG%LU_DEBUG,*) XM_FB
 WRITE(MSG%LU_DEBUG,*) 'METHOD_MACRO: BM_FB'
-WRITE(MSG%LU_DEBUG,*) BM_FB
+WRITE(MSG%LU_DEBUG,'(8E12.4)') BM_FB
 #endif
    CALL PARDISO_S(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, S%NC_MACRO, &
                   ACS%VAL_FB, ACS%ROW, ACS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                   MKL%MSGLVL, BM_FB, XM_FB, MKL%ERROR)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'METHOD_MACRO: SOLUTION'
-WRITE(MSG%LU_DEBUG,*) XM_FB
+WRITE(MSG%LU_DEBUG,'(8E12.4)') XM_FB
 #endif
 ELSE
    XM  => S%X_MACRO
    BM  => S%B_MACRO
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'METHOD_MACRO: XM'
-WRITE(MSG%LU_DEBUG,*) XM
 WRITE(MSG%LU_DEBUG,*) 'METHOD_MACRO: BM'
-WRITE(MSG%LU_DEBUG,*) BM
+WRITE(MSG%LU_DEBUG,'(8E12.4)') BM
 #endif
    CALL PARDISO_D(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, S%NC_MACRO, &
                   ACS%VAL, ACS%ROW, ACS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                   MKL%MSGLVL, BM, XM, MKL%ERROR)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'METHOD_MACRO: SOLUTION'
-WRITE(MSG%LU_DEBUG,*) XM
+WRITE(MSG%LU_DEBUG,'(8E12.4)') XM
 #endif
 ENDIF
 
@@ -11116,7 +11126,8 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    VF => SCARC_POINT_TO_VECTOR(NM, NL, NV)
    BM(NM) = SUM(VF(1:G%NC))/REAL(G%NC,EB)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'BM(',NM,')=',BM(NM)
+WRITE(MSG%LU_DEBUG,*) 'BM(',NM,')',BM(NM)
+WRITE(MSG%LU_DEBUG,'(8E12.4)') BM(NM)
 #endif
 ENDDO
 
@@ -11129,7 +11140,8 @@ IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
    BM_FB = REAL(BM, FB)
 ENDIF
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'RESTRICTION_MACRO: VF(',NM,')=',VF
+WRITE(MSG%LU_DEBUG,*) 'RESTRICTION_MACRO: VF(',NM,')'
+WRITE(MSG%LU_DEBUG,'(8E12.4)') VF
 #endif
    
 END SUBROUTINE SCARC_RESTRICTION_MACRO
@@ -11154,7 +11166,8 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    VF(1:G%NC) = XM(NM)
 ENDDO
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'PROLONGATION_MACRO: VF(',NM,')=',VF
+WRITE(MSG%LU_DEBUG,*) 'PROLONGATION_MACRO: VF(',NM,')'
+WRITE(MSG%LU_DEBUG,'(8E12.4)') VF
 #endif
 
 
