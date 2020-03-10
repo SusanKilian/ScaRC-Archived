@@ -7,9 +7,9 @@
 !>  - WITH_SCARC_STANDALONE   : dump environment for ScaRC standalone version
 !> ================================================================================================================
 !#undef WITH_MKL
-#undef WITH_SCARC_VERBOSE
-#undef WITH_SCARC_DEBUG
-#undef WITH_SCARC_MGM
+#define WITH_SCARC_VERBOSE
+#define WITH_SCARC_DEBUG
+#define WITH_SCARC_MGM
 #undef WITH_SCARC_STANDALONE
 
 
@@ -679,6 +679,7 @@ TYPE SCARC_FFT_TYPE
    INTEGER :: LBC, MBC, NBC
    INTEGER :: ITRN, JTRN, KTRN
    INTEGER :: IBAR, JBAR, KBAR
+   INTEGER :: IP, JP, KP
 
 END TYPE SCARC_FFT_TYPE
 
@@ -819,7 +820,7 @@ TYPE SCARC_LEVEL_TYPE
    TYPE (SCARC_FFT_TYPE)       :: FFT                          !> FFT preconditioner based on CRAYFISHPAK
    TYPE (SCARC_PRESSURE_TYPE)  :: PRES                         !> Multigrid method information
 #ifdef WITH_SCARC_MGM
-   TYPE (SCARC_MGM_TYPE)       :: MGM                          !> McKenney-Greengar-Mayo method 
+   TYPE (SCARC_MGM_TYPE)       :: MGM                          !> McKenney-Greengard-Mayo method 
 #endif
 #ifdef WITH_MKL
    TYPE (SCARC_MKL_TYPE)       :: MKL                          !> MKL preconditioner based on Intel MKL
@@ -1162,12 +1163,12 @@ CALL SCARC_SETUP_FACES                      ; IF (STOP_STATUS==SETUP_STOP) RETUR
 !> Setup wall information according to specified discretization type/method
 !>
 IF (HAS_MULTI_GRIDS) THEN
-   CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_STRUCTURED)
+   CALL SCARC_SETUP_GRID_TYPE (NSCARC_GRID_STRUCTURED)
    CALL SCARC_SETUP_WALLS                   ; IF (STOP_STATUS==SETUP_STOP) RETURN
-   CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)
+   CALL SCARC_SETUP_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)
    CALL SCARC_SETUP_WALLS                   ; IF (STOP_STATUS==SETUP_STOP) RETURN
 ELSE
-   CALL SCARC_ASSIGN_GRID_TYPE (TYPE_GRID)
+   CALL SCARC_SETUP_GRID_TYPE (TYPE_GRID)
    CALL SCARC_SETUP_WALLS                   ; IF (STOP_STATUS==SETUP_STOP) RETURN
 ENDIF
 
@@ -2133,7 +2134,7 @@ END SUBROUTINE SCARC_SETUP_TYPES
 !> This routine assumes, that L already points to the correct level NL of mesh NL and
 !> additionally sets the requested discretization type
 !> ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_ASSIGN_GRID_TYPE(NTYPE)
+SUBROUTINE SCARC_SETUP_GRID_TYPE(NTYPE)
 INTEGER, INTENT(IN) :: NTYPE
 
 SELECT CASE (NTYPE)
@@ -2147,7 +2148,7 @@ SELECT CASE (NTYPE)
       IS_UNSTRUCTURED = .TRUE.
 END SELECT
 
-END SUBROUTINE SCARC_ASSIGN_GRID_TYPE
+END SUBROUTINE SCARC_SETUP_GRID_TYPE
 
 
 !> -----------------------------------------------------------------------------
@@ -2343,13 +2344,19 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    !> If both discretization types (structured/unstructured) must be administrated (MGM method only):
    !> Allocate all arrays which are related to a specific discretization type
    !>
-   IF (HAS_MULTI_GRIDS) THEN
+   MULTI_GRIDS_IF: IF (HAS_MULTI_GRIDS) THEN
 
       !>
       !> ---------------- First process structured discretization
       !>
-      CALL SCARC_ASSIGN_GRID_TYPE(NSCARC_GRID_STRUCTURED)
+      CALL SCARC_SETUP_GRID_TYPE(NSCARC_GRID_STRUCTURED)
       CALL SCARC_POINT_TO_GRID(NM, NLEVEL_MIN)
+
+      !> Allocate index array which specifies I, J, K components for all degrees of freedom
+      NC = L%NX * L%NY * L%NZ
+      CALL SCARC_ALLOCATE_INT1(G%ICX, 1, NC, NSCARC_INIT_UNDEF, 'ICX')
+      CALL SCARC_ALLOCATE_INT1(G%ICY, 1, NC, NSCARC_INIT_UNDEF, 'ICY')
+      CALL SCARC_ALLOCATE_INT1(G%ICZ, 1, NC, NSCARC_INIT_UNDEF, 'ICZ')
 
       !> Number of local cells per mesh
       CALL SCARC_ALLOCATE_INT1(G%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'NC_LOCAL')
@@ -2369,6 +2376,9 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             DO IX=1,L%NX
                G%NC_LOCAL(NM) = G%NC_LOCAL(NM) + 1
                G%CELL_NUMBER(IX,IY,IZ) = G%NC_LOCAL(NM)
+               G%ICX(G%NC_LOCAL(NM)) = IX
+               G%ICY(G%NC_LOCAL(NM)) = IY
+               G%ICZ(G%NC_LOCAL(NM)) = IZ
             ENDDO
          ENDDO
       ENDDO
@@ -2378,12 +2388,18 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       !>
       !> ---------------- Then process unstructured discretization
       !>
-      CALL SCARC_ASSIGN_GRID_TYPE(NSCARC_GRID_UNSTRUCTURED)
+      CALL SCARC_SETUP_GRID_TYPE(NSCARC_GRID_UNSTRUCTURED)
       CALL SCARC_POINT_TO_GRID(NM, NLEVEL_MIN)
 
       !> Also allocate and preset cell numbers and state arrays for unstructured discretization
       CALL SCARC_ALLOCATE_INT3(G%CELL_NUMBER, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, &
                                NSCARC_INIT_UNDEF, 'CELL_NUMBER')
+
+      !> Allocate index array which specifies I, J, K components for all degrees of freedom
+      NC = L%NX * L%NY * L%NZ
+      CALL SCARC_ALLOCATE_INT1(G%ICX, 1, NC, NSCARC_INIT_UNDEF, 'ICX')
+      CALL SCARC_ALLOCATE_INT1(G%ICY, 1, NC, NSCARC_INIT_UNDEF, 'ICY')
+      CALL SCARC_ALLOCATE_INT1(G%ICZ, 1, NC, NSCARC_INIT_UNDEF, 'ICZ')
 
       !> Number of local cells per mesh
       CALL SCARC_ALLOCATE_INT1(G%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'NC_LOCAL')
@@ -2400,6 +2416,10 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                IF (.NOT.L%IS_SOLID(IX,IY,IZ)) THEN
                   G%NC_LOCAL(NM) = G%NC_LOCAL(NM) + 1
                   G%CELL_NUMBER(IX,IY,IZ) = G%NC_LOCAL(NM)
+
+                  G%ICX(G%NC_LOCAL(NM)) = IX
+                  G%ICY(G%NC_LOCAL(NM)) = IY
+                  G%ICZ(G%NC_LOCAL(NM)) = IZ
                ENDIF
             ENDDO
          ENDDO
@@ -2414,7 +2434,7 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ELSE
 
       !> ---------------- Only process specified type of discretization
-      CALL SCARC_ASSIGN_GRID_TYPE(TYPE_GRID)
+      CALL SCARC_SETUP_GRID_TYPE(TYPE_GRID)
       CALL SCARC_POINT_TO_GRID(NM, NLEVEL_MIN)
 
       !> Also allocate and preset cell numbers and state arrays for unstructured discretization
@@ -2455,7 +2475,7 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       G%NC  = G%NC_LOCAL(NM)
       G%NCE = G%NC_LOCAL(NM)
 
-   ENDIF
+   ENDIF MULTI_GRIDS_IF
 
 ENDDO MESHES_LOOP2
 
@@ -4658,7 +4678,7 @@ SELECT_SCARC_METHOD_SIZES: SELECT CASE (TYPE_METHOD)
    !>
    CASE (NSCARC_METHOD_KRYLOV)
    
-      CALL SCARC_ASSIGN_GRID_TYPE (TYPE_GRID)                                !> process specified discretization type
+      CALL SCARC_SETUP_GRID_TYPE (TYPE_GRID)                                !> process specified discretization type
       CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)         !> use specified discretization
    
       IF (HAS_TWO_LEVELS) &                                                  !> two grid levels used?
@@ -4675,7 +4695,7 @@ SELECT_SCARC_METHOD_SIZES: SELECT CASE (TYPE_METHOD)
    !>
    CASE (NSCARC_METHOD_MULTIGRID)
    
-      CALL SCARC_ASSIGN_GRID_TYPE (TYPE_GRID)                                !> process specified discretization type
+      CALL SCARC_SETUP_GRID_TYPE (TYPE_GRID)                                !> process specified discretization type
       SELECT CASE (TYPE_MULTIGRID)
          CASE (NSCARC_MULTIGRID_GEOMETRIC)                                   !> Geometric MG?
             DO NL=NLEVEL_MIN, NLEVEL_MAX
@@ -4694,13 +4714,13 @@ SELECT_SCARC_METHOD_SIZES: SELECT CASE (TYPE_METHOD)
       !>
       !> first process structured discretization
       !>
-      CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_STRUCTURED)              
+      CALL SCARC_SETUP_GRID_TYPE (NSCARC_GRID_STRUCTURED)              
       CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)        
    
       !>
       !> then process unstructured discretization
       !>
-      CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)            
+      CALL SCARC_SETUP_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)            
       CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_MATRIX, NLEVEL_MIN)         
    
 #endif
@@ -4909,14 +4929,14 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !>
          !> First assemble unstructured matrix
          !>
-         CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)
+         CALL SCARC_SETUP_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)
          CALL SCARC_SETUP_MATRIX  (NM, NLEVEL_MIN)
          CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
 
          !>
          !> Then assemble structured matrix
          !>
-         CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_STRUCTURED)
+         CALL SCARC_SETUP_GRID_TYPE (NSCARC_GRID_STRUCTURED)
          CALL SCARC_SETUP_MATRIX  (NM, NLEVEL_MIN)
          CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
 #endif
@@ -6502,28 +6522,28 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
       CALL SCARC_SETUP_MGM(NLEVEL_MIN, NLEVEL_MIN)
 
       !> ------- First part of method: Setup CG solver for inhomogeneous problem on structured discretization
+      !>         and use FFT-preconditioning
       TYPE_GRID = NSCARC_GRID_STRUCTURED
 
       NSTACK = NSCARC_STACK_ROOT
       STACK(NSTACK)%SOLVER => MAIN_CG_STRUCTURED
       CALL SCARC_SETUP_KRYLOV(NSCARC_SOLVER_MAIN, NSCARC_SCOPE_GLOBAL, NSCARC_STAGE_ONE, NSTACK, NLEVEL_MIN, NLEVEL_MIN)
 
-      !> use FFT-preconditioning
       NSTACK = NSTACK + 1
       STACK(NSTACK)%SOLVER => PRECON_FFT
       CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
       CALL SCARC_SETUP_FFT(NLEVEL_MIN, NLEVEL_MIN)
 
       !> ------- Second part of method: Setup CG solver for homogeneous problem on unstructured discretization
+      !>         and use SSOR-preconditioning for first tests
       TYPE_GRID = NSCARC_GRID_UNSTRUCTURED
 
       NSTACK = NSTACK + 1
       STACK(NSTACK)%SOLVER => MAIN_CG_UNSTRUCTURED
       CALL SCARC_SETUP_KRYLOV(NSCARC_SOLVER_MAIN, NSCARC_SCOPE_GLOBAL, NSCARC_STAGE_ONE, NSTACK, NLEVEL_MIN, NLEVEL_MIN)
 
-      !> for a first proof of concept only use SSOR-preconditioning (may be extended later to other preconditioners)
       NSTACK = NSTACK + 1
-      STACK(NSTACK)%SOLVER => PRECON_ILU
+      STACK(NSTACK)%SOLVER => PRECON_SSOR
       CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
 
 #endif
@@ -7320,27 +7340,48 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       FFT%MBC = M%MBC
       FFT%NBC = M%NBC
 
-      IF (NM == 1) THEN
-         FFT%IBAR = S%IBAR+1
-         FFT%XS = S%XS
-         FFT%XF = S%XF + L%DX
-      ELSE IF (NM == NMESHES) THEN
-         FFT%IBAR = S%IBAR+1
-         FFT%XS = S%XS - L%DX
-         FFT%XF = S%XF
-      ELSE 
-         FFT%IBAR = S%IBAR+2
-         FFT%XS = S%XS - L%DX
-         FFT%XF = S%XF + L%DX
-      ENDIF
+      FFT%IBAR = S%IBAR
+      FFT%JBAR = S%IBAR
+      FFT%KBAR = S%IBAR
 
-      FFT%JBAR = S%JBAR
-      FFT%KBAR = S%KBAR
-
+      FFT%XS = S%XS
+      FFT%XS = S%XS
       FFT%YS = S%YS
       FFT%YF = S%YF
       FFT%ZS = S%ZS
       FFT%ZF = S%ZF
+
+      FFT%IP = 1
+      FFT%JP = 1
+      FFT%KP = 1
+
+      IF (L%FACE( 1)%N_NEIGHBORS /= 0) THEN
+         FFT%IBAR = FFT%IBAR + 1
+         FFT%XS = FFT%XS - L%DX
+         FFT%IP = FFT%IP + 1
+      ENDIF
+      IF (L%FACE(-1)%N_NEIGHBORS /= 0) THEN
+         FFT%IBAR = FFT%IBAR + 1
+         FFT%XF = FFT%XF + L%DX
+      ENDIF
+      IF (L%FACE( 2)%N_NEIGHBORS /= 0) THEN
+         FFT%JBAR = FFT%JBAR + 1
+         FFT%YS = FFT%YS - L%DY
+         FFT%JP = FFT%JP + 1
+      ENDIF
+      IF (L%FACE(-2)%N_NEIGHBORS /= 0) THEN
+         FFT%JBAR = FFT%JBAR + 1
+         FFT%YS = FFT%YS + L%DY
+      ENDIF
+      IF (L%FACE( 3)%N_NEIGHBORS /= 0) THEN
+         FFT%KBAR = FFT%KBAR + 1
+         FFT%ZS = FFT%ZS - L%DZ
+         FFT%KP = FFT%KP + 1
+      ENDIF
+      IF (L%FACE(-3)%N_NEIGHBORS /= 0) THEN
+         FFT%KBAR = FFT%KBAR + 1
+         FFT%ZS = FFT%ZS + L%DZ
+      ENDIF
 
       FFT%ITRN = FFT%IBAR+1
       IF (TWO_D) THEN
@@ -8287,7 +8328,7 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
    CASE (NSCARC_METHOD_MGM)
    
       !> first solve inhomogeneous Poisson problem on structured grid with ScaRC (with Block-FFT)
-      CALL SCARC_ASSIGN_GRID_TYPE(NSCARC_GRID_STRUCTURED)
+      CALL SCARC_SETUP_GRID_TYPE(NSCARC_GRID_STRUCTURED)
       CALL SCARC_METHOD_CG (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
    
       CALL SCARC_STORE_MGM(NLEVEL_MIN, 1)
@@ -8296,7 +8337,7 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
    
       !> then solve homogeneous Poisson problem on unstructured grid with UScaRC (first with SSOR-preconditioning)
       !> later the preconditioning will be replaced by an individual LU-process
-      CALL SCARC_ASSIGN_GRID_TYPE(NSCARC_GRID_UNSTRUCTURED)
+      CALL SCARC_SETUP_GRID_TYPE(NSCARC_GRID_UNSTRUCTURED)
       CALL SCARC_METHOD_CG (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_HOMOGENEOUS, NLEVEL_MIN)
 
       CALL SCARC_STORE_MGM(NLEVEL_MIN, 2)
@@ -8935,7 +8976,7 @@ END SUBROUTINE SCARC_VECTOR_INIT
 !> Perform preconditioning
 !> ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_RELAXATION (NV1, NV2, NS, NP, NL)
-USE SCARC_POINTERS, ONLY: L, G, AB, AC, FFT, V1, V2
+USE SCARC_POINTERS, ONLY: L, G, F, AB, AC, FFT, V1, V2
 #ifdef WITH_MKL
 USE SCARC_POINTERS, ONLY: ACS, MKL, V1_FB, V2_FB
 #endif
@@ -8943,7 +8984,7 @@ USE POIS, ONLY: H2CZSS, H3CZSS
 REAL(EB) :: AUX, OMEGA_SSOR = 1.5_EB 
 REAL (EB) :: TNOW
 INTEGER, INTENT(IN) :: NV1, NV2, NS, NP, NL
-INTEGER :: NM, IC, JC, ICOL, ITYPE, IDIAG, IPTR, INCR, IOR0, IC0, IY, IZ
+INTEGER :: NM, IX, IY, IZ, IC, JC, ICG, ICOL, ITYPE, IDIAG, IPTR, INBR, INCR, ICE, ICW, IOR0
 
 TNOW = CURRENT_TIME()
 ITYPE = STACK(NS-1)%SOLVER%TYPE_RELAX
@@ -9286,60 +9327,84 @@ SELECT CASE (ITYPE)
          V1  => SCARC_POINT_TO_VECTOR(NM, NL, NV1)
          V2  => SCARC_POINT_TO_VECTOR(NM, NL, NV2)
 
-         IF (NM == 1) THEN
-
-            !$OMP PARALLEL DO PRIVATE(IC) SCHEDULE(STATIC)
-            DO IC = 1, G%NC
-               FFT%PRHS(G%ICX(IC), G%ICY(IC), G%ICZ(IC)) = V1(IC)
-            ENDDO
-            !$OMP END PARALLEL DO
-
-            IC0 = G%NC+1
-            DO IZ = 1, L%NZ
-               DO IY = 1, L%NY
-                  FFT%PRHS(FFT%IBAR, IY, IZ) = V1(IC0)
-               IC0 = IC0 + 1
+         DO IZ = FFT%KP, FFT%KP + L%NZ - 1 
+            DO IY = FFT%JP, FFT%JP + L%NY - 1 
+               DO IX = FFT%IP, FFT%IP + L%NX - 1 
+                  FFT%PRHS(IX, IY, IZ) = V1(IC)
                ENDDO
             ENDDO
+         ENDDO
 
-         ELSE IF (NM == NMESHES) THEN
-
-            !$OMP PARALLEL DO PRIVATE(IC) SCHEDULE(STATIC)
-            DO IC = 1, G%NC
-               FFT%PRHS(G%ICX(IC)+1, G%ICY(IC), G%ICZ(IC)) = V1(IC)
-            ENDDO
-            !$OMP END PARALLEL DO
-
-            IC0 = G%NC+1
-            DO IZ = 1, L%NZ
-               DO IY = 1, L%NY
-                  FFT%PRHS(1, IY, IZ) = V1(IC0)
-                  IC0 = IC0 + 1
+         F => L%FACE(1)
+         IF (F%N_NEIGHBORS /= 0) THEN
+            DO INBR = 1, F%N_NEIGHBORS
+               CALL SCARC_POINT_TO_NEIGHBOR(NM, F%NEIGHBORS(INBR), NL)
+               DO ICG = OL%NCG0(1), OL%NCG(1)
+                  ICE = OG%ICG_TO_ICE(ICG)
+                  ICW = OG%ICG_TO_ICW(ICG)
+                  FFT%PRHS(FFT%IBAR, G%ICY(ICW)+FFT%JP, G%ICZ(ICW)+FFT%KP) = V1(ICE)
                ENDDO
             ENDDO
+         ENDIF
 
-         ELSE 
-
-            !$OMP PARALLEL DO PRIVATE(IC) SCHEDULE(STATIC)
-            DO IC = 1, G%NC
-               FFT%PRHS(G%ICX(IC)+1, G%ICY(IC), G%ICZ(IC)) = V1(IC)
-            ENDDO
-            !$OMP END PARALLEL DO
-
-            IC0 = G%NC+1
-            DO IZ = 1, L%NZ
-               DO IY = 1, L%NY
-                  FFT%PRHS(1, IY, IZ) = V1(IC0)
-                  IC0 = IC0 + 1
+         F => L%FACE(-1)
+         IF (F%N_NEIGHBORS /= 0) THEN
+            DO INBR = 1, F%N_NEIGHBORS
+               CALL SCARC_POINT_TO_NEIGHBOR(NM, F%NEIGHBORS(INBR), NL)
+               DO ICG = OL%NCG0(-1), OL%NCG(-1)
+                  ICE = OG%ICG_TO_ICE(ICG)
+                  ICW = OG%ICG_TO_ICW(ICG)
+                  FFT%PRHS(1, G%ICY(ICW)+FFT%JP, G%ICZ(ICW)+FFT%KP) = V1(ICE)
                ENDDO
             ENDDO
-            DO IZ = 1, L%NZ
-               DO IY = 1, L%NY
-                  FFT%PRHS(FFT%IBAR, IY, IZ) = V1(IC0)
-                  IC0 = IC0 + 1
+         ENDIF
+
+         F => L%FACE(2)
+         IF (F%N_NEIGHBORS /= 0) THEN
+            DO INBR = 1, F%N_NEIGHBORS
+               CALL SCARC_POINT_TO_NEIGHBOR(NM, F%NEIGHBORS(INBR), NL)
+               DO ICG = OL%NCG0(2), OL%NCG(2)
+                  ICE = OG%ICG_TO_ICE(ICG)
+                  ICW = OG%ICG_TO_ICW(ICG)
+                  FFT%PRHS(G%ICX(ICW)+FFT%IP, FFT%JBAR, G%ICZ(ICW)+FFT%KP) = V1(ICE)
                ENDDO
             ENDDO
+         ENDIF
 
+         F => L%FACE(-2)
+         IF (F%N_NEIGHBORS /= 0) THEN
+            DO INBR = 1, F%N_NEIGHBORS
+               CALL SCARC_POINT_TO_NEIGHBOR(NM, F%NEIGHBORS(INBR), NL)
+               DO ICG = OL%NCG0(-2), OL%NCG(-2)
+                  ICE = OG%ICG_TO_ICE(ICG)
+                  ICW = OG%ICG_TO_ICW(ICG)
+                  FFT%PRHS(G%ICX(ICW)+FFT%IP, 1, G%ICZ(ICW)+FFT%KP) = V1(ICE)
+               ENDDO
+            ENDDO
+         ENDIF
+
+         F => L%FACE(3)
+         IF (F%N_NEIGHBORS /= 0) THEN
+            DO INBR = 1, F%N_NEIGHBORS
+               CALL SCARC_POINT_TO_NEIGHBOR(NM, F%NEIGHBORS(INBR), NL)
+               DO ICG = OL%NCG0(3), OL%NCG(3)
+                  ICE = OG%ICG_TO_ICE(ICG)
+                  ICW = OG%ICG_TO_ICW(ICG)
+                  FFT%PRHS(G%ICX(ICW)+FFT%IP, G%ICY(ICW)+FFT%JP, FFT%KBAR) = V1(ICE)
+               ENDDO
+            ENDDO
+         ENDIF
+
+         F => L%FACE(-3)
+         IF (F%N_NEIGHBORS /= 0) THEN
+            DO INBR = 1, F%N_NEIGHBORS
+               CALL SCARC_POINT_TO_NEIGHBOR(NM, F%NEIGHBORS(INBR), NL)
+               DO ICG = OL%NCG0(-3), OL%NCG(-3)
+                  ICE = OG%ICG_TO_ICE(ICG)
+                  ICW = OG%ICG_TO_ICW(ICG)
+                  FFT%PRHS(G%ICX(ICW)+FFT%IP, G%ICY(ICW)+FFT%JP, 1) = V1(ICE)
+               ENDDO
+            ENDDO
          ENDIF
 
          !> 
@@ -9356,59 +9421,84 @@ SELECT CASE (ITYPE)
          !> 
          !> Extract computed data from FFT%PRHS
          !> 
-         IF (NM == 1) THEN
-            !$OMP PARALLEL DO PRIVATE(IC) SCHEDULE(STATIC)
-            DO IC = 1, G%NC
-               V2(IC) = FFT%PRHS(G%ICX(IC), G%ICY(IC), G%ICZ(IC)) 
-            ENDDO
-            !$OMP END PARALLEL DO 
-
-            IC0 = G%NC+1
-            DO IZ = 1, L%NZ
-               DO IY = 1, L%NY
-                  V2(IC0) = FFT%PRHS(FFT%IBAR, IY, IZ) 
-                  IC0 = IC0 + 1
+         DO IZ = FFT%KP, FFT%KP + L%NZ - 1 
+            DO IY = FFT%JP, FFT%JP + L%NY - 1 
+               DO IX = FFT%IP, FFT%IP + L%NX - 1 
+                  V2(IC) = FFT%PRHS(IX, IY, IZ)
                ENDDO
             ENDDO
+         ENDDO
 
-         ELSE IF (NM == NMESHES) THEN
-
-            !$OMP PARALLEL DO PRIVATE(IC) SCHEDULE(STATIC)
-            DO IC = 1, G%NC
-               V2(IC) = FFT%PRHS(G%ICX(IC)+1, G%ICY(IC), G%ICZ(IC)) 
-            ENDDO
-            !$OMP END PARALLEL DO 
-
-            IC0 = G%NC+1
-            DO IZ = 1, L%NZ
-               DO IY = 1, L%NY
-                  V2(IC0) = FFT%PRHS(1, IY, IZ) 
-                  IC0 = IC0 + 1
+         F => L%FACE(1)
+         IF (F%N_NEIGHBORS /= 0) THEN
+            DO INBR = 1, F%N_NEIGHBORS
+               CALL SCARC_POINT_TO_NEIGHBOR(NM, F%NEIGHBORS(INBR), NL)
+               DO ICG = OL%NCG0(1), OL%NCG(1)
+                  ICE = OG%ICG_TO_ICE(ICG)
+                  ICW = OG%ICG_TO_ICW(ICG)
+                  V2(ICE) = FFT%PRHS(FFT%IBAR, G%ICY(ICW)+FFT%JP, G%ICZ(ICW)+FFT%KP) 
                ENDDO
             ENDDO
+         ENDIF
 
-         ELSE
-
-            !$OMP PARALLEL DO PRIVATE(IC) SCHEDULE(STATIC)
-            DO IC = 1, G%NC
-               V2(IC) = FFT%PRHS(G%ICX(IC)+1, G%ICY(IC), G%ICZ(IC)) 
-            ENDDO
-            !$OMP END PARALLEL DO 
-
-            IC0 = G%NC+1
-            DO IZ = 1, L%NZ
-               DO IY = 1, L%NY
-                  V2(IC0) = FFT%PRHS(1, IY, IZ) 
-                  IC0 = IC0 + 1
+         F => L%FACE(-1)
+         IF (F%N_NEIGHBORS /= 0) THEN
+            DO INBR = 1, F%N_NEIGHBORS
+               CALL SCARC_POINT_TO_NEIGHBOR(NM, F%NEIGHBORS(INBR), NL)
+               DO ICG = OL%NCG0(-1), OL%NCG(-1)
+                  ICE = OG%ICG_TO_ICE(ICG)
+                  ICW = OG%ICG_TO_ICW(ICG)
+                  V2(ICE) = FFT%PRHS(1, G%ICY(ICW)+FFT%JP, G%ICZ(ICW)+FFT%KP) 
                ENDDO
             ENDDO
-            DO IZ = 1, L%NZ
-               DO IY = 1, L%NY
-                  V2(IC0) = FFT%PRHS(FFT%IBAR, IY, IZ) 
-                  IC0 = IC0 + 1
+         ENDIF
+
+         F => L%FACE(2)
+         IF (F%N_NEIGHBORS /= 0) THEN
+            DO INBR = 1, F%N_NEIGHBORS
+               CALL SCARC_POINT_TO_NEIGHBOR(NM, F%NEIGHBORS(INBR), NL)
+               DO ICG = OL%NCG0(2), OL%NCG(2)
+                  ICE = OG%ICG_TO_ICE(ICG)
+                  ICW = OG%ICG_TO_ICW(ICG)
+                  V2(ICE) = FFT%PRHS(G%ICX(ICW)+FFT%IP, FFT%JBAR, G%ICZ(ICW)+FFT%KP) 
                ENDDO
             ENDDO
+         ENDIF
 
+         F => L%FACE(-2)
+         IF (F%N_NEIGHBORS /= 0) THEN
+            DO INBR = 1, F%N_NEIGHBORS
+               CALL SCARC_POINT_TO_NEIGHBOR(NM, F%NEIGHBORS(INBR), NL)
+               DO ICG = OL%NCG0(-2), OL%NCG(-2)
+                  ICE = OG%ICG_TO_ICE(ICG)
+                  ICW = OG%ICG_TO_ICW(ICG)
+                  V2(ICE) = FFT%PRHS(G%ICX(ICW)+FFT%IP, 1, G%ICZ(ICW)+FFT%KP) 
+               ENDDO
+            ENDDO
+         ENDIF
+
+         F => L%FACE(3)
+         IF (F%N_NEIGHBORS /= 0) THEN
+            DO INBR = 1, F%N_NEIGHBORS
+               CALL SCARC_POINT_TO_NEIGHBOR(NM, F%NEIGHBORS(INBR), NL)
+               DO ICG = OL%NCG0(3), OL%NCG(3)
+                  ICE = OG%ICG_TO_ICE(ICG)
+                  ICW = OG%ICG_TO_ICW(ICG)
+                  V2(ICE) = FFT%PRHS(G%ICX(ICW)+FFT%IP, G%ICY(ICW)+FFT%JP, FFT%KBAR)
+               ENDDO
+            ENDDO
+         ENDIF
+
+         F => L%FACE(-3)
+         IF (F%N_NEIGHBORS /= 0) THEN
+            DO INBR = 1, F%N_NEIGHBORS
+               CALL SCARC_POINT_TO_NEIGHBOR(NM, F%NEIGHBORS(INBR), NL)
+               DO ICG = OL%NCG0(-3), OL%NCG(-3)
+                  ICE = OG%ICG_TO_ICE(ICG)
+                  ICW = OG%ICG_TO_ICW(ICG)
+                  V2(ICE) = FFT%PRHS(G%ICX(ICW)+FFT%IP, G%ICY(ICW)+FFT%JP, 1)
+               ENDDO
+            ENDDO
          ENDIF
 
       ENDDO
@@ -10452,6 +10542,15 @@ SELECT_SOLVER_TYPE: SELECT CASE (SV%TYPE_SOLVER)
             !> Solve original problem with inhomegeneous boundary conditions
             CASE (NSCARC_RHS_INHOMOGENEOUS)
       
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'G%NC:', G%NC
+WRITE(MSG%LU_DEBUG,*) 'ICX:'
+WRITE(MSG%LU_DEBUG,'(16i4)') G%ICX
+WRITE(MSG%LU_DEBUG,*) 'ICY:'
+WRITE(MSG%LU_DEBUG,'(16i4)') G%ICY
+WRITE(MSG%LU_DEBUG,*) 'ICZ:'
+WRITE(MSG%LU_DEBUG,'(16i4)') G%ICZ
+#endif
                !$OMP PARALLEL DO PRIVATE(IC) SCHEDULE(STATIC)
                DO IC = 1, G%NC
                   ST%X(IC) = HP(G%ICX(IC), G%ICY(IC), G%ICZ(IC))        !> use last iterate as initial solution
@@ -13181,8 +13280,8 @@ END SUBROUTINE SCARC_MGM_INTERNAL_VELOCITY
 SUBROUTINE SCARC_SETUP_MGM(NLMIN, NLMAX)
 USE SCARC_POINTERS, ONLY: L, G, MGM, AC
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
-INTEGER :: NM, NL, IC, IW, IP
-LOGICAL, DIMENSION(:), ALLOCATABLE :: IS_PROCESSED
+INTEGER :: NM, NL !, IC, IW, IP
+!LOGICAL, DIMENSION(:), ALLOCATABLE :: IS_PROCESSED
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    DO NL = NLMIN, NLMAX
@@ -13190,6 +13289,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       L => SCARC(NM)%LEVEL(NL)
       G => L%UNSTRUCTURED
       MGM => L%MGM
+      AC => G%AC
 
       MGM%NWE = L%N_WALL_CELLS_EXT
       MGM%NWI = L%N_WALL_CELLS_INT
@@ -13197,53 +13297,52 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       MGM%NW1 = L%N_WALL_CELLS_EXT + 1
       MGM%NW2 = L%N_WALL_CELLS_EXT + L%N_WALL_CELLS_INT
 
-      CALL SCARC_ALLOCATE_REAL1(MGM%H1, 1, G%NC, NSCARC_INIT_ZERO, 'H1')
-      CALL SCARC_ALLOCATE_REAL1(MGM%H2, 1, G%NC, NSCARC_INIT_ZERO, 'H2')
+      CALL SCARC_ALLOCATE_REAL1(MGM%H1, 1, G%NCE, NSCARC_INIT_ZERO, 'H1')
+      CALL SCARC_ALLOCATE_REAL1(MGM%H2, 1, G%NCE, NSCARC_INIT_ZERO, 'H2')
 
       CALL SCARC_ALLOCATE_REAL1(MGM%US, MGM%NW1, MGM%NW2, NSCARC_INIT_ZERO, 'UMGM')
       CALL SCARC_ALLOCATE_REAL1(MGM%VS, MGM%NW1, MGM%NW2, NSCARC_INIT_ZERO, 'VMGM')
       CALL SCARC_ALLOCATE_REAL1(MGM%WS, MGM%NW1, MGM%NW2, NSCARC_INIT_ZERO, 'WMGM')
 
-      CALL SCARC_ALLOCATE_INT1 (MGM%PERM , 1, G%NC, NSCARC_INIT_ZERO, 'PERMUTATION')
+      !CALL SCARC_ALLOCATE_INT1 (MGM%PERM , 1, G%NC, NSCARC_INIT_ZERO, 'PERMUTATION')
 
-      CALL SCARC_ALLOCATE_REAL2(MGM%A , 1, G%NC, 1, G%NC, NSCARC_INIT_ZERO, 'A')
-      CALL SCARC_ALLOCATE_REAL2(MGM%L , 1, G%NC, 1, G%NC, NSCARC_INIT_ZERO, 'L')
-      CALL SCARC_ALLOCATE_REAL2(MGM%U , 1, G%NC, 1, G%NC, NSCARC_INIT_ZERO, 'U')
+      !CALL SCARC_ALLOCATE_REAL2(MGM%A , 1, G%NC, 1, G%NC, NSCARC_INIT_ZERO, 'A')
+      !CALL SCARC_ALLOCATE_REAL2(MGM%L , 1, G%NC, 1, G%NC, NSCARC_INIT_ZERO, 'L')
+      !CALL SCARC_ALLOCATE_REAL2(MGM%U , 1, G%NC, 1, G%NC, NSCARC_INIT_ZERO, 'U')
 
-      CALL SCARC_ALLOCATE_REAL2(MGM%IA, 1, G%NC, 1, G%NC, NSCARC_INIT_ZERO, 'IA')
-      CALL SCARC_ALLOCATE_REAL2(MGM%IL, 1, G%NC, 1, G%NC, NSCARC_INIT_ZERO, 'IL')
-      CALL SCARC_ALLOCATE_REAL2(MGM%IU, 1, G%NC, 1, G%NC, NSCARC_INIT_ZERO, 'IU')
+      !CALL SCARC_ALLOCATE_REAL2(MGM%IA, 1, G%NC, 1, G%NC, NSCARC_INIT_ZERO, 'IA')
+      !CALL SCARC_ALLOCATE_REAL2(MGM%IL, 1, G%NC, 1, G%NC, NSCARC_INIT_ZERO, 'IL')
+      !CALL SCARC_ALLOCATE_REAL2(MGM%IU, 1, G%NC, 1, G%NC, NSCARC_INIT_ZERO, 'IU')
 
-      CALL SCARC_ALLOCATE_REAL1(MGM%B, 1, G%NC, NSCARC_INIT_ZERO, 'B')
-      CALL SCARC_ALLOCATE_REAL1(MGM%Y, 1, G%NC, NSCARC_INIT_ZERO, 'Y')
-      CALL SCARC_ALLOCATE_REAL1(MGM%X, 1, G%NC, NSCARC_INIT_ZERO, 'X')
+      !CALL SCARC_ALLOCATE_REAL1(MGM%B, 1, G%NC, NSCARC_INIT_ZERO, 'B')
+      !CALL SCARC_ALLOCATE_REAL1(MGM%Y, 1, G%NC, NSCARC_INIT_ZERO, 'Y')
+      !CALL SCARC_ALLOCATE_REAL1(MGM%X, 1, G%NC, NSCARC_INIT_ZERO, 'X')
 
-      CALL SCARC_ALLOCATE_LOG1(IS_PROCESSED, 1, G%NC, NSCARC_INIT_FALSE, 'IS_PROCESSED')
-      AC => G%AC
+      !CALL SCARC_ALLOCATE_LOG1(IS_PROCESSED, 1, G%NC, NSCARC_INIT_FALSE, 'IS_PROCESSED')
 
-      IP = G%NC - MGM%NWI + 1
-      DO IW = MGM%NW1, MGM%NW2
-         IC = G%WALL(IW)%ICW
-         IS_PROCESSED(IC) = .TRUE.
-         MGM%PERM(IP) = IC
-         IP = IP + 1
-      ENDDO
+      !IP = G%NC - MGM%NWI + 1
+      !DO IW = MGM%NW1, MGM%NW2
+      !   IC = G%WALL(IW)%ICW
+      !   IS_PROCESSED(IC) = .TRUE.
+      !   MGM%PERM(IP) = IC
+      !   IP = IP + 1
+      !ENDDO
 
-      IP = 1
-      DO IC = 1, G%NC
-         IF (IS_PROCESSED(IC)) CYCLE
-         IS_PROCESSED(IC) = .TRUE.
-         MGM%PERM(IP) = IC
-         IP = IP + 1
-      ENDDO
+      !IP = 1
+      !DO IC = 1, G%NC
+      !   IF (IS_PROCESSED(IC)) CYCLE
+      !   IS_PROCESSED(IC) = .TRUE.
+      !   MGM%PERM(IP) = IC
+      !   IP = IP + 1
+      !ENDDO
 
-      DEALLOCATE (IS_PROCESSED)
+      !DEALLOCATE (IS_PROCESSED)
 
-      CALL SCARC_SETUP_MGM_LU(NM, NL)
-      CALL SCARC_METHOD_MGM_LU(NM, NL)
+      !CALL SCARC_SETUP_MGM_LU(NM, NL)
+      !CALL SCARC_METHOD_MGM_LU(NM, NL)
 
-      CALL SCARC_SETUP_MGM_ILU(NM, NL)
-      CALL SCARC_METHOD_MGM_ILU(NM, NL)
+      !CALL SCARC_SETUP_MGM_ILU(NM, NL)
+      !CALL SCARC_METHOD_MGM_ILU(NM, NL)
 
    ENDDO
 ENDDO
