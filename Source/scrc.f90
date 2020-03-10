@@ -9695,6 +9695,10 @@ NS  = NSTACK
 NP  = NPARENT
 NL  = NLEVEL
 
+#ifdef WITH_SCARC_STANDALONE
+IF (ITE_PRES == 1) CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_AB)
+#endif
+
 !> ------------------------------------------------------------------------------------------------
 !> Initialization:
 !>   - Get parameters for current scope (note: NL denotes the finest level)
@@ -9709,6 +9713,18 @@ IF (N_DIRIC_GLOBAL(NLEVEL_MIN) == 0) THEN
    CALL SCARC_FILTER_MEANVALUE(B, NL)                       
    CALL SCARC_SETUP_SYSTEM_CONDENSED (B, NL, 1)            
 ENDIF
+
+#ifdef WITH_SCARC_STANDALONE
+IF (ITE_PRES > 2) THEN
+   CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_B_OLD)
+   CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_B_NEW)
+   IF (PREDICTOR) THEN
+      CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_H_OLD)
+   ELSE
+      CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_HS_OLD)
+   ENDIF
+ENDIF
+#endif
 
 !> Compute initial residual 
 TYPE_MATVEC = NSCARC_MATVEC_GLOBAL
@@ -9778,6 +9794,11 @@ IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) THEN
    CALL SCARC_UPDATE_GHOSTCELLS(NLEVEL_MIN)
 #ifdef WITH_SCARC_STANDALONE
    CALL SCARC_PRESSURE_DIFFERENCE(NLEVEL_MIN)
+   IF (ITE_PRES > 2) THEN
+      CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_H_NEW)
+   ELSE
+      CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_HS_NEW)
+   ENDIF
 #endif
 ENDIF
 
@@ -10420,7 +10441,7 @@ SELECT_SOLVER_TYPE: SELECT CASE (SV%TYPE_SOLVER)
          IF (PREDICTOR) THEN
             P%H_OLD = P%H_NEW
          ELSE
-            P%H_OLD = P%HS_NEW
+            P%HS_OLD = P%HS_NEW
          ENDIF
          P%B_OLD = ST%B
 #endif
