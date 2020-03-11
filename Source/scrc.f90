@@ -9,8 +9,8 @@
 !#undef WITH_MKL
 #undef WITH_SCARC_VERBOSE
 #undef WITH_SCARC_DEBUG
+#define WITH_SCARC_STANDALONE
 #undef WITH_SCARC_MGM
-#undef WITH_SCARC_STANDALONE
 
 
 !> ================================================================================================================
@@ -68,13 +68,9 @@ INTEGER, PARAMETER :: NSCARC_DEBUG_BDRY              =  1, &    !> show pressure
                       NSCARC_DEBUG_WALL              =  8       !> show wall information
 
 #ifdef WITH_SCARC_STANDALONE
-INTEGER, PARAMETER :: NSCARC_DUMP_AB                 =  1, &    !> dump banded AB for a convolutional neural network
-                      NSCARC_DUMP_B_NEW              =  2, &    !> dump new B  ...
-                      NSCARC_DUMP_B_OLD              =  3, &    !> dump old B  ...
-                      NSCARC_DUMP_H_NEW              =  4, &    !> dump new H  ...
-                      NSCARC_DUMP_H_OLD              =  5, &    !> dump old H  ...
-                      NSCARC_DUMP_HS_NEW             =  6, &    !> dump new HS  ...
-                      NSCARC_DUMP_HS_OLD             =  7       !> dump old HS ...
+INTEGER, PARAMETER :: NSCARC_DUMP_A                  =  1, &    !> dump matrix A
+                      NSCARC_DUMP_B                  =  2, &    !> dump right hand side B
+                      NSCARC_DUMP_X                  =  3       !> dump solution X
 #endif
 
 INTEGER, PARAMETER :: NSCARC_ERROR_AMG_DISABLED      =  1, &    !> AMG-method is currently missing
@@ -367,7 +363,7 @@ LOGICAL :: SCARC_ERROR_FILE = .FALSE.                       !> Print ScaRC stati
 INTEGER :: IERROR = 0                                       !> general error flag - used at different positions
 
 #ifdef WITH_SCARC_STANDALONE
-LOGICAL :: SCARC_DUMP = .FALSE.                             !> Dump out several arrays for standalone use of ScaRC
+LOGICAL :: SCARC_DUMP = .TRUE.                             !> Dump out several arrays for standalone use of ScaRC
 #endif
 
 !> 
@@ -9696,7 +9692,7 @@ NP  = NPARENT
 NL  = NLEVEL
 
 #ifdef WITH_SCARC_STANDALONE
-IF (ITE_PRES == 1) CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_AB)
+IF (ICYC == 1) CALL SCARC_DUMP_SYSTEM(NS, NSCARC_DUMP_A)
 #endif
 
 !> ------------------------------------------------------------------------------------------------
@@ -9715,15 +9711,7 @@ IF (N_DIRIC_GLOBAL(NLEVEL_MIN) == 0) THEN
 ENDIF
 
 #ifdef WITH_SCARC_STANDALONE
-IF (ITE_PRES > 2) THEN
-   CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_B_OLD)
-   CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_B_NEW)
-   IF (PREDICTOR) THEN
-      CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_H_OLD)
-   ELSE
-      CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_HS_OLD)
-   ENDIF
-ENDIF
+CALL SCARC_DUMP_SYSTEM(NS, NSCARC_DUMP_B)
 #endif
 
 !> Compute initial residual 
@@ -9794,11 +9782,7 @@ IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) THEN
    CALL SCARC_UPDATE_GHOSTCELLS(NLEVEL_MIN)
 #ifdef WITH_SCARC_STANDALONE
    CALL SCARC_PRESSURE_DIFFERENCE(NLEVEL_MIN)
-   IF (ITE_PRES > 2) THEN
-      CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_H_NEW)
-   ELSE
-      CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_HS_NEW)
-   ENDIF
+   CALL SCARC_DUMP_SYSTEM(NS, NSCARC_DUMP_X)
 #endif
 ENDIF
 
@@ -14488,106 +14472,164 @@ END SUBROUTINE SCARC_MATLAB_MATRIX
 !> ------------------------------------------------------------------------------------------------
 !> Dump matrix and vectors belonging to pressure system 
 !> ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DUMP_SYSTEM (ITYPE)
-USE SCARC_POINTERS, ONLY: G, P, AB
-INTEGER, INTENT(IN) :: ITYPE
-INTEGER :: NM, IC, ID, IX, IY, IZ
+SUBROUTINE SCARC_DUMP_SYSTEM (NSTACK, ITYPE)
+USE SCARC_POINTERS, ONLY: SV, ST, G, AB !, P
+INTEGER, INTENT(IN) :: NSTACK, ITYPE
+INTEGER  :: NM, IC, JC, ID, IP, IW, IOR0, N
+INTEGER  :: COLUMNS(7) 
+REAL(EB) :: STENCIL(7), VAL
 
-!IF (MOD(ITE_TOTAL,10) /= 0) RETURN
+SV  => STACK(NSTACK)%SOLVER
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
+   ST => SCARC(NM)%LEVEL(NLEVEL_MIN)%STAGE(SV%TYPE_STAGE)
    CALL SCARC_POINT_TO_GRID(NM, NLEVEL_MIN)
 
    SELECT CASE(ITYPE)
 
-      CASE(NSCARC_DUMP_AB)            ! print out banded matrix
+      CASE(NSCARC_DUMP_A)          
 
-         AB => G%AB
-         MSG%LU_CNN = GET_FILE_NUMBER()
-         WRITE (MSG%FILE_CNN, '(A,I5.5)') 'cnn/A_t',ITE_GLOBAL
-         OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN)
-         DO ID = 1, AB%N_STENCIL
-            DO IC = 1, AB%N_DIAG
-               WRITE(MSG%LU_CNN,*) AB%VAL(IC, ID)
+         IF (TYPE_MATRIX == NSCARC_MATRIX_COMPACT) THEN
+
+            AC => G%AC
+            MSG%LU_CNN = GET_FILE_NUMBER()
+            WRITE (MSG%FILE_CNN, '(A,I3.3,A,I5.5)') 'cnn/AC/m',NM,'_t',ITE_GLOBAL
+            OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN, FORM = 'UNFORMATTED')
+            DO IC = 1, AC%N_ROW - 1
+               COLUMNS = -99
+               STENCIL = -987654321.123456789E+0_EB
+               STENCIL = 0.0_EB
+               DO IP = AC%ROW(IC), AC%ROW(IC+1)-1
+                  JC  = AC%COL(IP)
+                  VAL = AC%VAL(IP)
+                  N = -1
+                  IW = -1
+                  IOR0 = 0
+                  IF (TWO_D) THEN
+                     IF (IC - JC > 1 .AND. JC <= G%NC)  THEN
+                        N = 1
+                     ELSE IF (IC - JC == 1)  THEN
+                        N = 2
+                     ELSE IF (IC - JC == 0)  THEN
+                        N = 3
+                     ELSE IF (IC - JC == -1)  THEN
+                        N = 4
+                     ELSE IF ( JC <= G%NC .AND. IC - JC < -1)  THEN
+                        N = 5
+                     ELSE IF (JC > G%NC) THEN
+                        IW = G%ICE_TO_IWG(JC)
+                        IOR0 = G%WALL(IW)%IOR
+                        SELECT CASE (IOR0)
+                           CASE (-3)
+                              N = 5
+                           CASE (-1)
+                              N = 4
+                           CASE ( 1)
+                              N = 2
+                           CASE ( 3)
+                              N = 1
+                        END SELECT
+                     ENDIF
+                  ELSE
+                     IF (IC - JC == 0)  THEN
+                        N = 4
+                     ELSE IF (IC - JC == 1)  THEN
+                        N = 3
+                     ELSE IF (IC - JC == -1)  THEN
+                        N = 5
+                     ELSE IF (1 < IC - JC .AND. IC - JC <= L%NX)  THEN
+                        N = 2
+                     ELSE IF (-L%NX <= IC - JC  .AND. IC - JC < -1 )  THEN
+                        N = 6
+                     ELSE IF (L%NX < IC - JC .AND. JC <= G%NC)  THEN
+                        N = 1
+                     ELSE IF (JC <= G%NC .AND. IC - JC <= -L%NX)  THEN
+                        N = 7
+                     ELSE IF (JC > G%NC) THEN
+                        IW = G%ICE_TO_IWG(JC)
+                        IOR0 = G%WALL(IW)%IOR
+                        SELECT CASE (IOR0)
+                           CASE (-3)
+                              N = 7
+                           CASE (-2)
+                              N = 6
+                           CASE (-1)
+                              N = 5
+                           CASE ( 1)
+                              N = 3
+                           CASE ( 2)
+                              N = 2
+                           CASE ( 3)
+                              N = 1
+                        END SELECT
+                     ENDIF
+                  ENDIF
+                  IF (N > 0) THEN
+                     COLUMNS(N) = JC
+                     STENCIL(N) = VAL
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'IP, IC, JC, IW, IOR0, VAL, N:', IP, IC, JC, IW, IOR0, VAL, N
+#endif
+                  ENDIF
+               ENDDO
+               IF (TWO_D) THEN
+                  WRITE(MSG%LU_CNN) STENCIL(1:5)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,5I4,5E12.4)') 'COLUMNS, STENCIL:', COLUMNS(1:5), STENCIL(1:5)
+#endif
+               ELSE
+                  WRITE(MSG%LU_CNN) STENCIL(1:7)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,7I4,7E12.4)') 'COLUMNS, STENCIL:', COLUMNS(1:7), STENCIL(1:7)
+#endif
+               ENDIF
             ENDDO
-         ENDDO
-         CLOSE(MSG%LU_CNN)
+            CLOSE(MSG%LU_CNN)
 
-      CASE(NSCARC_DUMP_B_OLD)
+         ELSE
+
+            AB => G%AB
+            MSG%LU_CNN = GET_FILE_NUMBER()
+            WRITE (MSG%FILE_CNN, '(A,I3.3,A,I5.5)') 'cnn/AB/m',NM,'_t',ITE_GLOBAL
+            OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN)
+            DO ID = 1, AB%N_STENCIL
+               DO IC = 1, AB%N_DIAG
+                  WRITE(MSG%LU_CNN) AB%VAL(IC, ID)
+               ENDDO
+            ENDDO
+            CLOSE(MSG%LU_CNN)
+ 
+         ENDIF
+
+      CASE(NSCARC_DUMP_B)
 
          MSG%LU_CNN = GET_FILE_NUMBER()
-         WRITE (MSG%FILE_CNN, '(A,I5.5)') 'cnn/b_old_t',ITE_GLOBAL
-         OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN)
+         WRITE (MSG%FILE_CNN, '(A,I3.3,A,I5.5)') 'cnn/B/m',NM,'_t',ITE_GLOBAL
+         OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN, FORM = 'UNFORMATTED')
          DO IC = 1, G%NC
-            WRITE(MSG%LU_CNN,*) P%B_OLD(IC)
+            !WRITE(MSG%LU_CNN,*) P%B_NEW(IC)
+            WRITE(MSG%LU_CNN) ST%B(IC)
          ENDDO
          CLOSE(MSG%LU_CNN)
 
-      CASE(NSCARC_DUMP_B_NEW)
+      CASE(NSCARC_DUMP_X)
 
          MSG%LU_CNN = GET_FILE_NUMBER()
-         WRITE (MSG%FILE_CNN, '(A,I5.5)') 'cnn/b_new_t',ITE_GLOBAL
-         OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN)
+         WRITE (MSG%FILE_CNN, '(A,I3.3,A,I5.5)') 'cnn/X/m',NM,'_t',ITE_GLOBAL
+         OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN, FORM = 'UNFORMATTED')
          DO IC = 1, G%NC
-            WRITE(MSG%LU_CNN,*) P%B_NEW(IC)
+            WRITE(MSG%LU_CNN) ST%X(IC)
          ENDDO
-         CLOSE(MSG%LU_CNN)
-
-      CASE(NSCARC_DUMP_H_OLD)
-
-         MSG%LU_CNN = GET_FILE_NUMBER()
-         WRITE (MSG%FILE_CNN, '(A,I5.5)') 'cnn/h_old_t',ITE_GLOBAL
-         OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN)
-         DO IZ = 1, L%NZ
-            DO IY = 1, L%NY
-               DO IX = 1, L%NX
-                  WRITE(MSG%LU_CNN,*) P%H_OLD(IX, IY, IZ)
-               ENDDO
-            ENDDO
-         ENDDO
-         CLOSE(MSG%LU_CNN)
-
-      CASE(NSCARC_DUMP_H_NEW)
-
-         MSG%LU_CNN = GET_FILE_NUMBER()
-         WRITE (MSG%FILE_CNN, '(A,I5.5)') 'cnn/h_new_t',ITE_GLOBAL
-         OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN)
-         DO IZ = 1, L%NZ
-            DO IY = 1, L%NY
-               DO IX = 1, L%NX
-                  WRITE(MSG%LU_CNN,*) P%H_NEW(IX, IY, IZ)
-               ENDDO
-            ENDDO
-         ENDDO
-         CLOSE(MSG%LU_CNN)
-
-      CASE(NSCARC_DUMP_HS_OLD)
-
-         MSG%LU_CNN = GET_FILE_NUMBER()
-         WRITE (MSG%FILE_CNN, '(A,I5.5)') 'cnn/hs_old_t',ITE_GLOBAL
-         OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN)
-         DO IZ = 1, L%NZ
-            DO IY = 1, L%NY
-               DO IX = 1, L%NX
-                  WRITE(MSG%LU_CNN,*) P%HS_OLD(IX, IY, IZ)
-               ENDDO
-            ENDDO
-         ENDDO
-         CLOSE(MSG%LU_CNN)
-
-      CASE(NSCARC_DUMP_HS_NEW)
-
-         MSG%LU_CNN = GET_FILE_NUMBER()
-         WRITE (MSG%FILE_CNN, '(A,I5.5)') 'cnn/hs_new_t',ITE_GLOBAL
-         OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN)
-         DO IZ = 1, L%NZ
-            DO IY = 1, L%NY
-               DO IX = 1, L%NX
-                  WRITE(MSG%LU_CNN,*) P%HS_NEW(IX, IY, IZ)
-               ENDDO
-            ENDDO
-         ENDDO
+         !IF (PREDICTOR) THEN
+         !   DO IC = 1, G%NC
+         !      WRITE(MSG%LU_CNN,*) P%H_NEW(IC)
+         !   ENDDO
+         !ELSE
+         !   DO IC = 1, G%NC
+         !      WRITE(MSG%LU_CNN,*) P%HS_NEW(IC)
+         !   ENDDO
+         !ENDIF
          CLOSE(MSG%LU_CNN)
 
    END SELECT
@@ -15224,7 +15266,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 ENDDO
 
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'Differences of pressure vectors on mesh ', NM,' : ', P%DIFF_H, P%DIFF_HS
 #endif
 
