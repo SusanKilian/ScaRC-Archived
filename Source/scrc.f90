@@ -258,7 +258,8 @@ INTEGER, PARAMETER :: NSCARC_TWOLEVEL_NONE           =  0, &    !> no two levels
                       NSCARC_TWOLEVEL_ADD            =  1, &    !> additive 2-level method
                       NSCARC_TWOLEVEL_MUL            =  2, &    !> multiplicative 2-level method
                       NSCARC_TWOLEVEL_MUL2           =  3, &    !> multiplicative 2-level method
-                      NSCARC_TWOLEVEL_COARSE         =  4       !> only coarse grid
+                      NSCARC_TWOLEVEL_COARSE         =  4, &    !> only coarse grid
+                      NSCARC_TWOLEVEL_MACRO          =  5       !> 2. level is macro solver 
 
 INTEGER, PARAMETER :: NSCARC_VECTOR_ONE_X            =  1, &    !> selection parameter for 1-stage vector X
                       NSCARC_VECTOR_ONE_B            =  2, &    !>       ...                              F
@@ -399,8 +400,10 @@ LOGICAL :: IS_CG_GMG          = .FALSE.                     !> is Krylov-method 
 LOGICAL :: IS_CG_ADD          = .FALSE.                     !> is additive twolevel-Krylov-method?
 LOGICAL :: IS_CG_MUL          = .FALSE.                     !> is multiplicative Twolevel-Krylov-method ?
 LOGICAL :: IS_CG_COARSE       = .FALSE.                     !> is only coarse grid preconditiner?
+LOGICAL :: IS_CG_MACRO        = .FALSE.                     !> is macro coarse grid solver
 LOGICAL :: IS_MG              = .FALSE.                     !> is Multigrid-method?
 LOGICAL :: IS_GMG             = .FALSE.                     !> is Geometric Multigrid-method?
+LOGICAL :: IS_AMG             = .FALSE.                     !> is Algebraic Multigrid-method?
 LOGICAL :: IS_FFT             = .FALSE.                     !> is FFT-method?
 LOGICAL :: IS_FFTO            = .FALSE.                     !> is FFTO-method?
 LOGICAL :: IS_MGM             = .FALSE.                     !> is McKeeney-Greengard-Mayo method?
@@ -1828,13 +1831,15 @@ IS_CG_GMG = IS_CG .AND. TYPE_PRECON == NSCARC_RELAX_GMG .AND. TYPE_MULTIGRID == 
 
 IS_MG  = TYPE_METHOD == NSCARC_METHOD_MULTIGRID
 IS_GMG = IS_MG .AND. TYPE_MULTIGRID == NSCARC_MULTIGRID_GEOMETRIC
+IS_AMG = IS_MG .AND. TYPE_MULTIGRID == NSCARC_MULTIGRID_ALGEBRAIC
+
+HAS_TWO_LEVELS   = IS_CG .AND. TYPE_PRECON /= NSCARC_RELAX_GMG .AND. TYPE_TWOLEVEL > NSCARC_TWOLEVEL_NONE
+HAS_MULTI_LEVELS = IS_MG .OR. IS_CG_GMG .OR. HAS_TWO_LEVELS 
 
 IS_CG_ADD    = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_ADD
 IS_CG_MUL    = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MUL
 IS_CG_COARSE = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_COARSE
-
-HAS_TWO_LEVELS   = IS_CG .AND. TYPE_PRECON /= NSCARC_RELAX_GMG .AND. TYPE_TWOLEVEL > NSCARC_TWOLEVEL_NONE
-HAS_MULTI_LEVELS = IS_GMG .OR. IS_CG_GMG .OR. HAS_TWO_LEVELS
+IS_CG_MACRO  = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MACRO
 
 IS_FFT =  TYPE_PRECON == NSCARC_RELAX_FFT  .OR.  TYPE_SMOOTH == NSCARC_RELAX_FFT
 IS_FFTO=  TYPE_PRECON == NSCARC_RELAX_FFTO .OR.  TYPE_SMOOTH == NSCARC_RELAX_FFTO
@@ -2028,7 +2033,7 @@ SELECT_LEVEL_TYPE: SELECT CASE (NTYPE)
       ENDDO
    
       NLEVEL_MIN  = 1
-      IF (IS_GMG.OR.IS_CG_GMG) THEN
+      IF (IS_GMG.OR.IS_CG_GMG.OR.IS_AMG) THEN
 
          IF (SCARC_MULTIGRID_LEVEL /= -1) THEN
             NLEVEL_MAX  = NLEVEL_MIN + SCARC_MULTIGRID_LEVEL - 1
@@ -13225,28 +13230,6 @@ SELECT CASE (NTYPE)
             ENDDO
          ENDDO RS3_MEASURE_LOOP
 
-      
-         !> set measures on boundary layer to zero and decrease probability of a neighboring cell to be a coarse cell
-         RS3_MEASURE_BDRY_LOOP: DO IW = 1, G%NW
-            GWC => G%WALL(IW)
-
-            IF (GWC%NOM == 0) CYCLE RS3_MEASURE_BDRY_LOOP
-            IC = GWC%ICW
-            !IF (MG%CELLTYPE(IC) == NSCARC_CELLTYPE_COARSE) THEN
-            IF (MG%CELLTYPE(IC) == -999) THEN
-               DO ICOL = AC%ROW(IC)+1, AC%ROW(IC+1)-1
-                  JC = AC%COL(ICOL)
-                  IF (JC<=G%NC.AND.STRONGLY_COUPLED(AC, IC, ICOL)) THEN
-WRITE(*,*) 'CAUTION: NOT DEFINED: INTERNAL_BDRY_CELL:'
-!                     IF (G%INTERNAL_BDRY_CELL(JC)/=0) THEN
-                        MG%MEASURE(JC) = MG%MEASURE(JC) - 1.0_EB
-                        WRITE(MSG%LU_DEBUG,*) 'DECREASING MG%MEASURE(',JC,')=',MG%MEASURE(JC)
-!                     ENDIF
-                  ENDIF
-               ENDDO
-            ENDIF
-            MG%MEASURE(IC) = NSCARC_MEASURE_NONE
-         ENDDO RS3_MEASURE_BDRY_LOOP
 CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_MEASURE, NL, 'SETUP_MEASURES1')
       ENDDO RS3_LOOP
 
@@ -15524,7 +15507,7 @@ SUBROUTINE SCARC_DEBUG_LEVEL (NV, CVEC, NL)
 USE SCARC_POINTERS, ONLY: L, G, VC
 INTEGER, INTENT(IN) :: NV, NL
 REAL (EB) :: VALUES(0:100)
-INTEGER :: NM, II, JJ, KK, IC, NX8, NY8, NZ8
+INTEGER :: NM, II, JJ, KK, IC, NNX, NNY, NNZ
 CHARACTER (*), INTENT(IN) :: CVEC
 
 !IF (TYPE_SOLVER /= NSCARC_SOLVER_MAIN) RETURN
@@ -15533,18 +15516,18 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_POINT_TO_GRID(NM, NL)
    VC => SCARC_POINT_TO_VECTOR (NM, NL, NV)
 
-   NX8=MIN(10,L%NX)
-   NY8=MIN(10,L%NY)
-   NZ8=MIN(8,L%NZ)
+   NNX=MIN(10,L%NX)
+   NNY=MIN(10,L%NY)
+   NNZ=MIN(10,L%NZ)
 
    WRITE(MSG%LU_DEBUG,*) '=========================================================='
    WRITE(MSG%LU_DEBUG,2001) CVEC, NM, NL
-   WRITE(MSG%LU_DEBUG,2002) G%NC, NX8, NY8, NZ8, NV, SIZE(VC)
+   WRITE(MSG%LU_DEBUG,2002) G%NC, NNX, NNY, NNZ, NV, SIZE(VC)
    WRITE(MSG%LU_DEBUG,*) '=========================================================='
    !IF (NL == NLEVEL_MIN) THEN
-   DO KK = NZ8, 1, - 1
-      DO JJ = NY8, 1, - 1
-         DO II=1,NX8
+   DO KK = NNZ, 1, - 1
+      DO JJ = NNY, 1, - 1
+         DO II=1, NNX
             IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(II,JJ,KK)) THEN
                VALUES(II)=-999999.0_EB
             ELSE
@@ -15556,9 +15539,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                ENDIF
             ENDIF
          ENDDO
-         !WRITE(MSG%LU_DEBUG, '(5E23.14)') (VALUES(II), II=4, NX8)
-         WRITE(MSG%LU_DEBUG, '(12E14.6)') (VALUES(II), II=1, NX8)
-         !WRITE(MSG%LU_DEBUG, '(12E11.3)') (VALUES(II), II=1, NX8)
+         !WRITE(MSG%LU_DEBUG, '(5E23.14)') (VALUES(II), II=4, NNX)
+         WRITE(MSG%LU_DEBUG, '(12E14.6)') (VALUES(II), II=1, NNX)
+         !WRITE(MSG%LU_DEBUG, '(12E11.3)') (VALUES(II), II=1, NNX
       ENDDO
       IF (.NOT. TWO_D) WRITE(MSG%LU_DEBUG, *) '----------------'
    ENDDO
@@ -15605,13 +15588,13 @@ END SUBROUTINE SCARC_DEBUG_LEVEL2
 !> Debug specified quantity
 !> ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_QUANTITY(NTYPE, NL, CQUANTITY)
+USE SCARC_POINTERS, ONLY: M, L, OL, G, OG, SV, AB, AC, MG
 #ifdef WITH_MKL
-USE SCARC_POINTERS, ONLY: M, L, OL, G, OG, SV, AB, AC, ACS
-#else
-USE SCARC_POINTERS, ONLY: M, L, OL, G, OG, SV, AB, AC
+USE SCARC_POINTERS, ONLY: ACS
 #endif
 INTEGER, INTENT(IN) :: NTYPE, NL
-INTEGER :: NM, NOM, IP, IC, ID, IW, I, J, IOR0, INBR, III, JJJ, KKK, IWG, NX8, NY8, NZ8
+INTEGER :: NM, NOM, IP, IC, ID, IW, I, J, IOR0, INBR, III, JJJ, KKK, IWG, NNX, NNY, NNZ, IVAL(10)
+REAL(EB) :: VAL(10)
 CHARACTER (*), INTENT(IN) :: CQUANTITY
 
 SELECT CASE (NTYPE)
@@ -15625,53 +15608,53 @@ SELECT CASE (NTYPE)
 
          CALL SCARC_POINT_TO_GRID(NM, NL)
 
-         NX8=MIN(8,L%NX)
-         NY8=MIN(8,L%NY)
-         NZ8=MIN(8,L%NZ)
+         NNX=MIN(8,L%NX)
+         NNY=MIN(8,L%NY)
+         NNZ=MIN(8,L%NZ)
 
          WRITE(MSG%LU_DEBUG,*) '========= PRESSURE ========= ', NM, NL, CQUANTITY
          IF (PREDICTOR) THEN
             WRITE(MSG%LU_DEBUG,*) 'RHO'
-            DO KKK = NZ8+1, 0, -1
-               WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%RHO(III, 1, KKK), III=0,NX8+1)
+            DO KKK = NNZ+1, 0, -1
+               WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%RHO(III, 1, KKK), III=0,NNX+1)
             ENDDO
             WRITE(MSG%LU_DEBUG,*) 'H'
-            DO KKK = NZ8+1, 0, -1
-               WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%H(III, 1, KKK), III=0,NX8+1)
+            DO KKK = NNZ+1, 0, -1
+               WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%H(III, 1, KKK), III=0,NNX+1)
             ENDDO
          ELSE
             WRITE(MSG%LU_DEBUG,*) 'RHOS'
-            DO KKK = NZ8+1, 0, -1
-               WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%RHOS(III, 1, KKK), III=0,NX8+1)
+            DO KKK = NNZ+1, 0, -1
+               WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%RHOS(III, 1, KKK), III=0,NNX+1)
             ENDDO
             WRITE(MSG%LU_DEBUG,*) 'HS'
-            DO KKK = NZ8+1, 0, -1
-               WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%HS(III, 1, KKK), III=0,NX8+1)
+            DO KKK = NNZ+1, 0, -1
+               WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%HS(III, 1, KKK), III=0,NNX+1)
             ENDDO
          ENDIF
          WRITE(MSG%LU_DEBUG,*) 'FVX'
-         DO KKK = NZ8+1, 0, -1
-            WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%FVX(III, 1, KKK), III=0,NX8+1)
+         DO KKK = NNZ+1, 0, -1
+            WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%FVX(III, 1, KKK), III=0,NNX+1)
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'FVY'
-         DO KKK = NZ8+1, 0, -1
-            WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%FVY(III, 1, KKK), III=0,NX8+1)
+         DO KKK = NNZ+1, 0, -1
+            WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%FVY(III, 1, KKK), III=0,NNX+1)
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'FVZ'
-         DO KKK = NZ8+1, 0, -1
-            WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%FVZ(III, 1, KKK), III=0,NX8+1)
+         DO KKK = NNZ+1, 0, -1
+            WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%FVZ(III, 1, KKK), III=0,NNX+1)
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'KRES'
-         DO KKK = NZ8+1, 0, -1
-            WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%KRES(III, 1, KKK), III=0,NX8+1)
+         DO KKK = NNZ+1, 0, -1
+            WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%KRES(III, 1, KKK), III=0,NNX+1)
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'M%PRHS'
-         DO KKK = NZ8+1, 1, -1
-            WRITE(MSG%LU_DEBUG,'(I4,9E14.6)') KKK, (M%PRHS(III, 1, KKK), III=1,NX8+1)
+         DO KKK = NNZ+1, 1, -1
+            WRITE(MSG%LU_DEBUG,'(I4,9E14.6)') KKK, (M%PRHS(III, 1, KKK), III=1,NNX+1)
          ENDDO
          !WRITE(MSG%LU_DEBUG,*) 'P%PRHS'
-         !DO KKK = NZ8+1, 1, -1
-         !   WRITE(MSG%LU_DEBUG,'(I4,9E14.6)') KKK, (P%PRHS(III, 1, KKK), III=1,NX8+1)
+         !DO KKK = NNZ+1, 1, -1
+         !   WRITE(MSG%LU_DEBUG,'(I4,9E14.6)') KKK, (P%PRHS(III, 1, KKK), III=1,NNX+1)
          !ENDDO
 
       ENDDO
@@ -16121,6 +16104,69 @@ SELECT CASE (NTYPE)
          WRITE(MSG%LU_DEBUG,1000) CQUANTITY, NM, NL
          WRITE(MSG%LU_DEBUG, '(16I6)') (G%WALL(J)%BTYPE, J=1,L%N_WALL_CELLS)
       ENDDO
+
+   !> ------------------------------------------------------------------------------------------------
+   !> Debug CELLTYPE
+   !> ------------------------------------------------------------------------------------------------
+   CASE (NSCARC_DEBUG_CELL_TYPE)
+
+      DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+         CALL SCARC_POINT_TO_GRID(NM, NL)
+         MG => L%MG
+         WRITE(MSG%LU_DEBUG,1000) CQUANTITY, NM, NL
+         NNX=MIN(10,L%NX)
+         NNY=MIN(10,L%NY)
+         NNZ=MIN(10,L%NZ)
+         DO KKK = NNZ, 1, - 1
+            DO JJJ = NNY, 1, - 1
+               DO III=1, NNX
+                  IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(III,JJJ,KKK)) THEN
+                     IVAL(III)=-999999
+                  ELSE
+                     IC=G%CELL_NUMBER(III,JJJ,KKK)
+                     IVAL(III)=MG%CELLTYPE(IC)
+                  ENDIF
+               ENDDO
+               WRITE(MSG%LU_DEBUG, '(10I12)') (IVAL(III), III=1, NNX)
+            ENDDO
+            IF (.NOT. TWO_D) WRITE(MSG%LU_DEBUG, *) '----------------'
+         ENDDO
+         !ENDIF
+         WRITE(MSG%LU_DEBUG, *) '---------------- Overlap ----------------'
+         WRITE(MSG%LU_DEBUG, '(4E14.6)') (MG%CELLTYPE(IC), IC = G%NC+1, G%NCE)
+      ENDDO
+
+   !> ------------------------------------------------------------------------------------------------
+   !> Debug Measure
+   !> ------------------------------------------------------------------------------------------------
+   CASE (NSCARC_DEBUG_MEASURE)
+
+      DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+         CALL SCARC_POINT_TO_GRID(NM, NL)
+         MG => L%MG
+         WRITE(MSG%LU_DEBUG,1000) CQUANTITY, NM, NL
+         NNX=MIN(10,L%NX)
+         NNY=MIN(10,L%NY)
+         NNZ=MIN(10,L%NZ)
+         DO KKK = NNZ, 1, - 1
+            DO JJJ = NNY, 1, - 1
+               DO III=1, NNX
+                  IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(III,JJJ,KKK)) THEN
+                     VAL(III)=-999999.0_EB
+                  ELSE
+                     IC=G%CELL_NUMBER(III,JJJ,KKK)
+                     VAL(III)=MG%MEASURE(IC)
+                  ENDIF
+               ENDDO
+               WRITE(MSG%LU_DEBUG, '(10I12)') (VAL(III), III=1, NNX)
+            ENDDO
+            IF (.NOT. TWO_D) WRITE(MSG%LU_DEBUG, *) '----------------'
+         ENDDO
+         !ENDIF
+         WRITE(MSG%LU_DEBUG, *) '---------------- Overlap ----------------'
+         WRITE(MSG%LU_DEBUG, '(4E14.6)') (MG%MEASURE(IC), IC = G%NC+1, G%NCE)
+      ENDDO
+
 
 END SELECT
 
