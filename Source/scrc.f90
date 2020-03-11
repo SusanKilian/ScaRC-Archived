@@ -6544,7 +6544,7 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
       CALL SCARC_SETUP_KRYLOV(NSCARC_SOLVER_MAIN, NSCARC_SCOPE_GLOBAL, NSCARC_STAGE_ONE, NSTACK, NLEVEL_MIN, NLEVEL_MIN)
 
       NSTACK = NSTACK + 1
-      STACK(NSTACK)%SOLVER => PRECON_SSOR
+      STACK(NSTACK)%SOLVER => PRECON_MJAC
       CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
 
 #endif
@@ -8330,6 +8330,9 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
    CASE (NSCARC_METHOD_MGM)
    
       !> first solve inhomogeneous Poisson problem on structured grid with ScaRC (with Block-FFT)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '=================== ', ITE_PRES,' ================ Starting structured CG ========='
+#endif
       CALL SCARC_SETUP_GRID_TYPE(NSCARC_GRID_STRUCTURED)
       CALL SCARC_METHOD_CG (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
    
@@ -8339,6 +8342,9 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
    
       !> then solve homogeneous Poisson problem on unstructured grid with UScaRC (first with SSOR-preconditioning)
       !> later the preconditioning will be replaced by an individual LU-process
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '=================== ', ITE_PRES,' ================ Starting unstructured CG ========='
+#endif
       CALL SCARC_SETUP_GRID_TYPE(NSCARC_GRID_UNSTRUCTURED)
       CALL SCARC_METHOD_CG (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_HOMOGENEOUS, NLEVEL_MIN)
 
@@ -9806,6 +9812,11 @@ IF (N_DIRIC_GLOBAL(NLEVEL_MIN) == 0) THEN
    CALL SCARC_SETUP_SYSTEM_CONDENSED (B, NL, 1)            
 ENDIF
 
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_LEVEL (X, 'CG-METHOD: X INIT1 ', NL)
+CALL SCARC_DEBUG_LEVEL (B, 'CG-METHOD: B INIT1 ', NL)
+#endif
+
 #ifdef WITH_SCARC_STANDALONE
 IF (ITE_PRES > 2) THEN
    CALL SCARC_DUMP_SYSTEM(NSCARC_DUMP_B_OLD)
@@ -9834,6 +9845,11 @@ IF (NSTATE /= NSCARC_STATE_CONV0) THEN                       !>  if no convergen
    CALL SCARC_VECTOR_COPY (V, D, -1.0_EB, NL)                !>  d^0 := -v^0
 ENDIF
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'RESIN, RES, ITE, SIGMA0:', RESIN, RES, ITE, SIGMA0
+CALL SCARC_DEBUG_LEVEL (D, 'CG-METHOD: D INIT1 ', NL)
+#endif
+
 !> ------------------------------------------------------------------------------------------------
 !> Perform conjugate gradient looping
 !> ------------------------------------------------------------------------------------------------
@@ -9851,6 +9867,13 @@ CG_LOOP: DO ITE = 1, NIT
    CALL SCARC_VECTOR_SUM (D, X, ALPHA, 1.0_EB, NL)           !>  x^{k+1} := x^k + alpha * d^k
    CALL SCARC_VECTOR_SUM (Y, R, ALPHA, 1.0_EB, NL)           !>  r^{k+1} := r^k + alpha * y^k   ~  r^k + alpha * A * d^k
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'ITE, ITE_CG=', ITE, ITE_CG
+CALL SCARC_DEBUG_LEVEL (X, 'CG-METHOD: X ITE ', NL)
+CALL SCARC_DEBUG_LEVEL (Y, 'CG-METHOD: Y ITE ', NL)
+CALL SCARC_DEBUG_LEVEL (R, 'CG-METHOD: R ITE ', NL)
+#endif
+
    RES = SCARC_L2NORM (R, NL)                                !>  res := ||r^{k+1}||
    NSTATE = SCARC_CONVERGENCE_STATE (0, NS, NL)              !>  res < tolerance ??
    IF (NSTATE /= NSCARC_STATE_PROCEED) EXIT CG_LOOP
@@ -9862,6 +9885,11 @@ CG_LOOP: DO ITE = 1, NIT
    SIGMA0 = SIGMA                                            !>  save last sigma
 
    CALL SCARC_VECTOR_SUM (V, D, -1.0_EB, BETA, NL)           !>  d^{k+1} := -v^{k+1} + beta * d^{k+1}
+
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_LEVEL (V, 'CG-METHOD: V ITE ', NL)
+CALL SCARC_DEBUG_LEVEL (D, 'CG-METHOD: D ITE ', NL)
+#endif
 
    CPU(MYID)%ITERATION=MAX(CPU(MYID)%ITERATION,CURRENT_TIME()-TNOWI)
 
@@ -9880,6 +9908,10 @@ IF (N_DIRIC_GLOBAL(NLEVEL_MIN) == 0) THEN
    CALL SCARC_RESTORE_LAST_CELL(X, NL)
    CALL SCARC_FILTER_MEANVALUE(X, NL)
 ENDIF
+
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_LEVEL (X, 'CG-METHOD: X FINAL', NL)
+#endif
 
 IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) THEN
    CALL SCARC_UPDATE_MAINCELLS(NLEVEL_MIN)
@@ -13923,16 +13955,16 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    DO KK = NZ8, 1, - 1
       DO JJ = NY8, 1, - 1
          DO II=1,NX8
-            IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(II,JJ,KK)) THEN
-               VALUES(II)=-999999.0_EB
-            ELSE
+            !IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(II,JJ,KK)) THEN
+            !   VALUES(II)=-999999.0_EB
+            !ELSE
                IC=G%CELL_NUMBER(II,JJ,KK)
                IF (ABS(VC(IC))<1.0E-14_EB) THEN
                   VALUES(II)=0.0_EB
                ELSE
                   VALUES(II)=VC(IC)
                ENDIF
-            ENDIF
+            !ENDIF
          ENDDO
          !WRITE(MSG%LU_DEBUG, '(5E23.14)') (VALUES(II), II=4, NX8)
          WRITE(MSG%LU_DEBUG, '(12E14.6)') (VALUES(II), II=1, NX8)
