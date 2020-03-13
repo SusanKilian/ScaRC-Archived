@@ -144,8 +144,7 @@ INTEGER, PARAMETER :: NSCARC_HUGE_INT                = -999999999    !> undefine
 REAL(EB), PARAMETER:: NSCARC_HUGE_REAL               = -999999999_EB !> undefined integer value
 
 INTEGER, PARAMETER :: NSCARC_INIT_UNDEF              = -99, &   !> initialize allocated array as undefined
-                      NSCARC_INIT_NONE               =  -2, &   !> do not initialize allocated arrays
-                      NSCARC_INIT_MINUS_ONE          =  -1, &   !> do not initialize allocated arrays
+                      NSCARC_INIT_NONE               =  -1, &   !> do not initialize allocated arrays
                       NSCARC_INIT_ZERO               =   0, &   !> initialize allocated array with zero
                       NSCARC_INIT_ONE                =   1, &   !> initialize allocated array with one
                       NSCARC_INIT_TRUE               =   2, &   !> initialize allocated array with one
@@ -13287,10 +13286,9 @@ END SUBROUTINE SCARC_SETUP_COARSENING
 SUBROUTINE SCARC_SETUP_STRENGTH_MATRIX(NL)
 USE SCARC_POINTERS, ONLY: G, ACOL, AROW, AVAL, STRN, SCOL, SROW, SVAL
 INTEGER, INTENT(IN) :: NL
-REAL(EB):: VAL, EPS, THETA = 0.25_EB
-INTEGER :: NM, IC, JC, ICOL, NAGG
+REAL(EB):: VAL, DIAG, EPS, THETA = 0.25_EB, SCAL, SVAL_MAX
+INTEGER :: NM, IC, JC, ICOL, IAGG
 REAL(EB), ALLOCATABLE, DIMENSION(:) :: DIAGS
-REAL(EB) :: DIAG
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -13308,7 +13306,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       DIAGS(IC) = ABS(DIAG)
    ENDDO
 
-   NAGG = 0
+   IAGG = 1
    SROW(1) = 1
 
    DO IC = 1, G%NC
@@ -13319,18 +13317,30 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
          !> Always add the diagonal
          IF (IC == JC) THEN
-            SCOL = JC
-            SVAL = VAL
-            NAGG = NAGG + 1
+            SCOL(IAGG) = JC
+            SVAL(IAGG) = VAL
+            IAGG = IAGG + 1
 
          !>  |A(IC,JC)|  >= THETA * sqrt(|A(IC,IC)| * |A(JC,JC)|)
          ELSE IF (VAL**2 >= EPS * DIAGS(JC)) THEN
-            SCOL = JC
-            SVAL = VAL
-            NAGG = NAGG + 1
+            SCOL(IAGG) = JC
+            SVAL(IAGG) = VAL
+            IAGG = IAGG + 1
          ENDIF
+
       ENDDO
-      SROW(IC+1) = NAGG
+      SROW(IC+1) = IAGG
+   ENDDO
+
+   DO IC = 1, G%NC
+      SVAL_MAX = 0.0_EB
+      DO ICOL = AROW(IC), AROW(IC+1) -1
+         SVAL_MAX = MAX(ABS(SVAL(ICOL)), SVAL_MAX)
+      ENDDO
+      SCAL = 1.0_EB/SVAL_MAX
+      DO ICOL = AROW(IC), AROW(IC+1) -1
+         SVAL(ICOL) = ABS(SVAL(ICOL))*SCAL
+      ENDDO
    ENDDO
 
    DEALLOCATE(DIAGS)
@@ -13356,11 +13366,11 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_AMG(NM, NL)
 
-   CALL SCARC_ALLOCATE_INT1(AGG, 1, G%NC+1, NSCARC_INIT_MINUS_ONE, 'AGG')
-   CALL SCARC_ALLOCATE_INT1(CPT, 1, G%NC  , NSCARC_INIT_ZERO     , 'CPT')
+   CALL SCARC_ALLOCATE_INT1(CPT, 1, G%NC  , NSCARC_INIT_ZERO, 'CPT')
+   CALL SCARC_ALLOCATE_INT1(AGG, 1, G%NC+1, NSCARC_INIT_ZERO, 'AGG')
 
    NROWS = G%NC
-   NAGG = 2                            !> number of aggregates plus one
+   NAGG = 1       
 
    !> Pass 1
    PASS1_CELL_LOOP: DO IC = 1, G%NC
@@ -13382,14 +13392,14 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          ENDIF
       ENDDO
 
-      !> isolated node, do not aggregate
+      !> Do not aggregate isolated cells
       IF (.NOT. HAS_NEIGHBORS) THEN
          AGG(IC) = -G%NC                  !> number of rows in A
 
-      !> Make an aggregate out of this node and its neighbors
+      !> If not already done, build an aggregate of this cell and its  neighbors
       ELSE IF (.NOT. HAS_AGGREGATED_NEIGHBORS) THEN
          AGG(IC) = NAGG
-         CPT(NAGG-1) = IC                
+         CPT(NAGG) = IC                
          DO ICOL = AROW(IC), AROW(IC+1)-1 
             AGG(ACOL(ICOL)) = NAGG
          ENDDO
@@ -13423,12 +13433,13 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       !> cell IC has been aggregated
       IF (IAGG /= 0) THEN
          IF (IAGG > 0) THEN
-            AGG(IC) = IAGG - 1
+            AGG(IC) = IAGG 
          ELSE IF (IAGG == - G%NC) THEN
             AGG(IC) = -1
          ELSE
-            AGG(IC) = -IAGG - 1
+            AGG(IC) = -IAGG 
          ENDIF
+         CYCLE
       ENDIF
 
       !> cell IC has not been aggregated
