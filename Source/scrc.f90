@@ -755,17 +755,27 @@ TYPE SCARC_MULTIGRID_TYPE
    TYPE (SCARC_MATRIX_COMPACT_TYPE) :: PROLONGATION        !> Prolongation matrix
    TYPE (SCARC_MATRIX_COMPACT_TYPE) :: RESTRICTION         !> Restriction matrix
    TYPE (SCARC_MATRIX_COMPACT_TYPE) :: STRENGTH            !> Strength matrix
+   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: TENTATIVE           !> Tentative prolongator 
+   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: ADIAG_INV           !> A scaled with inverse of D
 
-   REAL(EB), ALLOCATABLE, DIMENSION (:) :: MEASURE         !> Measure for grid coarsening (AMG only)
+   REAL(EB), ALLOCATABLE, DIMENSION (:) :: MEASURES        !> Measure for grid coarsening (AMG only)
+   REAL(EB), ALLOCATABLE, DIMENSION (:) :: NSP             !> Nullspace vector
+   REAL(EB), ALLOCATABLE, DIMENSION (:) :: AUX1, AUX2      !> auxiliary vectors
+   REAL(EB), ALLOCATABLE, DIMENSION (:) :: DIAG, DIAG_INV  !> vector of inverse diagonal entries and temporary vector
+   REAL(EB), ALLOCATABLE, DIMENSION (:) :: XX, BB          !> solution and right hand side vector
    REAL(EB) :: AMG_TOL = 0.25_EB                           !> Tolerance for coarsening
+   REAL(EB) :: OMEGA                                       !> Relaxation parameter
 
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: AGGREGATE       !> Aggregates for grid coarsening (AMG only)
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: CELLTYPE        !> Celltype for grid coarsening (AMG only)
+   REAL(EB), ALLOCATABLE, DIMENSION (:,:,:) :: QX, R       !> Different arrays for tentative prolongation
+
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: AGGREGATES      !> Aggregates for grid coarsening (AMG only)
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: CELLTYPES       !> Celltype for grid coarsening (AMG only)
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: CPOINTS         !> Aggregates for grid coarsening (AMG only)
 
    INTEGER :: CYCLING(2) = 0                               !> Counter for multigrid cycling
    INTEGER :: N_PRESMOOTH, N_POSTSMOOTH                    !> Number of pre- and post-processing steps
    INTEGER :: N_AGGREGATES                                 !> Number of aggregates in AMG
+   INTEGER :: N_FINE, N_COARSE                             !> Number of aggregates in AMG
 
 END TYPE SCARC_MULTIGRID_TYPE
 
@@ -1069,17 +1079,18 @@ TYPE (SCARC_MATRIX_COMPACT_CONDENSED_TYPE), POINTER :: ACC=>NULL()
 TYPE (SCARC_MATRIX_BANDED_CONDENSED_TYPE),  POINTER :: ABC=>NULL()
 
 TYPE (SCARC_MULTIGRID_TYPE), POINTER :: MG=>NULL(), OMG=>NULL()
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: PROL=>NULL(), REST=>NULL(), STRN=>NULL(), CONN=>NULL()
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: PROL=>NULL(), REST=>NULL(), STRN=>NULL(), CONN=>NULL(), TENT=>NULL()
 
-INTEGER,  POINTER, DIMENSION(:) :: AGG=>NULL(),  CTYP=>NULL()
+INTEGER,  POINTER, DIMENSION(:) :: AGG=>NULL(), CTYP=>NULL(), CPTS=>NULL()
 INTEGER,  POINTER, DIMENSION(:) :: ACOL=>NULL(), AROW=>NULL()
 INTEGER,  POINTER, DIMENSION(:) :: CCOL=>NULL(), CROW=>NULL()
 INTEGER,  POINTER, DIMENSION(:) :: PCOL=>NULL(), PROW=>NULL()
 INTEGER,  POINTER, DIMENSION(:) :: RCOL=>NULL(), RROW=>NULL()
 INTEGER,  POINTER, DIMENSION(:) :: SCOL=>NULL(), SROW=>NULL()
+INTEGER,  POINTER, DIMENSION(:) :: TCOL=>NULL(), TROW=>NULL()
 
-REAL(EB), POINTER, DIMENSION(:) :: AVAL=>NULL(), CVAL=>NULL(), PVAL=>NULL(), RVAL=>NULL(), SVAL=>NULL()
-REAL(EB), POINTER, DIMENSION(:) :: MEAS=>NULL()
+REAL(EB), POINTER, DIMENSION(:) :: AVAL=>NULL(), CVAL=>NULL(), PVAL=>NULL(), RVAL=>NULL(), SVAL=>NULL(), TVAL=>NULL()
+REAL(EB), POINTER, DIMENSION(:) :: MEAS=>NULL(), AUX1=>NULL(), AUX2=>NULL()
 
 REAL(EB), POINTER, DIMENSION(:) :: XCOR=>NULL(), YCOR=>NULL(), ZCOR=>NULL()
 REAL(EB), POINTER, DIMENSION(:) :: XMID=>NULL(), YMID=>NULL(), ZMID=>NULL()
@@ -12253,6 +12264,7 @@ AROW => AC%ROW
 AVAL => AC%VAL
 
 MG => L%MG
+
 CONN => MG%CONNECTION
 CCOL => CONN%COL
 CROW => CONN%ROW
@@ -12272,6 +12284,13 @@ STRN => MG%STRENGTH
 SCOL => STRN%COL
 SROW => STRN%ROW
 SVAL => STRN%VAL
+
+MEAS => MG%MEASURES
+CPTS => MG%CPOINTS
+AGG  => MG%AGGREGATES
+
+AUX1 => MG%AUX1
+AUX2 => MG%AUX2
 
 END SUBROUTINE SCARC_POINT_TO_AMG
 
@@ -12882,6 +12901,61 @@ ENDIF
 #endif
 END SUBROUTINE SCARC_ALLOCATE_REAL3
 
+!> ------------------------------------------------------------------------------------------------
+!> Reduce size of integer vector
+!> ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_RESIZE_INT1(WORKSPACE, NSIZE, CNAME)
+INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(INOUT) :: WORKSPACE
+INTEGER, INTENT(IN) :: NSIZE
+CHARACTER(*), INTENT(IN) :: CNAME
+INTEGER, ALLOCATABLE, DIMENSION(:) :: AUX
+
+IF (NSIZE == SIZE(WORKSPACE)) THEN
+   RETURN                                  !> vector already has requested size
+ELSE IF (NSIZE < SIZE(WORKSPACE)) THEN
+
+   CALL SCARC_ALLOCATE_INT1(AUX, 1, NSIZE, NSCARC_INIT_NONE, TRIM(CNAME))
+   AUX(1:NSIZE) = WORKSPACE(1:NSIZE)
+   DEALLOCATE(WORKSPACE)
+
+   CALL SCARC_ALLOCATE_INT1(WORKSPACE, 1, NSIZE, NSCARC_INIT_NONE, TRIM(CNAME))
+   WORKSPACE(1:NSIZE) = AUX(1:NSIZE)
+   DEALLOCATE(AUX)
+ENDIF
+
+#ifdef WITH_SCARC_VERBOSE
+WRITE(MSG%LU_VERBOSE,1000) CNAME, NSIZE
+1000 FORMAT('Resizing   integer vector ',A20,' to size ',I8)
+#endif
+END SUBROUTINE SCARC_RESIZE_INT1
+
+!> ------------------------------------------------------------------------------------------------
+!> Reduce size of integer vector
+!> ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_RESIZE_REAL1(WORKSPACE, NSIZE, CNAME)
+REAL(EB), ALLOCATABLE, DIMENSION(:), INTENT(INOUT) :: WORKSPACE
+INTEGER, INTENT(IN) :: NSIZE
+CHARACTER(*), INTENT(IN) :: CNAME
+REAL(EB), ALLOCATABLE, DIMENSION(:) :: AUX
+
+IF (NSIZE == SIZE(WORKSPACE)) THEN
+   RETURN                                  !> vector already has requested size
+ELSE IF (NSIZE < SIZE(WORKSPACE)) THEN
+
+   CALL SCARC_ALLOCATE_REAL1(AUX, 1, NSIZE, NSCARC_INIT_NONE, TRIM(CNAME))
+   AUX(1:NSIZE) = WORKSPACE(1:NSIZE)
+   DEALLOCATE(WORKSPACE)
+
+   CALL SCARC_ALLOCATE_REAL1(WORKSPACE, 1, NSIZE, NSCARC_INIT_NONE, TRIM(CNAME))
+   WORKSPACE(1:NSIZE) = AUX(1:NSIZE)
+   DEALLOCATE(AUX)
+ENDIF
+
+#ifdef WITH_SCARC_VERBOSE
+WRITE(MSG%LU_VERBOSE,1000) CNAME, NSIZE
+1000 FORMAT('Resizing   integer vector ',A20,' to size ',I8)
+#endif
+END SUBROUTINE SCARC_RESIZE_REAL1
 
 !> ------------------------------------------------------------------------------------------------
 !> COMPACT storage format:
@@ -12899,15 +12973,11 @@ WRITE(MSG%LU_VERBOSE,1000) CNAME
 #endif
 
 IF (NPREC == NSCARC_PRECISION_SINGLE) THEN
-
    WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.VAL'
    CALL SCARC_ALLOCATE_REAL1_FB(A%VAL_FB, 1, A%N_VAL, NINIT, TRIM(CINFO))
-
 ELSE
-
    WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.VAL'
    CALL SCARC_ALLOCATE_REAL1(A%VAL, 1, A%N_VAL, NINIT, TRIM(CINFO))
-
 ENDIF
 
 WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.ROW'
@@ -12971,7 +13041,7 @@ REAL(EB), ALLOCATABLE, DIMENSION(:) :: VAL
 INTEGER , ALLOCATABLE, DIMENSION(:) :: COL
 
 IF (A%N_VAL == NSIZE) THEN
-   RETURN                                  !> matrix has already desired size
+   RETURN                                  !> matrix already has requested size
 ELSE IF (A%N_VAL > NSIZE) THEN
 
    A%N_VAL = NSIZE
@@ -13166,24 +13236,40 @@ INTEGER :: NM, NL, NOM, INBR
 
 IF (TYPE_MULTIGRID /= NSCARC_MULTIGRID_ALGEBRAIC) RETURN
 
+!> 
+!> Determine coarser meshes corresponding to coarsening strategy based on aggregation
+!> 
 LEVEL_LOOP: DO NL = NLEVEL_MIN, NLEVEL_MAX - 1
-   !> 
-   !> Determine coarser meshes corresponding to requested coarsening strategy
-   !>    - allocate necessary arrays
-   !>    - setup measures of single cells
-   !>    - setup celltypes of single cells
-   !>    - setup sizes of transformation matrices (prolongation/restriction)
-   !> 
-   MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       CALL SCARC_POINT_TO_AMG (NM, NL)
 
-      CALL SCARC_ALLOCATE_REAL1(MG%MEASURE,  1, G%NCE, NSCARC_INIT_ZERO, 'MEASURE')
-      CALL SCARC_ALLOCATE_INT1 (MG%CELLTYPE, 1, G%NCE, NSCARC_INIT_ZERO, 'CELLTYPE')
+      !CALL SCARC_ALLOCATE_REAL1(MG%MEASURES,  1, G%NCE, NSCARC_INIT_ZERO, 'MG%MEASURES')
+      CALL SCARC_ALLOCATE_INT1 (MG%CELLTYPES , 1, G%NCE, NSCARC_INIT_ZERO, 'MG%CELLTYPES')
+      CALL SCARC_ALLOCATE_INT1 (MG%CPOINTS   , 1, G%NCE, NSCARC_INIT_ZERO, 'MG%CPOINTS')
+      CALL SCARC_ALLOCATE_INT1 (MG%AGGREGATES, 1, G%NCE, NSCARC_INIT_ZERO, 'MG%AGGREGATES')
 
-      STRN%N_VAL = AC%N_VAL
-      STRN%N_ROW = AC%N_ROW
-      CALL SCARC_ALLOCATE_MATRIX_COMPACT(STRN, NL, NSCARC_PRECISION_DOUBLE, NSCARC_INIT_ZERO, 'STRENGTH')
+      CALL SCARC_ALLOCATE_REAL1 (MG%DIAG, 1, G%NCE, NSCARC_INIT_ZERO, 'MG%DINV')
+      CALL SCARC_ALLOCATE_REAL1 (MG%DIAG_INV, 1, G%NCE, NSCARC_INIT_ZERO, 'MG%DINV')
+      CALL SCARC_ALLOCATE_REAL1 (MG%NSP, 1, G%NCE, NSCARC_INIT_ONE, 'MG%B')
+
+      CALL SCARC_ALLOCATE_REAL1 (MG%BB, 1, G%NCE, NSCARC_INIT_ONE, 'MG%BB')
+      CALL SCARC_ALLOCATE_REAL1 (MG%XX, 1, G%NCE, NSCARC_INIT_ONE, 'MG%XX')
+ 
+      MG%STRENGTH%N_VAL = AC%N_VAL                  !> STRN points to MG%STRENGTH
+      MG%STRENGTH%N_ROW = AC%N_ROW
+      CALL SCARC_ALLOCATE_MATRIX_COMPACT(MG%STRENGTH, NL, NSCARC_PRECISION_DOUBLE, &
+                                         NSCARC_INIT_ZERO, 'MG%STRENGTH')
+
+      MG%PROLONGATION%N_VAL = AC%N_VAL                  !> PROL points to MG%PROLONGATION
+      MG%PROLONGATION%N_ROW = AC%N_ROW                  
+      CALL SCARC_ALLOCATE_MATRIX_COMPACT(MG%PROLONGATION, NL, NSCARC_PRECISION_DOUBLE, &
+                                         NSCARC_INIT_ZERO, 'MG%PROLONGATION')
+
+      MG%ADIAG_INV%N_VAL = AC%N_VAL                  !> PROL points to MG%PROLONGATION
+      MG%ADIAG_INV%N_ROW = AC%N_ROW                  
+      CALL SCARC_ALLOCATE_MATRIX_COMPACT(MG%ADIAG_INV, NL, NSCARC_PRECISION_DOUBLE, &
+                                         NSCARC_INIT_ZERO, 'MG%A_DINV')
 
       DO INBR = 1, SCARC(NM)%N_NEIGHBORS
 
@@ -13191,81 +13277,69 @@ LEVEL_LOOP: DO NL = NLEVEL_MIN, NLEVEL_MAX - 1
          CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NL)
          OMG => OL%MG
 
-         CALL SCARC_ALLOCATE_REAL1(OMG%MEASURE,  1, OG%NCG, NSCARC_INIT_ZERO, 'MEASURE')
-         CALL SCARC_ALLOCATE_INT1 (OMG%CELLTYPE, 1, OG%NCG, NSCARC_INIT_ZERO, 'CELLTYPE')
+         !CALL SCARC_ALLOCATE_REAL1(OMG%MEASURES ,  1, OG%NCG, NSCARC_INIT_ZERO, 'OMG%MEASURES')
+         CALL SCARC_ALLOCATE_INT1 (OMG%CELLTYPES , 1, OG%NCG, NSCARC_INIT_ZERO, 'OMG%CELLTYPES')
+         CALL SCARC_ALLOCATE_INT1 (OMG%CPOINTS   , 1, OG%NCG, NSCARC_INIT_ZERO, 'OMG%CPOINTS')
+         CALL SCARC_ALLOCATE_INT1 (OMG%AGGREGATES, 1, OG%NCG, NSCARC_INIT_ZERO, 'OMG%AGGREGATES')
 
       ENDDO 
 
-   ENDDO MESHES_LOOP
+   ENDDO MESHES_LOOP1
 
-   !>
-   !> Set measures and celltypes on internal cells due to chosen coarsening strategy
-   !>
-   CALL SCARC_SETUP_STRENGTH_MATRIX (NL)
-   CALL SCARC_SETUP_AGGREGATES (NL)
+   !> ----------------------------------------------------------------------------------
+   !> Build aggregates, setup tentative prolongator and build coarse matrix
+   !> ----------------------------------------------------------------------------------
+   MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   !CALL SCARC_SETUP_MEASURES (TYPE_COARSENING, NL)
-   !CALL SCARC_SETUP_CELLTYPES (TYPE_COARSENING, NL)
+      CALL SCARC_POINT_TO_AMG (NM, NL)
 
-   !>
-   !> Set dimensions for coarser mesh and define sizes of prolongation and restriction matrices
-   !>
-   !CALL SCARC_SETUP_MATRIX_SIZES (NSCARC_SIZE_TRANSFER, NL)
-   !CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_TYPE,  NL)
+      !> Set strength matrix and build aggregates
+      CALL SCARC_SETUP_STRENGTH_MATRIX (NL)
+      CALL SCARC_SETUP_AGGREGATES (NL)
 
-#ifdef WITH_SCARC_DEBUG
-    !CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_CELL_TYPE, NL, 'SETUP_CELLTYPES')
-#endif
+      CALL SCARC_SETUP_INVERSE_DIAGONAL
+      CALL SCARC_AMG_JACOBI
 
-   !>
-   !> Allocate and define grid transfer matrices and setup prolongation
-   !>
-   !MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+      !CALL SCARC_SETUP_TENTATIVE_PROLONGATOR 
 
-   !   CALL SCARC_POINT_TO_GRID(NM, NL)
-   !   CALL SCARC_POINT_TO_MULTIGRID(NM, NL)
-!
-!      CALL SCARC_ALLOCATE_MATRIX_COMPACT(P, NL, NSCARC_PRECISION_DOUBLE, NSCARC_INIT_ZERO, 'PROLONGATION')
-!      CALL SCARC_ALLOCATE_MATRIX_COMPACT(R, NL, NSCARC_PRECISION_DOUBLE, NSCARC_INIT_ZERO, 'RESTRICTION')
-!
-!      DO INBR = 1, SCARC(NM)%N_NEIGHBORS
-!
-!         NOM = S%NEIGHBORS(INBR)
-!         CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NL)
-!         OMG => OL%MG
-!
-!         WRITE(*,*) 'LENGTH OF OMG%PC?'
-!         CALL SCARC_ALLOCATE_MATRIX_COMPACT(OMG%PC, NL, NSCARC_PRECISION_DOUBLE, NSCARC_INIT_ZERO, 'OMG%PC')
-!         CALL SCARC_ALLOCATE_MATRIX_COMPACT(OMG%RC, NL, NSCARC_PRECISION_DOUBLE, NSCARC_INIT_ZERO, 'OMG%RC')
-!
-!      ENDDO 
-!
-!      !> determine prolongation and restriction matrix for the corresponding level
-!      CALL SCARC_SETUP_PROLONGATION(NL)
+   ENDDO MESHES_LOOP2
 
-#ifdef WITH_SCARC_DEBUG
-!      CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_CELL_TYPE, NL, 'SETUP_PROLONGATION')
-#endif
 
-!      CALL SCARC_SETUP_OVERLAPS (NSCARC_MATRIX_PROLONGATION, NL)
 
 #ifdef WITH_SCARC_DEBUG
 !      CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_CELL_TYPE, NL, 'SETUP_PROLONGATION')
 !      CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_PROLONGATION, NL, 'SETUP_PROLONGATION')
 #endif
 
-!      CALL SCARC_SETUP_RESTRICTION(NL)
-
-      !> Allocate and setup grid transfer matrices
-!      CALL SCARC_POINT_TO_GRID(NM, NL+1)
-
-!   ENDDO MESHES_LOOP2
-
-!   CALL SCARC_TRANSFER_MATRIX (NL)
 ENDDO LEVEL_LOOP
 
 END SUBROUTINE SCARC_SETUP_COARSENING
 
+
+!> ------------------------------------------------------------------------------------------------------
+!> Extract diagonal of A, set its inverse and A scaled with the inverted diagonal
+!> ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_INVERSE_DIAGONAL
+USE SCARC_POINTERS, ONLY: G, ACOL, AROW, AVAL
+INTEGER :: IC, JC, ICOL
+
+DO IC = 1, G%NC
+   DO ICOL = AROW(IC), AROW(IC+1) - 1
+      JC = ACOL(ICOL)
+      IF (JC == IC) THEN
+         MG%DIAG(IC) = AVAL(ICOL)
+         MG%DIAG_INV(IC) = 1.0_EB/AVAL(ICOL)
+      ENDIF
+   ENDDO
+ENDDO
+
+DO IC = 1, G%NC
+   DO ICOL = AROW(IC), AROW(IC+1) - 1
+      MG%ADIAG_INV%VAL (ICOL) = AVAL(ICOL) * MG%DIAG_INV(IC)
+   ENDDO
+ENDDO
+
+END SUBROUTINE SCARC_SETUP_INVERSE_DIAGONAL
 
 !> ------------------------------------------------------------------------------------------------------
 !> Compute a strength of connection matrix using the standard symmetric
@@ -13284,67 +13358,63 @@ END SUBROUTINE SCARC_SETUP_COARSENING
 !>  storage for S as is used by A.
 !> ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_STRENGTH_MATRIX(NL)
-USE SCARC_POINTERS, ONLY: G, ACOL, AROW, AVAL, STRN, SCOL, SROW, SVAL
+USE SCARC_POINTERS, ONLY: G, ACOL, AROW, AVAL, SCOL, SROW, SVAL
 INTEGER, INTENT(IN) :: NL
 REAL(EB):: VAL, DIAG, EPS, THETA = 0.25_EB, SCAL, SVAL_MAX
-INTEGER :: NM, IC, JC, ICOL, IAGG
+INTEGER :: IC, JC, ICOL, IAGG
 REAL(EB), ALLOCATABLE, DIMENSION(:) :: DIAGS
 
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+CALL SCARC_ALLOCATE_REAL1(DIAGS, 1, G%NC+1, NSCARC_INIT_ZERO, 'DIAGS')
 
-   CALL SCARC_POINT_TO_AMG(NM, NL)
-
-   CALL SCARC_ALLOCATE_REAL1(DIAGS, 1, G%NC+1, NSCARC_INIT_ZERO, 'DIAGS')
-   CALL SCARC_ALLOCATE_MATRIX_COMPACT(STRN, NL, NSCARC_PRECISION_DOUBLE, NSCARC_INIT_ZERO, 'STRENGTH')
-
-   DO IC = 1, G%NC
-      DIAG = 0.0_EB
-      DO ICOL = AROW(IC), AROW(IC+1) -1
-         JC = ACOL(ICOL)
-         IF (JC == IC) DIAG = DIAG + AVAL(JC)         !> gracefully handle duplicates
-      ENDDO
-      DIAGS(IC) = ABS(DIAG)
+DO IC = 1, G%NC
+   DIAG = 0.0_EB
+   DO ICOL = AROW(IC), AROW(IC+1) -1
+      JC = ACOL(ICOL)
+      IF (JC == IC) DIAG = DIAG + AVAL(JC)         !> gracefully handle duplicates
    ENDDO
-
-   IAGG = 1
-   SROW(1) = 1
-
-   DO IC = 1, G%NC
-      EPS = THETA**2 * DIAGS(IC)
-      DO ICOL = AROW(IC), AROW(IC+1) -1
-         JC  = ACOL(ICOL)
-         VAL = AVAL(JC)
-
-         !> Always add the diagonal
-         IF (IC == JC) THEN
-            SCOL(IAGG) = JC
-            SVAL(IAGG) = VAL
-            IAGG = IAGG + 1
-
-         !>  |A(IC,JC)|  >= THETA * sqrt(|A(IC,IC)| * |A(JC,JC)|)
-         ELSE IF (VAL**2 >= EPS * DIAGS(JC)) THEN
-            SCOL(IAGG) = JC
-            SVAL(IAGG) = VAL
-            IAGG = IAGG + 1
-         ENDIF
-
-      ENDDO
-      SROW(IC+1) = IAGG
-   ENDDO
-
-   DO IC = 1, G%NC
-      SVAL_MAX = 0.0_EB
-      DO ICOL = AROW(IC), AROW(IC+1) -1
-         SVAL_MAX = MAX(ABS(SVAL(ICOL)), SVAL_MAX)
-      ENDDO
-      SCAL = 1.0_EB/SVAL_MAX
-      DO ICOL = AROW(IC), AROW(IC+1) -1
-         SVAL(ICOL) = ABS(SVAL(ICOL))*SCAL
-      ENDDO
-   ENDDO
-
-   DEALLOCATE(DIAGS)
+   DIAGS(IC) = ABS(DIAG)
 ENDDO
+
+IAGG = 1
+SROW(1) = 1
+
+DO IC = 1, G%NC
+   EPS = THETA**2 * DIAGS(IC)
+   DO ICOL = AROW(IC), AROW(IC+1) -1
+      JC  = ACOL(ICOL)
+      VAL = AVAL(JC)
+
+      !> Always add the diagonal
+      IF (IC == JC) THEN
+         SCOL(IAGG) = JC
+         SVAL(IAGG) = VAL
+         IAGG = IAGG + 1
+
+      !>  |A(IC,JC)|  >= THETA * sqrt(|A(IC,IC)| * |A(JC,JC)|)
+      ELSE IF (VAL**2 >= EPS * DIAGS(JC)) THEN
+         SCOL(IAGG) = JC
+         SVAL(IAGG) = VAL
+         IAGG = IAGG + 1
+      ENDIF
+
+   ENDDO
+   SROW(IC+1) = IAGG
+ENDDO
+
+DO IC = 1, G%NC
+   SVAL_MAX = 0.0_EB
+   DO ICOL = AROW(IC), AROW(IC+1) -1
+      SVAL_MAX = MAX(ABS(SVAL(ICOL)), SVAL_MAX)
+   ENDDO
+   SCAL = 1.0_EB/SVAL_MAX
+   DO ICOL = AROW(IC), AROW(IC+1) -1
+      SVAL(ICOL) = ABS(SVAL(ICOL))*SCAL
+   ENDDO
+ENDDO
+
+DEALLOCATE(DIAGS)
+
+CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_STRENGTH, NL,'MG%STRENGTH')
 
 END SUBROUTINE SCARC_SETUP_STRENGTH_MATRIX
  
@@ -13355,133 +13425,294 @@ END SUBROUTINE SCARC_SETUP_STRENGTH_MATRIX
 !> Unaggregated nodes are marked with a -1
 !> ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_AGGREGATES(NL)
-USE SCARC_POINTERS, ONLY: G, MG, ACOL, AROW
+USE SCARC_POINTERS, ONLY: G, MG, ACOL, AROW, AGG, CPTS
 INTEGER, INTENT(IN) :: NL
-INTEGER, ALLOCATABLE, DIMENSION(:) :: AGG, CPT
-INTEGER :: NM, IC, JC, ICOL, NROWS, NAGG, IAGG, JAGG
+INTEGER :: IC, JC, ICOL, NROWS, NAGG, IAGG, JAGG
 LOGICAL :: HAS_NEIGHBORS, HAS_AGGREGATED_NEIGHBORS
 
+NROWS = G%NC
+NAGG = 1       
 
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+!> Pass 1
+PASS1_CELL_LOOP: DO IC = 1, G%NC
 
-   CALL SCARC_POINT_TO_AMG(NM, NL)
+   IF (AGG(IC) /= 0) CYCLE          !> already marked
 
-   CALL SCARC_ALLOCATE_INT1(CPT, 1, G%NC  , NSCARC_INIT_ZERO, 'CPT')
-   CALL SCARC_ALLOCATE_INT1(AGG, 1, G%NC+1, NSCARC_INIT_ZERO, 'AGG')
+   !> Determine whether all neighbors of this node are free (not already aggregates)
+   HAS_NEIGHBORS = .FALSE.
+   HAS_AGGREGATED_NEIGHBORS = .FALSE.
 
-   NROWS = G%NC
-   NAGG = 1       
-
-   !> Pass 1
-   PASS1_CELL_LOOP: DO IC = 1, G%NC
-
-      IF (AGG(IC) /= 0) CYCLE          !> already marked
-
-      !> Determine whether all neighbors of this node are free (not already aggregates)
-      HAS_NEIGHBORS = .FALSE.
-      HAS_AGGREGATED_NEIGHBORS = .FALSE.
-
-      DO ICOL = AROW(IC), AROW(IC+1)-1 
-         JC = ACOL(ICOL)
-         IF (IC /= JC) THEN
-            HAS_NEIGHBORS = .TRUE.
-            IF (AGG(JC) /= 0) THEN
-               HAS_AGGREGATED_NEIGHBORS = .TRUE.
-               EXIT
-            ENDIF
-         ENDIF
-      ENDDO
-
-      !> Do not aggregate isolated cells
-      IF (.NOT. HAS_NEIGHBORS) THEN
-         AGG(IC) = -G%NC                  !> number of rows in A
-
-      !> If not already done, build an aggregate of this cell and its  neighbors
-      ELSE IF (.NOT. HAS_AGGREGATED_NEIGHBORS) THEN
-         AGG(IC) = NAGG
-         CPT(NAGG) = IC                
-         DO ICOL = AROW(IC), AROW(IC+1)-1 
-            AGG(ACOL(ICOL)) = NAGG
-         ENDDO
-         NAGG = NAGG + 1
-      ENDIF
-
-   ENDDO PASS1_CELL_LOOP
-
-   !> Pass #2
-   !> Add unaggregated nodes to any neighboring aggregate
-   PASS2_CELL_LOOP: DO IC = 1, G%NC
-
-      IF (AGG(IC) /= 0) CYCLE             !> already marked
-      DO ICOL = AROW(IC), AROW(IC+1)-1
-         JC = ACOL(ICOL)
-         JAGG = AGG(JC)
-         IF (JAGG > 0) THEN
-            AGG(IC) = -JAGG
+   DO ICOL = AROW(IC), AROW(IC+1)-1 
+      JC = ACOL(ICOL)
+      IF (IC /= JC) THEN
+         HAS_NEIGHBORS = .TRUE.
+         IF (AGG(JC) /= 0) THEN
+            HAS_AGGREGATED_NEIGHBORS = .TRUE.
             EXIT
          ENDIF
-      ENDDO
-
-   ENDDO PASS2_CELL_LOOP
-   NAGG = NAGG - 1
-
-   !> Pass #3
-   PASS3_CELL_LOOP: DO IC = 1, G%NC
-
-      IAGG = AGG(IC)
-
-      !> cell IC has been aggregated
-      IF (IAGG /= 0) THEN
-         IF (IAGG > 0) THEN
-            AGG(IC) = IAGG 
-         ELSE IF (IAGG == - G%NC) THEN
-            AGG(IC) = -1
-         ELSE
-            AGG(IC) = -IAGG 
-         ENDIF
-         CYCLE
       ENDIF
-
-      !> cell IC has not been aggregated
-      AGG(IC) = NAGG
-      CPT(NAGG) = IC
-
-      DO ICOL = AROW(IC), AROW(IC+1)-1
-         JC = ACOL(ICOL)
-         IF (AGG(JC) == 0) AGG(JC) = NAGG
-      ENDDO
-      NAGG = NAGG + 1
-
-   ENDDO PASS3_CELL_LOOP
-
-   DEALLOCATE(CPT)
-   MG%N_AGGREGATES = NAGG
-
-   IF (MINVAL(AGG) == -1) THEN
-      WRITE(*,*) 'CAUTION: NOT YET FINISHED: AGG = -1 '
-      STOP
-   ENDIF
-
-   CALL SCARC_ALLOCATE_INT1(MG%CPOINTS , 1, MG%N_AGGREGATES, NSCARC_INIT_ZERO, 'CPOINTS')
-
-   PROL%N_ROW = AC%N_ROW
-   CALL SCARC_ALLOCATE_MATRIX_COMPACT(PROL, NL, NSCARC_PRECISION_DOUBLE, NSCARC_INIT_ZERO, 'PROLONGATION')
-   DO IC = 1, PROL%N_ROW
-      PROL%COL(IC) = AGG(IC)
-      PROL%ROW(IC) = IC
-      PROL%VAL(IC) = 1.0_EB
    ENDDO
 
-   CALL SCARC_ALLOCATE_MATRIX_COMPACT(REST, NL, NSCARC_PRECISION_DOUBLE, NSCARC_INIT_ZERO, 'RESTRICTION')
+   !> Do not aggregate isolated cells
+   IF (.NOT. HAS_NEIGHBORS) THEN
+      AGG(IC) = -G%NC                  !> number of rows in A
 
-   DEALLOCATE(AGG)
-   DEALLOCATE(CPT)
+   !> If not already done, build an aggregate of this cell and its  neighbors
+   ELSE IF (.NOT. HAS_AGGREGATED_NEIGHBORS) THEN
+      AGG(IC) = NAGG
+      CPTS(NAGG) = IC                
+      DO ICOL = AROW(IC), AROW(IC+1)-1 
+         AGG(ACOL(ICOL)) = NAGG
+      ENDDO
+      NAGG = NAGG + 1
+   ENDIF
 
+ENDDO PASS1_CELL_LOOP
+
+!> Pass #2
+!> Add unaggregated nodes to any neighboring aggregate
+PASS2_CELL_LOOP: DO IC = 1, G%NC
+
+   IF (AGG(IC) /= 0) CYCLE             !> already marked
+   DO ICOL = AROW(IC), AROW(IC+1)-1
+      JC = ACOL(ICOL)
+      JAGG = AGG(JC)
+      IF (JAGG > 0) THEN
+         AGG(IC) = -JAGG
+         EXIT
+      ENDIF
+   ENDDO
+
+ENDDO PASS2_CELL_LOOP
+NAGG = NAGG - 1
+
+!> Pass #3
+PASS3_CELL_LOOP: DO IC = 1, G%NC
+
+   IAGG = AGG(IC)
+
+   !> cell IC has been aggregated
+   IF (IAGG /= 0) THEN
+      IF (IAGG > 0) THEN
+         AGG(IC) = IAGG 
+      ELSE IF (IAGG == - G%NC) THEN
+         AGG(IC) = -1
+      ELSE
+         AGG(IC) = -IAGG 
+      ENDIF
+      CYCLE
+   ENDIF
+
+   !> cell IC has not been aggregated
+   AGG(IC) = NAGG
+   CPTS(NAGG) = IC
+
+   DO ICOL = AROW(IC), AROW(IC+1)-1
+      JC = ACOL(ICOL)
+      IF (AGG(JC) == 0) AGG(JC) = NAGG
+   ENDDO
+   NAGG = NAGG + 1
+
+ENDDO PASS3_CELL_LOOP
+
+IF (MINVAL(AGG) == -1) THEN
+   WRITE(*,*) 'CAUTION: NOT YET FINISHED: AGG = -1 '
+   STOP
+ENDIF
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES:'
+WRITE(MSG%LU_DEBUG,*) 'AGG:'
+WRITE(MSG%LU_DEBUG,'(8I8)') AGG(1:G%NC)
+WRITE(MSG%LU_DEBUG,*) 'CPTS:'
+WRITE(MSG%LU_DEBUG,'(8I8)') CPTS(1:G%NC)
+#endif
+
+!> reduce size of CPOINTS-array to number of aggretates
+MG%N_FINE       = G%NC
+MG%N_AGGREGATES = NAGG
+CALL SCARC_RESIZE_INT1(MG%CPOINTS, MG%N_AGGREGATES, 'MG%CPOINTS')     
+
+DO IC = 1, PROL%N_ROW
+   PROL%COL(IC) = AGG(IC)
+   PROL%ROW(IC) = IC
+   PROL%VAL(IC) = 1.0_EB
 ENDDO
+
+CALL SCARC_DEBUG_QUANTITY(NSCARC_DEBUG_PROLONGATION, NL,'MG%PROLONGATION')
 
 END SUBROUTINE SCARC_SETUP_AGGREGATES
 
+!> ------------------------------------------------------------------------------------------------------
+!> Perform AMG Jacobi :.. x = x - omega D^{-1} (Ax-b)
+!> Near-null space vector is given in vector MG%NSP --> corresponds to x
+!> vector b is zero
+!> ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_AMG_JACOBI
+USE SCARC_POINTERS, ONLY: G, MG, AROW, ACOL, AVAL
+INTEGER :: IC, JC, ICOL, IDIAG
 
+!> save near-null space vector
+MG%AUX1 = MG%NSP
+
+DO IC = 1, G%NC
+
+   !> Compute defect to near-null-space vector: d = Ax - b
+   IDIAG = AROW(IC)                                                
+   JC = ACOL(IDIAG)
+   MG%AUX2(IC) = AVAL(IDIAG)* MG%AUX1(JC)
+
+   DO ICOL = AROW(IC)+1, AROW(IC+1)-1                          
+      JC = ACOL(ICOL)
+      MG%AUX2(IC) =  MG%AUX2(IC) + AVAL(ICOL) * MG%AUX1(JC)
+   ENDDO
+
+   !> scale it by omega and inverse of diagonal:    d = omega D^{-1} d
+   MG%AUX2(IC) = MG%OMEGA/AVAL(IDIAG) * MG%AUX2(IC)
+
+   !> get new iterate:   x = x - d
+#ifdef WITH_MKL
+   CALL DAXPBY(G%NC, -1.0_EB, MG%AUX2, 1, 1.0_EB, MG%NSP, 1)
+#else
+   CALL SCARC_DAXPY_CONSTANT_DOUBLE(G%NC, -1.0_EB, MG%AUX2, 1.0_EB, MB%NSP)
+#endif
+
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) 'AMG_JACOBI: AUX2:'
+   WRITE(MSG%LU_DEBUG,'(8E12.4)') MG%AUX2
+#endif
+ENDDO
+
+END SUBROUTINE SCARC_AMG_JACOBI
+
+!!> ------------------------------------------------------------------------------------------------------
+!!> Setup and perform AMG Jacobi
+!!> ------------------------------------------------------------------------------------------------------
+!SUBROUTINE SCARC_AMG_JACOBI2(ISTART, ISTOP, ISTEP)
+!USE SCARC_POINTERS, ONLY: G, MG, AROW, ACOL, AVAL
+!INTEGER, INTENT(IN) :: ISTART, ISTOP, ISTEP
+!REAL(EB) :: RSUM, DIAG, ONE, OMEGA2, TEMP
+!INTEGER :: IC, JC, ICOL
+!
+!ONE = 1.0_EB
+!MG%OMEGA = 4.0_EB/3.0_EB
+!
+!DO IC = ISTART, ISTOP, ISTEP
+!   TEMP(IC) = XX(IC)
+!ENDDO
+!
+!DO IC = ISTART, ISTOP, ISTEP
+!   RSUM = 0.0_EB
+!   DIAG = 0.0_EB
+!   DO IC = AROW(IC), AROW(IC+1)-1
+!      JC = ACOL(IC)
+!      IF (IC == JC) THEN
+!         DIAG = AVAL(JC)
+!      ELSE
+!         RSUM = RSUM + AVAL(JC) * TEMP(JC)
+!      ENDIF
+!   ENDDO
+!   IF (DIAG /= 0.0_EB) XX(IC) = (ONE - OMEGA2) * TEMP(IC) + OMEGA2 * ((BB(IC) - RSUM)/DIAG)
+!ENDDO
+!
+!END SUBROUTINE SCARC_AMG_JACOBI2
+!
+!
+!!> ------------------------------------------------------------------------------------------------------
+!!> Setup and perform AMG Gauss-Seidel
+!!> ------------------------------------------------------------------------------------------------------
+!SUBROUTINE SCARC_SETUP_AMG_GAUSS_SEIDEL(NC, NB, NITE, NL, CSWEEP)
+!USE SCARC_POINTERS, ONLY: G, MG, AGG, TENT, TCOL, TROW, TVAL
+!INTEGER, INTENT(IN) :: NC, NB, NL, NITE
+!CHARACTER(*), INTENT(IN):: CSWEEP
+!INTEGER :: NM, ISTART, ISTOP, ISTEP
+!
+!MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+!
+!   CALL SCARC_POINT_TO_AMG(NM, NL)
+!
+!   IF (TRIM(CSWEEP) == 'FORWARD') THEN
+!      CALL SCARC_AMG_GAUSS_SEIDEL(0, G%NC/NB, 1)
+!   ELSE IF (TRIM(CSWEEP) == 'BACKWARD') THEN
+!      CALL SCARC_AMG_GAUSS_SEIDEL(G%NC(NB)-1, -1, -1)
+!   ELSE IF (TRIM(CSWEEP) == 'SYMMETRIC') THEN
+!      DO I = 1, NITE
+!         CALL SCARC_AMG_GAUSS_SEIDEL(0, G%NC/NB, 1, NM, NL)
+!         CALL SCARC_AMG_GAUSS_SEIDEL(G%NC(NB)-1, -1, -1)
+!      ENDDO
+!   ENDIF
+!
+!ENDDO MESHES_LOOP
+!
+!END SUBROUTINE SCARC_AMG_GAUSS_SEIDEL
+!
+!
+!SUBROUTINE SCARC_AMG_GAUSS_SEIDEL(ISTART, ISTOP, ISTEP)
+!USE SCARC_POINTERS, ONLY: G, MG, AROW, ACOL, AVAL
+!INTEGER, INTENT(IN) :: ISTART, ISTOP, ISTEP
+!REAL(EB) :: RSUM, DIAG
+!INTEGER :: IC, JC, ICOL
+!
+!DO IC = ISTART, ISTOP, ISTEP
+!   RSUM = 0.0_EB
+!   DIAG = 0.0_EB
+!   DO IC = AROW(IC), AROW(IC+1)-1
+!      JC = ACOL(IC)
+!      IF (IC == JC) THEN
+!         DIAG = AVAL(JC)
+!      ELSE
+!         RSUM = RSUM + AVAL(JC) * XX(JC)
+!      ENDIF
+!   ENDDO
+!   IF (DIAG /= 0.0_EB) XX(IC) = (BB(IC) - RSUM)/DIAG
+!ENDDO
+!
+!END SUBROUTINE SCARC_AMG_GAUSS_SEIDEL
+!
+
+!> ------------------------------------------------------------------------------------------------------
+!> Compute aggregates for a compact matrix AC
+!> Returns the number of aggregates (== max(x[:]) + 1 )
+!> Unaggregated nodes are marked with a -1
+!> ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_FIT_CANDIDATES(NL)
+USE SCARC_POINTERS, ONLY: G, MG!, AGG, TENT, TCOL, TROW, TVAL
+INTEGER, INTENT(IN) :: NL
+INTEGER :: NM, K1, K2 !, IC, JC, ICOL, BS, AX_START, B_START, B_END
+
+MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+   CALL SCARC_POINT_TO_AMG(NM, NL)
+
+   K1 = G%NC / MG%N_FINE
+   K2 = 1
+
+   CALL SCARC_ALLOCATE_REAL3(MG%QX, 1, G%NC, 1, K1, 1, K2, NSCARC_INIT_ZERO, 'MG%QX')
+   CALL SCARC_ALLOCATE_REAL3(MG%R , 1, MG%N_AGGREGATES, 1, K1, 1, K1, NSCARC_INIT_ZERO, 'MG%R')
+
+   !> Copy blocks into Ax
+   !DO IC = 1, G%NC
+   !   AX_START =  
+   !ENDDO
+
+ENDDO MESHES_LOOP
+
+END SUBROUTINE SCARC_SETUP_FIT_CANDIDATES
+
+!> ------------------------------------------------------------------------------------------------------
+!> Compute aggregates for a compact matrix AC
+!> Returns the number of aggregates (== max(x[:]) + 1 )
+!> Unaggregated nodes are marked with a -1
+!> ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_TENTATIVE_PROLONGATOR
+!USE SCARC_POINTERS, ONLY: G, MG, AGG, TENT, TCOL, TROW, TVAL
+INTEGER :: NM, IC
+
+MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   IC = 1 
+ENDDO MESHES_LOOP
+
+END SUBROUTINE SCARC_SETUP_TENTATIVE_PROLONGATOR
 
 !> ------------------------------------------------------------------------------------------------------
 !> Determine measure of cells corresponding to requested coarsening type
