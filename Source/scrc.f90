@@ -5434,6 +5434,15 @@ CALL SCARC_POINT_TO_GRID(NM, NL)
 AC  => G%AC
 ACS => G%ACS
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SETUP_MATRIX_MKL_DOUBLE:'
+WRITE(MSG%LU_DEBUG,*) 'AROW'
+WRITE(MSG%LU_DEBUG,'(8I8)') AC%ROW
+WRITE(MSG%LU_DEBUG,*) 'ACOL'
+WRITE(MSG%LU_DEBUG,'(8I8)') AC%COL
+WRITE(MSG%LU_DEBUG,*) 'AVAL'
+WRITE(MSG%LU_DEBUG,'(4E20.10)') AC%VAL
+#endif
 ! 
 ! ---------- Store only symmetric parts of matrix (diagonal and upper part)
 ! 
@@ -13312,7 +13321,7 @@ END SUBROUTINE SCARC_DUMP_TIMERS
 ! Setup coarsening process (Algebraic Multigrid only)
 ! -------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_COARSENING
-USE SCARC_POINTERS, ONLY: G, MG, OL, OG, OMG, AC, ACC
+USE SCARC_POINTERS, ONLY: G, MG, OL, OG, OMG, AC
 INTEGER :: NM, NL, NOM, INBR
 
 IF (TYPE_MULTIGRID /= NSCARC_MULTIGRID_ALGEBRAIC) RETURN
@@ -13328,6 +13337,7 @@ LEVEL_LOOP: DO NL = NLEVEL_MIN, NLEVEL_MAX - 1
    MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       CALL SCARC_POINT_TO_AMG (NM, NL)
+      CALL SCARC_PYTHON_MATRIX(NM, NL, 'Apython')
 
       CALL SCARC_ALLOCATE_INT1 (MG%CELLTYPES , 1, G%NCE, NSCARC_INIT_ZERO, 'MG%CELLTYPES')
       CALL SCARC_ALLOCATE_INT1 (MG%CPOINTS   , 1, G%NCE, NSCARC_INIT_ZERO, 'MG%CPOINTS')
@@ -13419,8 +13429,8 @@ LEVEL_LOOP: DO NL = NLEVEL_MIN, NLEVEL_MAX - 1
          CASE (NSCARC_GRID_UNSTRUCTURED)
             ACP => SCARC(NM)%LEVEL(NL+1)%UNSTRUCTURED%AC
       END SELECT
-      ACP%N_ROW = MG%N_COARSE+1
-      ACP%N_ROW = MG%N_VAL_COARSE
+      ACP%N_ROW = MG%N_COARSE+10
+      ACP%N_VAL = MG%N_VAL_COARSE+10
       CALL SCARC_ALLOCATE_MATRIX_COMPACT(ACP, NL+1, NSCARC_PRECISION_DOUBLE, NSCARC_INIT_ZERO, 'ACP')
       CALL SCARC_SETUP_COARSE_MATRIX(ACP)
 
@@ -13737,9 +13747,9 @@ CALL SCARC_RESIZE_INT1(MG%CPOINTS, MG%N_AGGREGATES, 'MG%CPOINTS')
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES:'
 WRITE(MSG%LU_DEBUG,*) 'AGG:'
-WRITE(MSG%LU_DEBUG,'(8I8)') AGG(1:G%NC)
+WRITE(MSG%LU_DEBUG,'(8I8)') AGG(1:MG%N_FINE)
 WRITE(MSG%LU_DEBUG,*) 'CPTS:'
-WRITE(MSG%LU_DEBUG,'(8I8)') CPTS(1:G%NC)
+WRITE(MSG%LU_DEBUG,'(8I8)') CPTS(1:MG%N_COARSE)
 #endif
 
 END SUBROUTINE SCARC_SETUP_AGGREGATES
@@ -14024,7 +14034,21 @@ INTEGER  :: ICC, JCC, IA
 IA = 1
 ACP%ROW(1) = IA
 DO ICC = 1, MG%N_COARSE
+
+   ! First process diagonal entry
+   JCC = ICC
+   IF (ABS(MG%VAL2(ICC, JCC)) > TOL) THEN
+      ACP%COL(IA) = JCC
+#ifdef WITH_MKL
+      ACP%COL_GLOBAL(IA) = JCC
+#endif
+      ACP%VAL(IA) = MG%VAL2(ICC, JCC)
+      IA = IA + 1
+   ENDIF
+
+   ! Then process other columns from left to right
    DO JCC = 1, MG%N_COARSE
+      IF (JCC == ICC) CYCLE
       IF (ABS(MG%VAL2(ICC, JCC)) > TOL) THEN
          ACP%COL(IA) = JCC
 #ifdef WITH_MKL
@@ -17334,6 +17358,75 @@ ENDDO
 CLOSE(MMATRIX)
 
 END SUBROUTINE SCARC_MATLAB_MATRIX
+
+! ------------------------------------------------------------------------------------------------
+! Print out matrix information on level NL for matlab
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PYTHON_MATRIX(NM, NL, CNAME)
+INTEGER, INTENT(IN) :: NM, NL
+CHARACTER(*), INTENT(IN) :: CNAME
+INTEGER :: IC, JC, ICOL, MVAL, MCOL, MROW, I, J, NLEN
+CHARACTER(60) :: CVAL, CROW, CCOL
+INTEGER :: STENCIL(7) = 99999999, COLUMNS(7) = 99999999
+
+WRITE (CVAL, '(A,A,A,i2.2,A,i2.2,A)') 'python/',TRIM(CNAME),'_mesh',NM,'_level',NL,'.val'
+WRITE (CCOL, '(A,A,A,i2.2,A,i2.2,A)') 'python/',TRIM(CNAME),'_mesh',NM,'_level',NL,'.col'
+WRITE (CROW, '(A,A,A,i2.2,A,i2.2,A)') 'python/',TRIM(CNAME),'_mesh',NM,'_level',NL,'.row'
+
+MVAL=GET_FILE_NUMBER()
+MCOL=GET_FILE_NUMBER()
+MROW=GET_FILE_NUMBER()
+
+OPEN(MVAL,FILE=CVAL)
+OPEN(MCOL,FILE=CCOL)
+OPEN(MVAL,FILE=CROW)
+
+WRITE(MVAL, *) '['
+WRITE(MCOL, *) '['
+WRITE(MROW, *) '['
+
+DO IC = 1, G%NC
+
+   I = 0
+   DO ICOL= AC%ROW(IC), AC%ROW(IC+1)-1
+      I = I + 1
+      COLUMNS(I) = ICOL
+      STENCIL(I) = AC%COL(ICOL)
+   ENDDO
+   NLEN = I
+
+   DO I = NLEN, 2, -1
+      DO J = 1, I-1
+         IF (STENCIL(J) > STENCIL(J+1)) THEN
+            JC = STENCIL(J+1)
+            STENCIL(J+1) = STENCIL(J)
+            STENCIL(J) = JC
+            JC = COLUMNS(J+1)
+            COLUMNS(J+1) = COLUMNS(J)
+            COLUMNS(J) = JC
+         ENDIF
+      ENDDO
+   ENDDO
+
+   DO I = 1, NLEN
+      ICOL = COLUMNS(I)
+      JC = AC%COL(ICOL)
+      WRITE(MVAL,*) AC%VAL(JC)
+      WRITE(MCOL,*) AC%COL(JC)
+   ENDDO
+   WRITE(MROW,*) AC%ROW(IC)
+
+ENDDO
+
+WRITE(MVAL, *) ' ]'
+WRITE(MCOL, *) ' ]'
+WRITE(MROW, *) ' ]'
+
+CLOSE(MVAL)
+CLOSE(MCOL)
+CLOSE(MROW)
+
+END SUBROUTINE SCARC_PYTHON_MATRIX
 
 ! ================================================================================================
 ! End  WITH_SCARC_DEBUG  - Part
