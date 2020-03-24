@@ -756,7 +756,7 @@ TYPE SCARC_MULTIGRID_TYPE
    TYPE (SCARC_MATRIX_COMPACT_TYPE) :: RESTRICTION         !> Restriction matrix
    TYPE (SCARC_MATRIX_COMPACT_TYPE) :: STRENGTH            !> Strength matrix
    TYPE (SCARC_MATRIX_COMPACT_TYPE) :: TENTATIVE           !> Tentative prolongator 
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: AGG                 !> Aggregates matrix
+   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: AGG, AC             !> Aggregates matrix
 
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: MEASURES        !> Measure for grid coarsening (AMG only)
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: NSP             !> Nullspace and Aggregate vector
@@ -767,8 +767,9 @@ TYPE SCARC_MULTIGRID_TYPE
    REAL(EB) :: AMG_TOL = 0.25_EB                           !> Tolerance for coarsening
    REAL(EB) :: OMEGA                                       !> Relaxation parameter
 
-   !REAL(EB), ALLOCATABLE, DIMENSION (:,:,:) :: Q, R        !> Different arrays for tentative prolongation
+   !REAL(EB), ALLOCATABLE, DIMENSION (:,:,:) :: Q, R       !> Different arrays for tentative prolongation
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: Q, R            !> Different arrays for tentative prolongation
+   REAL(EB), ALLOCATABLE, DIMENSION (:,:) :: VAL, VAL2     !> Auxiliary arrays for matrix-vector multiplications
 
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: AGGREGATES      !> Aggregates for grid coarsening (AMG only)
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: CELLTYPES       !> Celltype for grid coarsening (AMG only)
@@ -777,7 +778,7 @@ TYPE SCARC_MULTIGRID_TYPE
    INTEGER :: CYCLING(2) = 0                               !> Counter for multigrid cycling
    INTEGER :: N_PRESMOOTH, N_POSTSMOOTH                    !> Number of pre- and post-processing steps
    INTEGER :: N_AGGREGATES                                 !> Number of aggregates in AMG
-   INTEGER :: N_FINE, N_COARSE                             !> Number of aggregates in AMG
+   INTEGER :: N_FINE, N_COARSE, N_VAL_COARSE               !> Number of fine, coarse and matrix entries
 
 END TYPE SCARC_MULTIGRID_TYPE
 
@@ -10799,12 +10800,14 @@ END SUBROUTINE SCARC_CONVERGENCE_RATE
 !    - 'VC' corresponds to vector on coarse grid
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_RESTRICTION (NVB, NVC, NLF, NLC)
-USE SCARC_POINTERS, ONLY: LF, LC, GF, GC, VF, VC
+USE SCARC_POINTERS, ONLY: LF, LC, GF, GC, VF, VC, RROW, RCOL, RVAL
 INTEGER, INTENT(IN) :: NVB, NVC, NLF, NLC
+REAL(EB) :: DSUM
 INTEGER :: NM
 INTEGER :: IXF, IYF, IZF, ICF(8)=0, ICFB(-2:2,-2:2)=0
-INTEGER :: IXC, IYC, IZC, ICC
+INTEGER :: IXC, IYC, IZC, ICC, IC, ICOL
 
+IF (IS_GMG) THEN
 !
 ! ------------------ Twolevel-CG or Geometric multigrid (as main solver or preconditioner) --------------
 !
@@ -10992,6 +10995,40 @@ IF (HAS_MULTI_LEVELS) THEN
    ENDDO
 ENDIF
 
+ELSE
+
+   DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+      LF => SCARC(NM)%LEVEL(NLF)
+      LC => SCARC(NM)%LEVEL(NLC)
+
+      SELECT CASE(TYPE_GRID)
+         CASE(NSCARC_GRID_STRUCTURED)
+            GC => LC%STRUCTURED
+            GF => LF%STRUCTURED
+         CASE(NSCARC_GRID_UNSTRUCTURED)
+            GC => LC%UNSTRUCTURED
+            GF => LF%UNSTRUCTURED
+      END SELECT
+
+      VF => SCARC_POINT_TO_VECTOR(NM, NLF, NVB)
+      VC => SCARC_POINT_TO_VECTOR(NM, NLC, NVC)
+
+      RROW => LF%MG%RESTRICTION%ROW
+      RCOL => LF%MG%RESTRICTION%COL
+      RVAL => LF%MG%RESTRICTION%VAL
+
+      DO IC = 1, LF%MG%N_COARSE
+         DSUM = 0.0_EB
+         DO ICOL = RROW(IC), RROW(IC+1)-1                            
+            DSUM =  DSUM + RVAL(ICOL) * VF(RCOL(ICOL))
+         ENDDO
+         VC(IC) = DSUM
+      ENDDO
+
+   ENDDO
+
+ENDIF
 END SUBROUTINE SCARC_RESTRICTION
 
 
@@ -11001,12 +11038,14 @@ END SUBROUTINE SCARC_RESTRICTION
 !    - 'VF' corresponds to finer   grid
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PROLONGATION (NVC, NVB, NLC, NLF)
-USE SCARC_POINTERS, ONLY: LF, LC, GF, GC, VF, VC
+USE SCARC_POINTERS, ONLY: LF, LC, GF, GC, VF, VC, PROW, PCOL, PVAL
 INTEGER, INTENT(IN) :: NVC, NVB, NLC, NLF
+REAL(EB) :: DSUM
 INTEGER :: NM, I
 INTEGER :: IXF, IYF, IZF, ICF(8)=0, ICFB(-1:1,-1:1)=0
-INTEGER :: IXC, IYC, IZC, ICC
+INTEGER :: IXC, IYC, IZC, ICC, IC, ICOL
 
+IF (IS_GMG) THEN
 !
 ! ------------------ Twolevel CG or Geometric Multigrid 
 !
@@ -11164,6 +11203,41 @@ IF (HAS_MULTI_LEVELS) THEN
 
       ENDIF
    ENDDO
+ENDIF
+
+ELSE
+
+   DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+      LC => SCARC(NM)%LEVEL(NLC)
+      LF => SCARC(NM)%LEVEL(NLF)
+
+      VC => SCARC_POINT_TO_VECTOR(NM, NLC, NVC)
+      VF => SCARC_POINT_TO_VECTOR(NM, NLF, NVB)
+
+      SELECT CASE(TYPE_GRID)
+         CASE(NSCARC_GRID_STRUCTURED)
+            GC => LC%STRUCTURED
+            GF => LF%STRUCTURED
+         CASE(NSCARC_GRID_UNSTRUCTURED)
+            GC => LC%UNSTRUCTURED
+            GF => LF%UNSTRUCTURED
+      END SELECT
+
+      PROW => LF%MG%PROLONGATION%ROW
+      PCOL => LF%MG%PROLONGATION%COL
+      PVAL => LF%MG%PROLONGATION%VAL
+
+      DO IC = 1, LF%MG%N_FINE
+         DSUM = 0.0_EB
+         DO ICOL = PROW(IC), PROW(IC+1)-1                            
+            DSUM = DSUM + PVAL(ICOL) * VC(PCOL(ICOL))
+         ENDDO
+         VF(IC) = DSUM
+      ENDDO
+
+   ENDDO
+
 ENDIF
 
 END SUBROUTINE SCARC_PROLONGATION
@@ -13320,6 +13394,9 @@ LEVEL_LOOP: DO NL = NLEVEL_MIN, NLEVEL_MAX - 1
       CALL SCARC_SETUP_TENTATIVE_PROLONGATOR
       CALL SCARC_SETUP_NEXTLEVEL(NM, NL)
 
+      CALL SCARC_ALLOCATE_REAL2(MG%VAL, 1, MG%N_FINE, 1, MG%N_COARSE, NSCARC_INIT_ZERO, 'AUXVAL')
+      CALL SCARC_ALLOCATE_REAL2(MG%VAL2, 1, MG%N_COARSE, 1, MG%N_COARSE, NSCARC_INIT_ZERO, 'AUXVAL2')
+
       ! Perform Jacobi relaxation to get the final prolongator
       CALL SCARC_RELAX_PROLONGATOR
 
@@ -13327,9 +13404,19 @@ LEVEL_LOOP: DO NL = NLEVEL_MIN, NLEVEL_MAX - 1
       MG%RESTRICTION%N_ROW = MG%N_COARSE + 1
       CALL SCARC_ALLOCATE_MATRIX_COMPACT(MG%RESTRICTION, NL, NSCARC_PRECISION_DOUBLE, &
                                          NSCARC_INIT_ZERO, 'MG%RESTRICTION')
+
       CALL SCARC_POINT_TO_AMG (NM, NL)
       CALL SCARC_SETUP_RESTRICTION
 
+      CALL SCARC_SETUP_GALERKIN_OPERATOR
+      
+      ! Only temporarily
+      SCARC(NM)%LEVEL(NL+1)%MG%AC%N_ROW = MG%N_COARSE+1
+      SCARC(NM)%LEVEL(NL+1)%MG%AC%N_VAL = MG%N_VAL_COARSE
+      CALL SCARC_ALLOCATE_MATRIX_COMPACT(SCARC(NM)%LEVEL(NL+1)%MG%AC, NL+1, NSCARC_PRECISION_DOUBLE, &
+                                         NSCARC_INIT_ZERO, 'MG(NL+1)%AC')
+
+      CALL SCARC_SETUP_COARSE_MATRIX(SCARC(NM)%LEVEL(NL+1)%MG%AC)
 
    ENDDO MESHES_LOOP2
 
@@ -13702,50 +13789,75 @@ WRITE(MSG%LU_DEBUG,'(8E12.4)') SCARC(NM)%LEVEL(NL+1)%MG%NSP
 END SUBROUTINE SCARC_SETUP_NEXTLEVEL
 
 ! ------------------------------------------------------------------------------------------------------
-! Perform AMG Jacobi :.. x = x - omega D^{-1} (Ax-b)
-! Near-null space vector is given in vector MG%NSP --> corresponds to x
-! vector b is zero
+! Compute: P =  P - (D_inv_S*P)      
+! with D_inv_S = D_inv_S = 4/3 * 1/rho * D^{-1} A
+! for testing purposes:   rho ~1.95,    4/3*1/rho ~0.6
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_RELAX_PROLONGATOR
 USE SCARC_POINTERS, ONLY: MG
-REAL(EB), ALLOCATABLE, DIMENSION(:,:) :: VAL
-REAL(EB):: DSUM
-INTEGER :: IC, JC, ICC, ICOL, ICCOL
+REAL(EB):: DSUM, TOL = 1.0E-12_EB
+INTEGER :: IC, JC, ICC, ICOL, ICCOL, IP, IVAL
 
-CALL SCARC_ALLOCATE_REAL2(VAL, 1, MG%N_FINE, 1, MG%N_COARSE+1, NSCARC_INIT_ZERO, 'AUXVAL')
 
 DO ICC = 1, MG%N_COARSE
    DO IC = 1, MG%N_FINE
 
       DSUM = 0.0_EB
-      DO ICCOL = PROW(ICC), PROW(ICC+1)-1
-         JC = PCOL(ICCOL)
+      DO ICCOL = MG%AGG%ROW(ICC), MG%AGG%ROW(ICC+1)-1
+         JC = MG%AGG%COL(ICCOL)
          ICOL = SCARC_MATCH_MATRIX_COLUMN(IC, JC)
-         IF (ICOL /= -1) DSUM = DSUM + MG%ADIAG_INV(ICOL) * PVAL(ICCOL)
+         IF (ICOL /= -1) DSUM = DSUM + MG%ADIAG_INV(ICOL) * MG%Q(ICCOL)
       ENDDO
-      VAL(IC, ICC) = DSUM
+      MG%VAL(IC, ICC) = DSUM
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'VAL(',IC,',',ICC,'):', VAL(IC, ICC)
+WRITE(MSG%LU_DEBUG,*) 'MG%VAL(',IC,',',ICC,'):', MG%VAL(IC, ICC)
 #endif
 
    ENDDO
 ENDDO
 
+IVAL = 0
 DO ICC = 1, MG%N_COARSE
-   DO ICCOL = PROW(ICC), PROW(ICC+1)-1
-      IC = PCOL(ICCOL)
-      VAL(IC, ICC) = PVAL(ICCOL) - VAL(IC, ICC)
+   DO ICCOL = MG%AGG%ROW(ICC), MG%AGG%ROW(ICC+1)-1
+      IVAL = IVAL + 1
+      IC = MG%AGG%COL(ICCOL)
+      MG%VAL(IC, ICC) = MG%Q(ICCOL) - MG%VAL(IC, ICC)
    ENDDO
 ENDDO
 
+IP = 1
+PROW(1) = IP
+DO IC = 1, MG%N_FINE
+   DO ICC = 1, MG%N_COARSE
+      IF (ABS(MG%VAL(IC, ICC)) > TOL) THEN
+         PVAL(IP) = ABS(MG%VAL(IC, ICC))
+         PCOL(IP) = ICC
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'VAL:'
-WRITE(MSG%LU_DEBUG,'(4E14.6)') ((VAL(IC, ICC), ICC = 1, MG%N_COARSE), IC=1, MG%N_FINE)
+WRITE(MSG%LU_DEBUG,*) 'IC, ICC:', IC, ICC, ABS(MG%VAL(IC, ICC)), PVAL(IP), PCOL(IP)
+#endif
+         IP = IP + 1
+      ENDIF
+   ENDDO
+   PROW(IC+1) = IP
+ENDDO
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'VAL:', IVAL
+WRITE(MSG%LU_DEBUG,'(4E14.6)') ((MG%VAL(IC, ICC), ICC = 1, MG%N_COARSE), IC=1, MG%N_FINE)
+WRITE(MSG%LU_DEBUG,*) 'PROW:'
+WRITE(MSG%LU_DEBUG,'(8I8)') PROW
+WRITE(MSG%LU_DEBUG,*) 'PCOL:'
+WRITE(MSG%LU_DEBUG,'(8I8)')  PCOL
+WRITE(MSG%LU_DEBUG,*) 'PVAL:'
+WRITE(MSG%LU_DEBUG,'(8E12.4)') PVAL
 #endif
 
 END SUBROUTINE SCARC_RELAX_PROLONGATOR
 
+! ------------------------------------------------------------------------------------------------------
+! Determine which columns of system matrix are involved in multiplication with tentative prolongator
+! ------------------------------------------------------------------------------------------------------
 INTEGER FUNCTION SCARC_MATCH_MATRIX_COLUMN(IC, JC)
 INTEGER, INTENT(IN) :: IC, JC
 INTEGER :: ICOL
@@ -13760,42 +13872,129 @@ END FUNCTION SCARC_MATCH_MATRIX_COLUMN
 
 ! ------------------------------------------------------------------------------------------------------
 ! Setup restriction matrix: Build transpose of prolongation matrix
+! Compute the restriction matrix, R, which interpolates from the fine-grid to the coarse-grid.
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_RESTRICTION
 USE SCARC_POINTERS, ONLY: MG
 INTEGER  :: ICP, ICP2, IC, IC2
-LOGICAL  :: BFIRST
 
 IC2 = 1
+RROW(1) = IC2
 DO ICP = 1, MG%N_COARSE
-   BFIRST = .TRUE.
    DO IC = 1, MG%N_FINE
       
       ROW_LOOP: DO ICP2 = PROW(IC), PROW(IC+1)-1
          IF (PCOL(ICP2) == ICP) THEN
             RVAL(IC2) = PVAL(ICP2)
-            IF (BFIRST) THEN
-               RROW(ICP) = IC2
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'IC=',IC,': ICP2=',ICP2,': R_ROW(',ICP,')=',RROW(ICP)
-#endif
-            ENDIF
             RCOL(IC2) = IC
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) ' ----------->  R_COL(',ICP,')=',RCOL(IC2)
+WRITE(MSG%LU_DEBUG,*) 'ICP, IC, ICP2, RCOL, RVAL:', ICP, IC, ICP2, RCOL(IC2), RVAL(IC2)
 #endif
             IC2 = IC2 + 1
-            BFIRST = .FALSE.
             EXIT ROW_LOOP
          ENDIF
       ENDDO ROW_LOOP
-
+      RROW(ICP+1) = IC2
    ENDDO
 
 ENDDO
-RROW(MG%N_COARSE+1)=IC2
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'RROW'
+WRITE(MSG%LU_DEBUG,'(8I8)') RROW
+WRITE(MSG%LU_DEBUG,*) 'RCOL'
+WRITE(MSG%LU_DEBUG,'(8I8)') RCOL
+WRITE(MSG%LU_DEBUG,*) 'RVAL'
+WRITE(MSG%LU_DEBUG,'(8E12.4)') RVAL
+#endif
 END SUBROUTINE SCARC_SETUP_RESTRICTION
+
+! ------------------------------------------------------------------------------------------------------
+! Setup restriction matrix: Build transpose of prolongation matrix
+! ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_GALERKIN_OPERATOR
+USE SCARC_POINTERS, ONLY: MG
+INTEGER  :: ICC, JCC, IC, JC, IA1, IP, IR
+REAL(EB) :: DSUM, TOL = 1.0E-12_EB
+
+MG%VAL = 0.0_EB
+
+DO ICC = 1, MG%N_COARSE
+   DO IC = 1, MG%N_FINE
+
+      DSUM = 0.0_EB
+      DO IA1 = AROW(IC), AROW(IC+1) - 1
+         JC = ACOL(IA1)
+         DO IP = PROW(JC), PROW(JC+1) -1
+            IF (PCOL(IP) == ICC) DSUM = DSUM + AVAL(IA1)*PVAL(IP)
+         ENDDO
+      ENDDO
+      MG%VAL(IC, ICC) = DSUM
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'VAL(',IC,',',ICC,'):', MG%VAL(IC, ICC)
+#endif
+
+   ENDDO
+ENDDO
+
+MG%N_VAL_COARSE = 0
+DO ICC = 1, MG%N_COARSE
+   DO JCC = 1, MG%N_COARSE
+      DSUM = 0.0_EB
+      DO IR = RROW(JCC), RROW(JCC+1) - 1
+         JC = RCOL(IR)
+         DSUM = DSUM + RVAL(IR) * MG%VAL(JC, ICC)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4I5,3E12.4)') 'ICC, JCC, IR, JC, DSUM, RVAL, VAL:', ICC, JCC, IR, JC, DSUM, RVAL(IR), MG%VAL(JC, ICC)
+#endif
+      ENDDO
+      MG%VAL2(ICC, JCC) = DSUM
+      IF (ABS(DSUM) > TOL) MG%N_VAL_COARSE = MG%N_VAL_COARSE + 1
+   ENDDO
+ENDDO
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'VAL'
+WRITE(MSG%LU_DEBUG,'(4E16.8)') ((MG%VAL(IC, ICC), ICC=1, MG%N_COARSE), IC=1, MG%N_FINE)
+WRITE(MSG%LU_DEBUG,*) 'VAL2'
+WRITE(MSG%LU_DEBUG,'(4E16.8)') ((MG%VAL2(IC, ICC), ICC=1, MG%N_COARSE), IC=1, MG%N_COARSE)
+WRITE(MSG%LU_DEBUG,*) 'N_VAL_COARSE=', MG%N_VAL_COARSE
+#endif
+END SUBROUTINE SCARC_SETUP_GALERKIN_OPERATOR
+
+! ------------------------------------------------------------------------------------------------------
+! Setup restriction matrix: Build transpose of prolongation matrix
+! ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_COARSE_MATRIX(ACC)
+USE SCARC_POINTERS, ONLY: MG
+TYPE (SCARC_MATRIX_COMPACT_TYPE), INTENT(INOUT) :: ACC      
+REAL(EB) :: TOL = 1.0E-12_EB
+INTEGER  :: ICC, JCC, IA
+
+IA = 1
+ACC%ROW(1) = IA
+DO ICC = 1, MG%N_COARSE
+   DO JCC = 1, MG%N_COARSE
+      IF (ABS(MG%VAL2(ICC, JCC)) > TOL) THEN
+         ACC%COL(IA) = JCC
+         ACC%VAL(IA) = MG%VAL2(ICC, JCC)
+         IA = IA + 1
+      ENDIF
+   ENDDO
+   ACC%ROW(ICC+1) = IA
+ENDDO
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'ACC%ROW'
+WRITE(MSG%LU_DEBUG,'(8I8)') ACC%ROW
+WRITE(MSG%LU_DEBUG,*) 'ACC%COL'
+WRITE(MSG%LU_DEBUG,'(8I8)') ACC%COL
+WRITE(MSG%LU_DEBUG,*) 'ACC%VAL'
+WRITE(MSG%LU_DEBUG,'(8E12.4)') ACC%VAL
+#endif
+
+END SUBROUTINE SCARC_SETUP_COARSE_MATRIX
 
 !!> ------------------------------------------------------------------------------------------------------
 !!> Setup and perform AMG Gauss-Seidel
@@ -13871,8 +14070,8 @@ DO ICC = 1, MG%N_COARSE
 ENDDO
 MG%AGG%ROW(ICC) = ICOL
 
-MG%PROLONGATION%COL = MG%AGG%COL
-MG%PROLONGATION%ROW = MG%AGG%ROW
+!MG%PROLONGATION%COL = MG%AGG%COL
+!MG%PROLONGATION%ROW = MG%AGG%ROW
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'MG%AGG%ROW:'
@@ -13934,7 +14133,7 @@ DO ICC = 1, MG%N_COARSE
    DO ICOL = MG%AGG%ROW(ICC), MG%AGG%ROW(ICC+1)-1
       JC = MG%AGG%COL(ICOL)
       MG%Q(IQ) = MG%Q(IQ)/MG%R(ICC)
-      PVAL(IQ) = MG%Q(IQ)
+      !PVAL(IQ) = MG%Q(IQ)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,4I5,E12.4)') '--- ICC, ICOL, JC, IQ, MG%Q(IC):', ICC, ICOL, JC, IQ, MG%Q(IQ)
 #endif
