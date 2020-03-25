@@ -5511,7 +5511,7 @@ ENDIF
 ! extract symmetric matrix part from usual system matrix
 ! 
 IAS = 1
-DO IC = 1, G%NC
+DO IC = 1, ACS%N_ROW
    ACS%ROW(IC) = IAS
 
 
@@ -14064,7 +14064,12 @@ DO ICC = 1, MG%N_COARSE
    ACP%ROW(ICC+1) = IA
 ENDDO
 
+ACP%N_VAL = IA - 1
+ACP%N_ROW = ICC 
+
 #ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'ACP%N_VAL=', ACP%N_VAL
+WRITE(MSG%LU_DEBUG,*) 'ACP%N_ROW=', ACP%N_ROW
 WRITE(MSG%LU_DEBUG,*) 'ACP%ROW'
 WRITE(MSG%LU_DEBUG,'(8I8)') ACP%ROW
 WRITE(MSG%LU_DEBUG,*) 'ACP%COL'
