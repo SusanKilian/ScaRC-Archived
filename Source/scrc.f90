@@ -5508,7 +5508,7 @@ ENDIF
 ! extract symmetric matrix part from usual system matrix
 ! 
 IAS = 1
-DO IC = 1, ACS%N_ROW
+DO IC = 1, ACS%N_ROW - 1
    ACS%ROW(IC) = IAS
 
 
