@@ -14117,7 +14117,34 @@ IA = 1
 ACC%ROW(1) = 1
 
 DO IRC = 1, MGF%N_COARSE                      ! rows of restriction matrix
+
+   ! First process diagonal entry
+   IPC = IRC
+
+   ! Compute entry ACC(ICC,JCC) = SUM( P(:,JCC)*A(IC,:)*R(ICC,IC) )
+   DRSUM = 0.0_EB
+   DO IR = RF%ROW(IRC), RF%ROW(IRC+1) - 1
+      IC = RF%COL(IR)
+      DAP = SCARC_VALUE_AP(IC, IPC)
+      DRSUM = DRSUM + DAP*RF%VAL(IR)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4I4,3E12.4)') 'GAL: IRC, IPC, IR, IC, VAL_AP, RF%VAL, DRSUM:', &
+                                      IRC, IPC, IR, IC, DAP, RF%VAL(IR), DRSUM
+#endif
+   ENDDO
+   IF (ABS(DRSUM) > TOL) THEN
+      ACC%VAL(IA) = DRSUM
+      ACC%COL(IA) = IPC
+      IA = IA + 1
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,6I5,E12.4)') 'GALERKIN: IPC, IRC, IR, IC, IA, DRSUM:',IPC,IRC,IR,IC,IA,ACC%COL(IA),ACC%VAL(IA)
+#endif
+   ENDIF
+
+   ! Then process remaining entries in row
    DO IPC = 1, MGF%N_COARSE                   ! columns of prolongation matrix
+
+      IF (IPC == IRC) CYCLE
 
       ! Compute entry ACC(ICC,JCC) = SUM( P(:,JCC)*A(IC,:)*R(ICC,IC) )
       DRSUM = 0.0_EB
@@ -14140,6 +14167,7 @@ WRITE(MSG%LU_DEBUG,'(A,6I5,E12.4)') 'GALERKIN: IPC, IRC, IR, IC, IA, DRSUM:',IPC
       ENDIF
 
    ENDDO
+
    ACC%ROW(IRC+1) = IA
 ENDDO
 
