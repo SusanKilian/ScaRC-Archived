@@ -13325,7 +13325,7 @@ WRITE(MSG%LU_DEBUG,*) '========================================================'
 #endif
 
       ! Allocate several workspaces for coarse points, aggregates, inverse matrix diagonal
-      MGF%N_FINE = GF%NCE
+      IF (NL == NLEVEL_MIN) MGF%N_FINE = GF%NCE
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'SAMG: MGF%N_FINE=',MGF%N_FINE
 #endif

@@ -3161,7 +3161,7 @@ WRITE_SCARC: IF (TRIM(PRES_METHOD) == 'SCARC' .OR. TRIM(PRES_METHOD) == 'USCARC'
             WRITE(LU_OUTPUT,'(3X,A25,A12)') 'MKL precision            ', SCARC_MKL_PRECISION
          WRITE(LU_OUTPUT,'(3X,A25,I12)')   'Max iterations           ', SCARC_KRYLOV_ITERATIONS
          WRITE(LU_OUTPUT,'(3X,A25,E12.2)') 'Stopping accuracy        ', SCARC_KRYLOV_ACCURACY
-         IF (TRIM(SCARC_TWOLEVEL) /= 'NONE' .AND. SCARC_COARSE == 'DIRECT') &
+         IF (TRIM(SCARC_TWOLEVEL) /= 'NONE' .AND. TRIM(SCARC_COARSE) == 'DIRECT') &
             WRITE(LU_OUTPUT,'(3X,A25,A12)') 'MKL precision Coarse Grid', SCARC_MKL_PRECISION
       CASE('MULTIGRID')
          WRITE(LU_OUTPUT,'(3X,A25,A12)') 'Smoother                 ', TRIM(SCARC_SMOOTH)
