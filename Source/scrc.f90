@@ -11013,11 +11013,22 @@ ELSE
       VF => SCARC_POINT_TO_VECTOR(NM, NLF, NVB)
       VC => SCARC_POINT_TO_VECTOR(NM, NLC, NVC)
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'RESTRICTION_AMG: NM, NLF, NLC, N_COARSE:', NM, NLF, NLC, MGF%N_COARSE
+WRITE(MSG%LU_DEBUG,*) 'VF:'
+WRITE(MSG%LU_DEBUG,'(8E12.4)') VF
+WRITE(MSG%LU_DEBUG,*) 'VC:'
+WRITE(MSG%LU_DEBUG,'(8E12.4)') VC
+#endif
+
       DO IC = 1, MGF%N_COARSE
          DSUM = 0.0_EB
          DO ICOL = RF%ROW(IC), RF%ROW(IC+1)-1                            
             DSUM =  DSUM + RF%VAL(ICOL) * VF(RF%COL(ICOL))
          ENDDO
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'IC=',IC,': DSUM=',DSUM, RF%ROW(IC), RF%ROW(IC+1)-1
+#endif
          VC(IC) = DSUM
       ENDDO
 
@@ -13386,7 +13397,7 @@ WRITE(MSG%LU_DEBUG,*) 'SAMG: MGF%N_FINE=',MGF%N_FINE
       CALL SCARC_SETUP_AGGREGATION 
 
 #ifdef WITH_SCARC_DEBUG
-      IF (NL == NLEVEL_MIN) CALL SCARC_PYTHON_AGGREGATES(NM, NL, 'Agg')
+      CALL SCARC_PYTHON_AGGREGATES(NM, NL, 'Agg')
 #endif
 
       ! Improve near nullspace candidates by one Jacobi relaxing step and setup aggregate operator
@@ -13402,6 +13413,8 @@ WRITE(MSG%LU_DEBUG,*) 'SAMG: MGF%N_FINE=',MGF%N_FINE
 
       IF (NL < NLEVEL_MAX) THEN
          MGC%N_FINE = MGF%N_COARSE
+         GC%NC = MGC%N_FINE
+         GC%NCE = MGC%N_FINE        ! only temporarily
          CALL SCARC_ALLOCATE_REAL1(MGC%NULLSPACE, 1, MGC%N_FINE, NSCARC_INIT_ZERO, 'MG%B-COARSE')
          MGC%NULLSPACE(1:MGC%N_FINE) = MGF%R(1:MGC%N_FINE)
       ENDIF
@@ -13652,6 +13665,9 @@ PASS1_CELL_LOOP: DO IC = 1, GF%NC
    ELSE IF (.NOT. HAS_AGGREGATED_NEIGHBORS) THEN
       AGGF(IC) = NAGG
       CPTF(NAGG) = IC                
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'AGGF(',IC,')=', AGGF(IC),': CPTF(',NAGG,')=',CPTF(NAGG)
+#endif
       DO ICOL = ACF%ROW(IC), ACF%ROW(IC+1)-1 
          AGGF(ACF%COL(ICOL)) = NAGG
       ENDDO
@@ -13708,6 +13724,10 @@ PASS3_CELL_LOOP: DO IC = 1, GF%NC
    !> cell IC has not been aggregated
    AGGF(IC) = NAGG
    CPTF(NAGG) = IC
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'AGGF(',IC,')=', AGGF(IC),': CPTF(',NAGG,')=',CPTF(NAGG)
+#endif
 
    DO ICOL = ACF%ROW(IC), ACF%ROW(IC+1)-1
       JC = ACF%COL(ICOL)
@@ -13771,7 +13791,7 @@ MGF%AUX1 = MGF%NULLSPACE
 ! Compute defect to near-null-space vector: d = Ax - b, in this case
 !    'x' corresponds to nullspace vector consisting of only '1'-entries 
 !    'b' corresponds to zero vector
-DO IC = 1, GF%NC
+DO IC = 1, MGF%N_FINE
 
    IDIAG = ACF%ROW(IC)                                                
    JC = ACF%COL(IDIAG)
@@ -13784,16 +13804,26 @@ DO IC = 1, GF%NC
 
 ENDDO
 
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) 'RELAX_NULLSPACE:A: AUX2:'
+   WRITE(MSG%LU_DEBUG,'(8E12.4)') MGF%AUX2
+#endif
+
 ! scale it by omega and inverse of diagonal:    d = omega D^{-1} d
-DO IC = 1, GF%NC
+DO IC = 1, MGF%N_FINE
    MGF%AUX2(IC) = MGF%OMEGA * MGF%INVERSE_DIAG(IC) * MGF%AUX2(IC)
 ENDDO
 
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) 'RELAX_NULLSPACE:B: AUX2:'
+   WRITE(MSG%LU_DEBUG,'(8E12.4)') MGF%AUX2
+#endif
+
 ! get new iterate:   x = x - d
 #ifdef WITH_MKL
-CALL DAXPBY(GF%NC, -1.0_EB, MGF%AUX2, 1, 1.0_EB, MGF%NULLSPACE, 1)
+CALL DAXPBY(MGF%N_FINE, -1.0_EB, MGF%AUX2, 1, 1.0_EB, MGF%NULLSPACE, 1)
 #else
-CALL SCARC_DAXPY_CONSTANT_DOUBLE(GF%NC, -1.0_EB, MGF%AUX2, 1.0_EB, MB%NULLSPACE)
+CALL SCARC_DAXPY_CONSTANT_DOUBLE(MGF%N_FINE, -1.0_EB, MGF%AUX2, 1.0_EB, MB%NULLSPACE)
 #endif
 
 #ifdef WITH_SCARC_DEBUG
@@ -14084,7 +14114,7 @@ DSUM = 0.0_EB
 DO IA = ACF%ROW(IC), ACF%ROW(IC+1) - 1
    JC = ACF%COL(IA)
    DO IP = PF%ROW(JC), PF%ROW(JC+1) -1
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,'(A,6I4,3E12.4)') 'VALUE_AP: IC, ICC, IA, JC, IP, PF%COL(IP), DSUM, ACF%VAL(IA), PF%VAL(IP):',&
                        IC, ICC, IA, JC, IP, PF%COL(IP), DSUM, ACF%VAL(IA), PF%VAL(IP)
 #endif
@@ -14096,7 +14126,7 @@ WRITE(MSG%LU_DEBUG,'(A,6I4,3E12.4)') 'VALUE_AP: IC, ICC, IA, JC, IP, PF%COL(IP),
 ENDDO
 SCARC_VALUE_AP = DSUM
 
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'VALUE_AP: RETURN DSUM=', DSUM
 #endif
 
@@ -14125,7 +14155,7 @@ DO IRC = 1, MGF%N_COARSE                      ! rows of restriction matrix
       IC = RF%COL(IR)
       DAP = SCARC_VALUE_AP(IC, IPC)
       DRSUM = DRSUM + DAP*RF%VAL(IR)
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,'(A,4I4,3E12.4)') 'GAL: IRC, IPC, IR, IC, VAL_AP, RF%VAL, DRSUM:', &
                                       IRC, IPC, IR, IC, DAP, RF%VAL(IR), DRSUM
 #endif
@@ -14134,7 +14164,7 @@ WRITE(MSG%LU_DEBUG,'(A,4I4,3E12.4)') 'GAL: IRC, IPC, IR, IC, VAL_AP, RF%VAL, DRS
       ACC%VAL(IA) = DRSUM
       ACC%COL(IA) = IPC
       IA = IA + 1
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,'(A,6I5,E12.4)') 'GALERKIN: IPC, IRC, IR, IC, IA, DRSUM:',IPC,IRC,IR,IC,IA,ACC%COL(IA),ACC%VAL(IA)
 #endif
    ENDIF
@@ -14150,7 +14180,7 @@ WRITE(MSG%LU_DEBUG,'(A,6I5,E12.4)') 'GALERKIN: IPC, IRC, IR, IC, IA, DRSUM:',IPC
          IC = RF%COL(IR)
          DAP = SCARC_VALUE_AP(IC, IPC)
          DRSUM = DRSUM + DAP*RF%VAL(IR)
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,'(A,4I4,3E12.4)') 'GAL: IRC, IPC, IR, IC, VAL_AP, RF%VAL, DRSUM:', &
                                       IRC, IPC, IR, IC, DAP, RF%VAL(IR), DRSUM
 #endif
@@ -14159,7 +14189,7 @@ WRITE(MSG%LU_DEBUG,'(A,4I4,3E12.4)') 'GAL: IRC, IPC, IR, IC, VAL_AP, RF%VAL, DRS
          ACC%VAL(IA) = DRSUM
          ACC%COL(IA) = IPC
          IA = IA + 1
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,'(A,6I5,E12.4)') 'GALERKIN: IPC, IRC, IR, IC, IA, DRSUM:',IPC,IRC,IR,IC,IA,ACC%COL(IA),ACC%VAL(IA)
 #endif
       ENDIF
