@@ -70,7 +70,8 @@ INTEGER, PARAMETER :: NSCARC_DEBUG_BDRY              =  1, &    !> show pressure
 #ifdef WITH_SCARC_STANDALONE
 INTEGER, PARAMETER :: NSCARC_DUMP_A                  =  1, &    !> dump matrix A
                       NSCARC_DUMP_B                  =  2, &    !> dump right hand side B
-                      NSCARC_DUMP_X                  =  3       !> dump solution X
+                      NSCARC_DUMP_X                  =  3, &    !> dump solution X
+                      NSCARC_DUMP_MESH               =  4       !> dump solution mesh information
 #endif
 
 INTEGER, PARAMETER :: NSCARC_ERROR_AMG_DISABLED      =  1, &    !> AMG-method is currently missing
@@ -489,10 +490,12 @@ IMPLICIT NONE
 TYPE SCARC_MESSAGE_TYPE
 
    CHARACTER(100) :: TEXT
-   CHARACTER(60)  :: FILE_DEBUG, FILE_STAT, FILE_DUMP, FILE_VERBOSE, FILE_CPU, FILE_CNN
+   CHARACTER(60)  :: FILE_DEBUG, FILE_STAT, FILE_DUMP, FILE_VERBOSE, FILE_CPU
+   CHARACTER(60)  :: FILE_CNN, FILE_CNN1, FILE_CNN2, FILE_CNN3
    CHARACTER(120) :: FILE_SCARC
 
-   INTEGER :: LU_DEBUG = 0, LU_STAT = 0, LU_DUMP = 0, LU_VERBOSE = 0, LU_SCARC = 0, LU_CPU = 0, LU_CNN = 0
+   INTEGER :: LU_DEBUG = 0, LU_STAT = 0, LU_DUMP = 0, LU_VERBOSE = 0, LU_SCARC = 0, LU_CPU = 0
+   INTEGER :: LU_CNN = 0, LU_CNN1 = 0, LU_CNN2 = 0, LU_CNN3 = 0
 
 END TYPE SCARC_MESSAGE_TYPE
 
@@ -5518,7 +5521,7 @@ ACS%ROW(G%NC+1) = IAS
 IF (IS_MKL_LEVEL(NL)) THEN
    DEALLOCATE (KCOL_AUX, STAT=IERROR)
    DEALLOCATE (KC_AUX,   STAT=IERROR)
-   DEALLOCATE (AC%COL_GLOBAL, STAT=IERROR)
+   !DEALLOCATE (AC%COL_GLOBAL, STAT=IERROR)
 ENDIF
 
 END SUBROUTINE SCARC_SETUP_MATRIX_MKL_DOUBLE
@@ -9692,7 +9695,10 @@ NP  = NPARENT
 NL  = NLEVEL
 
 #ifdef WITH_SCARC_STANDALONE
-IF (ICYC == 1) CALL SCARC_DUMP_SYSTEM(NS, NSCARC_DUMP_A)
+IF (ICYC == 1) THEN
+   CALL SCARC_DUMP_SYSTEM(NS, NSCARC_DUMP_MESH)
+   CALL SCARC_DUMP_SYSTEM(NS, NSCARC_DUMP_A)
+ENDIF
 #endif
 
 !> ------------------------------------------------------------------------------------------------
@@ -14475,9 +14481,9 @@ END SUBROUTINE SCARC_MATLAB_MATRIX
 SUBROUTINE SCARC_DUMP_SYSTEM (NSTACK, ITYPE)
 USE SCARC_POINTERS, ONLY: SV, ST, G, AB !, P
 INTEGER, INTENT(IN) :: NSTACK, ITYPE
-INTEGER  :: NM, IC, JC, ID, IP, IW, IOR0, N
-INTEGER  :: COLUMNS(7) 
-REAL(EB) :: STENCIL(7), VAL
+INTEGER  :: NM, IC, JC, JCG, ID, IP, IW, IOR0, N
+INTEGER  :: COLUMNSL(7), COLUMNSG(7)
+REAL(EB) :: VALUES(7), VAL
 
 SV  => STACK(NSTACK)%SOLVER
 
@@ -14488,20 +14494,44 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    SELECT CASE(ITYPE)
 
+      CASE(NSCARC_DUMP_MESH)          
+
+         MSG%LU_CNN = GET_FILE_NUMBER()
+         WRITE (MSG%FILE_CNN, '(A,I3.3,A,I5.5)') 'CNN/M',NM,'/Mesh.dat'
+         OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN, FORM = 'UNFORMATTED')
+         WRITE(MSG%LU_CNN) 'Total number of cells over all meshes'
+         WRITE(MSG%LU_CNN) NC_GLOBAL(NLEVEL_MIN)
+         WRITE(MSG%LU_CNN) 'Local number of cells in current mesh'
+         WRITE(MSG%LU_CNN) G%NC_LOCAL(NM)
+         WRITE(MSG%LU_CNN) 'Local number of cells in x, y and z in current mesh'
+         WRITE(MSG%LU_CNN) L%NX, L%NY, L%NZ
+         WRITE(MSG%LU_CNN) 'Section of local mesh in overall geometry with respect to global numbering'
+         WRITE(MSG%LU_CNN) G%NC_OFFSET(NM)+1, G%NC_OFFSET(NM)+G%NC_LOCAL(NM)
+         WRITE(MSG%LU_CNN) 'Local grid sizes in x, y and z in current mesh'
+         WRITE(MSG%LU_CNN) L%DX, L%DY, L%DZ
+         CLOSE(MSG%LU_CNN)
+
       CASE(NSCARC_DUMP_A)          
 
          IF (TYPE_MATRIX == NSCARC_MATRIX_COMPACT) THEN
 
             AC => G%AC
-            MSG%LU_CNN = GET_FILE_NUMBER()
-            WRITE (MSG%FILE_CNN, '(A,I3.3,A,I5.5)') 'cnn/AC/m',NM,'_t',ITE_GLOBAL
-            OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN, FORM = 'UNFORMATTED')
+            MSG%LU_CNN1 = GET_FILE_NUMBER()
+            MSG%LU_CNN2 = GET_FILE_NUMBER()
+            MSG%LU_CNN3 = GET_FILE_NUMBER()
+            WRITE (MSG%FILE_CNN1, '(A,I3.3,A,I5.5)') 'CNN/M',NM,'/A/Values_t',ITE_GLOBAL
+            WRITE (MSG%FILE_CNN2, '(A,I3.3,A,I5.5)') 'CNN/M',NM,'/A/StencilLocal_t',ITE_GLOBAL
+            WRITE (MSG%FILE_CNN3, '(A,I3.3,A,I5.5)') 'CNN/M',NM,'/A/StencilGlobal_t',ITE_GLOBAL
+            OPEN (MSG%LU_CNN1, FILE=MSG%FILE_CNN1, FORM = 'UNFORMATTED')
+            OPEN (MSG%LU_CNN2, FILE=MSG%FILE_CNN2, FORM = 'UNFORMATTED')
+            OPEN (MSG%LU_CNN3, FILE=MSG%FILE_CNN3, FORM = 'UNFORMATTED')
             DO IC = 1, AC%N_ROW - 1
-               COLUMNS = -99
-               STENCIL = -987654321.123456789E+0_EB
-               STENCIL = 0.0_EB
+               COLUMNSL = 0
+               COLUMNSG = 0
+               VALUES = 0.0_EB
                DO IP = AC%ROW(IC), AC%ROW(IC+1)-1
                   JC  = AC%COL(IP)
+                  JCG = AC%COL_GLOBAL(IP)
                   VAL = AC%VAL(IP)
                   N = -1
                   IW = -1
@@ -14566,22 +14596,27 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                      ENDIF
                   ENDIF
                   IF (N > 0) THEN
-                     COLUMNS(N) = JC
-                     STENCIL(N) = VAL
+                     VALUES(N) = VAL
+                     COLUMNSL(N) = JC
+                     COLUMNSG(N) = JCG
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'IP, IC, JC, IW, IOR0, VAL, N:', IP, IC, JC, IW, IOR0, VAL, N
+WRITE(MSG%LU_DEBUG,*) 'IP, IC, JC, IW, IOR0, VAL, N:', IP, IC, JC, JCG, IW, IOR0, VAL, N
 #endif
                   ENDIF
                ENDDO
                IF (TWO_D) THEN
-                  WRITE(MSG%LU_CNN) STENCIL(1:5)
+                  WRITE(MSG%LU_CNN1) VALUES(1:5)
+                  WRITE(MSG%LU_CNN2) COLUMNSL(1:5)
+                  WRITE(MSG%LU_CNN3) COLUMNSG(1:5)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,5I4,5E12.4)') 'COLUMNS, STENCIL:', COLUMNS(1:5), STENCIL(1:5)
+WRITE(MSG%LU_DEBUG,'(A,5I84,5E12.4)') 'COLUMNS, VALUES:', COLUMNSL(1:5), VALUES(1:5)
 #endif
                ELSE
-                  WRITE(MSG%LU_CNN) STENCIL(1:7)
+                  WRITE(MSG%LU_CNN1) VALUES(1:7)
+                  WRITE(MSG%LU_CNN2) COLUMNSL(1:7)
+                  WRITE(MSG%LU_CNN3) COLUMNSG(1:7)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,7I4,7E12.4)') 'COLUMNS, STENCIL:', COLUMNS(1:7), STENCIL(1:7)
+WRITE(MSG%LU_DEBUG,'(A,7I84,7E12.4)') 'COLUMNS, VALUES:', COLUMNSL(1:7), VALUES(1:7)
 #endif
                ENDIF
             ENDDO
@@ -14591,8 +14626,8 @@ WRITE(MSG%LU_DEBUG,'(A,7I4,7E12.4)') 'COLUMNS, STENCIL:', COLUMNS(1:7), STENCIL(
 
             AB => G%AB
             MSG%LU_CNN = GET_FILE_NUMBER()
-            WRITE (MSG%FILE_CNN, '(A,I3.3,A,I5.5)') 'cnn/AB/m',NM,'_t',ITE_GLOBAL
-            OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN)
+            WRITE (MSG%FILE_CNN, '(A,I3.3,A,I5.5)') 'CNN/M',NM,'/AB/t',ITE_GLOBAL
+            OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN, FORM = 'UNFORMATTED')
             DO ID = 1, AB%N_STENCIL
                DO IC = 1, AB%N_DIAG
                   WRITE(MSG%LU_CNN) AB%VAL(IC, ID)
@@ -14605,10 +14640,10 @@ WRITE(MSG%LU_DEBUG,'(A,7I4,7E12.4)') 'COLUMNS, STENCIL:', COLUMNS(1:7), STENCIL(
       CASE(NSCARC_DUMP_B)
 
          MSG%LU_CNN = GET_FILE_NUMBER()
-         WRITE (MSG%FILE_CNN, '(A,I3.3,A,I5.5)') 'cnn/B/m',NM,'_t',ITE_GLOBAL
+         WRITE (MSG%FILE_CNN, '(A,I3.3,A,I5.5)') 'CNN/M',NM,'/B/t',ITE_GLOBAL
          OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN, FORM = 'UNFORMATTED')
          DO IC = 1, G%NC
-            !WRITE(MSG%LU_CNN,*) P%B_NEW(IC)
+            !WRITE(MSG%LU_CNN) P%B_NEW(IC)
             WRITE(MSG%LU_CNN) ST%B(IC)
          ENDDO
          CLOSE(MSG%LU_CNN)
@@ -14616,18 +14651,18 @@ WRITE(MSG%LU_DEBUG,'(A,7I4,7E12.4)') 'COLUMNS, STENCIL:', COLUMNS(1:7), STENCIL(
       CASE(NSCARC_DUMP_X)
 
          MSG%LU_CNN = GET_FILE_NUMBER()
-         WRITE (MSG%FILE_CNN, '(A,I3.3,A,I5.5)') 'cnn/X/m',NM,'_t',ITE_GLOBAL
+         WRITE (MSG%FILE_CNN, '(A,I3.3,A,I5.5)') 'CNN/M',NM,'/X/t',ITE_GLOBAL
          OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN, FORM = 'UNFORMATTED')
          DO IC = 1, G%NC
             WRITE(MSG%LU_CNN) ST%X(IC)
          ENDDO
          !IF (PREDICTOR) THEN
          !   DO IC = 1, G%NC
-         !      WRITE(MSG%LU_CNN,*) P%H_NEW(IC)
+         !      WRITE(MSG%LU_CNN) P%H_NEW(IC)
          !   ENDDO
          !ELSE
          !   DO IC = 1, G%NC
-         !      WRITE(MSG%LU_CNN,*) P%HS_NEW(IC)
+         !      WRITE(MSG%LU_CNN) P%HS_NEW(IC)
          !   ENDDO
          !ENDIF
          CLOSE(MSG%LU_CNN)
