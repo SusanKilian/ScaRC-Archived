@@ -13544,6 +13544,7 @@ END SUBROUTINE SCARC_SETUP_INVERSE_DIAGONAL
 !
 !     abs(A[i,j]) >= theta * sqrt( abs(A[i,i]) * abs(A[j,j]) )
 !
+!
 ! The strength matrix S corresponds to the set of nonzero entries of A that are strong connections
 ! based on a strength of connection tolerance theta
 !
@@ -13553,42 +13554,43 @@ USE SCARC_POINTERS, ONLY: MGF, ACF, SF
 REAL(EB):: VAL, DIAG, EPS, THETA = 0.24_EB, SCAL, SVAL_MAX
 INTEGER :: IC, JC, ICOL, IAGG
 
+! Keep norm of diagonal elements in auxiliary vector
 DO IC = 1, MGF%N_FINE
    DIAG = 0.0_EB
    DO ICOL = ACF%ROW(IC), ACF%ROW(IC+1) - 1
       JC = ACF%COL(ICOL)
-      IF (JC == IC) THEN
-         DIAG = DIAG + ACF%VAL(ICOL)    
-      ENDIF
+      IF (JC == IC) DIAG = DIAG + ACF%VAL(ICOL)    
    ENDDO
    MGF%AUX1(IC) = ABS(DIAG)
 ENDDO
 
+! Check strength-of-connection criterion  
 IAGG = 1
 SF%ROW(1) = 1
+DO IC = 1, MGF%N_FINE
 
-DO IC = 1, GF%NC
-   EPS = THETA**2 * MGF%AUX1(IC)
+   EPS = THETA**2 * MGF%AUX1(IC)                  ! EPS = theta**2 * A_ii
    DO ICOL = ACF%ROW(IC), ACF%ROW(IC+1) - 1
       JC  = ACF%COL(ICOL)
-      VAL = ACF%VAL(ICOL)
+      VAL = ACF%VAL(ICOL)                         ! VAL = A_ij
 
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,'(A,3I4,5E12.4)') 'IC, ICOL, JC, EPS, VAL, VAL2', IC, ICOL, JC, &
-                                     MGF%AUX1(IC),MGF%AUX1(JC), EPS, VAL, VAL**2
-#endif
-      !> Always add the diagonal
-      IF (IC == JC) THEN
+      !> Always add the diagonal:          |A_ii|  >= THETA * sqrt(|A_ii| * |A_ii|)     true!
+      IF (IC == JC) THEN                   
          SF%COL(IAGG) = JC
          SF%VAL(IAGG) = VAL
          IAGG = IAGG + 1
 
-      !>  |A(IC,JC)|  >= THETA * sqrt(|A(IC,IC)| * |A(JC,JC)|)
-      ELSE !IF (VAL**2 >= EPS * MGF%AUX1(JC)) THEN
+      !> Check subdiagonal entry:          |A_ij|  >= THETA * sqrt(|A_ii| * |A_jj|)     ??
+      ELSE IF (VAL**2 >= EPS * MGF%AUX1(JC)) THEN
          SF%COL(IAGG) = JC
          SF%VAL(IAGG) = VAL
          IAGG = IAGG + 1
       ENDIF
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,3I4,5E12.4)') 'IC, ICOL, JC, EPS, VAL, VAL2', IC, ICOL, JC, &
+                                     MGF%AUX1(IC),MGF%AUX1(JC), EPS, VAL, VAL**2
+#endif
 
    ENDDO
    SF%ROW(IC+1) = IAGG
@@ -13610,9 +13612,13 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_STRENGTH2:'
 WRITE(MSG%LU_DEBUG,*) 'SF%ROW:'
 WRITE(MSG%LU_DEBUG,'(8I8)') SF%ROW
 WRITE(MSG%LU_DEBUG,*) 'SF%COL:'
-WRITE(MSG%LU_DEBUG,'(8I8)') SF%COL
+DO IC = 1, GF%NC
+   WRITE(MSG%LU_DEBUG,'(16I8)') (SF%COL(ICOL), ICOL=SF%ROW(IC), SF%ROW(IC+1)-1)
+ENDDO
 WRITE(MSG%LU_DEBUG,*) 'SF%VAL:'
-WRITE(MSG%LU_DEBUG,'(8E12.4)') SF%VAL
+DO IC = 1, GF%NC
+   WRITE(MSG%LU_DEBUG,'(16E12.4)') (SF%VAL(ICOL), ICOL=SF%ROW(IC), SF%ROW(IC+1)-1)
+ENDDO
 #endif
 
 END SUBROUTINE SCARC_SETUP_STRENGTH_MATRIX
@@ -14138,7 +14144,7 @@ END FUNCTION SCARC_VALUE_AP
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_GALERKIN_OPERATOR
 USE SCARC_POINTERS, ONLY: MGF
-INTEGER  :: IPC, IRC, IC, IR, IA
+INTEGER  :: IPC, IRC, IC, IR, IA, ICOL
 REAL(EB) :: DRSUM, DAP, TOL = 1.0E-12_EB
 
 IA = 1
@@ -14205,13 +14211,21 @@ ACC%N_STENCIL = ACF%N_STENCIL
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'GALERKIN: ACC%ROW'
-WRITE(MSG%LU_DEBUG,'(4I8)') ACC%ROW
-WRITE(MSG%LU_DEBUG,*) 'GALERKIN: ACC%COL'
-WRITE(MSG%LU_DEBUG,'(4I8)') ACC%COL
-WRITE(MSG%LU_DEBUG,*) 'GALERKIN: ACC%COL_GLOBAL'
-WRITE(MSG%LU_DEBUG,'(4I8)') ACC%COL_GLOBAL
-WRITE(MSG%LU_DEBUG,*) 'GALERKIN: ACC%VAL'
-WRITE(MSG%LU_DEBUG,'(4E16.8)') ACC%VAL
+WRITE(MSG%LU_DEBUG,*) 'ACC%ROW:'
+WRITE(MSG%LU_DEBUG,'(16I8)') ACC%ROW
+WRITE(MSG%LU_DEBUG,*) 'ACC%COL:'
+DO IC = 1, MGC%N_FINE
+   WRITE(MSG%LU_DEBUG,'(16I8)') (ACC%COL(ICOL), ICOL=ACC%ROW(IC), ACC%ROW(IC+1)-1)
+ENDDO
+WRITE(MSG%LU_DEBUG,*) 'ACC%COL_GLOBAL:'
+DO IC = 1, MGC%N_FINE
+   WRITE(MSG%LU_DEBUG,'(16I8)') (ACC%COL_GLOBAL(ICOL), ICOL=ACC%ROW(IC), ACC%ROW(IC+1)-1)
+ENDDO
+WRITE(MSG%LU_DEBUG,*) 'ACC%VAL:'
+DO IC = 1, MGC%N_FINE
+   WRITE(MSG%LU_DEBUG,'(16E12.4)') (ACC%VAL(ICOL), ICOL=ACC%ROW(IC), ACC%ROW(IC+1)-1)
+ENDDO
+
 #endif
 END SUBROUTINE SCARC_SETUP_GALERKIN_OPERATOR
 
@@ -15724,7 +15738,7 @@ DO IC = 1, GF%NC
    ENDDO
    NLEN = I - 1
 
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'IC, NLEN, COLUMNS1, STENCIL1:', IC, NLEN, COLUMNS(1:NLEN), STENCIL(1:NLEN)
 #endif
 
@@ -15741,7 +15755,7 @@ WRITE(MSG%LU_DEBUG,*) 'IC, NLEN, COLUMNS1, STENCIL1:', IC, NLEN, COLUMNS(1:NLEN)
       ENDDO
    ENDDO
 
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) '          COLUMNS2, STENCIL2:', IC, NLEN, COLUMNS(1:NLEN), STENCIL(1:NLEN)
 #endif
 
