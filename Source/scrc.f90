@@ -14507,6 +14507,8 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          WRITE(MSG%LU_CNN,*) L%NX, L%NY, L%NZ
          WRITE(MSG%LU_CNN,*) 'Section of local mesh in overall geometry with respect to global numbering'
          WRITE(MSG%LU_CNN,*) G%NC_OFFSET(NM)+1, G%NC_OFFSET(NM)+G%NC_LOCAL(NM)
+         WRITE(MSG%LU_CNN,*) 'Coordinates of mesh x1, x2, y1, y2, z1, z2'
+         WRITE(MSG%LU_CNN,*) S%XS, S%XF, S%YS, S%YF, S%ZS, S%ZF
          WRITE(MSG%LU_CNN,*) 'Local grid sizes in x, y and z in current mesh'
          WRITE(MSG%LU_CNN,*) L%DX, L%DY, L%DZ
          CLOSE(MSG%LU_CNN)
@@ -14520,9 +14522,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          WRITE (MSG%FILE_CNN1, '(A,I3.3,A)') 'CNN/M',NM,'/A/values.dat'
          WRITE (MSG%FILE_CNN2, '(A,I3.3,A)') 'CNN/M',NM,'/A/stencilLocal.dat'
          WRITE (MSG%FILE_CNN3, '(A,I3.3,A)') 'CNN/M',NM,'/A/stencilGlobal.dat'
-         OPEN (NEWUNIT=MSG%LU_CNN1, FILE=MSG%FILE_CNN1, ACTION='READWRITE', FORM = 'UNFORMATTED')
-         OPEN (NEWUNIT=MSG%LU_CNN2, FILE=MSG%FILE_CNN2, ACTION='READWRITE', FORM = 'UNFORMATTED')
-         OPEN (NEWUNIT=MSG%LU_CNN3, FILE=MSG%FILE_CNN3, ACTION='READWRITE', FORM = 'UNFORMATTED')
+         OPEN (NEWUNIT=MSG%LU_CNN1, FILE=MSG%FILE_CNN1, ACTION='READWRITE', FORM = 'FORMATTED')
+         OPEN (NEWUNIT=MSG%LU_CNN2, FILE=MSG%FILE_CNN2, ACTION='READWRITE', FORM = 'FORMATTED')
+         OPEN (NEWUNIT=MSG%LU_CNN3, FILE=MSG%FILE_CNN3, ACTION='READWRITE', FORM = 'FORMATTED')
          DO IC = 1, AC%N_ROW - 1
             COLUMNSL = 0
             COLUMNSG = 0
@@ -14603,13 +14605,13 @@ WRITE(MSG%LU_DEBUG,*) 'IP, IC, JC, IW, IOR0, VAL, N:', IP, IC, JC, JCG, IW, IOR0
                ENDIF
             ENDDO
             IF (TWO_D) THEN
-               WRITE(MSG%LU_CNN1) VALUES(1:5)
-               WRITE(MSG%LU_CNN2) COLUMNSL(1:5)
-               WRITE(MSG%LU_CNN3) COLUMNSG(1:5)
+               WRITE(MSG%LU_CNN1,*) VALUES(1:5)
+               WRITE(MSG%LU_CNN2,*) COLUMNSL(1:5)
+               WRITE(MSG%LU_CNN3,*) COLUMNSG(1:5)
             ELSE
-               WRITE(MSG%LU_CNN1) VALUES(1:7)
-               WRITE(MSG%LU_CNN2) COLUMNSL(1:7)
-               WRITE(MSG%LU_CNN3) COLUMNSG(1:7)
+               WRITE(MSG%LU_CNN1,*) VALUES(1:7)
+               WRITE(MSG%LU_CNN2,*) COLUMNSL(1:7)
+               WRITE(MSG%LU_CNN3,*) COLUMNSG(1:7)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,7I84,7E12.4)') 'COLUMNS, VALUES:', COLUMNSL(1:7), VALUES(1:7)
 #endif
@@ -14623,9 +14625,9 @@ WRITE(MSG%LU_DEBUG,'(A,7I84,7E12.4)') 'COLUMNS, VALUES:', COLUMNSL(1:7), VALUES(
 
          MSG%LU_CNN = GET_FILE_NUMBER() 
          WRITE (MSG%FILE_CNN, '(A,I3.3,A,I6.6,A)') 'CNN/M',NM,'/B/values_t',ITE_GLOBAL,'.dat'
-         OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN, FORM = 'UNFORMATTED')
+         OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN, FORM = 'FORMATTED')
          DO IC = 1, G%NC
-            WRITE(MSG%LU_CNN) ST%B(IC)
+            WRITE(MSG%LU_CNN,*) ST%B(IC)
          ENDDO
          CLOSE(MSG%LU_CNN)
 
@@ -14633,9 +14635,9 @@ WRITE(MSG%LU_DEBUG,'(A,7I84,7E12.4)') 'COLUMNS, VALUES:', COLUMNSL(1:7), VALUES(
 
          MSG%LU_CNN = GET_FILE_NUMBER() 
          WRITE (MSG%FILE_CNN, '(A,I3.3,A,I6.6,A)') 'CNN/M',NM,'/X/values_t',ITE_GLOBAL,'.dat'
-         OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN, FORM = 'UNFORMATTED')
+         OPEN (MSG%LU_CNN, FILE=MSG%FILE_CNN, FORM = 'FORMATTED')
          DO IC = 1, G%NC
-            WRITE(MSG%LU_CNN) ST%X(IC)
+            WRITE(MSG%LU_CNN,*) ST%X(IC)
          ENDDO
          CLOSE(MSG%LU_CNN)
 
