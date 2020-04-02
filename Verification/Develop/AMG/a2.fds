@@ -1,4 +1,4 @@
-&HEAD CHID='a2',TITLE='AMG test' /
+&HEAD CHID='a2',TITLE='AMG test 2-mesh case' /
 
 &MESH IJK=7,1,7,  XB=0.0,0.7,-0.01,0.01,0.0,0.7 /
 &MESH IJK=6,1,7,  XB=0.7,1.3,-0.01,0.01,0.0,0.7 /
