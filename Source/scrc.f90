@@ -149,7 +149,8 @@ INTEGER, PARAMETER :: NSCARC_HUGE_INT                = -999999999    !> undefine
 REAL(EB), PARAMETER:: NSCARC_HUGE_REAL               = -999999999_EB !> undefined integer value
 
 INTEGER, PARAMETER :: NSCARC_INIT_UNDEF              = -99, &   !> initialize allocated array as undefined
-                      NSCARC_INIT_NONE               =  -1, &   !> do not initialize allocated arrays
+                      NSCARC_INIT_NONE               =  -2, &   !> do not initialize allocated arrays
+                      NSCARC_INIT_MINUS              =  -1, &   !> initialize allocated array with minus one
                       NSCARC_INIT_ZERO               =   0, &   !> initialize allocated array with zero
                       NSCARC_INIT_ONE                =   1, &   !> initialize allocated array with one
                       NSCARC_INIT_TRUE               =   2, &   !> initialize allocated array with one
@@ -792,6 +793,9 @@ TYPE SCARC_GRID_TYPE
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: DIAG                !> matrix diagonal, possible inverted depending on method
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: Q, R            !> Different arrays for tentative prolongation
 
+   REAL(EB), ALLOCATABLE, DIMENSION (:) :: ICG_TO_AVAL        !> mapping from ICG to AC%VAL
+   REAL(EB), ALLOCATABLE, DIMENSION (:) :: ICG_TO_SVAL        !> mapping from ICG to STRENGTH%VAL
+
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: AGGREGATES      !> Aggregates for grid coarsening (AMG only)
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: CELLTYPES       !> Celltype for grid coarsening (AMG only)
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: CPOINTS         !> Aggregates for grid coarsening (AMG only)
@@ -805,6 +809,8 @@ TYPE SCARC_GRID_TYPE
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICG_TO_IWG         !> mapping from ICG to IWG
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICG_TO_ICE         !> mapping from ICG to ICE
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICG_TO_ICW         !> mapping from ICG to ICW
+   INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICG_TO_ACOL        !> mapping from ICG to AC%COL
+   INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICG_TO_SCOL        !> mapping from ICG to STRENGTH%COL
 
    !> Assignment of cell coordinates
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICX                !> I-coordinate of cell IC
@@ -3023,9 +3029,9 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    !> Allocate corresponding pointer arrays for data exchanges with neighbors
    !>
    IF (G%NCE > G%NC) THEN
-      CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_IWG    , G%NC+1, G%NCE, NSCARC_INIT_ZERO, 'ICE_TO_IWG')
-      CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_ICG    , G%NC+1, G%NCE, NSCARC_INIT_ZERO, 'ICE_TO_ICG')
-      CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_ICN    , G%NC+1, G%NCE, NSCARC_INIT_ZERO, 'ICE_TO_ICN')
+      CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_IWG , G%NC+1, G%NCE, NSCARC_INIT_ZERO, 'ICE_TO_IWG')
+      CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_ICG , G%NC+1, G%NCE, NSCARC_INIT_ZERO, 'ICE_TO_ICG')
+      CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_ICN , G%NC+1, G%NCE, NSCARC_INIT_ZERO, 'ICE_TO_ICN')
    ENDIF
 
    FACE_NEIGHBORS_LOOP: DO IOR0 = -3, 3
@@ -3037,9 +3043,9 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          NOM = L%FACE(IOR0)%NEIGHBORS(INBR)
          CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NLEVEL_MIN)
 
-         CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_IWG, 1, OG%NCG, NSCARC_INIT_ZERO, 'ICG_TO_IWG')
-         CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_ICE, 1, OG%NCG, NSCARC_INIT_ZERO, 'ICG_TO_ICE')
-         CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_ICW, 1, OG%NCG, NSCARC_INIT_ZERO, 'ICG_TO_ICW')
+         CALL SCARC_ALLOCATE_INT1 (OG%ICG_TO_IWG,  1, OG%NCG, NSCARC_INIT_ZERO, 'ICG_TO_IWG')
+         CALL SCARC_ALLOCATE_INT1 (OG%ICG_TO_ICE,  1, OG%NCG, NSCARC_INIT_ZERO, 'ICG_TO_ICE')
+         CALL SCARC_ALLOCATE_INT1 (OG%ICG_TO_ICW,  1, OG%NCG, NSCARC_INIT_ZERO, 'ICG_TO_ICW')
 
       ENDDO
 
@@ -4992,9 +4998,7 @@ ENDIF
 ! -------------------------------------------------------------------------------------------
 #ifdef WITH_SCARC_DEBUG
 CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_WALL, NLEVEL_MIN, 'WALL')
-DO NL = NLEVEL_MIN, NLEVEL_MAX
-   CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_MATRIX, NL, 'SYSTEM-MATRIX')
-ENDDO
+CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_MATRIX, NLEVEL_MIN, 'SYSTEM-MATRIX')
 CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_FACE, NLEVEL_MIN, 'FACE_AFTER_SYSTEM')
 CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_WALL, NLEVEL_MIN, 'WALL_AFTER_SYSTEM')
 #endif
@@ -5081,8 +5085,16 @@ SELECT_STORAGE_TYPE: SELECT CASE (SCARC_MATRIX_LEVEL(NL))
    !>
    CASE (NSCARC_MATRIX_BANDED)
    
+      ! Allocate main matrix on non-overlapping part of mesh
       CALL SCARC_POINT_TO_GRID(NM, NL)
       CALL SCARC_ALLOCATE_MATRIX_BANDED(G%AB, NL, NSCARC_INIT_ZERO, 'AB')
+   
+      ! For every neighbor allocate small matrix for overlapping part of mesh
+      DO INBR = 1, SCARC(NM)%N_NEIGHBORS
+         NOM = S%NEIGHBORS(INBR)
+         CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NL)
+         CALL SCARC_ALLOCATE_MATRIX_BANDED(OG%AB, NL, NSCARC_INIT_ZERO, 'OG%AB')
+      ENDDO
    
       IP  = 1
       DO IZ = 1, L%NZ
@@ -8298,26 +8310,7 @@ SELECT_MATRIX_SIZE: SELECT CASE (NTYPE)
       !>
       !> -------- Exchange matrix sizes in case of a multi-mesh geometry
       !>
-      IF (NMESHES > 1) THEN
-
-         CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_SIZE, NL)
-   
-         IF (SCARC_MATRIX_LEVEL(NL) == NSCARC_MATRIX_BANDED) THEN
-            DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-               CALL SCARC_POINT_TO_GRID(NM, NL)
-               DO NOM = 1, NMESHES
-                  IF (.NOT. ARE_NEIGHBORS(NM, NOM)) CYCLE
-                  CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NL)
-                  CALL SCARC_ALLOCATE_MATRIX_BANDED(OG%AB, NL, NSCARC_INIT_ZERO, 'OG%AB')
-               ENDDO
-            ENDDO
-         ENDIF
-
-      ENDIF
-
-      !> Temporarily disabled, corresponding routines stored separatedly
-      !>   CASE (NSCARC_SIZE_PROLONGATION)
-      !>   CASE (NSCARC_SIZE_RESTRICTION)
+      IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_SIZE, NL)
 
 END SELECT SELECT_MATRIX_SIZE
 
@@ -11470,6 +11463,7 @@ RECEIVE_MESH_INDEX: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_EXCHANGE_SETUP)
 
             N_REQ = N_REQ+1
+            OS%RECV_INT0 = 0
             CALL MPI_IRECV(OS%RECV_INT0(1), 1, MPI_INTEGER, SNODE, &
                            TAG, MPI_COMM_WORLD, REQ(N_REQ), IERROR)
 
@@ -11479,6 +11473,7 @@ RECEIVE_MESH_INDEX: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_EXCHANGE_MATRIX_SIZE)
 
             N_REQ = N_REQ+1
+            OS%RECV_INT0 = 0
             CALL MPI_IRECV(OS%RECV_INT0(1), 3, MPI_INTEGER, SNODE, &
                            TAG, MPI_COMM_WORLD, REQ(N_REQ), IERROR)
 
@@ -11488,6 +11483,7 @@ RECEIVE_MESH_INDEX: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_EXCHANGE_CELL_WIDTH)
 
             N_REQ = N_REQ+1
+            OS%RECV_REAL0 = 0.0_EB
             CALL MPI_IRECV(OS%RECV_REAL0(1), 6, MPI_DOUBLE_PRECISION, SNODE, &
                            TAG, MPI_COMM_WORLD,REQ(N_REQ), IERROR)
 
@@ -11507,7 +11503,7 @@ RECEIVE_MESH_INDEX: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_EXCHANGE_MATRIX_VALS, NSCARC_EXCHANGE_STRENGTH_VALS)
 
             N_REQ = N_REQ+1
-            OS%RECV_REAL7 = 0
+            OS%RECV_REAL7 = 0.0_EB
             CALL MPI_IRECV(OS%RECV_REAL7(1), SIZE(OS%RECV_REAL7), MPI_DOUBLE_PRECISION, SNODE, &
                            TAG, MPI_COMM_WORLD,REQ(N_REQ), IERROR)
 
@@ -11517,7 +11513,7 @@ RECEIVE_MESH_INDEX: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_EXCHANGE_MATRIX_COLS, NSCARC_EXCHANGE_STRENGTH_COLS)
 
             N_REQ = N_REQ+1
-            OS%RECV_REAL7 = 0
+            OS%RECV_INT7 = -1                    ! it's important to use a -1 here 
             CALL MPI_IRECV(OS%RECV_INT7(1), SIZE(OS%RECV_INT7), MPI_INTEGER, SNODE, &
                            TAG, MPI_COMM_WORLD,REQ(N_REQ), IERROR)
 
@@ -11527,6 +11523,7 @@ RECEIVE_MESH_INDEX: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_EXCHANGE_VECTOR_MEAN)
 
             N_REQ = N_REQ+1
+            OS%RECV_REAL2 = 0.0_EB
             CALL MPI_IRECV(OS%RECV_REAL2(1), SIZE(OS%RECV_REAL2), MPI_DOUBLE_PRECISION, SNODE, &
                            TAG, MPI_COMM_WORLD, REQ(N_REQ), IERROR)
 
@@ -11536,6 +11533,7 @@ RECEIVE_MESH_INDEX: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_EXCHANGE_PRESSURE, NSCARC_EXCHANGE_VECTOR, NSCARC_EXCHANGE_MATRIX_DIAG)
 
             N_REQ = N_REQ+1
+            OS%RECV_REAL1 = 0.0_EB
             CALL MPI_IRECV(OS%RECV_REAL1(1), SIZE(OS%RECV_REAL1), MPI_DOUBLE_PRECISION, SNODE, &
                            TAG, MPI_COMM_WORLD, REQ(N_REQ), IERROR)
 
@@ -11849,6 +11847,85 @@ WRITE(MSG%LU_DEBUG,'(A, 5I4,E12.4)') 'MATRIX_DIAG: SEND: IOR0, ICG, ICW, ICE, IC
 
 
          !> 
+         !> ---------- Pack matrix columns on part of grid which is overlapped by neighbor
+         !> 
+         CASE (NSCARC_EXCHANGE_MATRIX_COLS, NSCARC_EXCHANGE_STRENGTH_COLS)
+
+            IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_MATRIX_COLS) THEN
+               MC => G%AC                      
+            ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_STRENGTH_COLS) THEN
+               MC => G%STRENGTH                 
+            ENDIF
+         
+            LL = 1
+            OS%SEND_INT7 = -1                        ! preset with -1 to be able to identify end of exchange
+            IF (IS_STRUCTURED) THEN
+     
+               DO IOR0 = -3, 3
+                  IF (OL%NCG(IOR0) == 0) CYCLE
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '============= EXCHANGE_MATRIX_VALS: NCG0, NCG:', OL%NCG0(IOR0), OL%NCG(IOR0)
+#endif
+                  DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+                     ICW = OG%ICG_TO_ICW(ICG)
+                     
+                     ICOL = MC%ROW(ICW)
+                     OS%SEND_INT7(LL) = -MC%COL(ICOL)           ! send first element with negative sign
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,5I5)') 'EXCHANGE_MATRIX_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
+                               IOR0, ICG, ICW, MC%ROW(ICW), OS%SEND_INT7(LL)
+#endif
+                     LL = LL + 1                                ! such that receiver can identify start of column
+                     DO ICOL = MC%ROW(ICW)+1, MC%ROW(ICW+1)-1
+                        OS%SEND_INT7(LL) = MC%COL(ICOL)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,5I5)') 'EXCHANGE_MATRIX_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
+                               IOR0, ICG, ICW, ICOL, OS%SEND_INT7(LL)
+#endif
+                        LL = LL + 1
+                     ENDDO
+                  ENDDO
+               ENDDO
+    
+            ELSE
+   
+               DO IOR0 = -3, 3
+                  IF (OL%NCG(IOR0) == 0) CYCLE
+
+                  DO ICG= OL%NCG0(IOR0), OL%NCG(IOR0)
+                     ICW = OG%ICG_TO_ICW(ICG)
+                     IF (ICW > 0) THEN
+                        ICOL = MC%ROW(ICW)
+                        OS%SEND_INT7(LL) = -MC%COL(ICOL)           ! send first element with negative sign
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,5I5)') 'EXCHANGE_MATRIX_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
+                               IOR0, ICG, ICW, MC%ROW(ICW), OS%SEND_INT7(LL)
+#endif
+                        LL = LL + 1                                ! such that receiver can identify start of column
+                        DO ICOL = MC%ROW(ICW)+1, MC%ROW(ICW+1)-1
+                           OS%SEND_INT7(LL) = MC%COL(ICOL)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,5I5)') 'EXCHANGE_MATRIX_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
+                               IOR0, ICG, ICW, ICOL, OS%SEND_INT7(LL)
+#endif
+                           LL = LL + 1
+                        ENDDO
+                     ELSE
+                        OS%SEND_INT7(LL) = NSCARC_HUGE_INT
+                        LL = LL + 1
+                     ENDIF
+                  ENDDO
+               ENDDO
+
+            ENDIF
+
+            IF (RNODE/=SNODE) THEN
+               N_REQ=N_REQ+1
+               CALL MPI_ISEND(OS%SEND_INT7(1), SIZE(OS%SEND_INT7), MPI_INTEGER, SNODE, &
+                              TAG, MPI_COMM_WORLD, REQ(N_REQ), IERROR)
+            ENDIF
+
+         !> 
          !> ---------- Pack values of system or strength matrix on overlapped part for neighbor
          !> 
          CASE (NSCARC_EXCHANGE_MATRIX_VALS, NSCARC_EXCHANGE_STRENGTH_VALS)
@@ -11880,10 +11957,14 @@ WRITE(MSG%LU_DEBUG,'(A, 5I4,E12.4)') 'MATRIX_DIAG: SEND: IOR0, ICG, ICW, ICE, IC
                   ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_STRENGTH_VALS) THEN
                      MC => G%STRENGTH
                   ENDIF
+
                   IF (IS_STRUCTURED) THEN
       
                      DO IOR0 = -3, 3
                         IF (OL%NCG(IOR0) == 0) CYCLE
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '============= EXCHANGE_MATRIX_VALS: NCG0, NCG:', OL%NCG0(IOR0), OL%NCG(IOR0)
+#endif
                         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
                            ICW = OG%ICG_TO_ICW(ICG)
                            DO ICOL = MC%ROW(ICW), MC%ROW(ICW+1)-1
@@ -11905,7 +11986,7 @@ WRITE(MSG%LU_DEBUG,*) 'EXCHANGE_MATRIX_VALS: SEND: IOR0, ICG, ICW, ICOL, VAL:', 
                            ICW = OG%ICG_TO_ICW(ICG)
                            IF (ICW > 0) THEN
                               DO ICOL = MC%ROW(ICW), MC%ROW(ICW+1)-1
-                                 OS%SEND_REAL7(LL) = MC%VAL(ICOL)
+                                 OS%SEND_REAL7(LL) = MC%VAL(MC%COL(ICOL))
                                  LL = LL + 1
                               ENDDO
                            ELSE
@@ -11921,69 +12002,6 @@ WRITE(MSG%LU_DEBUG,*) 'EXCHANGE_MATRIX_VALS: SEND: IOR0, ICG, ICW, ICOL, VAL:', 
             IF (RNODE/=SNODE) THEN
                N_REQ=N_REQ+1
                CALL MPI_ISEND(OS%SEND_REAL7(1), SIZE(OS%SEND_REAL7), MPI_DOUBLE_PRECISION, SNODE, &
-                              TAG, MPI_COMM_WORLD, REQ(N_REQ), IERROR)
-            ENDIF
-
-         !> 
-         !> ---------- Pack matrix columns on part of grid which is overlapped by neighbor
-         !> 
-         CASE (NSCARC_EXCHANGE_MATRIX_COLS, NSCARC_EXCHANGE_STRENGTH_COLS)
-
-            LL = 1
-            IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_MATRIX_COLS) THEN
-               MC => G%AC                      
-            ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_STRENGTH_COLS) THEN
-               MC => G%STRENGTH                 
-            ENDIF
-         
-            OS%SEND_INT7 = -1                        ! preset with -1 to be able to identify end of exchange
-            IF (IS_STRUCTURED) THEN
-     
-               DO IOR0 = -3, 3
-                  IF (OL%NCG(IOR0) == 0) CYCLE
-                  DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
-                     ICW = OG%ICG_TO_ICW(ICG)
-                     OS%SEND_INT7(LL) = -MC%COL(MC%ROW(ICW))    ! send first element with negative sign
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,5I5)') 'EXCHANGE_MATRIX_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
-                               IOR0, ICG, ICW, MC%ROW(ICW), OS%SEND_INT7(LL)
-#endif
-                     LL = LL + 1                                ! such that receiver can identify start of column
-                     DO ICOL = MC%ROW(ICW)+1, MC%ROW(ICW+1)-1
-                        OS%SEND_INT7(LL) = MC%COL(ICOL)
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,5I5)') 'EXCHANGE_MATRIX_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
-                               IOR0, ICG, ICW, ICOL, OS%SEND_INT7(LL)
-#endif
-                        LL = LL + 1
-                     ENDDO
-                  ENDDO
-               ENDDO
-    
-            ELSE
-   
-               DO IOR0 = -3, 3
-                  IF (OL%NCG(IOR0) == 0) CYCLE
-
-                  DO ICG= OL%NCG0(IOR0), OL%NCG(IOR0)
-                     ICW = OG%ICG_TO_ICW(ICG)
-                     IF (ICW > 0) THEN
-                        DO ICOL = MC%ROW(ICW), MC%ROW(ICW+1)-1
-                           OS%SEND_INT7(LL) = MC%COL(ICOL)
-                           LL = LL + 1
-                        ENDDO
-                     ELSE
-                        OS%SEND_INT7(LL) = NSCARC_HUGE_INT
-                        LL = LL + 1
-                     ENDIF
-                  ENDDO
-               ENDDO
-
-            ENDIF
-
-            IF (RNODE/=SNODE) THEN
-               N_REQ=N_REQ+1
-               CALL MPI_ISEND(OS%SEND_INT7(1), SIZE(OS%SEND_INT7), MPI_INTEGER, SNODE, &
                               TAG, MPI_COMM_WORLD, REQ(N_REQ), IERROR)
             ENDIF
 
@@ -12196,6 +12214,50 @@ WRITE(MSG%LU_DEBUG,'(A, 4I4,E12.4)') 'RECV: MATRIX_DIAG: NOM, IOR0, ICG, ICE, DI
                ENDDO
             ENDDO
 
+         ! 
+         ! ---------- Unpack neighboring matrix columns (compact storage technique only)
+         !
+         CASE (NSCARC_EXCHANGE_MATRIX_COLS, NSCARC_EXCHANGE_STRENGTH_COLS)
+
+            CALL SCARC_POINT_TO_BUFFER (NM, NOM, RNODE, SNODE, NSCARC_BUFFER_INT7)
+
+            IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_MATRIX_VALS) THEN
+               MC => OG%AC
+            ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_STRENGTH_VALS) THEN
+               MC => OG%STRENGTH
+            ENDIF
+
+            LL = 1                                 
+            DO IOR0 = -3, 3
+               IF (OL%NCG(IOR0) == 0) CYCLE
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A, 12I4)') 'EXCHANGE_MATRIX_COLS: NCG0, NCG:', OL%NCG0(IOR0), OL%NCG(IOR0), RECV_INT7(1:10)
+#endif
+               DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+                  ICE = OG%ICG_TO_ICE(ICG)
+                  MC%ROW(ICG) = LL
+                  MC%COL(LL) = ABS(RECV_INT7(LL))
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A, 5I4)') 'EXCHANGE_MATRIX_COLS: A: RECV: ICG, LL, RECV_INT7, MC%ROW(ICG), MC%COL(LL):', &
+                                ICG, LL, RECV_INT7(LL), MC%ROW(ICG), MC%COL(LL)
+#endif
+                  DO WHILE (RECV_INT7(LL+1) > 0)
+                     LL = LL + 1
+                     MC%COL(LL) = ABS(RECV_INT7(LL))
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A, 7I4)') 'EXCHANGE_MATRIX_COLS: B: RECV: NOM, IOR0, ICG, ICE, LL, MC%ROW, MC%COL', &
+                                NOM, IOR0, ICG, ICE, LL, MC%ROW(ICG), MC%COL(LL)
+#endif
+                  ENDDO
+                  LL = LL + 1
+               ENDDO
+               MC%ROW(ICG) = LL
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A, 5I4)') 'EXCHANGE_MATRIX_COLS: RECV: NOM, IOR0, ICG, ICE, OG%MC%ROW', &
+                                NOM, IOR0, ICG, ICE, MC%ROW(ICG)
+#endif
+            ENDDO
+
 
          !> 
          !> ---------- Unpack information about neighboring matrix values
@@ -12203,6 +12265,7 @@ WRITE(MSG%LU_DEBUG,'(A, 4I4,E12.4)') 'RECV: MATRIX_DIAG: NOM, IOR0, ICG, ICE, DI
          CASE (NSCARC_EXCHANGE_MATRIX_VALS, NSCARC_EXCHANGE_STRENGTH_VALS)
 
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, RNODE, SNODE, NSCARC_BUFFER_REAL7)
+
             SELECT CASE (SCARC_MATRIX_LEVEL(NL))
 
                CASE (NSCARC_MATRIX_BANDED)              
@@ -12226,54 +12289,26 @@ WRITE(MSG%LU_DEBUG,'(A, 4I4,E12.4)') 'RECV: MATRIX_DIAG: NOM, IOR0, ICG, ICE, DI
                      MC => OG%STRENGTH
                   ENDIF
 
-                  LL = 1
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'EXCHANGE_MATRIX_VALS, RECV: MC%ROW:'
+WRITE(MSG%LU_DEBUG,'(8I8)') OG%AC%ROW(1:8)
+WRITE(MSG%LU_DEBUG,*) 'EXCHANGE_MATRIX_VALS, RECV: MC%COL:'
+WRITE(MSG%LU_DEBUG,'(8I8)') OG%AC%COL(1:32)
+#endif
                   DO IOR0 = -3, 3
                      IF (OL%NCG(IOR0) == 0) CYCLE
                      DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
-                        ICE = OG%ICG_TO_ICE(ICG)
-                        MC%VAL(LL) = RECV_REAL7(LL)
+                        DO LL = MC%ROW(ICG), MC%ROW(ICG+1)-1
+                           MC%VAL(LL) = RECV_REAL7(LL)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 4I4,E12.4)') 'EXCHANGE_MATRIX_VALS, RECV: NOM, IOR0, ICG, ICE, MC%VAL', &
-                                      NOM, IOR0, ICG, ICE, MC%VAL(LL)
+WRITE(MSG%LU_DEBUG,'(A, 5I4,E12.4)') 'EXCHANGE_MATRIX_VALS, RECV: NOM, IOR0, ICG, ICE, LL, MC%VAL', &
+                                      NOM, IOR0, ICG, ICE, LL, MC%VAL(LL)
 #endif
-                        LL = LL + 1
+                        ENDDO
                      ENDDO
                   ENDDO
 
             END SELECT
-
-         !> 
-         !> ---------- Unpack information about neighboring matrix columns
-         !             only needed for compact storage technique
-         !> 
-         CASE (NSCARC_EXCHANGE_MATRIX_COLS, NSCARC_EXCHANGE_STRENGTH_COLS)
-
-            CALL SCARC_POINT_TO_BUFFER (NM, NOM, RNODE, SNODE, NSCARC_BUFFER_INT7)
-
-            IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_MATRIX_VALS) THEN
-               MC => OG%AC
-            ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_STRENGTH_VALS) THEN
-               MC => OG%STRENGTH
-            ENDIF
-
-            LL = 1                                 
-            DO IOR0 = -3, 3
-               IF (OL%NCG(IOR0) == 0) CYCLE
-               DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
-                  ICE = OG%ICG_TO_ICE(ICG)
-                  IF (RECV_INT7(LL) < 0) OG%AC%ROW(ICG) = LL
-                  MC%COL(LL) = ABS(RECV_INT7(LL))
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 5I4)') 'EXCHANGE_MATRIX_VALS, RECV: NOM, IOR0, ICG, ICE, OG%AC%COL', &
-                                      NOM, IOR0, ICG, ICE, MC%COL(LL)
-#endif
-                  LL = LL + 1
-               ENDDO
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 5I4)') 'EXCHANGE_MATRIX_VALS, RECV: ICG = ', ICG
-#endif
-               MC%ROW(ICG) = LL
-            ENDDO
 
          !> 
          !> ---------- Print error message in case of wrong exchange type
@@ -13542,7 +13577,11 @@ WRITE(MSG%LU_DEBUG,*) '========================================================'
 
    ENDDO MESHES_ALLOCATION_LOOP
 
-   IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_DIAG, NL)
+   IF (NMESHES > 1) THEN
+      CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_DIAG, NL)
+      CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_STRENGTH_COLS, NL)
+      CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_STRENGTH_VALS, NL)
+   ENDIF
 
    ! 
    ! Main coarsening process: 
