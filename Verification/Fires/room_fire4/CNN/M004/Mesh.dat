@@ -1,0 +1,10 @@
+ Total number of cells over all meshes
+       67392
+ Local number of cells in current mesh
+       16848
+ Local number of cells in x, y and z in current mesh
+          26          27          24
+ Section of local mesh in overall geometry with respect to global numbering
+       50545       67392
+ Local grid sizes in x, y and z in current mesh
+  0.100000000000000       0.100000000000000       0.100000000000000     
