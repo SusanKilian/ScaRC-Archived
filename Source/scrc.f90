@@ -8148,7 +8148,7 @@ END SUBROUTINE SCARC_SETUP_PARDISO
 SUBROUTINE SCARC_SETUP_MATRIX_SIZES(NTYPE, NL)
 USE SCARC_POINTERS, ONLY: L, G, OG, AB, AC
 INTEGER, INTENT(IN) :: NTYPE, NL
-INTEGER :: NM, NOM, IW
+INTEGER :: NM, NOM, INBR
 
 SELECT_MATRIX_SIZE: SELECT CASE (NTYPE)
    
@@ -8177,13 +8177,14 @@ SELECT_MATRIX_SIZE: SELECT CASE (NTYPE)
                AC%N_VAL  = G%NC * AC%N_STENCIL
                AC%N_ROW  = G%NC + 1
       
-               !> Determine sizes of overlapped parts for later communication with corresponding neighbors
-               DO IW = 1, L%N_WALL_CELLS_EXT
-                  NOM = G%WALL(IW)%NOM
-                  IF (NOM /= 0) THEN
-                     CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NL)
-                     OG%AC%N_VAL = OG%AC%N_VAL + AC%N_STENCIL
-                  ENDIF
+               !> Allocate matrices on overlapping parts for later data exchanges with neighbors
+               DO INBR = 1, SCARC(NM)%N_NEIGHBORS
+                  NOM = S%NEIGHBORS(INBR)
+                  CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NL)
+                  OG%AC%N_STENCIL = AC%N_STENCIL
+                  OG%AC%N_VAL     = OG%NCG * AC%N_STENCIL
+                  OG%AC%N_ROW     = OG%NCG + 1
+                  CALL SCARC_ALLOCATE_MATRIX_COMPACT(OG%AC, NL, NSCARC_PRECISION_DOUBLE, NSCARC_INIT_ZERO, 'OG%AC')
                ENDDO
       
             !>
@@ -8265,15 +8266,23 @@ SELECT_MATRIX_SIZE: SELECT CASE (NTYPE)
                AB%N_DIAG = G%NC
       
                !> Determine sizes of overlapping parts for later communication with corresponding neighbors
-               DO IW = 1, L%N_WALL_CELLS_EXT
-                  NOM = G%WALL(IW)%NOM
-                  IF (NOM /= 0) THEN
-                     CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NL)
-                     OG%AB%N_VAL     = OG%AB%N_VAL + AB%N_STENCIL
-                     OG%AB%N_DIAG    = OG%AB%N_DIAG + 1
-                     OG%AB%N_STENCIL = AB%N_STENCIL
-                  ENDIF
+               DO INBR = 1, SCARC(NM)%N_NEIGHBORS
+                  NOM = S%NEIGHBORS(INBR)
+                  CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NL)
+                  OG%AB%N_STENCIL = AB%N_STENCIL
+                  OG%AB%N_VAL     = OG%NCG * AB%N_STENCIL
+                  OG%AB%N_DIAG    = OG%NCG 
                ENDDO
+      
+               !DO IW = 1, L%N_WALL_CELLS_EXT
+               !   NOM = G%WALL(IW)%NOM
+               !   IF (NOM /= 0) THEN
+               !      CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NL)
+               !      OG%AB%N_VAL     = OG%AB%N_VAL + AB%N_STENCIL
+               !      OG%AB%N_DIAG    = OG%AB%N_DIAG + 1
+               !      OG%AB%N_STENCIL = AB%N_STENCIL
+               !   ENDIF
+               !ENDDO
       
          END SELECT SELECT_MATRIX_TYPE
    
