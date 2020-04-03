@@ -12173,7 +12173,7 @@ WRITE(MSG%LU_DEBUG,'(14I4)') OS%RECV_INT2
                         ILAST = RECV_INT2(LL+1)
                         G%N_AGGREGATES = G%N_AGGREGATES + 1
                      ENDIF
-                     IF (RECV_INT2(LL+1) /= RECV_INT2(LL)) THEN               ! temporarily, really needed? TODO
+                     IF (RECV_INT2(LL+1)> 0 .AND. RECV_INT2(LL+1) /= RECV_INT2(LL)) THEN               ! temporarily, really needed? TODO
                         WRITE(*,*) 'TO CHECK: WRONG EXCHANGE OF AGGREGATES1'  
                         STOP
                      ENDIF
