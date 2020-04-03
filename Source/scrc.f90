@@ -12153,7 +12153,7 @@ MESHES_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !> 
          !> ---------- Unpack aggregates information (Smoothed Aggregation Algebraid Multigrid only)
          !> 
-         CASE (NSCARC_EXCHANGE_AGGREGATES1)
+         CASE (NSCARC_EXCHANGE_AGGREGATES1, NSCARC_EXCHANGE_AGGREGATES2)
 
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, RNODE, SNODE, NSCARC_BUFFER_INT2)
 
