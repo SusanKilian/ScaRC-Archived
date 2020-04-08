@@ -1300,7 +1300,7 @@ ENDIF
 !
 ! If requested, open file for log-information
 !
-LASTID = -99999
+LASTID = -NSCARC_HUGE_INT
 DO NM=LOWER_MESH_INDEX, UPPER_MESH_INDEX
    IF (MYID == LASTID) CYCLE
    WRITE (MSG%FILE_VERBOSE, '(A,A,i3.3)') TRIM(CHID),'.log',MYID+1
@@ -1314,7 +1314,7 @@ ENDDO
 !
 ! If requested, open file for debug messages
 !
-LASTID = -99999
+LASTID = -NSCARC_HUGE_INT
 DO NM=LOWER_MESH_INDEX, UPPER_MESH_INDEX
    IF (MYID == LASTID) CYCLE
    WRITE (MSG%FILE_DEBUG, '(A,A,i3.3)') TRIM(CHID),'.debug',MYID+1
@@ -5567,7 +5567,7 @@ DO IC = 1, ACS%N_ROW - 1
 
       !> store indices of all diagonal and upper-diagonal entries
       KCOL_AUX = 0
-      KC_AUX   = 99999999
+      KC_AUX   = NSCARC_HUGE_INT
       ISYM = 1
       JC0 = AC%COL_GLOBAL(AC%ROW(IC))
       DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1
@@ -5592,13 +5592,13 @@ DO IC = 1, ACS%N_ROW - 1
       SORT_LOOP: DO WHILE (JSYM <= NSYM)
          DO ISYM = 1, NSYM
             JC = KC_AUX(ISYM)
-            IF (JC == 99999999) CYCLE
+            IF (JC == NSCARC_HUGE_INT) CYCLE
             IF (JC <= MINVAL(KC_AUX)) THEN
                ICOL = KCOL_AUX(ISYM)
                ACS%VAL(IAS) = AC%VAL(ICOL)
                !ACS%COL(IAS) = AC%COL(ICOL)
                ACS%COL(IAS) = AC%COL_GLOBAL(ICOL)
-               KC_AUX(ISYM) = 99999999            ! mark entry as already used
+               KC_AUX(ISYM) = NSCARC_HUGE_INT            ! mark entry as already used
                IAS  = IAS  + 1
             ENDIF
          ENDDO
@@ -5728,7 +5728,7 @@ DO IC = 1, G%NC
 
       !> store indices of all diagonal and upper-diagonal entries
       KCOL_AUX = 0
-      KC_AUX   = 99999999
+      KC_AUX   = NSCARC_HUGE_INT
       ISYM = 1
       JC0 = AC%COL_GLOBAL(AC%ROW(IC))
       DO ICOL = AC%ROW(IC), AC%ROW(IC+1)-1
@@ -5753,13 +5753,13 @@ DO IC = 1, G%NC
       SORT_LOOP: DO WHILE (JSYM <= NSYM)
          DO ISYM = 1, NSYM
             JC = KC_AUX(ISYM)
-            IF (JC == 99999999) CYCLE
+            IF (JC == NSCARC_HUGE_INT) CYCLE
             IF (JC <= MINVAL(KC_AUX)) THEN
                ICOL = KCOL_AUX(ISYM)
                ACS%VAL_FB(IAS) = REAL(AC%VAL(ICOL),FB)
                !ACS%COL(IAS) = AC%COL(ICOL)
                ACS%COL(IAS) = AC%COL_GLOBAL(ICOL)
-               KC_AUX(ISYM) = 99999999            ! mark entry as already used
+               KC_AUX(ISYM) = NSCARC_HUGE_INT            ! mark entry as already used
                IAS  = IAS  + 1
             ENDIF
          ENDDO
@@ -12169,13 +12169,13 @@ WRITE(MSG%LU_DEBUG,'(14I4)') OS%RECV_INT2
                   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
                      ICE = OG%ICG_TO_ICE(ICG)
                      ICW = OG%ICG_TO_ICW(ICG)
-                     IF (RECV_INT2(LL+1) > 0 .AND. RECV_INT2(LL+1) /= ILAST) THEN
-                        ILAST = RECV_INT2(LL+1)
-                        G%N_AGGREGATES = G%N_AGGREGATES + 1
-                     ENDIF
-                     IF (RECV_INT2(LL+1)> 0 .AND. RECV_INT2(LL+1) /= RECV_INT2(LL)) THEN               ! temporarily, really needed? TODO
+                     IF (RECV_INT2(LL+1) > 0 .AND. RECV_INT2(LL+1) /= RECV_INT2(LL)) THEN    ! really needed? TODO
                         WRITE(*,*) 'TO CHECK: WRONG EXCHANGE OF AGGREGATES1'  
                         STOP
+                     ENDIF
+                     IF (RECV_INT2(LL) /= ILAST) THEN
+                        ILAST = RECV_INT2(LL)
+                        G%N_AGGREGATES = G%N_AGGREGATES + 1
                      ENDIF
                      G%AGGREGATES(ICE) = G%N_AGGREGATES               
                      IF (RECV_INT2(LL+1) > 0) G%AGGREGATES(ICW) = G%N_AGGREGATES
@@ -12188,19 +12188,21 @@ WRITE(MSG%LU_DEBUG,'(A, 10I4)') 'EXCHANGE_AGGREGATES1: RECV: IOR0, ICG, ICE, ICW
                ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_AGGREGATES2 .AND. NM < NOM) THEN
                   ILAST = -1
                   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+                     ICW = OG%ICG_TO_ICW(ICG)
                      ICE = OG%ICG_TO_ICE(ICG)
                      IF (G%AGGREGATES(ICE) == 0) THEN
-                        IF (RECV_INT2(LL) /= ILAST) THEN
+                        IF (RECV_INT2(LL) == RECV_INT2(LL+1)) THEN
+                           G%AGGREGATES(ICE) = G%AGGREGATES(ICW) 
+                        ELSE IF (RECV_INT2(LL) /= ILAST) THEN
                            G%N_AGGREGATES = G%N_AGGREGATES + 1
+                           G%AGGREGATES(ICE) = G%N_AGGREGATES 
                            ILAST = RECV_INT2(LL)
                         ENDIF
-                        G%AGGREGATES(ICE) = G%N_AGGREGATES 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A, 8I4)') 'EXCHANGE_AGGREGATES2: RECV: IOR0, ICG, ICW, ICE, RECV:', &
-              IOR0, ICG, ICW, ICE, RECV_INT2(LL:LL+1), G%N_AGGREGATES, ILAST, G%AGGREGATES(ICE), G%AGGREGATES(ICW)
+              IOR0, ICG, ICE, RECV_INT2(LL:LL+1), G%N_AGGREGATES, ILAST, G%AGGREGATES(ICE)
 #endif
                      ENDIF
-                     ILAST = RECV_INT2(LL)
                      LL = LL + 2
                   ENDDO
                ELSE
@@ -12338,12 +12340,6 @@ WRITE(MSG%LU_DEBUG,'(A, 4I4,E12.4)') 'RECV: MATRIX_DIAG: NOM, IOR0, ICG, ICE, DI
                MC => OG%STRENGTH
             ENDIF
 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'EXCHANGE_MATRIX_COLS, RECV: INIT: MC%ROW:', SIZE(MC%ROW)
-WRITE(MSG%LU_DEBUG,'(8I8)') OG%AC%ROW(1:8)
-WRITE(MSG%LU_DEBUG,*) 'EXCHANGE_MATRIX_COLS, RECV: INIT: MC%COL:', SIZE(MC%COL)
-WRITE(MSG%LU_DEBUG,'(8I8)') OG%AC%COL(1:32)
-#endif
             LL = 1                                 
             DO IOR0 = -3, 3
                IF (OL%NCG(IOR0) == 0) CYCLE
@@ -12375,12 +12371,6 @@ WRITE(MSG%LU_DEBUG,'(A, 5I4)') 'EXCHANGE_MATRIX_COLS: RECV: NOM, IOR0, ICG, ICE,
 #endif
             ENDDO
 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'EXCHANGE_MATRIX_COLS, RECV: END : MC%ROW:', SIZE(MC%ROW)
-WRITE(MSG%LU_DEBUG,'(8I8)') OG%AC%ROW(1:8)
-WRITE(MSG%LU_DEBUG,*) 'EXCHANGE_MATRIX_COLS, RECV: END : MC%COL:', SIZE(MC%COL)
-WRITE(MSG%LU_DEBUG,'(8I8)') OG%AC%COL(1:32)
-#endif
 
          !> 
          !> ---------- Unpack information about neighboring matrix values
@@ -12413,12 +12403,6 @@ WRITE(MSG%LU_DEBUG,'(8I8)') OG%AC%COL(1:32)
                      MC => OG%STRENGTH
                   ENDIF
 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'EXCHANGE_MATRIX_VALS, RECV: INIT: MC%ROW:', SIZE(MC%ROW)
-WRITE(MSG%LU_DEBUG,'(8I8)') OG%AC%ROW(1:8)
-WRITE(MSG%LU_DEBUG,*) 'EXCHANGE_MATRIX_VALS, RECV: INIT: MC%COL:', SIZE(MC%COL)
-WRITE(MSG%LU_DEBUG,'(8I8)') OG%AC%COL(1:32)
-#endif
                   DO IOR0 = -3, 3
                      IF (OL%NCG(IOR0) == 0) CYCLE
                      DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
@@ -12431,12 +12415,6 @@ WRITE(MSG%LU_DEBUG,'(A,4I4,E12.4)') 'EXCHANGE_MATRIX_VALS, RECV: NOM, IOR0, ICG,
                         ENDDO
                      ENDDO
                   ENDDO
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'EXCHANGE_MATRIX_VALS, RECV: END : MC%ROW:', SIZE(MC%ROW)
-WRITE(MSG%LU_DEBUG,'(8I8)') OG%AC%ROW(1:8)
-WRITE(MSG%LU_DEBUG,*) 'EXCHANGE_MATRIX_VALS, RECV: END : MC%COL:', SIZE(MC%COL)
-WRITE(MSG%LU_DEBUG,'(8I8)') OG%AC%COL(1:32)
-#endif
 
             END SELECT
 
@@ -13729,13 +13707,12 @@ WRITE(MSG%LU_DEBUG,*) '========================================================'
       CALL SCARC_SETUP_AGGREGATE_OPERATOR
 
       ! Compute QR-decomposition of nullspace vector in order to determine tentative prolongator 
-      ! Set nullspace for next level and perform Jacobi relaxation to get the final prolongator
       CALL SCARC_ALLOCATE_REAL1(GF%Q, 1, GF%N_FINE+1  , NSCARC_INIT_ZERO, 'GF%Q')
       CALL SCARC_ALLOCATE_REAL1(GF%R, 1, GF%N_COARSE+1, NSCARC_INIT_ZERO, 'GF%R')
 
-      ! setup tentative prolongator and build coarse matrix
       CALL SCARC_SETUP_TENTATIVE_PROLONGATOR
 
+      ! Set nullspace for next level and perform Jacobi relaxation to get the final prolongator
       ! If the maximum allowed level is not yet reached, set dimensions for next coarser level, 
       ! define its nullspace and perform relaxation to define the respective prolongation matrix
       IF (NL < NLEVEL_MAX) THEN
@@ -14055,23 +14032,24 @@ INTEGER :: NM, IC, JC, ICOL, IAGG, JAGG, INBR, NOM, IOR0, ICG, ICW
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTILEVEL(NM, NL, NL+1)
+   GF%N_AGGREGATES = 1       
    DO INBR = 1, S%N_NEIGHBORS
    
       NOM = S%NEIGHBORS(INBR)
       CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NL)
    
       IF (NM < NOM) THEN
-         GF%N_AGGREGATES = 1       
          DO IOR0 = -3, 3
             IF (OLF%NCG(IOR0) == 0) CYCLE
             DO ICG = OLF%NCG0(IOR0), OLF%NCG(IOR0)
                ICW = OGF%ICG_TO_ICW(ICG)
                IF (GF%AGGREGATES(ICW) /= 0) CYCLE                     
-               CALL SCARC_SETUP_AGGREGATES_PASS1(ICW)
+               CALL SCARC_SETUP_AGGREGATES_OVERLAP(ICW, IOR0)
             ENDDO
          ENDDO
       ENDIF
    ENDDO
+   !GF%AGGREGATES = -GF%AGGREGATES
 
 ENDDO
 
@@ -14105,14 +14083,11 @@ IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_AGGREGATES1, NL)
 !
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   !
-   ! Perform usual aggregation on remaining internal cells
-   !
    CALL SCARC_POINT_TO_MULTILEVEL(NM, NL, NL+1)
 
    PASS1_CELL_LOOP: DO IC = 1, GF%NC
       IF (GF%AGGREGATES(IC) /= 0) CYCLE                         !> already marked
-      CALL SCARC_SETUP_AGGREGATES_PASS1(IC)
+      CALL SCARC_SETUP_AGGREGATES_INTERNAL(IC)
    ENDDO PASS1_CELL_LOOP
    
 #ifdef WITH_SCARC_DEBUG
@@ -14120,19 +14095,21 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES2: GF%NC=',GF%NC
 #endif
    
-   !
    ! Add unaggregated nodes to neighboring aggregate
-   !
    PASS2_CELL_LOOP: DO IC = 1, GF%NC
    
       IF (GF%AGGREGATES(IC) /= 0) CYCLE             !> already marked
+
       DO ICOL = SF%ROW(IC), SF%ROW(IC+1)-1
          JC = SF%COL(ICOL)
          JAGG = GF%AGGREGATES(JC)
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,'(A,4I5)') 'PASS2: IC, ICOL, JC, JAGG:', IC, ICOL, JC, JAGG
+#endif
          IF (JAGG > 0) THEN
             GF%AGGREGATES(IC) = -JAGG
 #ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'PASS2: GF%AGGREGATES(',IC,')=', GF%AGGREGATES(IC)
+   WRITE(MSG%LU_DEBUG,'(A,I3,A,I5)') '            -----------> GF%AGGREGATES(',IC,')=', GF%AGGREGATES(IC)
 #endif
             EXIT
          ENDIF
@@ -14146,9 +14123,26 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES3: GF%NC=',GF%NC
 #endif
 
-   !
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES_PASS2: =============  '
+   IF (NMESHES == 1) THEN
+      WRITE(MSG%LU_DEBUG,'(13I4)') GF%AGGREGATES(1:GF%NC)
+   ELSE IF (NMESHES == 2) THEN
+      IF (MYID == 0) THEN
+         WRITE(MSG%LU_DEBUG,'(7I4)') GF%AGGREGATES(1:GF%NC)
+      ELSE
+         WRITE(MSG%LU_DEBUG,'(6I4)') GF%AGGREGATES(1:GF%NC)
+      ENDIF
+      WRITE(MSG%LU_DEBUG,*) '-------------- overlap:'
+      WRITE(MSG%LU_DEBUG,'(7I4)') GF%AGGREGATES(GF%NC+1: GF%NCE)
+      WRITE(MSG%LU_DEBUG,*) 'CPTS:'
+      WRITE(MSG%LU_DEBUG,'(8I8)') GF%CPOINTS(1:GF%N_COARSE)
+   ENDIF
+#endif
+   
+   !GF%AGGREGATES = ABS(GF%AGGREGATES)
+
    ! Process remaining nodes which have not been aggregated yet
-   !
    PASS3_CELL_LOOP: DO IC = 1, GF%NC
    
       IAGG = GF%AGGREGATES(IC)
@@ -14157,10 +14151,19 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       IF (IAGG /= 0) THEN
          IF (IAGG > 0) THEN
             GF%AGGREGATES(IC) = IAGG 
-         ELSE IF (IAGG == - GF%NC) THEN
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'PASS3:A: AGGREGATING IC=',IAGG
+#endif
+         ELSE IF (IAGG == NSCARC_HUGE_INT ) THEN
             GF%AGGREGATES(IC) = -1
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'PASS3:B: AGGREGATING IC=',-1
+#endif
          ELSE
             GF%AGGREGATES(IC) = -IAGG 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'PASS3:C: AGGREGATING IC=',-IAGG
+#endif
          ENDIF
          CYCLE
       ENDIF
@@ -14188,15 +14191,23 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES4: GF%NC=',GF%NC
 #endif
    
-   !
-   ! set number of coarse and find grid cells on current AMG level 
+   ! Set number of coarse and find grid cells on current AMG level 
    ! and reduce size of CPOINTS-array to number of aggretates
-   !
    GF%N_COARSE = GF%N_AGGREGATES
    GC%N_FINE  = GF%N_AGGREGATES
    
    CALL SCARC_RESIZE_INT1(GF%CPOINTS, GF%N_COARSE, 'GF%CPOINTS')     
+
+ENDDO
    
+! make information on higher-number-mesh available for smaller-number-mesh 
+IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_AGGREGATES2, NL)
+   
+! only temporarily due to debugging purposes
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+   CALL SCARC_POINT_TO_MULTILEVEL(NM, NL, NL+1)
+
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES_PASS3: =============  IC:',IC
    WRITE(MSG%LU_DEBUG,*) 'GF%NC  =',GF%NC
@@ -14229,7 +14240,91 @@ END SUBROUTINE SCARC_SETUP_AGGREGATES
 ! ------------------------------------------------------------------------------------------------------
 ! Pass1:  Aggregation of internal cells
 ! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_AGGREGATES_PASS1(IC)
+SUBROUTINE SCARC_SETUP_AGGREGATES_OVERLAP(IC, IOR0)
+USE SCARC_POINTERS, ONLY: LF, SF
+INTEGER, INTENT(IN) :: IC, IOR0
+INTEGER :: JC, ICOL, IOFFSET, IDIFF
+LOGICAL :: HAS_NEIGHBORS, HAS_AGGREGATED_NEIGHBORS
+
+!> Determine whether all neighbors of this node are free (not already aggregated)
+HAS_NEIGHBORS = .FALSE.
+HAS_AGGREGATED_NEIGHBORS = .FALSE.
+
+
+IOFFSET = 0
+SELECT CASE (IOR0)
+   CASE (1)
+      IOFFSET =  1
+   CASE (-1)
+      IOFFSET = -1
+   CASE (2)
+      IOFFSET =  LF%NX
+   CASE (-2)
+      IOFFSET = -LF%NX
+   CASE (3)
+      IOFFSET =  LF%NX*LF%NY
+   CASE (-3)
+      IOFFSET = -LF%NX*LF%NY
+END SELECT
+
+DO ICOL = SF%ROW(IC) + 1, SF%ROW(IC+1)-1 
+   JC = SF%COL(ICOL)
+   IDIFF = JC - IC
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,'(A,6I5)') 'OVERLAP: IOR0, IC, ICOL, JC, IDIFF, IOFFSET:', IOR0, IC, ICOL, JC, IDIFF, IOFFSET
+#endif
+   !IF (IDIFF /= IOFFSET) THEN
+   IF (JC <= G%NC) THEN
+      HAS_NEIGHBORS = .TRUE.
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,'(A,6I5)') '          bingo'
+#endif
+      IF (GF%AGGREGATES(JC) /= 0) THEN
+         HAS_AGGREGATED_NEIGHBORS = .TRUE.
+         EXIT
+      ENDIF
+   ENDIF
+ENDDO
+
+!> Do not aggregate isolated cells
+IF (.NOT. HAS_NEIGHBORS) THEN
+
+   GF%AGGREGATES(IC) = NSCARC_HUGE_INT
+
+!> If not already done, build an aggregate of this cell and its  neighbors
+ELSE IF (.NOT. HAS_AGGREGATED_NEIGHBORS) THEN
+
+   GF%AGGREGATES(IC) = GF%N_AGGREGATES
+   GF%CPOINTS(GF%N_AGGREGATES) = IC                
+   DO ICOL = SF%ROW(IC), SF%ROW(IC+1)-1 
+      JC = SF%COL(ICOL)
+      IDIFF = JC - IC
+      IF (IDIFF /= IOFFSET) GF%AGGREGATES(SF%COL(ICOL)) = GF%N_AGGREGATES
+   ENDDO
+   GF%N_AGGREGATES = GF%N_AGGREGATES + 1
+ENDIF
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES_PASS1: =============  IC:',IC
+IF (NMESHES == 1) THEN
+   WRITE(MSG%LU_DEBUG,'(13I4)') GF%AGGREGATES(1:GF%NC)
+ELSE IF (NMESHES == 2) THEN
+   IF (MYID == 0) THEN
+      WRITE(MSG%LU_DEBUG,'(7I4)') GF%AGGREGATES(1:GF%NC)
+   ELSE
+      WRITE(MSG%LU_DEBUG,'(6I4)') GF%AGGREGATES(1:GF%NC)
+   ENDIF
+   WRITE(MSG%LU_DEBUG,*) '-------------- overlap:'
+   WRITE(MSG%LU_DEBUG,'(7I4)') GF%AGGREGATES(GF%NC+1: GF%NCE)
+ENDIF
+#endif
+
+END SUBROUTINE SCARC_SETUP_AGGREGATES_OVERLAP
+
+! ------------------------------------------------------------------------------------------------------
+! Pass1:  Aggregation of internal cells
+! ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_AGGREGATES_INTERNAL(IC)
 USE SCARC_POINTERS, ONLY: SF
 INTEGER, INTENT(IN) :: IC
 INTEGER :: JC, ICOL
@@ -14253,7 +14348,7 @@ ENDDO
 !> Do not aggregate isolated cells
 IF (.NOT. HAS_NEIGHBORS) THEN
 
-   GF%AGGREGATES(IC) = -GF%NC                  !> number of rows in A
+   GF%AGGREGATES(IC) = NSCARC_HUGE_INT
 
 !> If not already done, build an aggregate of this cell and its  neighbors
 ELSE IF (.NOT. HAS_AGGREGATED_NEIGHBORS) THEN
@@ -14281,7 +14376,7 @@ ELSE IF (NMESHES == 2) THEN
 ENDIF
 #endif
 
-END SUBROUTINE SCARC_SETUP_AGGREGATES_PASS1
+END SUBROUTINE SCARC_SETUP_AGGREGATES_INTERNAL
 
 
 ! ------------------------------------------------------------------------------------------------------
@@ -16393,7 +16488,7 @@ WRITE(MSG%LU_DEBUG,'(8E12.4)') ACF%VAL
 DO IC = 1, GF%NC
    I = 1
    COLUMNS = 0
-   STENCIL = 999999999
+   STENCIL = NSCARC_HUGE_INT
    DO ICOL= ACF%ROW(IC), ACF%ROW(IC+1)-1
       COLUMNS(I) = ICOL
       STENCIL(I) = ACF%COL(ICOL)
