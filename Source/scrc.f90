@@ -128,22 +128,23 @@ INTEGER, PARAMETER :: NSCARC_ERROR_AGGREGATION       =  1, &    !> SAMG-aggregat
 
 INTEGER, PARAMETER :: NSCARC_EXCHANGE_AGGREGATES1    =  1, &    !> exchange aggregates - preprocessing
                       NSCARC_EXCHANGE_AGGREGATES2    =  2, &    !> exchange aggregates - postprocessing
-                      NSCARC_EXCHANGE_CELL_NUMBER    =  3, &    !> neighboring cell numbers on overlap
-                      NSCARC_EXCHANGE_CELL_TYPE      =  4, &    !> cell type for coarsening process
-                      NSCARC_EXCHANGE_CELL_WIDTH     =  5, &    !> neighboring grid widths on overlap
-                      NSCARC_EXCHANGE_MATRIX_COLS    =  6, &    !> columns of neighboring matrix on overlap
-                      NSCARC_EXCHANGE_MATRIX_DIAG    =  7, &    !> size of neighboring matrix 
-                      NSCARC_EXCHANGE_MATRIX_SIZE    =  8, &    !> size of neighboring matrix 
-                      NSCARC_EXCHANGE_MATRIX_VALS    =  9, &    !> values of neighboring matrix on overlap
-                      NSCARC_EXCHANGE_NULLSPACE      = 10, &    !> exchange sum of nullspace entries
-                      NSCARC_EXCHANGE_PRESSURE       = 11, &    !> vector values along internal boundaries
-                      NSCARC_EXCHANGE_SETUP          = 12, &    !> initialize wall information
-                      NSCARC_EXCHANGE_STRENGTH_COLS  = 13, &    !> columns of neighboring matrix on overlap
-                      NSCARC_EXCHANGE_STRENGTH_VALS  = 14, &    !> values of neighboring matrix on overlap
-                      NSCARC_EXCHANGE_TRANSFER       = 15, &    !> AMG information for transfer matrix
-                      NSCARC_EXCHANGE_VECTOR         = 16, &    !> exchange vector for mat-vec multiplication
-                      NSCARC_EXCHANGE_VECTOR_MEAN    = 17, &    !> exchange vector for mat-vec multiplication and build sum
-                      NSCARC_EXCHANGE_WEIGHTS        = 18       !> weights for prolongation
+                      NSCARC_EXCHANGE_AGGREGATES3    =  3, &    !> exchange aggregates - postprocessing
+                      NSCARC_EXCHANGE_CELL_NUMBER    =  4, &    !> neighboring cell numbers on overlap
+                      NSCARC_EXCHANGE_CELL_TYPE      =  5, &    !> cell type for coarsening process
+                      NSCARC_EXCHANGE_CELL_WIDTH     =  6, &    !> neighboring grid widths on overlap
+                      NSCARC_EXCHANGE_MATRIX_COLS    =  7, &    !> columns of neighboring matrix on overlap
+                      NSCARC_EXCHANGE_MATRIX_DIAG    =  8, &    !> size of neighboring matrix 
+                      NSCARC_EXCHANGE_MATRIX_SIZE    =  9, &    !> size of neighboring matrix 
+                      NSCARC_EXCHANGE_MATRIX_VALS    = 10, &    !> values of neighboring matrix on overlap
+                      NSCARC_EXCHANGE_NULLSPACE      = 11, &    !> exchange sum of nullspace entries
+                      NSCARC_EXCHANGE_PRESSURE       = 12, &    !> vector values along internal boundaries
+                      NSCARC_EXCHANGE_SETUP          = 13, &    !> initialize wall information
+                      NSCARC_EXCHANGE_STRENGTH_COLS  = 14, &    !> columns of neighboring matrix on overlap
+                      NSCARC_EXCHANGE_STRENGTH_VALS  = 15, &    !> values of neighboring matrix on overlap
+                      NSCARC_EXCHANGE_TRANSFER       = 16, &    !> AMG information for transfer matrix
+                      NSCARC_EXCHANGE_VECTOR         = 17, &    !> exchange vector for mat-vec multiplication
+                      NSCARC_EXCHANGE_VECTOR_MEAN    = 18, &    !> exchange vector for mat-vec multiplication and build sum
+                      NSCARC_EXCHANGE_WEIGHTS        = 19       !> weights for prolongation
 
 INTEGER, PARAMETER :: NSCARC_GRID_STRUCTURED         =  1, &    !> structured discretization
                       NSCARC_GRID_UNSTRUCTURED       =  2       !> unstructured discretization
@@ -156,8 +157,8 @@ INTEGER, PARAMETER :: NSCARC_INIT_UNDEF              = -99, &   !> initialize al
                       NSCARC_INIT_MINUS              =  -1, &   !> initialize allocated array with minus one
                       NSCARC_INIT_ZERO               =   0, &   !> initialize allocated array with zero
                       NSCARC_INIT_ONE                =   1, &   !> initialize allocated array with one
-                      NSCARC_INIT_TRUE               =   2, &   !> initialize allocated array with one
-                      NSCARC_INIT_FALSE              =   3      !> initialize allocated array with one
+                      NSCARC_INIT_TRUE               =   2, &   !> initialize allocated array with .TRUE.
+                      NSCARC_INIT_FALSE              =   3      !> initialize allocated array with .FALSE.
 
 INTEGER, PARAMETER :: NSCARC_INTERPOL_BILINEAR       =  1, &    !> bilinear interpolation
                       NSCARC_INTERPOL_CONSTANT       =  2, &    !> constant interpolation
@@ -211,6 +212,10 @@ INTEGER, PARAMETER :: NSCARC_MULTIGRID_GEOMETRIC     =  1, &    !> geometric mul
                       NSCARC_MULTIGRID_ALGEBRAIC     =  2, &    !> algebraic multigrid
                       NSCARC_MULTIGRID_MAIN          =  1, &    !> multigrid solver as main solver
                       NSCARC_MULTIGRID_PRECON        =  2       !> multigrid solver as preconditioner
+
+INTEGER, PARAMETER :: NSCARC_ORDER_AGGREGATING       =  1, &    !> be next in line for aggregation
+                      NSCARC_ORDER_LOCKED            =  2, &    !> locked for aggregation
+                      NSCARC_ORDER_UNDEFINED         =  3       !> still not defined for aggregation
 
 INTEGER, PARAMETER :: NSCARC_PRECISION_SINGLE        =  1, &    !> single precision data 
                       NSCARC_PRECISION_DOUBLE        =  2       !> double precision data
@@ -537,12 +542,14 @@ END TYPE SCARC_MESSAGE_TYPE
 !
 ! ---------- Information about the mesh decomposition
 !
-TYPE SCARC_DECOMPOSITION_TYPE
+TYPE SCARC_SUBDIVISION_TYPE
 
-   LOGICAL, ALLOCATABLE, DIMENSION (:,:) :: ORDER
-   LOGICAL, ALLOCATABLE :: IS_FINISHED
+   INTEGER, ALLOCATABLE, DIMENSION (:,:) :: ORDER
+   INTEGER, ALLOCATABLE, DIMENSION (:,:) :: NEIGHBORS
+   INTEGER, ALLOCATABLE, DIMENSION (:)   :: N_NEIGHBORS
+   INTEGER :: N_NEIGHBORS_TOTAL, N_CYCLES
 
-END TYPE SCARC_DECOMPOSITION_TYPE
+END TYPE SCARC_SUBDIVISION_TYPE
 
 
 !
@@ -851,7 +858,7 @@ TYPE SCARC_GRID_TYPE
 
    INTEGER :: N_FINE = NSCARC_ZERO_INT                         !> Number of fine cells (SAMG only)
    INTEGER :: N_COARSE = NSCARC_ZERO_INT                       !> Number of coarse cells (SAMG only)
-   INTEGER :: N_AGGREGATES = NSCARC_ZERO_INT                   !> Number of aggregates (SAMG only)
+   INTEGER :: N_AGGREGATES = NSCARC_ONE_INT                    !> Number of aggregates (SAMG only)
 
    !> Pointer variables and arrays for data exchange with neighbors
    INTEGER :: ICG = 0, ICG2 = 0, ICE = 0                       !> ghost cell and extended cell pointers
@@ -1089,6 +1096,8 @@ TYPE (SCARC_GRID_TYPE),     POINTER :: G=>NULL(), GF=>NULL(), GC=>NULL(), OG=>NU
 TYPE (SCARC_FACE_TYPE),     POINTER :: F=>NULL(), FF=>NULL(), FC=>NULL()
 TYPE (SCARC_OBST_TYPE),     POINTER :: OB=>NULL()
 
+TYPE (SCARC_SUBDIVISION_TYPE), POINTER :: SUB=>NULL()
+
 TYPE (SCARC_WALL_TYPE), POINTER :: GWC=>NULL()
 TYPE (SCARC_WALL_TYPE), DIMENSION(:), POINTER :: W=>NULL(), WF=>NULL(), WC=>NULL()
 
@@ -1207,6 +1216,7 @@ TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_MKL, SMOOTH_MKL
 #endif
 TYPE (SCARC_MESSAGE_TYPE), SAVE :: MSG
 
+TYPE (SCARC_SUBDIVISION_TYPE), SAVE, TARGET :: SUBDIVISION
 
 CONTAINS
 
@@ -2567,7 +2577,7 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    LF => SCARC(NM)%LEVEL(NLEVEL_MIN)
    LC => SCARC(NM)%LEVEL(NL)
 
-   CALL SCARC_ALLOCATE_LOG3(LC%IS_SOLID, 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, NSCARC_INIT_NONE, 'IS_SOLID')
+   CALL SCARC_ALLOCATE_LOG3(LC%IS_SOLID, 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, NSCARC_INIT_FALSE, 'IS_SOLID')
    LC%IS_SOLID (1:LC%NX, 1:LC%NY, 1:LC%NZ)  = .FALSE.
 
    NSTEP = 2**(NL - NLEVEL_MIN)
@@ -3382,7 +3392,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CALL SCARC_ALLOCATE_REAL1(OS%SEND_REAL1, 1, NLEN, NSCARC_INIT_ZERO, 'SEND_REAL1')
       CALL SCARC_ALLOCATE_REAL1(OS%RECV_REAL1, 1, NLEN, NSCARC_INIT_ZERO, 'RECV_REAL1')
 
-      NLEN = 2 * OG%NCG
+      NLEN = 2 * OG%NCG 
       CALL SCARC_ALLOCATE_INT1 (OS%SEND_INT2 , 1, NLEN, NSCARC_INIT_ZERO, 'SEND_INT2')
       CALL SCARC_ALLOCATE_INT1 (OS%RECV_INT2 , 1, NLEN, NSCARC_INIT_ZERO, 'RECV_INT2')
       calL SCARC_ALLOCATE_REAL1(OS%SEND_REAL2, 1, NLEN, NSCARC_INIT_ZERO, 'SEND_REAL2')
@@ -5508,12 +5518,20 @@ ACS => G%ACS
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'SETUP_MATRIX_MKL_DOUBLE:', NL, G%NC
-WRITE(MSG%LU_DEBUG,*) 'AROW'
+WRITE(MSG%LU_DEBUG,*) 'AC%ROW:', AC%N_ROW, AC%N_VAL
 WRITE(MSG%LU_DEBUG,'(8I8)') AC%ROW
-WRITE(MSG%LU_DEBUG,*) 'ACOL'
-WRITE(MSG%LU_DEBUG,'(8I8)') AC%COL
-WRITE(MSG%LU_DEBUG,*) 'AVAL'
-WRITE(MSG%LU_DEBUG,'(4E20.10)') AC%VAL
+WRITE(MSG%LU_DEBUG,*) 'AC%COL:'
+DO IC = 1, AC%N_ROW-1
+   WRITE(MSG%LU_DEBUG,'(16I8)') (AC%COL(ICOL), ICOL=AC%ROW(IC), AC%ROW(IC+1)-1)
+ENDDO
+WRITE(MSG%LU_DEBUG,*) 'AC%COL_GLOBAL:'
+DO IC = 1, AC%N_ROW-1
+   WRITE(MSG%LU_DEBUG,'(16I8)') (AC%COL_GLOBAL(ICOL), ICOL=AC%ROW(IC), AC%ROW(IC+1)-1)
+ENDDO
+WRITE(MSG%LU_DEBUG,*) 'AC%VAL:'
+DO IC = 1, AC%N_ROW-1
+   WRITE(MSG%LU_DEBUG,'(16E12.4)') (AC%VAL(ICOL), ICOL=AC%ROW(IC), AC%ROW(IC+1)-1)
+ENDDO
 #endif
 ! 
 ! ---------- Store only symmetric parts of matrix (diagonal and upper part)
@@ -5680,13 +5698,17 @@ IF (IS_MKL_LEVEL(NL)) THEN
 ENDIF
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SETUP_MATRIX_MKL_DOUBLE:'
-WRITE(MSG%LU_DEBUG,*) 'ACS%ROW'
-WRITE(MSG%LU_DEBUG,'(8I8)') ACS%ROW
-WRITE(MSG%LU_DEBUG,*) 'ACS%COL'
-WRITE(MSG%LU_DEBUG,'(8I8)') ACS%COL
-WRITE(MSG%LU_DEBUG,*) 'ACS%VAL'
-WRITE(MSG%LU_DEBUG,'(4E20.10)') ACS%VAL
+WRITE(MSG%LU_DEBUG,*) 'SETUP_MATRIX_MKL_DOUBLE:', NL, G%NC
+WRITE(MSG%LU_DEBUG,*) 'ACS%ROW:', ACS%N_ROW, ACS%N_VAL
+WRITE(MSG%LU_DEBUG,*) ACS%ROW
+WRITE(MSG%LU_DEBUG,*) 'ACS%COL:'
+DO IC = 1, ACS%N_ROW-1
+   WRITE(MSG%LU_DEBUG,'(16I8)') (ACS%COL(ICOL), ICOL=ACS%ROW(IC), ACS%ROW(IC+1)-1)
+ENDDO
+WRITE(MSG%LU_DEBUG,*) 'ACS%VAL:'
+DO IC = 1, ACS%N_ROW-1
+   WRITE(MSG%LU_DEBUG,'(16E12.4)') (ACS%VAL(ICOL), ICOL=ACS%ROW(IC), ACS%ROW(IC+1)-1)
+ENDDO
 #endif
 END SUBROUTINE SCARC_SETUP_MATRIX_MKL_DOUBLE
 
@@ -7061,7 +7083,13 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_COARSE_SOLVER: CLUSTER'
 #endif
          STACK(NSTACK)%SOLVER => COARSE_CLUSTER
          CALL SCARC_SETUP_MKL(NSCARC_SOLVER_COARSE, NSCOPE, NSTAGE, NSTACK, NLMIN, NLMAX)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'AFTER SETUP_MKL'
+#endif
          CALL SCARC_SETUP_CLUSTER(NLMIN, NLMAX)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'AFTER SETUP_CLUSTER'
+#endif
 
       !> Local scope:
       !> initialize current stack position as PARDISO solver
@@ -11706,7 +11734,7 @@ RECEIVE_MESH_INDEX: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !> 
          !> Exchange information about neighboring cell numbers 
          !> 
-         CASE (NSCARC_EXCHANGE_AGGREGATES1, NSCARC_EXCHANGE_AGGREGATES2)
+         CASE (NSCARC_EXCHANGE_AGGREGATES1, NSCARC_EXCHANGE_AGGREGATES2, NSCARC_EXCHANGE_AGGREGATES3)
 
             N_REQ = N_REQ+1
             OS%RECV_INT2 = 0
@@ -11785,7 +11813,7 @@ USE SCARC_POINTERS, ONLY: OS, L, OL, G, OG, AB, AC, MC, VC, &
                           RECV_INT0, RECV_INT1, RECV_REAL0, RECV_REAL1, RECV_REAL7
 INTEGER, INTENT(IN) :: NL
 INTEGER  :: NM, NOM
-INTEGER  :: IWG, ICOL, ICE, ICW, ICG, IOR0, ID, LL, ILAST
+INTEGER  :: IWG, ICOL, ICE, ICW, ICG, IOR0, ID, LL
 INTEGER  :: IXW, IYW, IZW, IXG, IYG, IZG
 REAL(EB) :: TNOW
 
@@ -12009,27 +12037,27 @@ MESHES_PACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !> 
          !> ---------- Pack aggregates - preprocessing  (Smoothed Aggregation Algebraid Multigrid only)
          !> 
-         CASE (NSCARC_EXCHANGE_AGGREGATES1, NSCARC_EXCHANGE_AGGREGATES2)
+         CASE (NSCARC_EXCHANGE_AGGREGATES1, NSCARC_EXCHANGE_AGGREGATES2, NSCARC_EXCHANGE_AGGREGATES3)
 
             LL = 1
+            OS%SEND_INT2 = 0
             DO IOR0 = -3, 3
                IF (OL%NCG(IOR0) == 0) CYCLE
 
-               IF ((TYPE_EXCHANGE == NSCARC_EXCHANGE_AGGREGATES1 .AND. NM < NOM) .OR. &
-                   (TYPE_EXCHANGE == NSCARC_EXCHANGE_AGGREGATES2 .AND. NM > NOM)) THEN
+               IF (TYPE_EXCHANGE /= NSCARC_EXCHANGE_AGGREGATES3) THEN
                   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
                      ICW = OG%ICG_TO_ICW(ICG)
                      ICE = OG%ICG_TO_ICE(ICG)
                      IF (G%AGGREGATES(ICW) /= 0) THEN
                         IF (G%CPOINTS(G%AGGREGATES(ICW)) == ICW) THEN
-                           OS%SEND_INT2(LL)   = -G%AGGREGATES(ICW)
+                           OS%SEND_INT2(LL) = -G%AGGREGATES(ICW)
                         ELSE
-                           OS%SEND_INT2(LL)   = G%AGGREGATES(ICW)
+                           OS%SEND_INT2(LL) = G%AGGREGATES(ICW)
                         ENDIF
                         OS%SEND_INT2(LL+1) = G%AGGREGATES(ICE)
                      ELSE
-                        OS%SEND_INT2(LL) = -9999999
-                        OS%SEND_INT2(LL+1) = -9999999
+                        OS%SEND_INT2(LL)   = 0
+                        OS%SEND_INT2(LL+1) = 0
                      ENDIF
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A, 6I8)') 'EXCHANGE_AGGREGATES1: SEND: IOR0, ICG, ICW, SEND(LL:LL+1):', &
@@ -12038,7 +12066,7 @@ WRITE(MSG%LU_DEBUG,'(A, 6I8)') 'EXCHANGE_AGGREGATES1: SEND: IOR0, ICG, ICW, SEND
                      LL = LL + 2
                   ENDDO
                ELSE
-                  OS%SEND_INT2 = -1           ! mesh with biggest number fills in dummy data
+                  OS%SEND_INT2 = 0           ! mesh with biggest number fills in dummy data
                ENDIF
             ENDDO
 
@@ -12383,7 +12411,7 @@ MESHES_UNPACK_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !> 
          !> ---------- Unpack aggregates information (Smoothed Aggregation Algebraid Multigrid only)
          !> 
-         CASE (NSCARC_EXCHANGE_AGGREGATES1, NSCARC_EXCHANGE_AGGREGATES2)
+         CASE (NSCARC_EXCHANGE_AGGREGATES1, NSCARC_EXCHANGE_AGGREGATES2, NSCARC_EXCHANGE_AGGREGATES3)
 
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, RNODE, SNODE, NSCARC_BUFFER_INT2)
 
@@ -12394,49 +12422,29 @@ WRITE(MSG%LU_DEBUG,'(7I8)') OS%RECV_INT2
             LL = 1
             DO IOR0 = -3, 3
                IF (OL%NCG(IOR0) == 0) CYCLE
-               IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_AGGREGATES1 .AND. NM > NOM) THEN
-                  ILAST = -9999999
+               IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_AGGREGATES1 .OR. &
+                   TYPE_EXCHANGE == NSCARC_EXCHANGE_AGGREGATES2) THEN
                   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
-                     ICW = OG%ICG_TO_ICW(ICG)
                      ICE = OG%ICG_TO_ICE(ICG)
-                     IF (ABS(RECV_INT2(LL)) /= ILAST) THEN
-                        ILAST = ABS(RECV_INT2(LL))
-                        G%N_AGGREGATES = G%N_AGGREGATES + 1
-                     ENDIF
-                     G%AGGREGATES(ICE) = G%N_AGGREGATES - 1              
-                     IF (RECV_INT2(LL) < 0) G%CPOINTS(G%N_AGGREGATES - 1) = -ICE
-                     IF (ABS(RECV_INT2(LL)) == ABS(RECV_INT2(LL+1))) G%AGGREGATES(ICW) = G%N_AGGREGATES - 1              
+                     IF (G%AGGREGATES(ICE) == 0) G%AGGREGATES(ICE) = RECV_INT2(LL)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 10I8)') 'EXCHANGE_AGGREGATES1: RECV: IOR0, ICG, ICE, ICW,RECV:', &
-             IOR0, ICG, ICE, ICW, RECV_INT2(LL:LL+1), G%N_AGGREGATES-1, ILAST, G%AGGREGATES(ICE), G%AGGREGATES(ICW)
+WRITE(MSG%LU_DEBUG,'(A, 7I8)') 'AGGREGATES2: RECV: IOR0, ICG, ICE, RECV, NAGG, AGG(ICE):', &
+              IOR0, ICG, ICE, RECV_INT2(LL:LL+1), G%N_AGGREGATES, G%AGGREGATES(ICE)
 #endif
                      LL = LL + 2
                   ENDDO
-                  !G%N_AGGREGATES = G%N_AGGREGATES + 1
-               ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_AGGREGATES2 .AND. NM < NOM) THEN
-                  ILAST = -1
+               ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_AGGREGATES3) THEN
                   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
                      ICW = OG%ICG_TO_ICW(ICG)
                      ICE = OG%ICG_TO_ICE(ICG)
-                     IF (RECV_INT2(LL) == RECV_INT2(LL+1)) THEN
-                        G%AGGREGATES(ICE) = G%AGGREGATES(ICW) 
-                     ELSE IF (RECV_INT2(LL) /= ILAST) THEN
-                        G%N_AGGREGATES = G%N_AGGREGATES + 1
-                        G%AGGREGATES(ICE) = G%N_AGGREGATES 
-                        ILAST = RECV_INT2(LL)
-                     ELSE
-                        G%AGGREGATES(ICE) = G%N_AGGREGATES 
-                     ENDIF
+                     G%AGGREGATES(ICE) = RECV_INT2(LL)
+                     G%AGGREGATES(ICW) = RECV_INT2(LL+1)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 9I4)') 'EXCHANGE_AGGREGATES2: RECV: IOR0, ICG, ICW, ICE, RECV:', &
-              IOR0, ICG, ICW, ICE, RECV_INT2(LL:LL+1), G%N_AGGREGATES, ILAST, G%AGGREGATES(ICE)
+WRITE(MSG%LU_DEBUG,'(A, 8I8)') 'AGGREGATES3: RECV: IOR0, ICG, ICW, ICE, NAGG, AGG(ICW), AGG(ICE):', &
+              IOR0, ICG, ICW, ICE, G%N_AGGREGATES, G%AGGREGATES(ICW), G%AGGREGATES(ICE)
 #endif
                      LL = LL + 2
                   ENDDO
-               ELSE
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A)') 'EXCHANGE_AGGREGATES2: WAITING NEIGHBOR'
-#endif
                ENDIF
             ENDDO
 
@@ -12829,7 +12837,7 @@ END SUBROUTINE SCARC_POINT_TO_GRID
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_POINT_TO_MULTILEVEL(NM, NLF, NLC)
 USE SCARC_POINTERS, ONLY: M, S, L, OL, G, OG, W, AC, MG, LF, LC, GF, GC, ACF, ACC, ACFS, ACCS, &
-                          WF, WC, SF, SC, PF, PC, RF, RC
+                          WF, WC, SF, SC, PF, PC, RF, RC, SUB
 INTEGER, INTENT(IN) ::  NM, NLF, NLC
 
 ! set general pointers to level NL
@@ -12876,6 +12884,8 @@ PC => GC%PROLONGATION
 
 RF => GF%RESTRICTION
 RC => GC%RESTRICTION
+
+SUB => SUBDIVISION
 
 END SUBROUTINE SCARC_POINT_TO_MULTILEVEL
 
@@ -13933,26 +13943,6 @@ WRITE(MSG%LU_DEBUG,*) '========================================================'
 
 ENDDO FURTHER_COARSENING_LOOP
 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'NLEVEL_MAX = ',NLEVEL_MAX
-WRITE(MSG%LU_DEBUG,*) 'SCARC(1)%LEVEL(1)%STRUCTURED%AC:'
-WRITE(MSG%LU_DEBUG,*) 'AC(1)%ROW:'
-WRITE(MSG%LU_DEBUG,'(8I8)') SCARC(1)%LEVEL(1)%STRUCTURED%AC%ROW
-WRITE(MSG%LU_DEBUG,*) 'AC(1)%COL:'
-WRITE(MSG%LU_DEBUG,'(8I8)') SCARC(1)%LEVEL(1)%STRUCTURED%AC%COL
-WRITE(MSG%LU_DEBUG,*) 'AC(1)%VAL:'
-WRITE(MSG%LU_DEBUG,'(8E12.4)') SCARC(1)%LEVEL(1)%STRUCTURED%AC%VAL
-WRITE(MSG%LU_DEBUG,*) 'SCARC(1)%LEVEL(2)%STRUCTURED%AC:'
-WRITE(MSG%LU_DEBUG,*) 'AC(2)%ROW:'
-WRITE(MSG%LU_DEBUG,'(8I8)') SCARC(1)%LEVEL(2)%STRUCTURED%AC%ROW
-WRITE(MSG%LU_DEBUG,*) 'AC(2)%COL:'
-WRITE(MSG%LU_DEBUG,'(8I8)') SCARC(1)%LEVEL(2)%STRUCTURED%AC%COL
-!WRITE(MSG%LU_DEBUG,*) 'AC(2)%COL_GLOBAL:'
-!WRITE(MSG%LU_DEBUG,'(8I8)') SCARC(1)%LEVEL(2)%STRUCTURED%AC%COL_GLOBAL
-WRITE(MSG%LU_DEBUG,*) 'AC(2)%VAL:'
-WRITE(MSG%LU_DEBUG,'(8E12.4)') SCARC(1)%LEVEL(2)%STRUCTURED%AC%VAL
-#endif
-
 #ifdef WITH_MKL
 MESHES_LOOP3: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    IF (TYPE_COARSE == NSCARC_COARSE_DIRECT) THEN
@@ -13971,32 +13961,132 @@ END SUBROUTINE SCARC_SETUP_SAMG
 ! Setup order in which aggregation is performed over mesh decomposition
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_AGGREGATION_ORDER
-USE SCARC_POINTERS, ONLY: GF, ACF
-INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, IC, JC, ICOL
+USE SCARC_POINTERS, ONLY: SUB, S
+INTEGER, ALLOCATABLE, DIMENSION(:) :: INT_BUFFER
+INTEGER, ALLOCATABLE, DIMENSION(:) :: COUNTS_NBR   
+INTEGER, ALLOCATABLE, DIMENSION(:) :: DISPLS_NBR    
+LOGICAL, ALLOCATABLE, DIMENSION(:) :: NOT_AGGREGATED
+INTEGER :: N, NM, NOM, INBR, MAX_NBR, IP, ICYCLE
 
-MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+SUB => SUBDIVISION
 
-   CALL SCARC_POINT_TO_MULTILEVEL(NM, NL, NL+1)
+CALL SCARC_ALLOCATE_INT1 (SUB%N_NEIGHBORS, 1, NMESHES, NSCARC_INIT_ZERO, 'SUB%N_NEIGHBORS')
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   SUB%N_NEIGHBORS(NM) = SCARC(NM)%N_NEIGHBORS
+ENDDO
 
-   CALL SCARC_ALLOCATE_REAL1 (GF%DIAG, 1, GF%NCE, NSCARC_INIT_ZERO, 'GF%DIAG')
+IF (N_MPI_PROCESSES > 1) &
+   CALL MPI_ALLGATHERV(MPI_IN_PLACE,1,MPI_INTEGER,SUB%N_NEIGHBORS,COUNTS,DISPLS, MPI_INTEGER,MPI_COMM_WORLD,IERROR)
 
-   DO IC = 1, GF%NC
-      DO ICOL = ACF%ROW(IC), ACF%ROW(IC+1) - 1
-         JC = ACF%COL(ICOL)
-         IF (JC == IC) GF%DIAG(IC) = ACF%VAL(ICOL)
-      ENDDO
-   ENDDO
+SUB%N_NEIGHBORS_TOTAL = SUM(SUB%N_NEIGHBORS)
 
 #ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'EXTRACT_MATRIX_DIAGONAL: DIAG:'
-   WRITE(MSG%LU_DEBUG,'(8E12.4)') GF%DIAG
+WRITE(MSG%LU_DEBUG,*) 'SUB%N_NEIGHBORS:'
+WRITE(MSG%LU_DEBUG,*) SUB%N_NEIGHBORS
+WRITE(MSG%LU_DEBUG,*) SUB%N_NEIGHBORS_TOTAL
 #endif
 
-ENDDO MESHES_LOOP
+CALL SCARC_ALLOCATE_INT1 (COUNTS_NBR, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'COUNTS_NBR')
+CALL SCARC_ALLOCATE_INT1 (DISPLS_NBR, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'DISPLS_NBR')
 
-! If there are multiple meshes exchange diagonal matrix on overlapping parts
-IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_DIAG, NL)
+DO N = 0, N_MPI_PROCESSES - 1
+   DO NM = 1, NMESHES
+      IF (PROCESS(NM) == N) COUNTS_NBR(N) = COUNTS_NBR(N) + SUB%N_NEIGHBORS(NM)
+   ENDDO
+ENDDO
+
+DO N = 1, N_MPI_PROCESSES -1
+   DISPLS_NBR(N) = COUNTS_NBR(N-1) + DISPLS_NBR(N-1)
+ENDDO
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'COUNTS_NBR:'
+WRITE(MSG%LU_DEBUG,*) COUNTS_NBR
+WRITE(MSG%LU_DEBUG,*) 'DISPLS_NBR:'
+WRITE(MSG%LU_DEBUG,*) DISPLS_NBR
+#endif
+  
+CALL SCARC_ALLOCATE_INT1 (INT_BUFFER, 1, SUB%N_NEIGHBORS_TOTAL, NSCARC_INIT_ZERO, 'INT_BUFFER')
+
+IP = 1
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   DO INBR = 1, SCARC(NM)%N_NEIGHBORS
+      INT_BUFFER(DISPLS_NBR(NM-1) + IP) = SCARC(NM)%NEIGHBORS(INBR)
+      IP = IP + 1
+   ENDDO
+ENDDO
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'INT_BUFFER_SEND on mesh ', MYID+1
+WRITE(MSG%LU_DEBUG,*) INT_BUFFER
+#endif
+
+
+IF (N_MPI_PROCESSES > 1) &
+   CALL MPI_ALLGATHERV(MPI_IN_PLACE,1,MPI_INTEGER,INT_BUFFER,COUNTS_NBR,DISPLS_NBR, MPI_INTEGER,MPI_COMM_WORLD,IERROR)
+
+
+MAX_NBR = MAXVAL(SUB%N_NEIGHBORS)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'MAX_NBR ', MAX_NBR
+WRITE(MSG%LU_DEBUG,*) 'INT_BUFFER_RECV on mesh NM, MAX_NBR ', MYID+1
+WRITE(MSG%LU_DEBUG,*) INT_BUFFER
+#endif
+
+CALL SCARC_ALLOCATE_INT2 (SUB%NEIGHBORS, 1, MAX_NBR, 1, NMESHES,  NSCARC_INIT_ZERO, 'SUB%NEIGHBORS')
+DO NM = 1, NMESHES
+   DO INBR = 1, SUB%N_NEIGHBORS(NM)
+      SUB%NEIGHBORS(INBR, NM) = INT_BUFFER(DISPLS_NBR(NM-1) + INBR)
+   ENDDO
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'NM: SUB%NEIGHBORS:', SUB%NEIGHBORS(1:SUB%N_NEIGHBORS(NM),NM)
+#endif
+ENDDO
+
+DEALLOCATE(INT_BUFFER)
+DEALLOCATE(COUNTS_NBR)
+DEALLOCATE(DISPLS_NBR)
+
+
+CALL SCARC_ALLOCATE_INT2(SUB%ORDER, 1, NMESHES, 1, NMESHES, NSCARC_INIT_NONE, 'SUB%ORDER')
+CALL SCARC_ALLOCATE_LOG1(NOT_AGGREGATED, 1, NMESHES, NSCARC_INIT_TRUE, 'SUB%IS_FINISHED')
+
+ICYCLE = 1
+DO WHILE (ANY(NOT_AGGREGATED)) 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '----------- ICYCLE, NOT_AGGREGATED:', ICYCLE, NOT_AGGREGATED
+#endif
+   SUB%ORDER(1:NMESHES, ICYCLE) = NSCARC_ORDER_UNDEFINED
+   DO NM = 1, NMESHES
+      S => SCARC(NM)
+      IF (NOT_AGGREGATED(NM) .AND. SUB%ORDER(NM, ICYCLE) /= NSCARC_ORDER_LOCKED) THEN
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '          SUB%ORDER(',NM,', ICYCLE)=', SUB%ORDER(NM, ICYCLE)
+#endif
+         SUB%ORDER(NM, ICYCLE) = NSCARC_ORDER_AGGREGATING
+         DO INBR = 1, S%N_NEIGHBORS
+            NOM = S%NEIGHBORS(INBR)
+            SUB%ORDER(NOM, ICYCLE) = NSCARC_ORDER_LOCKED
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '          SUB%ORDER(',NOM,', ICYCLE)=', SUB%ORDER(NOM, ICYCLE)
+#endif
+         ENDDO
+         NOT_AGGREGATED(NM) = .FALSE.
+      ENDIF
+   ENDDO
+
+   ICYCLE = ICYCLE + 1
+ENDDO
+
+SUB%N_CYCLES = ICYCLE - 1
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SUB%N_CYCLES :', SUB%N_CYCLES
+DO ICYCLE = 1, SUB%N_CYCLES
+   WRITE(MSG%LU_DEBUG,*) SUB%ORDER(1:NMESHES, ICYCLE)
+ENDDO
+#endif
+
+DEALLOCATE(NOT_AGGREGATED)
 
 END SUBROUTINE SCARC_SETUP_AGGREGATION_ORDER
 
@@ -14236,6 +14326,8 @@ ENDIF
 END SUBROUTINE SCARC_SETUP_STRENGTH_MATRIX
  
 
+   
+
 ! ------------------------------------------------------------------------------------------------------
 ! Multimesh-version
 ! Compute aggregates for a compact matrix AC
@@ -14243,192 +14335,173 @@ END SUBROUTINE SCARC_SETUP_STRENGTH_MATRIX
 ! Unaggregated nodes are marked with a -1
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_AGGREGATES(NL)
-USE SCARC_POINTERS, ONLY: OLF, OGF
+USE SCARC_POINTERS, ONLY: SF, GF, SUB
 INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, IC, JC, ICOL, IAGG, JAGG, INBR, NOM, IOR0, ICG, ICW, NAGG_MAX
+INTEGER :: NM, NM2, IC, JC, ICOL, IAGG, JAGG, NAGG, NAGG_CUR, NAGG_LOCAL, NAGG_PREVIOUS = 0
+INTEGER, ALLOCATABLE, DIMENSION(:) :: NAGG_GLOBAL
+!LOGICAL :: SERIAL_AGGREGATION = .TRUE.
 
-!
-! ------------- Pass 1
-! First aggregate on overlapping parts in a fixed order: 
-! For a common overlap between mesh NM and mesh nom, only the mesh with the smallest
-! number min(NM, NOM) performs its aggregation for all those internal cells which are adjacent to 
-! the neighboring edge; this process interlocks with the adjacent cells on the neighbouring mesh 
-! (stored on ICE's) and must be send to corresponding neighbor afterwards
-!
-!
-! lower-number-mesh: perform aggregation along common edge (including overlap)
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+SUB => SUBDIVISION
+MESH_INT = 0
 
-   CALL SCARC_POINT_TO_MULTILEVEL(NM, NL, NL+1)
+!IF (SERIAL_AGGREGATION) THEN
 
-   GF%N_AGGREGATES = 1
-   IF (S%N_NEIGHBORS > 0) THEN
-      DO INBR = 1, S%N_NEIGHBORS
-   
-         NOM = S%NEIGHBORS(INBR)
-         CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NL)
-      
+CALL SCARC_ALLOCATE_INT1 (NAGG_GLOBAL, 1, NMESHES, NSCARC_INIT_ZERO, 'NAGG_GLOBAL')
+NAGG_CUR = 1
+
+FIRST_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   AGGREGATION_LOOP: DO NAGG = 1, NMESHES
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SETTING UP AGGREGATES_FACES: NM, NOM:', NM, NOM
+      WRITE(MSG%LU_DEBUG,*) '================================================================='
+      WRITE(MSG%LU_DEBUG,*) '=============== AGGREGATING ON MESH ',NM,' FOR NAGG ', NAGG
+      WRITE(MSG%LU_DEBUG,*) '================================================================='
 #endif
-         IF (NM < NOM) THEN
-            DO IOR0 = -3, 3
-               IF (OLF%NCG(IOR0) == 0) CYCLE
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) ' -----------> IOR0, NCG0, NCG=',IOR0,OLF%NCG0(IOR0), OLF%NCG(IOR0)
-#endif
-               DO ICG = OLF%NCG0(IOR0), OLF%NCG(IOR0)
-                  ICW = OGF%ICG_TO_ICW(ICG)
-                  IF (GF%AGGREGATES(ICW) /= 0) CYCLE                     
-                     CALL SCARC_SETUP_AGGREGATES_FACES(ICW, IOR0)
-               ENDDO
-            ENDDO
-         ENDIF
-      ENDDO
-   ELSE
-      GF%N_AGGREGATES = 1
-   ENDIF
-   !GF%AGGREGATES = -GF%AGGREGATES
+      CURRENT_MESH_IF: IF (NM /= NAGG_CUR) THEN
 
-ENDDO
-
-! make information on smaller-number-mesh available for higher-number-mesh 
-IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_AGGREGATES1, NL)
-   
-! higher-number-mesh: extract aggregation information along common edge and set own number of aggregates
-!DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-!
-!   CALL SCARC_POINT_TO_MULTILEVEL(NM, NL, NL+1)
-!   DO INBR = 1, S%N_NEIGHBORS
-!   
-!      NOM = S%NEIGHBORS(INBR)
-!      CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NL)
-!   
-!      IF (NM > NOM) THEN
-!         GF%N_AGGREGATES = 1       
-!         DO IOR0 = -3, 3
-!            IF (OLF%NCG(IOR0) == 0) CYCLE
-!            DO ICG = OLF%NCG0(IOR0), OLF%NCG(IOR0)
-!               ICW = OGF%ICG_TO_ICW(ICG)
-!            ENDDO
-!         ENDDO
-!      ENDIF
-!   ENDDO
-!
-!ENDDO
-!
-! ------------- Pass 2
-! Proceed with internal mesh cells
-!
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-   CALL SCARC_POINT_TO_MULTILEVEL(NM, NL, NL+1)
-
-   PASS1_CELL_LOOP: DO IC = 1, GF%NC
-      IF (GF%AGGREGATES(IC) /= 0) CYCLE                         !> already marked
-      CALL SCARC_SETUP_AGGREGATES_INTERNAL(IC)
-   ENDDO PASS1_CELL_LOOP
-   
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES2: GF%N_FINE=',GF%N_FINE
-   WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES2: GF%NC=',GF%NC
-#endif
-   
-   ! Add unaggregated nodes to neighboring aggregate
-   PASS2_CELL_LOOP: DO IC = 1, GF%NC
-   
-      IF (GF%AGGREGATES(IC) /= 0) CYCLE             !> already marked
-
-      DO ICOL = SF%ROW(IC), SF%ROW(IC+1)-1
-         JC = SF%COL(ICOL)
-         JAGG = GF%AGGREGATES(JC)
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,'(A,4I5)') 'PASS2: IC, ICOL, JC, JAGG:', IC, ICOL, JC, JAGG
-#endif
-         IF (JAGG > 0) THEN
-            IF (JC >= GF%NC .OR. GF%CPOINTS(JAGG)>0) THEN
-               GF%AGGREGATES(IC) = -JAGG
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,'(A,I3,A,I5)') '            -----------> GF%AGGREGATES(',IC,')=', GF%AGGREGATES(IC)
-#endif
-               EXIT
+         NAGG_GLOBAL = 0
+         IF (NMESHES > 1) THEN
+            IF (NM > NAGG_CUR) THEN
+               CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_AGGREGATES3, NL)
+            ELSE IF (NM < NAGG_CUR) THEN
+               CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_AGGREGATES2, NL)
             ENDIF
          ENDIF
-      ENDDO
-   
-   ENDDO PASS2_CELL_LOOP
-   GF%N_AGGREGATES = GF%N_AGGREGATES - 1
-   
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES3: GF%N_FINE=',GF%N_FINE
-   WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES3: GF%NC=',GF%NC
-#endif
+         IF (N_MPI_PROCESSES>1) &
+            CALL MPI_ALLGATHERV(MPI_IN_PLACE,1,MPI_INTEGER,NAGG_GLOBAL,COUNTS,DISPLS, MPI_INTEGER,MPI_COMM_WORLD,IERROR)
+         NAGG_CUR = NAGG_CUR + 1
 
 #ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES_PASS2: =============  '
-   WRITE(MSG%LU_DEBUG,CFORM_INT) GF%AGGREGATES(1:GF%NC)
-   WRITE(MSG%LU_DEBUG,*) '-------------- overlap:'
-   WRITE(MSG%LU_DEBUG,'(4I4)') GF%AGGREGATES(GF%NC+1: GF%NCE)
+         WRITE(MSG%LU_DEBUG,*) ' NOT MY TURN  =============  '
+         WRITE(MSG%LU_DEBUG,CFORM_INT) GF%AGGREGATES(1:GF%NC)
+         WRITE(MSG%LU_DEBUG,*) '-------------- overlap:'
+         WRITE(MSG%LU_DEBUG,'(10I4)') GF%AGGREGATES(GF%NC+1: GF%NCE)
 #endif
-   
-   !GF%AGGREGATES = ABS(GF%AGGREGATES)
+      ELSE 
 
-   ! Process remaining nodes which have not been aggregated yet
-   PASS3_CELL_LOOP: DO IC = 1, GF%NC
-   
-      IAGG = GF%AGGREGATES(IC)
-   
-      !> cell IC has been aggregated
-      IF (IAGG /= 0) THEN
-         IF (IAGG > 0) THEN
-            GF%AGGREGATES(IC) = IAGG 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'PASS3:A: AGGREGATING IC=',IAGG
-#endif
-         ELSE IF (IAGG == NSCARC_HUGE_INT ) THEN
-            GF%AGGREGATES(IC) = -1
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'PASS3:B: AGGREGATING IC=',-1
-#endif
-         ELSE
-            GF%AGGREGATES(IC) = -IAGG 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'PASS3:C: AGGREGATING IC=',-IAGG
-#endif
+         NAGG_LOCAL = 0
+         CALL SCARC_POINT_TO_MULTILEVEL(NM, NL, NL+1)
+         IF (NM > 1) THEN
+            GF%N_AGGREGATES = NAGG_GLOBAL(NM-1) + 1       ! already initialized on mesh 1 to one
+            NAGG_PREVIOUS = GF%N_AGGREGATES
          ENDIF
-         CYCLE
-      ENDIF
+
+         ! Perform aggregation on internal part of mesh
+         PASS1_LOOP: DO IC = 1, GF%NC
+            IF (GF%AGGREGATES(IC) /= 0) CYCLE                        
+            CALL SCARC_SETUP_AGGREGATES_INTERNAL(IC)
+         ENDDO PASS1_LOOP
    
-      !> cell IC has not been aggregated
-      GF%AGGREGATES(IC) = GF%N_AGGREGATES
-      GF%CPOINTS(GF%N_AGGREGATES) = IC
+         ! Add unaggregated nodes to neighboring aggregate
+         PASS2_LOOP: DO IC = 1, GF%NC
+            IF (GF%AGGREGATES(IC) /= 0) CYCLE            
+            DO ICOL = SF%ROW(IC), SF%ROW(IC+1)-1
+               JC = SF%COL(ICOL)
+               JAGG = GF%AGGREGATES(JC)
+               IF (JAGG > 0) THEN
+                  IF (JC >= GF%NC .OR. GF%CPOINTS(JAGG)>0) THEN
+                     GF%AGGREGATES(IC) = -JAGG
+                     EXIT
+                  ENDIF
+               ENDIF
+            ENDDO
+         ENDDO PASS2_LOOP
+         GF%N_AGGREGATES = GF%N_AGGREGATES - 1
    
 #ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'GF%AGGREGATES(',IC,')=', GF%AGGREGATES(IC),&
-                       ': GF%CPOINTS(',GF%N_AGGREGATES,')=',GF%CPOINTS(GF%N_AGGREGATES)
+         WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES_PASS2: =============  ', NAGG_LOCAL
+         WRITE(MSG%LU_DEBUG,CFORM_INT) GF%AGGREGATES(1:GF%NC)
+         WRITE(MSG%LU_DEBUG,*) '-------------- overlap:'
+         WRITE(MSG%LU_DEBUG,'(10I4)') GF%AGGREGATES(GF%NC+1: GF%NCE)
 #endif
    
-      DO ICOL = SF%ROW(IC), SF%ROW(IC+1)-1
-         JC = SF%COL(ICOL)
-         IF (GF%AGGREGATES(JC) == 0) GF%AGGREGATES(JC) = GF%N_AGGREGATES
-      ENDDO
-      GF%N_AGGREGATES = GF%N_AGGREGATES + 1
+         !GF%AGGREGATES = ABS(GF%AGGREGATES)
+
+         ! Process remaining nodes which have not been aggregated yet
+         PASS3_LOOP: DO IC = 1, GF%NC
    
-   ENDDO PASS3_CELL_LOOP
+            IAGG = GF%AGGREGATES(IC)
    
-   IF (MINVAL(GF%AGGREGATES) == -1) CALL SCARC_SHUTDOWN(NSCARC_ERROR_AGGREGATION, SCARC_NONE, -1)
+            !> cell IC has not been aggregated
+            IF (IAGG /= 0) THEN
+               IF (IAGG > 0) THEN
+                  GF%AGGREGATES(IC) = IAGG 
+               ELSE IF (IAGG == NSCARC_HUGE_INT ) THEN
+                  GF%AGGREGATES(IC) = -1
+               ELSE
+                  GF%AGGREGATES(IC) = -IAGG 
+               ENDIF
+               CYCLE PASS3_LOOP
+            ENDIF
+   
+            !> cell IC has not been aggregated
+            GF%AGGREGATES(IC) = GF%N_AGGREGATES
+            GF%CPOINTS(GF%N_AGGREGATES) = IC
+   
+            DO ICOL = SF%ROW(IC), SF%ROW(IC+1)-1
+               JC = SF%COL(ICOL)
+               IF (JC <= GF%NC .AND. GF%AGGREGATES(JC) == 0) GF%AGGREGATES(JC) = GF%N_AGGREGATES
+            ENDDO
+            GF%N_AGGREGATES = GF%N_AGGREGATES + 1
+   
+         ENDDO PASS3_LOOP
    
 #ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES4: GF%N_FINE=',GF%N_FINE
-   WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES4: GF%NC=',GF%NC
-   WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES4: GC%N_AGGREGATES=',GF%N_AGGREGATES
-   WRITE(MSG%LU_DEBUG,CFORM_INT) GF%AGGREGATES(1:GF%NC)
-   WRITE(MSG%LU_DEBUG,*) '-------------- overlap:'
-   WRITE(MSG%LU_DEBUG,'(4I4)') GF%AGGREGATES(GF%NC+1: GF%NCE)
-   WRITE(MSG%LU_DEBUG,*) 'CPOINTS:'
-   WRITE(MSG%LU_DEBUG,CFORM_INT) GF%CPOINTS
+         WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES_PASS3: =============  ', NAGG_LOCAL
+         WRITE(MSG%LU_DEBUG,CFORM_INT) GF%AGGREGATES(1:GF%NC)
+         WRITE(MSG%LU_DEBUG,*) '-------------- overlap:'
+         WRITE(MSG%LU_DEBUG,'(10I4)') GF%AGGREGATES(GF%NC+1: GF%NCE)
+#endif
+         DO IC = GF%NC+1, GF%NCE
+            GF%AGGREGATES(IC) = ABS(GF%AGGREGATES(IC))
+         ENDDO
+         !IF (MINVAL(GF%AGGREGATES) <= 0) CALL SCARC_SHUTDOWN(NSCARC_ERROR_AGGREGATION, SCARC_NONE, -1)
+   
+         ! areduce size of CPOINTS-array to real number of aggretates
+         CALL SCARC_RESIZE_INT1(GF%CPOINTS, GF%N_AGGREGATES, 'GF%CPOINTS')     
+
+         ! Set number of coarse and fine grid cells on current AMG level 
+         GF%N_COARSE = GF%N_AGGREGATES
+         GC%N_FINE   = GF%N_AGGREGATES
+         NAGG_GLOBAL(NAGG_CUR) = GF%N_AGGREGATES
+      
+         IF (NM == 1) THEN
+            GC%NC_LOCAL(NM) = GF%N_AGGREGATES - NAGG_PREVIOUS 
+         ELSE
+            GC%NC_LOCAL(NM) = GF%N_AGGREGATES - NAGG_PREVIOUS + 1
+         ENDIF
+ 
+         IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_AGGREGATES1, NL)
+         IF (N_MPI_PROCESSES>1) &
+            CALL MPI_ALLGATHERV(MPI_IN_PLACE,1,MPI_INTEGER,NAGG_GLOBAL,COUNTS,DISPLS, MPI_INTEGER,MPI_COMM_WORLD,IERROR)
+
+         NAGG_CUR = NAGG_CUR + 1
+
+#ifdef WITH_SCARC_DEBUG
+         WRITE(MSG%LU_DEBUG,*) 'FINAL: GF%N_AGGREGATES  =',GF%N_AGGREGATES
+         WRITE(MSG%LU_DEBUG,*) 'NAGG_GLOBAL - END  = ', NAGG_GLOBAL
+         WRITE(MSG%LU_DEBUG,*) 'FINAL: NAGG_PREVIOUS  =',NAGG_PREVIOUS
+         WRITE(MSG%LU_DEBUG,*) 'FINAL: GF%N_FINE  =',GF%N_FINE
+         WRITE(MSG%LU_DEBUG,*) 'FINAL: GF%N_COARSE=',GF%N_COARSE
+         WRITE(MSG%LU_DEBUG,*) 'FINAL: GC%N_FINE  =',GC%N_FINE
+         WRITE(MSG%LU_DEBUG,*) 'FINAL: GC%NC_LOCAL(NM)  =',GC%NC_LOCAL(NM)
+         WRITE(MSG%LU_DEBUG,*) 'C:----------> NM=',NM,': NAGG:', NAGG,': NAGG_CURR=',NAGG_CUR,': NAGG_GLOBAL:',NAGG_GLOBAL
+         WRITE(MSG%LU_DEBUG,*) 'NAGG_CUR = ', NAGG_CUR
+         WRITE(MSG%LU_DEBUG,CFORM_INT) GF%AGGREGATES(1:GF%NC)
+         WRITE(MSG%LU_DEBUG,*) '-------------- overlap:'
+         WRITE(MSG%LU_DEBUG,'(10I4)') GF%AGGREGATES(GF%NC+1: GF%NCE)
+         WRITE(MSG%LU_DEBUG,*) 'CPOINTS:'
+         WRITE(MSG%LU_DEBUG,CFORM_INT) GF%CPOINTS
+         WRITE(MSG%LU_DEBUG,*) 'NAGG_CUR = ', NAGG_CUR
+         WRITE(MSG%LU_DEBUG,*) 'NAGG_GLOBAL - END  = ', NAGG_GLOBAL
+         WRITE(MSG%LU_DEBUG,*) ' END END END END END END END END END END END END END END END END END END'
 #endif
    
+      ENDIF CURRENT_MESH_IF
+   ENDDO AGGREGATION_LOOP
+ENDDO FIRST_MESHES_LOOP
+
+SECOND_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+      CALL SCARC_POINT_TO_MULTILEVEL(NM, NL, NL+1)
 !!!!!!!!!!!!! ONLY TEMPORARILY FOR DEBUGGING
 WRITE(*,*) TRIM(CHID)
 IF (TRIM(CHID) == 'b1') THEN
@@ -14438,37 +14511,37 @@ IF (TRIM(CHID) == 'b1') THEN
    GF%AGGREGATES = 6
 
    GF%AGGREGATES = 0
-   GF%AGGREGATES(1)  = 3
-   GF%AGGREGATES(2)  = 3
-   GF%AGGREGATES(3)  = 1
-   GF%AGGREGATES(4)  = 1
-   GF%AGGREGATES(5)  = 6
-   GF%AGGREGATES(6)  = 6
-   GF%AGGREGATES(7)  = 3
-   GF%AGGREGATES(8)  = 3
-   GF%AGGREGATES(9)  = 1
-   GF%AGGREGATES(10) = 1
+   GF%AGGREGATES(1)  = 1
+   GF%AGGREGATES(2)  = 1
+   GF%AGGREGATES(3)  = 2
+   GF%AGGREGATES(4)  = 4
+   GF%AGGREGATES(5)  = 4
+   GF%AGGREGATES(6)  = 5
+   GF%AGGREGATES(7)  = 1
+   GF%AGGREGATES(8)  = 2
+   GF%AGGREGATES(9)  = 2
+   GF%AGGREGATES(10) = 4
    GF%AGGREGATES(11) = 5
-   GF%AGGREGATES(12) = 6
-   GF%AGGREGATES(13) = 4
-   GF%AGGREGATES(14) = 4
+   GF%AGGREGATES(12) = 5
+   GF%AGGREGATES(13) = 3
+   GF%AGGREGATES(14) = 2
    GF%AGGREGATES(15) = 2
-   GF%AGGREGATES(16) = 5
+   GF%AGGREGATES(16) = 6
    GF%AGGREGATES(17) = 5
    GF%AGGREGATES(18) = 5
-   GF%AGGREGATES(19) = 4
-   GF%AGGREGATES(20) = 4
+   GF%AGGREGATES(19) = 3
+   GF%AGGREGATES(20) = 3
    GF%AGGREGATES(21) = 2
-   GF%AGGREGATES(22) = 2
-   GF%AGGREGATES(23) = 5
+   GF%AGGREGATES(22) = 6
+   GF%AGGREGATES(23) = 6
    GF%AGGREGATES(24) = 5
 
-   GF%CPOINTS(1) =  3
-   GF%CPOINTS(2) = 21
-   GF%CPOINTS(3) =  1
-   GF%CPOINTS(4) = 19
-   GF%CPOINTS(5) = 17
-   GF%CPOINTS(6) =  6
+   GF%CPOINTS(1) =  1
+   GF%CPOINTS(2) =  9
+   GF%CPOINTS(3) = 19
+   GF%CPOINTS(4) =  4
+   GF%CPOINTS(5) = 12
+   GF%CPOINTS(6) = 22
 
    GF%N_COARSE = 6
    GC%N_FINE = 6
@@ -14487,149 +14560,44 @@ IF (TRIM(CHID) == 'b1') THEN
 ENDIF
 !!!!!!!!!!!!! ONLY TEMPORARILY FOR DEBUGGING
 
-   CALL SCARC_RESIZE_INT1(GF%CPOINTS, GF%N_COARSE, 'GF%CPOINTS')     
+#ifdef WITH_SCARC_DEBUG
+   CALL SCARC_PYTHON_AGGREGATES0(NM, NL, 'Agg')
+#endif
+ENDDO SECOND_MESHES_LOOP
 
-ENDDO
 
-! make information on higher-number-mesh available for smaller-number-mesh 
-IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_AGGREGATES2, NL)
-   
-! only temporarily due to debugging purposes
+! Broadcast number of local mesh cells on level NL to all and build global sum
+IF (N_MPI_PROCESSES > 1) &
+   CALL MPI_ALLGATHERV(MPI_IN_PLACE,1,MPI_INTEGER,GC%NC_LOCAL,COUNTS,DISPLS, MPI_INTEGER,MPI_COMM_WORLD,IERROR)
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) 'GF%NC_LOCAL=', GC%NC_LOCAL
+#endif
+!NC_GLOBAL(NL+1) = SUM(NAGG_GLOBAL(1:NMESHES))
+NC_GLOBAL(NL+1) = NAGG_GLOBAL(NMESHES)
+
+! Store information on local and global cells numbers on data structure of corresponding discretization type
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTILEVEL(NM, NL, NL+1)
-
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'FINAL1: GF%N_AGGREGATES  =',GF%N_AGGREGATES
-   WRITE(MSG%LU_DEBUG,*) 'FINAL1: GF%NC  =',GF%NC
-   WRITE(MSG%LU_DEBUG,*) 'FINAL1: GC%NC  =',GC%NC
-   WRITE(MSG%LU_DEBUG,*) 'FINAL1: GF%N_FINE  =',GF%N_FINE
-   WRITE(MSG%LU_DEBUG,*) 'FINAL1: GF%N_COARSE=',GF%N_COARSE
-   WRITE(MSG%LU_DEBUG,*) 'FINAL1: GC%N_FINE  =',GC%N_FINE
-#endif
-
    IF (NMESHES > 1) THEN
-      NAGG_MAX = MAXVAL(GF%AGGREGATES(GF%NC+1:GF%NCE))
-      IF (NAGG_MAX > GF%N_AGGREGATES) GF%N_AGGREGATES = NAGG_MAX
+      DO NM2=2,NMESHES
+         GC%NC_OFFSET(NM2) = GC%NC_OFFSET(NM2-1) + GC%NC_LOCAL(NM2-1)
+      ENDDO
    ENDIF
 
-   ! Set number of coarse and find grid cells on current AMG level 
-   ! and reduce size of CPOINTS-array to number of aggretates
-   GF%N_COARSE = GF%N_AGGREGATES
-   GC%N_FINE  = GF%N_AGGREGATES
-   
+ENDDO
 
 #ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES_PASS3: =============  IC:',IC
-   WRITE(MSG%LU_DEBUG,*) 'FINAL: GF%N_AGGREGATES  =',GF%N_AGGREGATES
-   WRITE(MSG%LU_DEBUG,*) 'FINAL: GF%NC  =',GF%NC
-   WRITE(MSG%LU_DEBUG,*) 'FINAL: GC%NC  =',GC%NC
-   WRITE(MSG%LU_DEBUG,*) 'FINAL: GF%N_FINE  =',GF%N_FINE
-   WRITE(MSG%LU_DEBUG,*) 'FINAL: GF%N_COARSE=',GF%N_COARSE
-   WRITE(MSG%LU_DEBUG,*) 'FINAL: GC%N_FINE  =',GC%N_FINE
-   WRITE(MSG%LU_DEBUG,CFORM_INT) GF%AGGREGATES(1:GF%NC)
-   WRITE(MSG%LU_DEBUG,*) '-------------- overlap:'
-   WRITE(MSG%LU_DEBUG,'(4I4)') GF%AGGREGATES(GF%NC+1: GF%NCE)
-   WRITE(MSG%LU_DEBUG,*) 'CPOINTS:'
-   WRITE(MSG%LU_DEBUG,CFORM_INT) GF%CPOINTS
+WRITE(MSG%LU_DEBUG,*) 'NC_GLOBAL(',NL+1,')=', NC_GLOBAL(NL+1)
+WRITE(MSG%LU_DEBUG,*) 'GC%NC_LOCAL :', GC%NC_LOCAL
+WRITE(MSG%LU_DEBUG,*) 'GC%NC_GLOBAL:', GC%NC_GLOBAL
+WRITE(MSG%LU_DEBUG,*) 'GC%NC_OFFSET:', GC%NC_OFFSET
 #endif
-   
-#ifdef WITH_SCARC_DEBUG
-   CALL SCARC_PYTHON_AGGREGATES(NM, NL, 'Agg')
-#endif
-ENDDO
 
 END SUBROUTINE SCARC_SETUP_AGGREGATES
 
 ! ------------------------------------------------------------------------------------------------------
-! Pass1:  Aggregation of internal cells
-! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_AGGREGATES_FACES(IC, IOR0)
-USE SCARC_POINTERS, ONLY: LF, SF
-INTEGER, INTENT(IN) :: IC, IOR0
-INTEGER :: JC, ICOL, IOFFSET, IDIFF
-LOGICAL :: HAS_NEIGHBORS, HAS_AGGREGATED_NEIGHBORS
-
-!> Determine whether all neighbors of this node are free (not already aggregated)
-HAS_NEIGHBORS = .FALSE.
-HAS_AGGREGATED_NEIGHBORS = .FALSE.
-
-
-IOFFSET = 0
-SELECT CASE (IOR0)
-   CASE (1)
-      IOFFSET =  1
-   CASE (-1)
-      IOFFSET = -1
-   CASE (2)
-      IOFFSET =  LF%NX
-   CASE (-2)
-      IOFFSET = -LF%NX
-   CASE (3)
-      IOFFSET =  LF%NX*LF%NY
-   CASE (-3)
-      IOFFSET = -LF%NX*LF%NY
-END SELECT
-
-DO ICOL = SF%ROW(IC) + 1, SF%ROW(IC+1)-1 
-   JC = SF%COL(ICOL)
-   IDIFF = JC - IC
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,'(A,6I5)') 'OVERLAP: IOR0, IC, ICOL, JC, IDIFF, IOFFSET:', IOR0, IC, ICOL, JC, IDIFF, IOFFSET
-#endif
-   IF (IDIFF /= IOFFSET) THEN
-   !IF (JC <= GF%NC) THEN
-   !IF (JC <= GF%NC .AND. IDIFF/=IOFFSET) THEN
-      HAS_NEIGHBORS = .TRUE.
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,'(A,6I5)') '          bingo'
-#endif
-      IF (GF%AGGREGATES(JC) /= 0) THEN
-         HAS_AGGREGATED_NEIGHBORS = .TRUE.
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,'(A,6I5)') '          has_aggregated'
-#endif
-         EXIT
-      ENDIF
-   ENDIF
-ENDDO
-
-!> Do not aggregate isolated cells
-IF (.NOT. HAS_NEIGHBORS) THEN
-
-   GF%AGGREGATES(IC) = NSCARC_HUGE_INT
-
-!> If not already done, build an aggregate of this cell and its  neighbors
-ELSE IF (.NOT. HAS_AGGREGATED_NEIGHBORS) THEN
-
-   GF%AGGREGATES(IC) = GF%N_AGGREGATES
-   GF%CPOINTS(GF%N_AGGREGATES) = IC                
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'FACES: IC, N_AGG:', IC, GF%N_AGGREGATES, GF%AGGREGATES(IC), GF%CPOINTS(GF%N_AGGREGATES)
-#endif
-   DO ICOL = SF%ROW(IC), SF%ROW(IC+1)-1 
-      JC = SF%COL(ICOL)
-      IDIFF = JC - IC
-      IF (IDIFF /= IOFFSET) GF%AGGREGATES(SF%COL(ICOL)) = GF%N_AGGREGATES
-      !IF (JC <= GF%NC) GF%AGGREGATES(SF%COL(ICOL)) = GF%N_AGGREGATES
-      !IF (JC <= GF%NC .AND. IDIFF/=IOFFSET) GF%AGGREGATES(SF%COL(ICOL)) = GF%N_AGGREGATES
-   ENDDO
-   GF%N_AGGREGATES = GF%N_AGGREGATES + 1
-ENDIF
-
-
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES_FACES: =============  IC:',IC
-WRITE(MSG%LU_DEBUG,*) 'AGGREGATES:'
-WRITE(MSG%LU_DEBUG,CFORM_INT) GF%AGGREGATES(1:GF%NC)
-WRITE(MSG%LU_DEBUG,*) 'CPOINTS:'
-WRITE(MSG%LU_DEBUG,CFORM_INT) GF%CPOINTS
-#endif
-
-END SUBROUTINE SCARC_SETUP_AGGREGATES_FACES
-
-! ------------------------------------------------------------------------------------------------------
-! Pass1:  Aggregation of internal cells
+! Aggregation of internal cells
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_AGGREGATES_INTERNAL(IC)
 USE SCARC_POINTERS, ONLY: SF
@@ -14643,7 +14611,7 @@ HAS_AGGREGATED_NEIGHBORS = .FALSE.
 
 DO ICOL = SF%ROW(IC), SF%ROW(IC+1)-1 
    JC = SF%COL(ICOL)
-   IF (IC /= JC) THEN
+   IF (IC /= JC .AND. JC <= GF%NC) THEN
       HAS_NEIGHBORS = .TRUE.
       IF (GF%AGGREGATES(JC) /= 0) THEN
          HAS_AGGREGATED_NEIGHBORS = .TRUE.
@@ -14663,15 +14631,19 @@ ELSE IF (.NOT. HAS_AGGREGATED_NEIGHBORS) THEN
    GF%AGGREGATES(IC) = GF%N_AGGREGATES
    GF%CPOINTS(GF%N_AGGREGATES) = IC                
    DO ICOL = SF%ROW(IC), SF%ROW(IC+1)-1 
-      GF%AGGREGATES(SF%COL(ICOL)) = GF%N_AGGREGATES
+      JC = SF%COL(ICOL)
+      IF (JC <= GF%NC) GF%AGGREGATES(SF%COL(ICOL)) = GF%N_AGGREGATES
    ENDDO
    GF%N_AGGREGATES = GF%N_AGGREGATES + 1
+
 ENDIF
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATES_INTERNAL: =============  IC:',IC
 WRITE(MSG%LU_DEBUG,*) 'AGGREGATES:'
 WRITE(MSG%LU_DEBUG,CFORM_INT) GF%AGGREGATES(1:GF%NC)
+WRITE(MSG%LU_DEBUG,*) '-------------- overlap:'
+WRITE(MSG%LU_DEBUG,'(10I4)') GF%AGGREGATES(GF%NC+1: GF%NCE)
 WRITE(MSG%LU_DEBUG,*) 'CPOINTS:'
 WRITE(MSG%LU_DEBUG,CFORM_INT) GF%CPOINTS
 #endif
@@ -14804,7 +14776,7 @@ END SUBROUTINE SCARC_RELAX_NULLSPACE
 SUBROUTINE SCARC_SETUP_AGGREGATE_OPERATOR(NL)
 USE SCARC_POINTERS, ONLY: GF, ACF
 INTEGER, INTENT(IN) :: NL
-INTEGER :: ICC, IC, ICOL, IP, NM, N_ROW, N_VAL
+INTEGER :: ICC, IC, ICOL, IP, NM, N_ROW, N_VAL, ICC1, ICC2
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -14819,25 +14791,31 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    WRITE(MSG%LU_DEBUG,*) 'ORIG: GF%AGG%ROW:', GF%AGG%N_ROW, GF%AGG%N_VAL, SIZE(GF%AGG%ROW), SIZE(GF%AGG%VAL)
 #endif
 
-   ICOL = 1
    IP = 1
    GF%AGG%ROW(1) = 1
-   DO ICC = 1, GF%N_COARSE
+   !DO ICC = 1, GF%N_COARSE
+   IF (NM == 1) THEN
+      ICC1 = 1 
+   ELSE
+      ICC1 = GC%NC_LOCAL(NM-1)+1 
+   ENDIF
+   ICC2 = GC%NC_LOCAL(NM)
+   DO ICC = ICC1, ICC2
+
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATE_OPERATOR: ICC=',ICC
+WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATE_OPERATOR: ICC, N_COARSE, NC_OFFSET(NM)=',ICC, GF%N_COARSE, GC%NC_OFFSET(NM)
 #endif
       DO IC = 1, GF%N_FINE
-         IF (GF%AGGREGATES(IC) /= ICC) CYCLE
-         GF%AGG%COL(ICOL) = IC
+         IF (GF%AGGREGATES(IC) /= ICC + GC%NC_OFFSET(NM)) CYCLE
+         GF%AGG%COL(IP) = IC
          IP = IP + 1
-         ICOL = ICOL + 1
-         GF%AGG%ROW(ICC+1) = ICOL
+         GF%AGG%ROW(ICC+1) = IP
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '         bingo, IC, IP, ICOL:', IC, IP, ICOL
+WRITE(MSG%LU_DEBUG,*) '         bingo, IC, IP, ICC, ICC+GC%NC_OFFSET(NM):', IC, IP, ICC, ICC+GC%NC_OFFSET(NM)
 #endif
       ENDDO
    ENDDO
-   GF%AGG%ROW(ICC) = ICOL
+   GF%AGG%ROW(ICC) = IP
 
    N_ROW = ICC
    N_VAL = IP - 1
@@ -15247,6 +15225,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       IF (ABS(DRSUM) > TOL) THEN
          ACC%VAL(IA) = DRSUM
          ACC%COL(IA) = IPC
+#ifdef WITH_MKL
+IF (IS_MKL_LEVEL(NL+1)) ACC%COL_GLOBAL(IA) = ACC%COL(IA) + GC%NC_OFFSET(NM)
+#endif
          IA = IA + 1
 #ifdef WITH_SCARC_DEBUG2
          WRITE(MSG%LU_DEBUG,'(A,6I5,E12.4)') 'GALERKIN: IPC, IRC, IR, IC, IA, DRSUM:',&
@@ -16049,6 +16030,10 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    WRITE(MSG%LU_DEBUG,2001) CVEC, NM, NL
    WRITE(MSG%LU_DEBUG,2002) G%NC, NNX, NNY, NNZ, NV, SIZE(VC)
    WRITE(MSG%LU_DEBUG,*) '=========================================================='
+   IF (IS_AMG .AND. NL > NLEVEL_MIN) THEN
+      WRITE(MSG%LU_DEBUG, '(4E14.6)') (VC(IC), IC = 1, G%N_FINE)
+
+   ELSE
    !IF (NL == NLEVEL_MIN) THEN
    DO KK = NNZ, 1, - 1
       DO JJ = NNY, 1, - 1
@@ -16073,6 +16058,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    !ENDIF
    WRITE(MSG%LU_DEBUG, *) '---------------- Overlap ----------------'
    WRITE(MSG%LU_DEBUG, '(4E14.6)') (VC(IC), IC = G%NC+1, G%NCE)
+   ENDIF
 ENDDO
 
 !CALL SCARC_MATLAB_VECTOR(NV, CVEC, NL)
@@ -16873,10 +16859,11 @@ CLOSE(MROW)
 1002 FORMAT(E10.2,',')
 END SUBROUTINE SCARC_PYTHON_MATRIX
 
+
 ! ------------------------------------------------------------------------------------------------
 ! Print out matrix information on level NL for matlab
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_PYTHON_AGGREGATES(NM, NL, CNAME)
+SUBROUTINE SCARC_PYTHON_AGGREGATES0(NM, NL, CNAME)
 INTEGER, INTENT(IN) :: NM, NL
 CHARACTER(*), INTENT(IN) :: CNAME
 INTEGER :: IC, MAGG
@@ -16895,6 +16882,124 @@ CLOSE(MAGG)
 
 1001 FORMAT(I4,',')
 1002 FORMAT(I4)
+END SUBROUTINE SCARC_PYTHON_AGGREGATES0
+
+
+! ------------------------------------------------------------------------------------------------
+! Print out matrix information on level NL for matlab
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PYTHON_AGGREGATES(NM, NL, CNAME)
+USE SCARC_POINTERS, ONLY: M, L, OL, G, OG, F, XCOR, YCOR, ZCOR
+INTEGER, INTENT(IN) :: NM, NL
+CHARACTER(*), INTENT(IN) :: CNAME
+REAL(EB) :: INCX, INCY, INCZ, XCOR0, YCOR0, ZCOR0
+INTEGER :: IC, IAGG, ICPT, MAGG, II, JJ, KK, IFACE, IOR0, NOM, ICG, INBR, ICW, ICE
+CHARACTER(60) :: CAGG
+
+CALL SCARC_POINT_TO_GRID(NM, NL)
+
+IF (NL == NLEVEL_MIN) THEN
+   XCOR => M%X; YCOR => M%Y; ZCOR => M%Z
+ELSE
+   XCOR => L%XCOR; YCOR => L%YCOR; ZCOR => L%ZCOR
+ENDIF
+
+WRITE (CAGG, '(5A,i2.2,A,i2.2,A)') 'python/',TRIM(CHID),'_',TRIM(CNAME),'_m',NM,'_l',NL,'.val'
+MAGG=GET_FILE_NUMBER()
+OPEN(MAGG,FILE=CAGG)
+
+!CALL SCARC_ALLOCATE_INT1(VALUES, 1, L%NX, NSCARC_INIT_ZERO, 'VALUES')
+
+WRITE(MAGG,1001) GF%NC, GF%NCE
+WRITE(MAGG,1002) L%NX, L%NY, L%NZ
+WRITE(MAGG,1003) L%DX, L%DY, L%DZ
+
+DO KK = 1, L%NZ
+   DO JJ = 1, L%NY
+      DO II=1, L%NX
+         !IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(II,JJ,KK)) THEN
+         !   VALUES(II)=-999999.0_EB
+         !ELSE
+            IC=GF%CELL_NUMBER(II,JJ,KK)
+            IAGG = ABS(GF%AGGREGATES(IC))
+            ICPT = GF%CPOINTS(IAGG)
+ 
+            XCOR0 = XCOR(II-1)
+            ZCOR0 = ZCOR(KK-1)
+            IF (TWO_D) THEN
+               YCOR0 = 0.0_EB
+            ELSE
+               YCOR0 = YCOR(JJ-1)
+            ENDIF
+            IF (IC == ICPT) THEN
+               WRITE(MAGG,1000) IC, -IAGG, XCOR0, YCOR0, ZCOR0
+            ELSE
+               WRITE(MAGG,1000) IC,  IAGG, XCOR0, YCOR0, ZCOR0
+            ENDIF
+         !ENDIF
+      ENDDO
+   ENDDO
+ENDDO
+
+DO IFACE = 1, 6                                  
+
+   IOR0 = FACE_ORIENTATION(IFACE)
+   F => L%FACE(IOR0)
+
+   INCX = 0
+   INCY = 0
+   INCZ = 0
+
+   SELECT CASE(IOR0)
+      CASE ( 1)
+         INCX = -L%DX
+      CASE (-1)
+         INCX =  L%DX
+      CASE ( 2)
+         INCY = -L%DY
+      CASE (-2)
+         INCY =  L%DY
+      CASE ( 3)
+         INCZ = -L%DZ
+      CASE (-3)
+         INCZ =  L%DZ
+   END SELECT
+
+   DO INBR = 1, F%N_NEIGHBORS
+
+      NOM = F%NEIGHBORS(INBR)
+      CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NL)
+
+      DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+         ICW = OG%ICG_TO_ICW(ICG)
+         ICE = OG%ICG_TO_ICE(ICG)
+         II = G%ICX(ICW) 
+         JJ = G%ICY(ICW) 
+         KK = G%ICZ(ICW) 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'PY: ICG, ICW, ICE, II, JJ, KK:', ICG, ICW, ICE, II, JJ, KK
+#endif
+         XCOR0 = XCOR(II-1) + INCX
+         ZCOR0 = ZCOR(KK-1) + INCZ
+         IF (TWO_D) THEN
+            YCOR0 = 0.0_EB
+         ELSE
+            YCOR0 = YCOR(JJ-1) + INCY
+         ENDIF
+         IAGG = ABS(GF%AGGREGATES(ICE))
+         WRITE(MAGG,1000) ICE, IAGG, XCOR0, YCOR0, ZCOR0
+      ENDDO
+
+   ENDDO
+ENDDO
+
+!DEALLOCATE(VALUES)
+CLOSE(MAGG)
+
+1001 FORMAT(I8,',', I8)
+1002 FORMAT(I8,',', I8,',', I8)
+1003 FORMAT(E12.4,',',  E12.4,',', E12.4)
+1000 FORMAT(I8,',', I8,',', E12.4,',',  E12.4,',', E12.4)
 END SUBROUTINE SCARC_PYTHON_AGGREGATES
 
 ! ================================================================================================
