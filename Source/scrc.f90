@@ -1117,7 +1117,7 @@ TYPE (SCARC_FFT_TYPE), POINTER :: FFT=>NULL()
 TYPE (SCARC_MGM_TYPE), POINTER :: MGM=>NULL()
 #endif
 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL(), MC=>NULL()
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL(), A=>NULL(), OA=>NULL()
 TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: ACF=>NULL(), ACFS=>NULL(), ACC=>NULL(), ACCS=>NULL()
 TYPE (SCARC_MATRIX_BANDED_TYPE),  POINTER :: AB=>NULL()
 
@@ -1142,6 +1142,9 @@ REAL(EB), POINTER, DIMENSION(:,:,:) :: UU=>NULL(), VV=>NULL(), WW=>NULL()
 
 REAL(EB), POINTER, DIMENSION(:) ::  RECV_REAL0, RECV_REAL1, RECV_REAL2, RECV_REAL7
 INTEGER,  POINTER, DIMENSION(:) ::  RECV_INT0, RECV_INT1, RECV_INT2, RECV_INT7 
+
+REAL(EB), POINTER, DIMENSION(:) ::  AVAL=>NULL()
+INTEGER,  POINTER, DIMENSION(:) ::  ACOL=>NULL(), AROW=>NULL()
 
 INTEGER, POINTER :: I_MIN_R, I_MAX_R, I_MIN_S, I_MAX_S
 INTEGER, POINTER :: J_MIN_R, J_MAX_R, J_MIN_S, J_MAX_S
@@ -5081,9 +5084,8 @@ END SUBROUTINE SCARC_SETUP_SYSTEMS
 ! Extract overlapping matrix part and add to main matrix
 ! -------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_EXTRACT_MATRIX_OVERLAPS (NTYPE, NL)
-USE SCARC_POINTERS, ONLY : L, G, F, OL, OG
+USE SCARC_POINTERS, ONLY : L, G, F, A, OL, OG, OA
 INTEGER, INTENT(IN) :: NL, NTYPE
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: A
 INTEGER :: NM, IFACE, NOM, IOR0, ICG, ICE, IP, ICOL, INBR
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -5098,7 +5100,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          A => G%RESTRICTION
    END SELECT
  
-   IP = G%AC%ROW(G%NC+1)
+   IP = A%ROW(G%NC+1)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'EXTRACT_MATRIX_OVERLAPS: NM=', NM,': IP=',IP, G%AC%N_ROW
 #endif
@@ -5113,6 +5115,15 @@ WRITE(MSG%LU_DEBUG,*) 'EXTRACT_MATRIX_OVERLAPS: NM=', NM,': IP=',IP, G%AC%N_ROW
          IF (NOM /= NMESHES) CYCLE                         ! only check for common matrix entries with last mesh
          CALL SCARC_POINT_TO_NEIGHBOR(NM, NOM, NL)
 
+         SELECT CASE (NTYPE)
+            CASE (NSCARC_MATRIX_POISSON)
+               OA => OG%AC
+            CASE (NSCARC_MATRIX_PROLONGATION)
+               OA => OG%PROLONGATION
+            CASE (NSCARC_MATRIX_RESTRICTION)
+               OA => OG%RESTRICTION
+         END SELECT
+
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I6)') 'IFACE, IOR0, INBR, NOM:', IFACE, IOR0, INBR, NOM, G%AC%N_ROW
 WRITE(MSG%LU_DEBUG,*) 'G%AC%ROW:'
@@ -5122,26 +5133,26 @@ WRITE(MSG%LU_DEBUG,'( 8I6)') G%AC%ROW(1:G%AC%N_ROW)
          DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
 
             ICE = OG%ICG_TO_ICE(ICG)
-            G%AC%ROW(ICE) = IP 
+            A%ROW(ICE) = IP 
             !IF (OG%AC%COL(ICOL) > 0) THEN
             !   WRITE(*,*) 'CAUTION: ERROR IN RESORTING POISSON MATRIX'
             !   !STOP
             !ENDIF
 
             DO ICOL = OG%AC%ROW(ICG), OG%AC%ROW(ICG+1)-1
-               G%AC%COL(IP) = ABS(OG%AC%COL(ICOL))            ! TODO CAUTION COL_GLOBAL or COL?
-               G%AC%VAL(IP) = OG%AC%VAL(ICOL)
+               A%COL(IP) = ABS(OG%AC%COL(ICOL))            ! TODO CAUTION COL_GLOBAL or COL?
+               A%VAL(IP) = OG%AC%VAL(ICOL)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,6I6,E12.4)') '       ----> B: ICG, ICE, ICOL, IP, ROW, COL, VAL :', &
-                                       ICG, ICE, ICOL, IP, G%AC%ROW(ICE), G%AC%COL(IP), G%AC%VAL(IP)
+                                       ICG, ICE, ICOL, IP, A%ROW(ICE), A%COL(IP), A%VAL(IP)
 #endif
                IP = IP + 1
             ENDDO
 
          ENDDO
-         G%AC%ROW(ICE+1) = IP 
-         G%AC%N_ROW = ICE + 1
-         G%AC%N_VAL = IP - 1
+         A%ROW(ICE+1) = IP 
+         A%N_ROW = ICE + 1
+         A%N_VAL = IP - 1
       ENDDO
    ENDDO
    
@@ -5218,8 +5229,8 @@ SELECT_STORAGE_TYPE: SELECT CASE (SCARC_MATRIX_LEVEL(NL))
          ENDDO
       ENDDO
    
-      G%AC%ROW(G%AC%N_ROW) = IP
-      G%AC%N_VAL           = IP-1                         ! set correct number of matrix entries
+      G%AC%ROW(G%NC+1) = IP
+      G%AC%N_VAL       = IP-1                         ! set correct number of matrix entries
    
       CALL SCARC_RESIZE_MATRIX_COMPACT(G%AC, G%AC%N_VAL, G%AC%N_ROW, 'AC')
    
@@ -11895,14 +11906,13 @@ END SUBROUTINE SCARC_EXCHANGE_RECV
 !
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_EXCHANGE_SEND (NL)
-USE SCARC_POINTERS, ONLY: OS, L, OL, G, OG, AB, AC, MC, VC, &
+USE SCARC_POINTERS, ONLY: OS, L, OL, G, OG, AB, AC, A, ACOL, AVAL, VC, &
                           RECV_INT0, RECV_INT1, RECV_REAL0, RECV_REAL1, RECV_REAL7
 INTEGER, INTENT(IN) :: NL
 INTEGER  :: NM, NOM
 INTEGER  :: IWG, ICOL, ICE, ICW, ICG, IOR0, ID, LL, ICP
 INTEGER  :: IXW, IYW, IZW, IXG, IYG, IZG
 REAL(EB) :: TNOW
-INTEGER, DIMENSION(:), POINTER :: MCCOL => NULL()
 
 ! 
 ! ------------------------------ First part ------------------------------------------------------
@@ -12232,23 +12242,24 @@ WRITE(MSG%LU_DEBUG,'(A, 5I4,E12.4)') 'MATRIX_DIAG: SEND: IOR0, ICG, ICW, ICE, IC
          ! 
          CASE (NSCARC_EXCHANGE_MATRIX_COLS, NSCARC_EXCHANGE_STRENGTH_COLS, NSCARC_EXCHANGE_PROL_COLS)
 
-            MC => NULL()
+            A => NULL()
             IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_MATRIX_COLS) THEN
-               MC => G%AC                      
-               MCCOL => G%AC%COL
+               A => G%AC                      
+               ACOL => A%COL
             ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_STRENGTH_COLS) THEN
-               MC => G%STRENGTH                 
-               MCCOL => G%STRENGTH%COL
+               A => G%STRENGTH                 
+               ACOL => A%COL
             ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_PROL_COLS) THEN
-               MC => G%PROLONGATION                 
-               MCCOL => G%PROLONGATION%COL_GLOBAL
+               A => G%PROLONGATION                 
+               ACOL => A%COL_GLOBAL                          ! use global numbering 
             ENDIF
+            AROW => A%ROW
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '=============== EXCHANGE_COLS: TYPE_EXCHANGE=', TYPE_EXCHANGE
-WRITE(MSG%LU_DEBUG,*) 'SIZE(MC%ROW)', SIZE(MC%ROW)
-WRITE(MSG%LU_DEBUG,*) 'SIZE(MC%COL)', SIZE(MC%COL)
-WRITE(MSG%LU_DEBUG,*) 'SIZE(MC%VAL)', SIZE(MC%VAL)
+WRITE(MSG%LU_DEBUG,*) 'SIZE(A%ROW)', SIZE(A%ROW)
+WRITE(MSG%LU_DEBUG,*) 'SIZE(A%COL)', SIZE(A%COL)
+WRITE(MSG%LU_DEBUG,*) 'SIZE(A%VAL)', SIZE(A%VAL)
 #endif
          
             LL = 1
@@ -12263,15 +12274,15 @@ WRITE(MSG%LU_DEBUG,*) '============= EXCHANGE_MATRIX_COLS: SEND: NCG0, NCG:', OL
                   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
                      ICW = OG%ICG_TO_ICW(ICG)
                      
-                     ICOL = MC%ROW(ICW)
-                     OS%SEND_INT7(LL) = -MCCOL(ICOL)           ! send first element with negative sign
+                     ICOL = AROW(ICW)
+                     OS%SEND_INT7(LL) = -ACOL(ICOL)           ! send first element with negative sign
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I5)') 'EXCHANGE_MATRIX_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
-                               IOR0, ICG, ICW, MC%ROW(ICW), OS%SEND_INT7(LL)
+                               IOR0, ICG, ICW, AROW(ICW), OS%SEND_INT7(LL)
 #endif
                      LL = LL + 1                                ! such that receiver can identify start of column
-                     DO ICOL = MC%ROW(ICW)+1, MC%ROW(ICW+1)-1
-                        OS%SEND_INT7(LL) = MCCOL(ICOL)
+                     DO ICOL = AROW(ICW)+1, AROW(ICW+1)-1
+                        OS%SEND_INT7(LL) = ACOL(ICOL)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I5)') 'EXCHANGE_MATRIX_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
                                IOR0, ICG, ICW, ICOL, OS%SEND_INT7(LL)
@@ -12289,15 +12300,15 @@ WRITE(MSG%LU_DEBUG,'(A,5I5)') 'EXCHANGE_MATRIX_COLS: SEND: IOR0, ICG, ICW, ICOL,
                   DO ICG= OL%NCG0(IOR0), OL%NCG(IOR0)
                      ICW = OG%ICG_TO_ICW(ICG)
                      IF (ICW > 0) THEN
-                        ICOL = MC%ROW(ICW)
-                        OS%SEND_INT7(LL) = -MCCOL(ICOL)           ! send first element with negative sign
+                        ICOL = AROW(ICW)
+                        OS%SEND_INT7(LL) = -ACOL(ICOL)           ! send first element with negative sign
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I5)') 'EXCHANGE_MATRIX_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
-                               IOR0, ICG, ICW, MC%ROW(ICW), OS%SEND_INT7(LL)
+                               IOR0, ICG, ICW, AROW(ICW), OS%SEND_INT7(LL)
 #endif
                         LL = LL + 1                                ! such that receiver can identify start of column
-                        DO ICOL = MC%ROW(ICW)+1, MC%ROW(ICW+1)-1
-                           OS%SEND_INT7(LL) = MCCOL(ICOL)
+                        DO ICOL = AROW(ICW)+1, AROW(ICW+1)-1
+                           OS%SEND_INT7(LL) = ACOL(ICOL)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I5)') 'EXCHANGE_MATRIX_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
                                IOR0, ICG, ICW, ICOL, OS%SEND_INT7(LL)
@@ -12347,12 +12358,17 @@ WRITE(MSG%LU_DEBUG,'(A,5I5)') 'EXCHANGE_MATRIX_COLS: SEND: IOR0, ICG, ICW, ICOL,
                CASE (NSCARC_MATRIX_COMPACT)
 
                   IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_MATRIX_VALS) THEN
-                     MC => G%AC
+                     A => G%AC
+                     ACOL => A%COL
                   ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_STRENGTH_VALS) THEN
-                     MC => G%STRENGTH
+                     A => G%STRENGTH
+                     ACOL => A%COL
                   ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_PROL_VALS) THEN
-                     MC => G%PROLONGATION
+                     A => G%PROLONGATION
+                     ACOL => A%COL_GLOBAL
                   ENDIF
+                  AROW => A%ROW
+                  AVAL => A%VAL
 
                   IF (IS_STRUCTURED) THEN
       
@@ -12363,10 +12379,10 @@ WRITE(MSG%LU_DEBUG,*) '============= EXCHANGE_MATRIX_VALS: NCG0, NCG:', OL%NCG0(
 #endif
                         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
                            ICW = OG%ICG_TO_ICW(ICG)
-                           DO ICOL = MC%ROW(ICW), MC%ROW(ICW+1)-1
-                              OS%SEND_REAL7(LL) = MC%VAL(ICOL)
+                           DO ICOL = AROW(ICW), AROW(ICW+1)-1
+                              OS%SEND_REAL7(LL) = AVAL(ICOL)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 4I5,E12.4)') 'EXCHANGE_MATRIX_VALS: SEND: IOR0, ICG, ICW, ICOL, VAL:', IOR0, ICG, ICW, ICOL, MC%VAL(ICOL)
+WRITE(MSG%LU_DEBUG,'(A, 4I5,E12.4)') 'EXCHANGE_MATRIX_VALS: SEND: IOR0, ICG, ICW, ICOL, VAL:', IOR0, ICG, ICW, ICOL, AVAL(ICOL)
 #endif
                               LL = LL + 1
                            ENDDO
@@ -12381,8 +12397,8 @@ WRITE(MSG%LU_DEBUG,'(A, 4I5,E12.4)') 'EXCHANGE_MATRIX_VALS: SEND: IOR0, ICG, ICW
                         DO ICG= OL%NCG0(IOR0), OL%NCG(IOR0)
                            ICW = OG%ICG_TO_ICW(ICG)
                            IF (ICW > 0) THEN
-                              DO ICOL = MC%ROW(ICW), MC%ROW(ICW+1)-1
-                                 OS%SEND_REAL7(LL) = MC%VAL(MC%COL(ICOL))
+                              DO ICOL = AROW(ICW), AROW(ICW+1)-1
+                                 OS%SEND_REAL7(LL) = AVAL(ACOL(ICOL))
                                  LL = LL + 1
                               ENDDO
                            ELSE
@@ -12670,14 +12686,18 @@ WRITE(MSG%LU_DEBUG,'(A, 4I4,E12.4)') 'RECV: MATRIX_DIAG: NOM, IOR0, ICG, ICE, DI
 
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, RNODE, SNODE, NSCARC_BUFFER_INT7)
 
-            MC => NULL()
+            A => NULL()
             IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_MATRIX_COLS) THEN
-               MC => OG%AC
+               A => OG%AC
+               ACOL=> A%COL
             ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_STRENGTH_COLS) THEN
-               MC => OG%STRENGTH
+               A => OG%STRENGTH
+               ACOL=> A%COL
             ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_PROL_COLS) THEN
-               MC => OG%PROLONGATION
+               A => OG%PROLONGATION
+               ACOL=> A%COL_GLOBAL
             ENDIF
+            AROW => A%ROW
 
             LL = 1                                 
             ICP = 1
@@ -12686,34 +12706,34 @@ WRITE(MSG%LU_DEBUG,'(A, 4I4,E12.4)') 'RECV: MATRIX_DIAG: NOM, IOR0, ICG, ICE, DI
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A, 12I4)') 'UNPACK_MATRIX_COLS: NCG0, NCG:', OL%NCG0(IOR0), OL%NCG(IOR0), RECV_INT7(1:10)
 #endif
-               MC%ROW(ICP) = 1
+               AROW(ICP) = 1
                DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
                   ICE = OG%ICG_TO_ICE(ICG)
-                  MC%COL(LL) = ABS(RECV_INT7(LL))
+                  ACOL(LL) = ABS(RECV_INT7(LL))
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 4I4)') 'UNPACK_MATRIX_COLS: A: RECV: ICG, LL, RECV_INT7, MC%ROW(ICG), MC%COL(LL):', &
-                                ICG, LL, RECV_INT7(LL), MC%COL(LL)
+WRITE(MSG%LU_DEBUG,'(A, 4I4)') 'UNPACK_MATRIX_COLS: A: RECV: ICG, LL, RECV_INT7, AROW(ICG), ACOL(LL):', &
+                                ICG, LL, RECV_INT7(LL), ACOL(LL)
 #endif
                   DO WHILE (RECV_INT7(LL+1) > 0)
                      LL = LL + 1
-                     MC%COL(LL) = ABS(RECV_INT7(LL))
+                     ACOL(LL) = ABS(RECV_INT7(LL))
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 4I4)') 'UNPACK_MATRIX_COLS: B: RECV: ICG, LL, RECV_INT7, MC%ROW(ICG), MC%COL(LL):', &
-                                ICG, LL, RECV_INT7(LL), MC%COL(LL)
+WRITE(MSG%LU_DEBUG,'(A, 4I4)') 'UNPACK_MATRIX_COLS: B: RECV: ICG, LL, RECV_INT7, AROW(ICG), ACOL(LL):', &
+                                ICG, LL, RECV_INT7(LL), ACOL(LL)
 #endif
                   ENDDO
                   LL = LL + 1
                   ICP = ICP + 1
-                  MC%ROW(ICP) = LL
+                  AROW(ICP) = LL
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'UNPACK_MATRIX_COLS: MC%ROW(',ICP,')=',MC%ROW(ICP)
+WRITE(MSG%LU_DEBUG,*) 'UNPACK_MATRIX_COLS: AROW(',ICP,')=',AROW(ICP)
 #endif
                ENDDO
-               MC%N_ROW = ICP  
-               MC%N_VAL = LL - 1
+               A%N_ROW = ICP  
+               A%N_VAL = LL - 1
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 4I4)') 'UNPACK_MATRIX_COLS: MC%N_ROW=',MC%N_ROW
-WRITE(MSG%LU_DEBUG,'(A, 4I4)') 'UNPACK_MATRIX_COLS: MC%N_VAL=',MC%N_VAL
+WRITE(MSG%LU_DEBUG,'(A, 4I4)') 'UNPACK_MATRIX_COLS: A%N_ROW=',A%N_ROW
+WRITE(MSG%LU_DEBUG,'(A, 4I4)') 'UNPACK_MATRIX_COLS: A%N_VAL=',A%N_VAL
 #endif
             ENDDO
 
@@ -12742,29 +12762,31 @@ WRITE(MSG%LU_DEBUG,'(A, 4I4)') 'UNPACK_MATRIX_COLS: MC%N_VAL=',MC%N_VAL
 
                CASE (NSCARC_MATRIX_COMPACT)
 
-                  MC => NULL()
+                  A => NULL()
                   IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_MATRIX_VALS) THEN
-                     MC => OG%AC
+                     A => OG%AC
                   ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_STRENGTH_VALS) THEN
-                     MC => OG%STRENGTH
+                     A => OG%STRENGTH
                   ELSE IF (TYPE_EXCHANGE == NSCARC_EXCHANGE_PROL_VALS) THEN
-                     MC => OG%PROLONGATION
+                     A => OG%PROLONGATION
                   ENDIF
+                  AROW => A%ROW
+                  AVAL => A%VAL
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'UNPACK_MATRIX_VALS: MC%ROW=',MC%ROW
+WRITE(MSG%LU_DEBUG,*) 'UNPACK_MATRIX_VALS: AROW=',AROW
 #endif
                   DO IOR0 = -3, 3
                      IF (OL%NCG(IOR0) == 0) CYCLE
                      DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'UNPACK_MATRIX_VALS: ICG, MC%ROW(ICG)', ICG, MC%ROW(ICG)
+WRITE(MSG%LU_DEBUG,*) 'UNPACK_MATRIX_VALS: ICG, AROW(ICG)', ICG, AROW(ICG)
 #endif
-                        DO LL = MC%ROW(ICG), MC%ROW(ICG+1)-1
-                           MC%VAL(LL) = RECV_REAL7(LL)
+                        DO LL = AROW(ICG), AROW(ICG+1)-1
+                           AVAL(LL) = RECV_REAL7(LL)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,4I4,E12.4)') 'UNPACK_MATRIX_VALS, RECV: NOM, IOR0, ICG, LL, MC%VAL', &
-                                     NOM, IOR0, ICG, LL, MC%VAL(LL)
+WRITE(MSG%LU_DEBUG,'(A,4I4,E12.4)') 'UNPACK_MATRIX_VALS, RECV: NOM, IOR0, ICG, LL, AVAL', &
+                                     NOM, IOR0, ICG, LL, AVAL(LL)
 #endif
                         ENDDO
                      ENDDO
@@ -14116,7 +14138,7 @@ CALL SCARC_ALLOCATE_INT1 (INT_BUFFER, 1, SUB%N_NEIGHBORS_TOTAL, NSCARC_INIT_ZERO
 IP = 1
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    DO INBR = 1, SCARC(NM)%N_NEIGHBORS
-      INT_BUFFER(DISPLS_NBR(NM-1) + IP) = SCARC(NM)%NEIGHBORS(INBR)
+      INT_BUFFER(DISPLS_NBR(PROCESS(NM)) + IP) = SCARC(NM)%NEIGHBORS(INBR)
       IP = IP + 1
    ENDDO
 ENDDO
@@ -14141,7 +14163,7 @@ WRITE(MSG%LU_DEBUG,*) INT_BUFFER
 CALL SCARC_ALLOCATE_INT2 (SUB%NEIGHBORS, 1, MAX_NBR, 1, NMESHES,  NSCARC_INIT_ZERO, 'SUB%NEIGHBORS')
 DO NM = 1, NMESHES
    DO INBR = 1, SUB%N_NEIGHBORS(NM)
-      SUB%NEIGHBORS(INBR, NM) = INT_BUFFER(DISPLS_NBR(NM-1) + INBR)
+      SUB%NEIGHBORS(INBR, NM) = INT_BUFFER(DISPLS_NBR(PROCESS(NM)) + INBR)
    ENDDO
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'NM: SUB%NEIGHBORS:', SUB%NEIGHBORS(1:SUB%N_NEIGHBORS(NM),NM)
@@ -14931,21 +14953,18 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATE_OPERATOR: N_FINE, NC, NCE:', GF%N_FINE, G
    DO ICC_GLOBAL = ICC1, ICC2
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATE_OPERATOR: ICC, N_COARSE, NC_OFFSET(NM)=',ICC, GF%N_COARSE, GC%NC_OFFSET(NM)
+WRITE(MSG%LU_DEBUG,'(A,3I4)') 'SETUP_AGGREGATE_OPERATOR: ICC, N_COARSE, NC_OFFSET(NM)=',ICC, GF%N_COARSE, GC%NC_OFFSET(NM)
 #endif
       IS_INCLUDED = .FALSE.
       DO IC = 1, GF%N_FINE
          IF (GF%AGGREGATES(IC) /= ICC_GLOBAL) CYCLE
          GF%AGG_LOCAL(IC) = ICC
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '         included, IC, ICC_GLOBAL, ICC:', IC, ICC_GLOBAL, ICC, GF%AGG_LOCAL(IC)
-#endif
          IS_INCLUDED = .TRUE.
          GF%AGG%COL(IP) = IC
-         IP = IP + 1
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '         bingo, IC, IP, ICC_GLOBAL, ICC, IS_INCLUDED:', IC, IP, ICC_GLOBAL, ICC, IS_INCLUDED
+WRITE(MSG%LU_DEBUG,'(A,5I4)') '         bingo, IC, IP, ICC_GLOBAL, ICC, IS_INCLUDED:', IC, IP, ICC_GLOBAL, ICC, GF%AGG_LOCAL(IC)
 #endif
+         IP = IP + 1
       ENDDO
       IF (IS_INCLUDED) THEN
          ICC = ICC + 1
@@ -14956,7 +14975,7 @@ WRITE(MSG%LU_DEBUG,*) '         bingo, IC, IP, ICC_GLOBAL, ICC, IS_INCLUDED:', I
    N_ROW = ICC
    N_VAL = IP - 1
 
-   ! TODO resize aggregation matriceces !!!
+   ! TODO resize aggregation matrices !!!
    GF%AGG%N_ROW = N_ROW
    GF%AGG%N_VAL = N_VAL
 
