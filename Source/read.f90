@@ -8265,7 +8265,7 @@ SELECT CASE(TRIM(SOLVER))
       PRES_ON_WHOLE_DOMAIN = .TRUE.
       IF (SCARC_METHOD == 'NONE') SCARC_METHOD = 'KRYLOV'    ! Use Krylov default solver for SCARC
       IF (SCARC_PRECON == 'NONE') SCARC_PRECON = 'FFT'       ! Use FFT as default preconditioner for SCARC
-      IF (SCARC_MATRIX == 'NONE') SCARC_MATRIX = 'BANDED'    ! Use banded matrix storage technique
+      IF (SCARC_MATRIX == 'NONE') SCARC_MATRIX = 'BANDWISE'  ! Use banded matrix storage technique
 
    CASE('UGLMAT')
       PRES_METHOD = 'GLMAT'
