@@ -4987,7 +4987,6 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
                CALL SCARC_SETUP_MATRIX  (NM, NLEVEL_MIN)
                CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
-               IF (IS_AMG) CALL SCARC_SETUP_MATRIX_DIAGONAL(NLEVEL_MIN)     ! Separately store Poisson matrix diagonal
 
          END SELECT SELECT_MULTIGRID_TYPE
 
@@ -13219,6 +13218,7 @@ WRITE(MSG%LU_DEBUG,*) ' SAMG : LEVEL ', NL
 WRITE(MSG%LU_DEBUG,*) '========================================================'
 #endif
 
+   CALL SCARC_EXTRACT_MATRIX_DIAGONAL(NL)           ! Extract matrix diagonal from Poisson matrix
    CALL SCARC_SETUP_STRENGTH_OF_CONNECTION(NL)      ! Determine strength of connection matrix for Poisson matrix
    CALL SCARC_INVERT_MATRIX_DIAGONAL(NL)            ! Invert matrix diagonal
    CALL SCARC_SETUP_AGGREGATION_ZONES(NL)           ! Apply smoothed aggregation heuristic to specify aggregation zones
@@ -13240,7 +13240,7 @@ END SUBROUTINE SCARC_SETUP_SAMG
 ! ------------------------------------------------------------------------------------------------------
 ! Extract diagonal of A and store it in a separate vector for further use
 ! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_MATRIX_DIAGONAL(NL)
+SUBROUTINE SCARC_EXTRACT_MATRIX_DIAGONAL(NL)
 USE SCARC_POINTERS, ONLY: G, A
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, IC, JC, ICOL
@@ -13259,7 +13259,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ENDDO
 
 #ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'SETUP_MATRIX_DIAGONAL: DIAG:'
+   WRITE(MSG%LU_DEBUG,*) 'EXTRACT_MATRIX_DIAGONAL: DIAG:'
    WRITE(MSG%LU_DEBUG,'(8E12.4)') G%DIAG
 #endif
 
@@ -13268,7 +13268,7 @@ ENDDO MESHES_LOOP
 ! If there are multiple meshes exchange diagonal matrix on overlapping parts
 IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_DIAG, NSCARC_NONE, NL)
 
-END SUBROUTINE SCARC_SETUP_MATRIX_DIAGONAL
+END SUBROUTINE SCARC_EXTRACT_MATRIX_DIAGONAL
 
 
 ! ------------------------------------------------------------------------------------------------------
@@ -13444,32 +13444,32 @@ INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, NM2, IC, JC, ICOL, IZONE, JZONE, NMZ
 INTEGER :: ACTIVE_MESH, N_ZONES_LOCAL, N_ZONES_PREVIOUS = 0
 LOGICAL :: HAS_NEIGHBORS, HAS_AGGREGATED_NEIGHBORS
-INTEGER, ALLOCATABLE, DIMENSION(:) :: ZONES_PER_MESH
+INTEGER, ALLOCATABLE, DIMENSION(:) :: ZONES_UP_TO_MESH
 
 MESH_INT = 0
 
-CALL SCARC_ALLOCATE_INT1 (ZONES_PER_MESH, 1, NMESHES, NSCARC_INIT_ZERO, 'ZONES_PER_MESH')
-ACTIVE_MESH = 1
+CALL SCARC_ALLOCATE_INT1 (ZONES_UP_TO_MESH, 1, NMESHES, NSCARC_INIT_ZERO, 'ZONES_UP_TO_MESH')
 
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   MESHZONES_LOOP: DO NMZ = 1, NMESHES
+   ACTIVE_MESH = 1
+   ZONES_LOOP: DO NMZ = 1, NMESHES
 
 #ifdef WITH_SCARC_DEBUG
       WRITE(MSG%LU_DEBUG,*) '================================================================='
       WRITE(MSG%LU_DEBUG,*) '=============== AGGREGATING ON MESH ',NM,' FOR NMZ ', NMZ
       WRITE(MSG%LU_DEBUG,*) '================================================================='
 #endif
-      ! ---------- NM is the active mesh
+      ! ---------- on the active mesh perform aggregation of internal cells and broadcast interfaces to neighbors
       ACTIVE_MESH_IF: IF (NM == ACTIVE_MESH) THEN
 
          N_ZONES_LOCAL = 0
-         CALL SCARC_POINT_TO_MULTIGRID(NM, NL, NL+1)
+         CALL SCARC_POINT_TO_MULTIGRID(NM, NL, NL+1)                    ! Sets grid pointers GF and GC
          CF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_CONNECTION)
 
          GF%N_FINE = GF%NCE
          IF (NM > 1) THEN
-            GF%N_ZONES = ZONES_PER_MESH(NM-1) + 1                 ! note: already been initialized to 1 on mesh 1 
-            N_ZONES_PREVIOUS = GF%N_ZONES
+            N_ZONES_PREVIOUS = ZONES_UP_TO_MESH(NM-1)               ! store previous number of zones
+            GF%N_ZONES = N_ZONES_PREVIOUS + 1                       ! note: already been initialized to 1 on mesh 1 
          ENDIF
 
          !
@@ -13583,17 +13583,19 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          ! Initialize number of coarse and fine grid cells on current SAMG level 
          GF%N_COARSE = GF%N_ZONES
          GC%N_FINE   = GF%N_ZONES
-         ZONES_PER_MESH(ACTIVE_MESH) = GF%N_ZONES
+         ZONES_UP_TO_MESH(ACTIVE_MESH) = GF%N_ZONES
       
-         IF (NM == 1) THEN
-            GC%NC_LOCAL(NM) = GF%N_ZONES - N_ZONES_PREVIOUS 
-         ELSE
-            GC%NC_LOCAL(NM) = GF%N_ZONES - N_ZONES_PREVIOUS + 1
-         ENDIF
+         GC%NC_LOCAL(NM) = GF%N_ZONES - N_ZONES_PREVIOUS 
          MESH_INT(NM) = GC%NC_LOCAL(NM)
  
+         ! only ACTIVE_MESH broadcasts its whole zone information along interfaces
+         ! in order to make zones consistent along interfaces 
+         IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONES, NSCARC_ZONES_INITIAL, NL)
+         IF (N_MPI_PROCESSES>1) &
+            CALL MPI_ALLGATHERV(MPI_IN_PLACE, 1, MPI_INTEGER, ZONES_UP_TO_MESH, COUNTS, DISPLS, &
+                                MPI_INTEGER, MPI_COMM_WORLD, IERROR)
+      
          ACTIVE_MESH = ACTIVE_MESH + 1
-
       !
       ! ---------- NM is NOT the active mesh
       ! if NM > ACTIVE_MESH, then the complete zone information must be received for both the overlapping 
@@ -13603,8 +13605,6 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       !
       ELSE ACTIVE_MESH_IF
 
-         ZONES_PER_MESH = 0
-
          IF (NMESHES > 1) THEN
             IF (NM > ACTIVE_MESH) THEN
                CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONES, NSCARC_ZONES_COMPLETE, NL)
@@ -13612,23 +13612,18 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONES, NSCARC_ZONES_FILLUP, NL)
             ENDIF
          ENDIF
-         ! only ACTIVE_MESH broadcasts its whole zone information along interfaces
-         ! in order to make zones consistent along interfaces 
-         IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONES, NSCARC_ZONES_INITIAL, NL)
-      
          IF (N_MPI_PROCESSES>1) &
-            CALL MPI_ALLGATHERV(MPI_IN_PLACE, 1, MPI_INTEGER, ZONES_PER_MESH, COUNTS, DISPLS, &
+            CALL MPI_ALLGATHERV(MPI_IN_PLACE, 1, MPI_INTEGER, ZONES_UP_TO_MESH, COUNTS, DISPLS, &
                                 MPI_INTEGER, MPI_COMM_WORLD, IERROR)
 
          ACTIVE_MESH = ACTIVE_MESH + 1
 
       ENDIF ACTIVE_MESH_IF
-   ENDDO MESHZONES_LOOP
-   
+   ENDDO ZONES_LOOP
 ENDDO MESHES_LOOP
 
 IF (TRIM(CHID) == 'b1') CALL SCARC_PRESET_B1_CASE
-DEALLOCATE (ZONES_PER_MESH)
+DEALLOCATE (ZONES_UP_TO_MESH)
 
 !
 ! Broadcast number of local mesh cells on level NL to all and build global sum
@@ -13643,8 +13638,10 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTIGRID(NM, NL, NL+1)
 
+   GC%NC_LOCAL = MESH_INT
+   GC%NC_GLOBAL = SUM(MESH_INT)
+
    CALL SCARC_RESIZE_INT1(GF%CPOINTS, GF%N_ZONES, 'GF%CPOINTS')     
-   GC%NC_GLOBAL = SUM(GC%NC_LOCAL(1:NMESHES))
 
 #ifdef WITH_SCARC_DEBUG
       WRITE(MSG%LU_DEBUG,*) 'GC%NC_LOCAL=', GC%NC_LOCAL
