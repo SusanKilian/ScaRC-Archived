@@ -24,14 +24,14 @@ IMPLICIT NONE
 INTEGER, PARAMETER :: NSCARC_ACCURACY_ABSOLUTE       =  1, &    ! absolute accuracy must be reached
                       NSCARC_ACCURACY_RELATIVE       =  2       ! relative accuracy must be reached
                    
-INTEGER, PARAMETER :: NSCARC_BUFFER_INT0             =  0, &    ! Point to RECV_INT0 buffer
-                      NSCARC_BUFFER_INT1             =  1, &    ! Point to RECV_INT1 buffer
-                      NSCARC_BUFFER_INT2             =  2, &    ! Point to RECV_INT2 buffer
-                      NSCARC_BUFFER_INT7             =  3, &    ! Point to RECV_INT7 buffer
-                      NSCARC_BUFFER_REAL0            =  4, &    ! Point to RECV_REAL0 buffer
-                      NSCARC_BUFFER_REAL1            =  5, &    ! Point to RECV_REAL1 buffer
-                      NSCARC_BUFFER_REAL2            =  6, &    ! Point to RECV_REAL2 buffer
-                      NSCARC_BUFFER_REAL7            =  7       ! Point to RECV_REAL7 buffer
+INTEGER, PARAMETER :: NSCARC_BUFFER_INT0             =  0, &    ! Handles for several buffers
+                      NSCARC_BUFFER_INT1             =  1, &    ! of different types and lengths
+                      NSCARC_BUFFER_INT2             =  2, &    ! needed for data exchanges
+                      NSCARC_BUFFER_INT7             =  3, &    ! 
+                      NSCARC_BUFFER_REAL0            =  4, &    ! 
+                      NSCARC_BUFFER_REAL1            =  5, &    ! 
+                      NSCARC_BUFFER_REAL2            =  6, &    ! 
+                      NSCARC_BUFFER_REAL7            =  7       ! 
 
 INTEGER, PARAMETER :: NSCARC_CELL_GASPHASE           =  1, &    ! gasphase cell
                       NSCARC_CELL_SOLID              =  2       ! solid cell
@@ -868,7 +868,7 @@ TYPE SCARC_GRID_TYPE
 
    INTEGER :: N_FINE   = NSCARC_ZERO_INT                       ! Number of fine cells (SAMG only)
    INTEGER :: N_COARSE = NSCARC_ZERO_INT                       ! Number of coarse cells (SAMG only)
-   INTEGER :: N_ZONES  = NSCARC_ONE_INT                        ! Number of zones (SAMG only)
+   INTEGER :: N_ZONES  = NSCARC_ZERO_INT                       ! Number of zones (SAMG only)
 
    ! Pointer variables and arrays for data exchange with neighbors
    INTEGER :: ICG = 0, ICG2 = 0, ICE = 0                       ! ghost cell and extended cell pointers
@@ -13905,7 +13905,7 @@ PASS2_LOOP: DO IC = 1, G%NC
       ENDIF
    ENDDO
 ENDDO PASS2_LOOP
-G%N_ZONES = G%N_ZONES - 1
+!G%N_ZONES = G%N_ZONES - 1
       
 CALL SCARC_DEBUG_ZONES(G, -1, 'AFTER ACTIVE PASS2')
 
@@ -13956,11 +13956,12 @@ END SUBROUTINE SCARC_SETUP_AGGREGATION_PASS3
 ! Setup aggregation zones for Smoothed Aggregation Algebraic Multigrid Method
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_AGGREGATION_ZONES(NL)
-USE SCARC_POINTERS, ONLY: SUB, G, C
+USE SCARC_POINTERS, ONLY: SUB, L, C, G
 INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, ICYCLE, IC
+INTEGER :: NM, NM2, NOM, ICYCLE, IC, IOR0, IZ
 
 SUB => SUBDIVISION
+MESH_INT = -1
 
 DO ICYCLE = 1, SUB%N_CYCLES
 
@@ -13971,22 +13972,15 @@ WRITE(MSG%LU_DEBUG,*) 'HUGE(ICYCLE) =', HUGE(ICYCLE)
 
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-      ! ------------------- ACTIVE MESHES
       IF (SUB%ORDER(NM, ICYCLE) == NSCARC_ORDER_ACTIVE) THEN
-
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '===== NM = ', NM,' ----- I AM ACTIVE -----'
-#endif
-
          CALL SCARC_POINT_TO_GRID(NM, NL)
          C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
-
-         G%N_ZONES = 0
          CALL SCARC_SETUP_AGGREGATION_PASS1(G, C)
          CALL SCARC_SETUP_AGGREGATION_PASS2(G, C)
          CALL SCARC_SETUP_AGGREGATION_PASS3(G, C)
-
+         MESH_INT (NM) = G%N_ZONES
       ENDIF
+
    ENDDO
    
    IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONES, NSCARC_ZONES_SEND, NL)
@@ -13995,29 +13989,80 @@ WRITE(MSG%LU_DEBUG,*) '===== NM = ', NM,' ----- I AM ACTIVE -----'
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       IF (SUB%ORDER (NM, ICYCLE) /= NSCARC_ORDER_ACTIVE) THEN
-
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '===== NM = ', NM,' ----- I AM PASSIVE -----'
-#endif
-
          CALL SCARC_POINT_TO_GRID(NM, NL)
          C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
-
-         G%N_ZONES = 0
          CALL SCARC_SETUP_AGGREGATION_PASS1(G, C)
-
+         CALL SCARC_SETUP_AGGREGATION_PASS2(G, C)
+         CALL SCARC_SETUP_AGGREGATION_PASS3(G, C)
+         MESH_INT (NM) = G%N_ZONES
       ENDIF
 
    ENDDO
+
+   IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONES, NSCARC_ZONES_SEND, NL)
+
+ENDDO
+IF (MINVAL(MESH_INT) == -1) WRITE(*,*) 'ERROR in SETUP_AGGREGATION_ZONES, MISSING ZONES FOR ',MINLOC(MESH_INT)
+IF (N_MPI_PROCESSES>1) &
+   CALL MPI_ALLGATHERV(MPI_IN_PLACE, 1, MPI_INTEGER, MESH_INT, COUNTS, DISPLS, MPI_INTEGER, MPI_COMM_WORLD, IERROR)
+      
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   CALL SCARC_POINT_TO_GRID(NM, NL)                    ! Point to finer grid level
+   CALL SCARC_DEBUG_ZONES(G, -1, 'AFTER SETUP_AGGREGATION_ZONES ')
 ENDDO
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   CALL SCARC_POINT_TO_GRID(NM, NL)
-   CALL SCARC_DEBUG_ZONES(G, IC, 'AFTER SETUP_AGGREGATION_ZONES ')
+   CALL SCARC_POINT_TO_GRID(NM, NL+1)                    ! Point to coarser grid level
+   G%NC_LOCAL(1:NMESHES) = MESH_INT(1:NMESHES)
+   G%NC_GLOBAL = SUM(MESH_INT(1:NMESHES))
+   G%NC = G%NC_LOCAL(NM)
+   IF (NMESHES > 1) THEN
+      DO NM2 = 2, NMESHES
+         G%NC_OFFSET(NM2) = G%NC_OFFSET(NM2-1) + G%NC_LOCAL(NM2-1)
+      ENDDO
+   ENDIF                   
+
+   CALL SCARC_ALLOCATE_INT1(G%LOCAL_TO_GLOBAL, 1, G%NC_LOCAL(NM), NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL')
+   DO IZ = 1, G%NC_LOCAL(NM)
+      G%LOCAL_TO_GLOBAL(IZ) = IZ + G%NC_OFFSET(NM)
+   ENDDO
+   
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '================== END OF SETUP AGGREGATION_ZONES '
+   WRITE(MSG%LU_DEBUG,*) 'G%NC_GLOBAL =', G%NC_GLOBAL
+   WRITE(MSG%LU_DEBUG,*) 'G%NC_LOCAL(1:NMESHES) =', G%NC_LOCAL(1:NMESHES)
+   WRITE(MSG%LU_DEBUG,*) 'G%NC_OFFSET(1:NMESHES) =', G%NC_OFFSET(1:NMESHES)
+   WRITE(MSG%LU_DEBUG,*) 'G%LOCAL_TO_GLOBAL =', G%LOCAL_TO_GLOBAL
+#endif
+
 ENDDO
 
 WRITE(*,*) 'TODO: REMOVE CONNECTION MATRIX?'
 
 END SUBROUTINE SCARC_SETUP_AGGREGATION_ZONES
+
+! ------------------------------------------------------------------------------------------------------
+! Setup aggregation zones for Smoothed Aggregation Algebraic Multigrid Method
+! ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_EXTRACT_ZONE_OVERLAPS(NL)
+USE SCARC_POINTERS, ONLY: SUB, L, G, C, F
+INTEGER, INTENT(IN) :: NL
+INTEGER :: NM, IOR0, INBR, NOM, ICG, ICE, ICW
+
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   DO NOM = 1, NMESHES
+      IF (.NOT. ARE_NEIGHBORS(NM, NOM)) CYCLE
+      CALL SCARC_POINT_TO_OTHER_GRID (NM, NOM, NL)
+      DO IOR0 = -3, 3
+         IF (OL%NCG(IOR0) == 0) CYCLE
+         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+            ICW = OG%ICG_TO_ICW(ICG)
+            ICE = OG%ICG_TO_ICE(ICG)
+         ENDDO
+      ENDDO
+   ENDDO
+ENDDO
+
+END SUBROUTINE SCARC_EXTRACT_ZONE_OVERLAPS
 
 ! ------------------------------------------------------------------------------------------------------
 ! Debug zones information
@@ -14513,7 +14558,6 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
   
    ! Again conservative upper bound for length - to be reduced later 
    CALL SCARC_ALLOCATE_INT1(GF%ZONES_LOCAL, 1, GF%NCE, NSCARC_INIT_ZERO, 'GF%ZONES_LOCAL')
-   CALL SCARC_ALLOCATE_INT1(GC%LOCAL_TO_GLOBAL, 1, GC%NCE, NSCARC_INIT_ZERO, 'GC%LOCAL_TO_GLOBAL')
 
    ! TODO Reduce length of LOCAL_TO_GLOBAL 
 #ifdef WITH_SCARC_DEBUG
