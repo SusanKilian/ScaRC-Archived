@@ -14014,6 +14014,11 @@ IF (MINVAL(MESH_INT) == -1) WRITE(*,*) 'ERROR in SETUP_AGGREGATION_ZONES, MISSIN
 IF (N_MPI_PROCESSES>1) &
    CALL MPI_ALLGATHERV(MPI_IN_PLACE, 1, MPI_INTEGER, MESH_INT, COUNTS, DISPLS, MPI_INTEGER, MPI_COMM_WORLD, IERROR)
       
+IF (TRIM(CHID) == 'b1') THEN
+   CALL SCARC_PRESET_B1_CASE
+   MESH_INT(1) = 6
+ENDIF
+
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTIGRID(NM, NL, NL+1)                    ! Point to coarser grid level
@@ -14027,6 +14032,16 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          GC%NC_OFFSET(NM2) = GC%NC_OFFSET(NM2-1) + GC%NC_LOCAL(NM2-1)
       ENDDO
    ENDIF                   
+
+   IF (TRIM(CHID) == 'b1') THEN
+      GF%NC = 24
+      GF%NCE = 24
+      GC%NC_LOCAL  = 6
+      GC%NC_GLOBAL = 6
+      GC%NC_OFFSET = 0
+      GC%NC = 6
+      GC%NCE = 6
+   ENDIF
 
    ! Setup mapping from local zones to global zones
    ! TODO Reduce GC%LOCAL_TO_GLOBAL in length 
