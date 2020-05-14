@@ -5278,7 +5278,7 @@ WRITE(MSG%LU_DEBUG,'(A,7I6,E12.4)') '       ----> B: ICG, ICE, ICOL, IP, ROW, CO
 
                      DO ICOL = OA%ROW(ICG), OA%ROW(ICG+1)-1
                         A%COL(IP) = ABS(OA%COL(ICOL))      
-                        A%COLG(IP) = ABS(OA%COL(ICOL))      
+                        A%COLG(IP) = ABS(OA%COLG(ICOL))      
                         A%VAL(IP) = OA%VAL(ICOL)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,7I6,E12.4)') '       ----> B: ICG, ICE, ICOL, IP, ROW, COL, VAL :', &
