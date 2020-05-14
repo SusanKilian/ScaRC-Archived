@@ -12526,7 +12526,8 @@ WRITE(MSG%LU_DEBUG,*) '============= PACK_MATRIX_COLSG: SEND: NCG0, NCG:', OL%NC
             ICW = OG%ICG_TO_ICW(ICG)
             
             ICOL = A%ROW(ICW)
-            OS%SEND_INT7(LL) = -G%LOCAL_TO_GLOBAL(A%COL(ICOL))           ! send first element with negative sign
+            !OS%SEND_INT7(LL) = -G%LOCAL_TO_GLOBAL(A%COL(ICOL))           ! send first element with negative sign
+            OS%SEND_INT7(LL) = -A%COLG(ICOL)          ! send first element with negative sign
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I5)') 'PACK_MATRIX_COLSG: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
@@ -12534,7 +12535,8 @@ WRITE(MSG%LU_DEBUG,'(A,5I5)') 'PACK_MATRIX_COLSG: SEND: IOR0, ICG, ICW, ICOL, VA
 #endif
             LL = LL + 1                                ! such that receiver can identify start of column
             DO ICOL = A%ROW(ICW)+1, A%ROW(ICW+1)-1
-               OS%SEND_INT7(LL) = G%LOCAL_TO_GLOBAL(A%COL(ICOL))           ! send first element with negative sign
+               !OS%SEND_INT7(LL) = G%LOCAL_TO_GLOBAL(A%COL(ICOL))           ! send first element with negative sign
+               OS%SEND_INT7(LL) = A%COLG(ICOL)           ! send first element with negative sign
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I5)') 'PACK_MATRIX_COLSG: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
                                IOR0, ICG, ICW, ICOL, OS%SEND_INT7(LL)
@@ -12553,14 +12555,16 @@ WRITE(MSG%LU_DEBUG,'(A,5I5)') 'PACK_MATRIX_COLSG: SEND: IOR0, ICG, ICW, ICOL, VA
             ICW = OG%ICG_TO_ICW(ICG)
             IF (ICW > 0) THEN
                ICOL = A%ROW(ICW)
-               OS%SEND_INT7(LL) = -G%LOCAL_TO_GLOBAL(A%COL(ICOL))           ! send first element with negative sign
+               !OS%SEND_INT7(LL) = -G%LOCAL_TO_GLOBAL(A%COL(ICOL))           ! send first element with negative sign
+               OS%SEND_INT7(LL) = -A%COLG(ICOL)           ! send first element with negative sign
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I5)') 'PACK_MATRIX_COLSG: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
                                   IOR0, ICG, ICW, A%ROW(ICW), OS%SEND_INT7(LL)
 #endif
                LL = LL + 1                                ! such that receiver can identify start of column
                DO ICOL = A%ROW(ICW)+1, A%ROW(ICW+1)-1
-                  OS%SEND_INT7(LL) = G%LOCAL_TO_GLOBAL(A%COL(ICOL))           ! send first element with negative sign
+                  !OS%SEND_INT7(LL) = G%LOCAL_TO_GLOBAL(A%COL(ICOL))           ! send first element with negative sign
+                  OS%SEND_INT7(LL) = A%COL(ICOL)           ! send first element with negative sign
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I5)') 'PACK_MATRIX_COLSG: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
                                IOR0, ICG, ICW, ICOL, OS%SEND_INT7(LL)
@@ -13876,7 +13880,7 @@ PASS1_LOOP: DO IC = 1, G%NC
       ENDDO
    ENDIF
 
-   CALL SCARC_DEBUG_ZONES(G, IC, 'AFTER ACTIVE PASS1')
+   CALL SCARC_DEBUG_ZONES(G, IC, 1, 'AFTER ACTIVE PASS1')
 
 ENDDO PASS1_LOOP
 
@@ -13907,7 +13911,7 @@ PASS2_LOOP: DO IC = 1, G%NC
 ENDDO PASS2_LOOP
 !G%N_ZONES = G%N_ZONES - 1
       
-CALL SCARC_DEBUG_ZONES(G, -1, 'AFTER ACTIVE PASS2')
+CALL SCARC_DEBUG_ZONES(G, -1, 1, 'AFTER ACTIVE PASS2')
 
 END SUBROUTINE SCARC_SETUP_AGGREGATION_PASS2
 
@@ -13947,7 +13951,7 @@ PASS3_LOOP: DO IC = 1, G%NC
 
 ENDDO PASS3_LOOP
       
-CALL SCARC_DEBUG_ZONES(G, -1, 'AFTER ACTIVE PASS3')
+CALL SCARC_DEBUG_ZONES(G, -1, 1, 'AFTER ACTIVE PASS3')
 
 END SUBROUTINE SCARC_SETUP_AGGREGATION_PASS3
 
@@ -13956,9 +13960,9 @@ END SUBROUTINE SCARC_SETUP_AGGREGATION_PASS3
 ! Setup aggregation zones for Smoothed Aggregation Algebraic Multigrid Method
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_AGGREGATION_ZONES(NL)
-USE SCARC_POINTERS, ONLY: SUB, L, C, G
+USE SCARC_POINTERS, ONLY: SUB, C, G, LF, FF, GF, GC
 INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, NM2, NOM, ICYCLE, IC, IOR0, IZ
+INTEGER :: NM, NM2, NOM, ICYCLE, IC, IOR0, ICG, ICE, IZ, IZ_PREV, INBR
 
 SUB => SUBDIVISION
 MESH_INT = -1
@@ -14002,36 +14006,85 @@ WRITE(MSG%LU_DEBUG,*) 'HUGE(ICYCLE) =', HUGE(ICYCLE)
    IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONES, NSCARC_ZONES_SEND, NL)
 
 ENDDO
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'MESH_INT=',MESH_INT
+#endif
 IF (MINVAL(MESH_INT) == -1) WRITE(*,*) 'ERROR in SETUP_AGGREGATION_ZONES, MISSING ZONES FOR ',MINLOC(MESH_INT)
+
 IF (N_MPI_PROCESSES>1) &
    CALL MPI_ALLGATHERV(MPI_IN_PLACE, 1, MPI_INTEGER, MESH_INT, COUNTS, DISPLS, MPI_INTEGER, MPI_COMM_WORLD, IERROR)
       
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   CALL SCARC_POINT_TO_GRID(NM, NL)                    ! Point to finer grid level
-   CALL SCARC_DEBUG_ZONES(G, -1, 'AFTER SETUP_AGGREGATION_ZONES ')
-ENDDO
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   CALL SCARC_POINT_TO_GRID(NM, NL+1)                    ! Point to coarser grid level
-   G%NC_LOCAL(1:NMESHES) = MESH_INT(1:NMESHES)
-   G%NC_GLOBAL = SUM(MESH_INT(1:NMESHES))
-   G%NC = G%NC_LOCAL(NM)
+
+   CALL SCARC_POINT_TO_MULTIGRID(NM, NL, NL+1)                    ! Point to coarser grid level
+
+   ! Set grid dimensions on coarse level
+   GC%NC_LOCAL(1:NMESHES) = MESH_INT(1:NMESHES)
+   GC%NC_GLOBAL = SUM(MESH_INT(1:NMESHES))
+   GC%NC = GC%NC_LOCAL(NM)
    IF (NMESHES > 1) THEN
       DO NM2 = 2, NMESHES
-         G%NC_OFFSET(NM2) = G%NC_OFFSET(NM2-1) + G%NC_LOCAL(NM2-1)
+         GC%NC_OFFSET(NM2) = GC%NC_OFFSET(NM2-1) + GC%NC_LOCAL(NM2-1)
       ENDDO
    ENDIF                   
 
-   CALL SCARC_ALLOCATE_INT1(G%LOCAL_TO_GLOBAL, 1, G%NC_LOCAL(NM), NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL')
-   DO IZ = 1, G%NC_LOCAL(NM)
-      G%LOCAL_TO_GLOBAL(IZ) = IZ + G%NC_OFFSET(NM)
+   ! Setup mapping from local zones to global zones
+   ! TODO Reduce GC%LOCAL_TO_GLOBAL in length 
+   CALL SCARC_ALLOCATE_INT1(GC%LOCAL_TO_GLOBAL, 1, GF%NCE, NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL')
+   DO IZ = 1, GC%NC
+      GC%LOCAL_TO_GLOBAL(IZ) = IZ + GC%NC_OFFSET(NM)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'GC%LOCAL_TO_GLOBAL(',IZ,')=',GC%LOCAL_TO_GLOBAL(IZ)
+#endif
    ENDDO
+
+   DO IC = 1, GF%NC
+      GF%ZONES_GLOBAL(IC) = GF%ZONES_LOCAL(IC) + GC%NC_OFFSET(NM)
+   ENDDO
+
+   GC%NCE = GC%NC
+   DO IOR0 = -3, 3
+      FF => LF%FACE(IOR0)
+      DO INBR = 1, FF%N_NEIGHBORS
+         NOM = FF%NEIGHBORS(INBR)
+         CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
+         IZ_PREV = 0
+         IF (OL%NCG(IOR0) == 0) CYCLE
+         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+            ICE = OG%ICG_TO_ICE(ICG)
+            IZ = GF%ZONES_LOCAL(ICE)
+            IF (IZ /= IZ_PREV) THEN
+               GC%NCE = GC%NCE + 1
+               IZ_PREV = IZ
+            ENDIF
+            GF%ZONES_GLOBAL(ICE) = ABS(GF%ZONES_LOCAL(ICE)) + GC%NC_OFFSET(NOM)
+            GC%LOCAL_TO_GLOBAL(GC%NCE) = GF%ZONES_GLOBAL(ICE)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,9I6)') 'ZONES_OVERLAP: NM, NOM, IOR0, ICG, ICE, NCE, OFFSET, LOCAL, GLOBAL:', &
+                      NM, NOM, IOR0, ICG, ICE, GC%NCE, GC%NC_OFFSET(NOM), GF%ZONES_LOCAL(ICE), GF%ZONES_GLOBAL(ICE)
+#endif
+         ENDDO
+      ENDDO
+   ENDDO
+
+   CALL SCARC_RESIZE_INT1(GC%LOCAL_TO_GLOBAL, GC%NCE, 'GC%LOCAL_TO_GLOBAL')
+
+   CALL SCARC_DEBUG_ZONES(GF, -1, 1, 'AFTER SETUP_AGGREGATION_ZONES ')
+   CALL SCARC_DEBUG_ZONES(GF, -1, 2, 'AFTER SETUP_AGGREGATION_ZONES ')
    
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) '================== END OF SETUP AGGREGATION_ZONES '
-   WRITE(MSG%LU_DEBUG,*) 'G%NC_GLOBAL =', G%NC_GLOBAL
-   WRITE(MSG%LU_DEBUG,*) 'G%NC_LOCAL(1:NMESHES) =', G%NC_LOCAL(1:NMESHES)
-   WRITE(MSG%LU_DEBUG,*) 'G%NC_OFFSET(1:NMESHES) =', G%NC_OFFSET(1:NMESHES)
-   WRITE(MSG%LU_DEBUG,*) 'G%LOCAL_TO_GLOBAL =', G%LOCAL_TO_GLOBAL
+   WRITE(MSG%LU_DEBUG,*) 'GC%NC =', GC%NC
+   WRITE(MSG%LU_DEBUG,*) 'GC%NCE =', GC%NCE
+   WRITE(MSG%LU_DEBUG,*) 'GC%NC_GLOBAL =', GC%NC_GLOBAL
+   WRITE(MSG%LU_DEBUG,*) 'GC%NC_LOCAL(1:NMESHES) =', GC%NC_LOCAL(1:NMESHES)
+   WRITE(MSG%LU_DEBUG,*) 'GC%NC_OFFSET(1:NMESHES) =', GC%NC_OFFSET(1:NMESHES)
+   WRITE(MSG%LU_DEBUG,*) 'GF%ZONES_LOCAL  ='
+   WRITE(MSG%LU_DEBUG,'(8I6)') GF%ZONES_LOCAL
+   WRITE(MSG%LU_DEBUG,*) 'GF%ZONES_GLOBAL  ='
+   WRITE(MSG%LU_DEBUG,'(8I6)') GF%ZONES_GLOBAL
+   WRITE(MSG%LU_DEBUG,*) 'GC%LOCAL_TO_GLOBAL  ='
+   WRITE(MSG%LU_DEBUG,'(8I6)') GC%LOCAL_TO_GLOBAL
 #endif
 
 ENDDO
@@ -14040,44 +14093,28 @@ WRITE(*,*) 'TODO: REMOVE CONNECTION MATRIX?'
 
 END SUBROUTINE SCARC_SETUP_AGGREGATION_ZONES
 
-! ------------------------------------------------------------------------------------------------------
-! Setup aggregation zones for Smoothed Aggregation Algebraic Multigrid Method
-! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_EXTRACT_ZONE_OVERLAPS(NL)
-USE SCARC_POINTERS, ONLY: SUB, L, G, C, F
-INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, IOR0, INBR, NOM, ICG, ICE, ICW
-
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   DO NOM = 1, NMESHES
-      IF (.NOT. ARE_NEIGHBORS(NM, NOM)) CYCLE
-      CALL SCARC_POINT_TO_OTHER_GRID (NM, NOM, NL)
-      DO IOR0 = -3, 3
-         IF (OL%NCG(IOR0) == 0) CYCLE
-         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
-            ICW = OG%ICG_TO_ICW(ICG)
-            ICE = OG%ICG_TO_ICE(ICG)
-         ENDDO
-      ENDDO
-   ENDDO
-ENDDO
-
-END SUBROUTINE SCARC_EXTRACT_ZONE_OVERLAPS
 
 ! ------------------------------------------------------------------------------------------------------
 ! Debug zones information
 ! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DEBUG_ZONES(G, IC, CTEXT)
+SUBROUTINE SCARC_DEBUG_ZONES(G, IC, ITYPE, CTEXT)
 TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
-INTEGER, INTENT(IN) :: IC
+INTEGER, INTENT(IN) :: IC, ITYPE
 CHARACTER(*), INTENT(IN) :: CTEXT
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '================= DEBUG_ZONES at ', CTEXT
 IF (IC /= -1) WRITE(MSG%LU_DEBUG,*) ' IC = ', IC
-WRITE(MSG%LU_DEBUG,*) '-------------- ZONES_LOCAL: internal:'
-WRITE(MSG%LU_DEBUG,CFORM_INT) G%ZONES_LOCAL(1:G%NC)
-WRITE(MSG%LU_DEBUG,*) '-------------- ZONES_LOCAL: overlap:'
-WRITE(MSG%LU_DEBUG,'(10I4)') G%ZONES_LOCAL(G%NC+1: G%NCE)
+IF (ITYPE == 1) THEN
+   WRITE(MSG%LU_DEBUG,*) '-------------- ZONES_LOCAL: internal:'
+   WRITE(MSG%LU_DEBUG,CFORM_INT) G%ZONES_LOCAL(1:G%NC)
+   WRITE(MSG%LU_DEBUG,*) '-------------- ZONES_LOCAL: overlap:'
+   WRITE(MSG%LU_DEBUG,'(10I4)') G%ZONES_LOCAL(G%NC+1: G%NCE)
+ELSE
+   WRITE(MSG%LU_DEBUG,*) '-------------- ZONES_GLOBAL: internal:'
+   WRITE(MSG%LU_DEBUG,CFORM_INT) G%ZONES_GLOBAL(1:G%NC)
+   WRITE(MSG%LU_DEBUG,*) '-------------- ZONES_GLOBAL: overlap:'
+   WRITE(MSG%LU_DEBUG,'(10I4)') G%ZONES_GLOBAL(G%NC+1: G%NCE)
+ENDIF
 WRITE(MSG%LU_DEBUG,*) '-------------- CPOINTS'
 WRITE(MSG%LU_DEBUG,CFORM_INT) G%CPOINTS
 #endif
@@ -14426,7 +14463,7 @@ WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: GC%NC_GLOBAL=',GC%NC_GLOBAL
 #endif
 
 END SUBROUTINE SCARC_PRESET_B1_CASE
-
+ 
 
 ! ------------------------------------------------------------------------------------------------------
 ! Perform AMG Jacobi :.. x = x - omega D^{-1} (Ax-b)
@@ -14868,19 +14905,19 @@ CALL SCARC_DEBUG_MATRIX(P, 'PROLONGATION','AFTER RESORT PROL ')
       DO ICCOL = Z%ROW(ICC), Z%ROW(ICC+1) - 1
          IC = Z%COL(ICCOL)
 
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,'(A, 5I5)') '--------  ICC, ICCOL, IC:', ICC, ICCOL, IC
 #endif
          IF (IC > G%NC) CYCLE
          DO JCCOL = P%ROW(IC), P%ROW(IC+1) - 1
             JCC = P%COL(JCCOL)
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,'(A, 5I5)') 'Subtracting: ICC, ICCOL, IC, JCCOL, JCC:', ICC, ICCOL, IC, JCCOL, JCC
 #endif
             IF (JCC == ICC) THEN
                PSAVE = P%VAL(JCCOL)
                P%VAL(JCCOL) = P%VAL(JCCOL) + G%QQ(ICCOL)
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,'(A, 3E12.4)') '       PSAVE,Q,PF  ---->', PSAVE, G%QQ(ICCOL), P%VAL(JCCOL)
 #endif
                CYCLE
