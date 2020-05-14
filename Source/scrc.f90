@@ -11857,7 +11857,7 @@ SEND_PACK_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
          CASE (NSCARC_EXCHANGE_ZONES)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: ZONES'
-            CALL SCARC_PACK_ZONES(NPARAM)
+            CALL SCARC_PACK_ZONES
             CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_INT2)
 
          CASE (NSCARC_EXCHANGE_CELL_NUMBER)
@@ -12853,9 +12853,8 @@ END SUBROUTINE SCARC_UNPACK_MATRIX_DIAG
 ! ------------------------------------------------------------------------------------------------
 ! Pack ZONES information into send vector
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_PACK_ZONES(NTYPE)
+SUBROUTINE SCARC_PACK_ZONES
 USE SCARC_POINTERS, ONLY: G, OS, OL, OG
-INTEGER, INTENT(IN) :: NTYPE
 INTEGER :: IOR0, ICG, ICW, ICE, LL
 LL = 1
 OS%SEND_INT2 = 0
@@ -13837,17 +13836,129 @@ ENDIF
 
 END SUBROUTINE SCARC_SETUP_STRENGTH_OF_CONNECTION
  
+
 ! ------------------------------------------------------------------------------------------------------
-! Multimesh-version
-! Compute ZONES for a compact matrix AC
-! Returns the number of ZONES (== max(x[:]) + 1 )
-! Unaggregated nodes are marked with a -1
+! Pass 1 of aggregation:  Setup aggregation zones on internal cells of active mesh
+! ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_AGGREGATION_PASS1(G, C)
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER, INTENT(IN) :: C
+TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
+INTEGER :: IC, ICOL, JC
+LOGICAL :: HAS_NEIGHBORS, HAS_AGGREGATED_NEIGHBORS
+
+PASS1_LOOP: DO IC = 1, G%NC
+
+   IF (G%ZONES_LOCAL(IC) /= 0) CYCLE                   ! has cell already been aggregated?
+
+   HAS_NEIGHBORS = .FALSE.
+   HAS_AGGREGATED_NEIGHBORS = .FALSE.
+
+   DO ICOL = C%ROW(IC), C%ROW(IC+1)-1                  ! are all neighbors free (not already aggregated)?
+      JC = C%COL(ICOL)
+      IF (IC /= JC .AND. JC <= G%NC) THEN               ! only consider internal cells here
+         HAS_NEIGHBORS = .TRUE.
+         IF (G%ZONES_LOCAL(JC) /= 0) THEN
+            HAS_AGGREGATED_NEIGHBORS = .TRUE.
+            EXIT
+         ENDIF
+      ENDIF
+   ENDDO
+
+   IF (.NOT. HAS_NEIGHBORS) THEN                        ! do not aggregate isolated cells
+      G%ZONES_LOCAL(IC) = NSCARC_HUGE_INT
+   ELSE IF (.NOT. HAS_AGGREGATED_NEIGHBORS) THEN        ! build aggregate of this cell and its neighbors
+      G%N_ZONES = G%N_ZONES + 1
+      G%ZONES_LOCAL(IC) = G%N_ZONES
+      G%CPOINTS(G%N_ZONES) = IC                
+      DO ICOL = C%ROW(IC), C%ROW(IC+1)-1 
+         JC = C%COL(ICOL)
+         IF (JC <= G%NC) G%ZONES_LOCAL(C%COL(ICOL)) = G%N_ZONES
+      ENDDO
+   ENDIF
+
+   CALL SCARC_DEBUG_ZONES(G, IC, 'AFTER ACTIVE PASS1')
+
+ENDDO PASS1_LOOP
+
+END SUBROUTINE SCARC_SETUP_AGGREGATION_PASS1
+
+
+! ------------------------------------------------------------------------------------------------------
+! Pass 2 of Aggregation:  Add unaggregated nodes to neighboring aggregate
+! ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_AGGREGATION_PASS2(G, C)
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER, INTENT(IN) :: C
+TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
+INTEGER :: IC, ICOL, JC, JZONE
+
+PASS2_LOOP: DO IC = 1, G%NC
+
+   IF (G%ZONES_LOCAL(IC) /= 0) CYCLE            
+   DO ICOL = C%ROW(IC), C%ROW(IC+1)-1
+      JC = C%COL(ICOL)
+      JZONE = G%ZONES_LOCAL(JC)
+      IF (JZONE > 0) THEN
+         IF (JC >= G%NC .OR. G%CPOINTS(JZONE)>0) THEN
+            G%ZONES_LOCAL(IC) = -JZONE
+            EXIT
+         ENDIF
+      ENDIF
+   ENDDO
+ENDDO PASS2_LOOP
+G%N_ZONES = G%N_ZONES - 1
+      
+CALL SCARC_DEBUG_ZONES(G, -1, 'AFTER ACTIVE PASS2')
+
+END SUBROUTINE SCARC_SETUP_AGGREGATION_PASS2
+
+
+! ------------------------------------------------------------------------------------------------------
+! Pass 3 of Aggregation:  Process remaining nodes which have not been aggregated yet
+! ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_AGGREGATION_PASS3(G, C)
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER, INTENT(IN) :: C
+TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
+INTEGER :: IC, ICOL, JC, IZONE
+ 
+PASS3_LOOP: DO IC = 1, G%NC
+
+   IZONE = G%ZONES_LOCAL(IC)
+
+   ! cell IC has not been aggregated
+   IF (IZONE /= 0) THEN
+      IF (IZONE > 0) THEN
+         G%ZONES_LOCAL(IC) = IZONE 
+      ELSE IF (IZONE == NSCARC_HUGE_INT ) THEN
+         G%ZONES_LOCAL(IC) = -1
+      ELSE
+         G%ZONES_LOCAL(IC) = -IZONE 
+      ENDIF
+      CYCLE PASS3_LOOP
+   ENDIF
+
+   G%ZONES_LOCAL(IC) = G%N_ZONES
+   G%CPOINTS(G%N_ZONES) = IC
+
+   DO ICOL = C%ROW(IC), C%ROW(IC+1)-1
+      JC = C%COL(ICOL)
+      IF (JC <= G%NC .AND. G%ZONES_LOCAL(JC) == 0) G%ZONES_LOCAL(JC) = G%N_ZONES
+   ENDDO
+   G%N_ZONES = G%N_ZONES + 1
+
+ENDDO PASS3_LOOP
+      
+CALL SCARC_DEBUG_ZONES(G, -1, 'AFTER ACTIVE PASS3')
+
+END SUBROUTINE SCARC_SETUP_AGGREGATION_PASS3
+
+
+! ------------------------------------------------------------------------------------------------------
+! Setup aggregation zones for Smoothed Aggregation Algebraic Multigrid Method
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_AGGREGATION_ZONES(NL)
 USE SCARC_POINTERS, ONLY: SUB, G, C
 INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, ICYCLE, IC, JC, ICOL, IZONE, JZONE
-LOGICAL :: HAS_NEIGHBORS, HAS_AGGREGATED_NEIGHBORS
+INTEGER :: NM, ICYCLE, IC
 
 SUB => SUBDIVISION
 
@@ -13861,103 +13972,19 @@ WRITE(MSG%LU_DEBUG,*) 'HUGE(ICYCLE) =', HUGE(ICYCLE)
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       ! ------------------- ACTIVE MESHES
-      ! Pass 1:  Setup aggregation zones on internal cells of active mesh
-      !
       IF (SUB%ORDER(NM, ICYCLE) == NSCARC_ORDER_ACTIVE) THEN
-
-         CALL SCARC_POINT_TO_MULTIGRID(NM, NL)
-         C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '===== NM = ', NM,' ----- I AM ACTIVE -----'
 #endif
 
+         CALL SCARC_POINT_TO_GRID(NM, NL)
+         C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
+
          G%N_ZONES = 0
-         PASS1_ACTIVE_LOOP: DO IC = 1, G%NC
-
-            IF (G%ZONES_LOCAL(IC) /= 0) CYCLE                   ! has cell already been aggregated?
-
-            HAS_NEIGHBORS = .FALSE.
-            HAS_AGGREGATED_NEIGHBORS = .FALSE.
-
-            DO ICOL = C%ROW(IC), C%ROW(IC+1)-1                  ! are all neighbors free (not already aggregated)?
-               JC = C%COL(ICOL)
-               IF (IC /= JC .AND. JC <= G%NC) THEN               ! only consider internal cells here
-                  HAS_NEIGHBORS = .TRUE.
-                  IF (G%ZONES_LOCAL(JC) /= 0) THEN
-                     HAS_AGGREGATED_NEIGHBORS = .TRUE.
-                     EXIT
-                  ENDIF
-               ENDIF
-            ENDDO
-
-            IF (.NOT. HAS_NEIGHBORS) THEN                        ! do not aggregate isolated cells
-               G%ZONES_LOCAL(IC) = NSCARC_HUGE_INT
-            ELSE IF (.NOT. HAS_AGGREGATED_NEIGHBORS) THEN        ! build aggregate of this cell and its neighbors
-               G%N_ZONES = G%N_ZONES + 1
-               G%ZONES_LOCAL(IC) = G%N_ZONES
-               G%CPOINTS(G%N_ZONES) = IC                
-               DO ICOL = C%ROW(IC), C%ROW(IC+1)-1 
-                  JC = C%COL(ICOL)
-                  IF (JC <= G%NC) G%ZONES_LOCAL(C%COL(ICOL)) = G%N_ZONES
-               ENDDO
-            ENDIF
-
-            CALL SCARC_DEBUG_ZONES(G, IC, 'AFTER ACTIVE PASS1')
-
-         ENDDO PASS1_ACTIVE_LOOP
-
-         !
-         ! Pass 2:  Add unaggregated nodes to neighboring aggregate
-         !
-         PASS2_ACTIVE_LOOP: DO IC = 1, G%NC
-            IF (G%ZONES_LOCAL(IC) /= 0) CYCLE            
-            DO ICOL = C%ROW(IC), C%ROW(IC+1)-1
-               JC = C%COL(ICOL)
-               JZONE = G%ZONES_LOCAL(JC)
-               IF (JZONE > 0) THEN
-                  IF (JC >= G%NC .OR. G%CPOINTS(JZONE)>0) THEN
-                     G%ZONES_LOCAL(IC) = -JZONE
-                     EXIT
-                  ENDIF
-               ENDIF
-            ENDDO
-         ENDDO PASS2_ACTIVE_LOOP
-         G%N_ZONES = G%N_ZONES - 1
-      
-         CALL SCARC_DEBUG_ZONES(G, -1, 'AFTER ACTIVE PASS2')
-
-         !
-         ! Pass 3  Process remaining nodes which have not been aggregated yet
-         !
-         PASS3_ACTIVE_LOOP: DO IC = 1, G%NC
-
-            IZONE = G%ZONES_LOCAL(IC)
-
-            ! cell IC has not been aggregated
-            IF (IZONE /= 0) THEN
-               IF (IZONE > 0) THEN
-                  G%ZONES_LOCAL(IC) = IZONE 
-               ELSE IF (IZONE == NSCARC_HUGE_INT ) THEN
-                  G%ZONES_LOCAL(IC) = -1
-               ELSE
-                  G%ZONES_LOCAL(IC) = -IZONE 
-               ENDIF
-               CYCLE PASS3_ACTIVE_LOOP
-            ENDIF
-
-            G%ZONES_LOCAL(IC) = G%N_ZONES
-            G%CPOINTS(G%N_ZONES) = IC
-
-            DO ICOL = C%ROW(IC), C%ROW(IC+1)-1
-               JC = C%COL(ICOL)
-               IF (JC <= G%NC .AND. G%ZONES_LOCAL(JC) == 0) G%ZONES_LOCAL(JC) = G%N_ZONES
-            ENDDO
-            G%N_ZONES = G%N_ZONES + 1
-
-         ENDDO PASS3_ACTIVE_LOOP
-      
-         CALL SCARC_DEBUG_ZONES(G, -1, 'AFTER ACTIVE PASS3')
+         CALL SCARC_SETUP_AGGREGATION_PASS1(G, C)
+         CALL SCARC_SETUP_AGGREGATION_PASS2(G, C)
+         CALL SCARC_SETUP_AGGREGATION_PASS3(G, C)
 
       ENDIF
    ENDDO
@@ -13969,57 +13996,23 @@ WRITE(MSG%LU_DEBUG,*) '===== NM = ', NM,' ----- I AM ACTIVE -----'
 
       IF (SUB%ORDER (NM, ICYCLE) /= NSCARC_ORDER_ACTIVE) THEN
 
-         CALL SCARC_POINT_TO_MULTIGRID(NM, NL, NL+1)                    ! Sets grid pointers G and GC
-         C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
-
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '===== NM = ', NM,' ----- I AM PASSIVE -----'
 #endif
 
-         !
-         ! Pass 1:  Setup aggregation zones on internal cells of active mesh
-         !
+         CALL SCARC_POINT_TO_GRID(NM, NL)
+         C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
+
          G%N_ZONES = 0
-         PASS1_PASSIVE_LOOP: DO IC = 1, G%NC
+         CALL SCARC_SETUP_AGGREGATION_PASS1(G, C)
 
-            IF (G%ZONES_LOCAL(IC) /= 0) CYCLE                   ! has cell already been aggregated?
-
-            HAS_NEIGHBORS = .FALSE.
-            HAS_AGGREGATED_NEIGHBORS = .FALSE.
-
-            DO ICOL = C%ROW(IC), C%ROW(IC+1)-1                  ! are all neighbors free (not already aggregated)?
-               JC = C%COL(ICOL)
-               IF (IC /= JC) THEN                               ! consider internal and overlapping cells 
-                  HAS_NEIGHBORS = .TRUE.
-                  IF (G%ZONES_LOCAL(JC) /= 0) THEN
-                     HAS_AGGREGATED_NEIGHBORS = .TRUE.
-                     EXIT
-                  ENDIF
-               ENDIF
-            ENDDO
-
-            IF (.NOT. HAS_NEIGHBORS) THEN                       ! do not aggregate isolated cells
-               G%ZONES_LOCAL(IC) = NSCARC_HUGE_INT
-            ELSE IF (.NOT. HAS_AGGREGATED_NEIGHBORS) THEN       ! build aggregate of this cell and its neighbors
-               G%N_ZONES = G%N_ZONES + 1
-               G%ZONES_LOCAL(IC) = G%N_ZONES
-               G%CPOINTS(G%N_ZONES) = IC                
-               DO ICOL = C%ROW(IC), C%ROW(IC+1)-1 
-                  JC = C%COL(ICOL)
-                  IF (JC <= G%NC) G%ZONES_LOCAL(C%COL(ICOL)) = G%N_ZONES
-               ENDDO
-            ENDIF
-
-            CALL SCARC_DEBUG_ZONES(G, IC, 'AFTER PASSIVE PASS1')
-
-         ENDDO PASS1_PASSIVE_LOOP
       ENDIF
 
    ENDDO
 ENDDO
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_POINT_TO_GRID(NM, NL)
-   CALL SCARC_DEBUG_ZONES(F, IC, 'AFTER SETUP_AGGREGATION_ZONES ')
+   CALL SCARC_DEBUG_ZONES(G, IC, 'AFTER SETUP_AGGREGATION_ZONES ')
 ENDDO
 
 WRITE(*,*) 'TODO: REMOVE CONNECTION MATRIX?'
