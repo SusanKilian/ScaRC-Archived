@@ -15239,6 +15239,7 @@ WRITE(MSG%LU_DEBUG,'(A,2I6,3E12.4)') 'SETUP_AP:, JC, P%COL(IPCOL), A%VAL(IACOL),
 
          IF (ABS(DSUM) > TOL) THEN
             AP%COL(IP) = ICC
+            AP%COLG(IP) = ICC
             AP%VAL(IP) = DSUM
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,2I6,E12.4)') ' -------- bingo: IP, COL, VAL :', IP, ICC, DSUM
@@ -15316,6 +15317,7 @@ WRITE(MSG%LU_DEBUG,'(A,2I6,E12.4)') 'SETUP_RAP:, JC, AP%COL(IAPCOL), DSUM:', JC,
 
          IF (ABS(DSUM) > TOL) THEN
             AC%COL(IP) = JCC
+            AC%COLG(IP) = JCC
             AC%VAL(IP) = DSUM
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,2I6,E12.4)') ' -------- bingo: IP, COL, VAL :', IP, JCC, DSUM
