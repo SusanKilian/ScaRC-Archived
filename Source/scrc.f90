@@ -126,20 +126,22 @@ INTEGER, PARAMETER :: NSCARC_ERROR_AGGREGATION       =  1, &    ! SAMG-aggregati
                       NSCARC_ERROR_RHS_SETUP         = 33, &    ! error with rhs setup
                       NSCARC_ERROR_VECTOR_LENGTH     = 34       ! error in vector length
 
-INTEGER, PARAMETER :: NSCARC_EXCHANGE_CELL_NUMBER    =  1, &    ! exchange neighboring cell numbers on overlap
-                      NSCARC_EXCHANGE_CELL_TYPE      =  2, &    ! exchange cell type for coarsening process
-                      NSCARC_EXCHANGE_CELL_WIDTH     =  3, &    ! exchange neighboring grid widths on overlap
-                      NSCARC_EXCHANGE_MATRIX_COLS    =  4, &    ! exchange columns of neighboring matrix on overlap
-                      NSCARC_EXCHANGE_MATRIX_COLSG   =  5, &    ! exchange columns of neighboring matrix on overlap
-                      NSCARC_EXCHANGE_MATRIX_DIAG    =  6, &    ! exchange size of neighboring matrix 
-                      NSCARC_EXCHANGE_MATRIX_SIZE    =  7, &    ! exchange size of neighboring matrix 
-                      NSCARC_EXCHANGE_MATRIX_VALS    =  8, &    ! exchange values of neighboring matrix on overlap
-                      NSCARC_EXCHANGE_NULLSPACE      =  9, &    ! exchange sum of nullspace entries
-                      NSCARC_EXCHANGE_PRESSURE       = 10, &    ! exchange vector values along internal boundaries
-                      NSCARC_EXCHANGE_SETUP          = 11, &    ! exchange initial information
-                      NSCARC_EXCHANGE_VECTOR         = 12, &    ! exchange vector for mat-vec-mult
-                      NSCARC_EXCHANGE_VECTOR_MEAN    = 13, &    ! exchange vector for mat-vec-mult including averaging
-                      NSCARC_EXCHANGE_ZONES          = 14       ! exchange aggregation zones (SAMG only)
+INTEGER, PARAMETER :: NSCARC_EXCHANGE_CELL_NEIGHBORS =  1, &    ! exchange neighboring cell numbers on overlap
+                      NSCARC_EXCHANGE_CELL_NUMBERS   =  2, &    ! exchange neighboring grid widths on overlap
+                      NSCARC_EXCHANGE_CELL_SIZES     =  3, &    ! exchange neighboring grid widths on overlap
+                      NSCARC_EXCHANGE_INITIAL_SIZES  =  4, &    ! exchange initial information
+                      NSCARC_EXCHANGE_MATRIX_COLUMNS =  5, &    ! exchange columns of neighboring matrix on overlap
+                      NSCARC_EXCHANGE_MATRIX_COLUMNSG=  6, &    ! exchange columns of neighboring matrix on overlap
+                      NSCARC_EXCHANGE_MATRIX_DIAGS   =  7, &    ! exchange size of neighboring matrix 
+                      NSCARC_EXCHANGE_MATRIX_SIZES   =  8, &    ! exchange size of neighboring matrix 
+                      NSCARC_EXCHANGE_MATRIX_VALUES  =  9, &    ! exchange values of neighboring matrix on overlap
+                      NSCARC_EXCHANGE_MEAN_VECTORS   = 10, &    ! exchange vector for mat-vec-mult including averaging
+                      NSCARC_EXCHANGE_NULLSPACES     = 11, &    ! exchange sum of nullspace entries
+                      NSCARC_EXCHANGE_PRESSURES      = 12, &    ! exchange vector values along internal boundaries
+                      NSCARC_EXCHANGE_VECTORS        = 13, &    ! exchange vector for mat-vec-mult
+                      NSCARC_EXCHANGE_ZONE_NEIGHBORS = 14, &    ! exchange number of aggregation zones (SAMG only)
+                      NSCARC_EXCHANGE_ZONE_NUMBERS   = 15, &    ! exchange number of aggregation zones (SAMG only)
+                      NSCARC_EXCHANGE_ZONE_TYPES     = 16       ! exchange aggregation zones (SAMG only)
 
 INTEGER, PARAMETER :: NSCARC_GRID_STRUCTURED         =  1, &    ! structured discretization
                       NSCARC_GRID_UNSTRUCTURED       =  2       ! unstructured discretization
@@ -836,12 +838,16 @@ TYPE SCARC_GRID_TYPE
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICE_TO_IWG         ! mapping from ICE to IWG
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICE_TO_ICG         ! mapping from ICE to ICG
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICE_TO_ICN         ! mapping from ICE to ICN
-   INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICE_TO_LOCAL       ! mapping from ICE to local numbering
-   INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICE_TO_GLOBAL      ! mapping from ICE to global numbering
+   INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICE_TO_LZONE       ! mapping from ICE to local zone
+   INTEGER, ALLOCATABLE, DIMENSION (:,:) :: ICE_TO_GZONE       ! mapping from ICE to global zone
 
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICG_TO_IWG         ! mapping from ICG to IWG
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICG_TO_ICE         ! mapping from ICG to ICE
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICG_TO_ICW         ! mapping from ICG to ICW
+   INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICG_TO_LCELL       ! mapping from ICG to local cell
+   INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICG_TO_GCELL       ! mapping from ICG to global cell
+   INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICG_TO_LZONE       ! mapping from ICG to local zone
+   INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICG_TO_GZONE       ! mapping from ICG to global zone
 
    ! Assignment of cell coordinates
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICX                ! I-coordinate of cell IC
@@ -857,10 +863,12 @@ TYPE SCARC_GRID_TYPE
    INTEGER :: NC_GLOBAL = NSCARC_ZERO_INT                      ! global number of cells in all meshes
 
    ! Local numbers of internal, extended and ghost cells
-   INTEGER :: NC  = NSCARC_ZERO_INT                            ! number of cells needed for matrix
-   INTEGER :: NW  = NSCARC_ZERO_INT                            ! number of wall cells
-   INTEGER :: NCE = NSCARC_ZERO_INT                            ! number of extended cells
-   INTEGER :: NCG = NSCARC_ZERO_INT                            ! number of ghost cells 
+   INTEGER :: NC   = NSCARC_ZERO_INT                           ! number of cells needed for matrix
+   INTEGER :: NW   = NSCARC_ZERO_INT                           ! number of wall cells
+   INTEGER :: NCG  = NSCARC_ZERO_INT                           ! number of ghost cells 
+   INTEGER :: NZG  = NSCARC_ZERO_INT                           ! number of ghost zones 
+   INTEGER :: NCE  = NSCARC_ZERO_INT                           ! number of extended cells
+   INTEGER :: NCE2 = NSCARC_ZERO_INT                           ! number of extended cells, second layer
 
    ! Number of Dirichlet and Neumann boundary cells
    INTEGER :: N_DIRIC   = NSCARC_ZERO_INT                      ! number of Dirichlet BCs
@@ -936,8 +944,8 @@ TYPE SCARC_LEVEL_TYPE
    LOGICAL, ALLOCATABLE, DIMENSION (:,:,:) :: IS_SOLID         ! State of single cells (.TRUE. if solid/.FALSE. otherwise)
 
    ! Orientation and different cell related lengths
-   INTEGER :: NCG(-3:3)  = NSCARC_ZERO_INT                     ! First and total wall cell numbers for all faces
-   INTEGER :: NCG0(-3:3) = NSCARC_ZERO_INT                     ! First and total wall cell numbers for all faces
+   INTEGER :: GHOST_FIRST(-3:3) = NSCARC_ZERO_INT              ! First ghost cell numbers for all faces
+   INTEGER :: GHOST_LAST(-3:3)  = NSCARC_ZERO_INT              ! Last ghost cell numbers for all faces
    INTEGER :: NX, NY, NZ                                       ! Number of grid cells in x-, y- and z-direction
 
    ! Number of discretizations and obstructions
@@ -945,6 +953,7 @@ TYPE SCARC_LEVEL_TYPE
    INTEGER :: N_OBST                                           ! Number of obstructions
    INTEGER :: N_CELL_INDEX                                     ! Number of entries in CELL_INDEX array
    INTEGER :: N_CELLS                                          ! Number of cells in structured discretization
+   INTEGER :: N_GHOST_ZONES                                    ! Number of adjacent ghost zones
 
    ! Different wall related lengths
    INTEGER :: N_WALL_CELLS                                     ! Number of wall cells
@@ -2408,7 +2417,8 @@ ENDDO MESHES_LOOP1
 !
 MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   CALL SCARC_POINT_TO_LEVEL(NM, NLEVEL_MIN)
+   !CALL SCARC_POINT_TO_LEVEL(NM, NLEVEL_MIN)
+   CALL SCARC_POINT_TO_GRID(NM, NLEVEL_MIN)
 
    ! Set pointers to already existing CELL_INDEX WALL_INDEX arrays from main program (on finest level)
    CALL SCARC_SETUP_CELL_INDEX(NM, NLEVEL_MIN)
@@ -2760,7 +2770,8 @@ INTEGER :: N_MESH_NEIGHBORS
 
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   CALL SCARC_POINT_TO_LEVEL(NM, NLEVEL_MIN)             ! consider only finest grid level
+   !CALL SCARC_POINT_TO_LEVEL(NM, NLEVEL_MIN)             ! consider only finest grid level
+   CALL SCARC_POINT_TO_GRID(NM, NLEVEL_MIN)             ! consider only finest grid level
 
    ! Allocate FACE arrays on different grid levels
    ALLOCATE(L%FACE(-3:3), STAT=IERROR)
@@ -3110,8 +3121,8 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NLEVEL_MIN)
 
          IF (ANY(IS_KNOWN)) OG%NCG = OG%NCG + 1                       ! increase counter for local ghost cells
-         IF (OL%NCG0(IOR0) == 0) OL%NCG0(IOR0) = OG%NCG               ! save first ghost cell for -IOR0
-         OL%NCG(IOR0) = OG%NCG                                     
+         IF (OL%GHOST_FIRST(IOR0) == 0) OL%GHOST_FIRST(IOR0) = OG%NCG               ! save first ghost cell for -IOR0
+         OL%GHOST_LAST(IOR0) = OG%NCG                                     
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'NM, NOM, IWG, IOR0, NCG:', NM, NOM, IWG, IOR0, OG%NCG
@@ -3447,7 +3458,7 @@ IF (N_MPI_PROCESSES>1) THEN
    CALL CHKMEMERR ('SCARC_SETUP_EXCHANGES', 'REQ', IERROR)
    REQ = MPI_REQUEST_NULL
 ENDIF
-CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_SETUP, NSCARC_NONE, NLEVEL_MIN)
+CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_INITIAL_SIZES, NSCARC_NONE, NLEVEL_MIN)
 
 !
 ! Allocate send and receive buffers (real and integer) in correct lengths
@@ -3456,7 +3467,8 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    DO INBR = 1, SCARC(NM)%N_NEIGHBORS
 
-      CALL SCARC_POINT_TO_LEVEL(NM, NLEVEL_MIN)                          
+      !CALL SCARC_POINT_TO_LEVEL(NM, NLEVEL_MIN)                          
+      CALL SCARC_POINT_TO_GRID(NM, NLEVEL_MIN)                          
 
       NOM = S%NEIGHBORS(INBR)
       CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NLEVEL_MIN)
@@ -3506,8 +3518,8 @@ ENDDO
 !
 IF (NMESHES > 1) THEN
    DO NL = NLEVEL_MIN, NLEVEL_MAX
-      CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_NUMBER, NSCARC_NONE, NL)
-      CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_WIDTH,  NSCARC_NONE, NL)
+      CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_NUMBERS, NSCARC_NONE, NL)
+      CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_SIZES,  NSCARC_NONE, NL)
    ENDDO
 ENDIF
 
@@ -3700,8 +3712,8 @@ DO IW = 1, L%N_WALL_CELLS
   CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
 
   OG%ICG2 = OG%ICG2 + 1
-  IF (OL%NCG0(IOR0) == 0) OL%NCG0(IOR0) = OG%ICG2
-  OL%NCG(IOR0) = OG%ICG2
+  IF (OL%GHOST_FIRST(IOR0) == 0) OL%GHOST_FIRST(IOR0) = OG%ICG2
+  OL%GHOST_LAST(IOR0) = OG%ICG2
 
 ENDDO
 
@@ -5089,18 +5101,18 @@ IF (NMESHES > 1) THEN
 CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_MATRIX, NLEVEL_MIN, 'SYSTEM-MATRIX')
 
 
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLS,  NSCARC_MATRIX_POISSON, NLEVEL_MIN)
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLSG, NSCARC_MATRIX_POISSON, NLEVEL_MIN)
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALS,  NSCARC_MATRIX_POISSON, NLEVEL_MIN)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLUMNS,  NSCARC_MATRIX_POISSON, NLEVEL_MIN)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLUMNSG, NSCARC_MATRIX_POISSON, NLEVEL_MIN)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALUES,  NSCARC_MATRIX_POISSON, NLEVEL_MIN)
 
    IF (TYPE_MATRIX == NSCARC_MATRIX_COMPACT) &
       CALL SCARC_EXTRACT_MATRIX_OVERLAPS(NSCARC_MATRIX_POISSON, NLEVEL_MIN)
 
    IF (HAS_MULTI_LEVELS .AND. .NOT.IS_AMG) THEN
       DO NL = NLEVEL_MIN+1, NLEVEL_MAX
-         CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLS,  NSCARC_MATRIX_POISSON, NL)
-         CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLSG, NSCARC_MATRIX_POISSON, NL)
-         CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALS,  NSCARC_MATRIX_POISSON, NL)
+         CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLUMNS,  NSCARC_MATRIX_POISSON, NL)
+         CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLUMNSG, NSCARC_MATRIX_POISSON, NL)
+         CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALUES,  NSCARC_MATRIX_POISSON, NL)
       ENDDO
    ENDIF
 
@@ -5240,7 +5252,7 @@ WRITE(MSG%LU_DEBUG,*) 'OA%VAL'
 WRITE(MSG%LU_DEBUG,'(8E12.4)') OA%VAL
 #endif
                ICOL = 1
-               DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+               DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
    
                   ICE = OG%ICG_TO_ICE(ICG)
                   A%ROW(ICE) = IP 
@@ -5261,10 +5273,10 @@ WRITE(MSG%LU_DEBUG,'(8E12.4)') OA%VAL
                            A%COL(IP) = ABS(OA%COLG(ICOL)) - G%NC_OFFSET(NM)     
                         ELSE
                            A%COL(IP) = -ABS(OA%COLG(ICOL))
-                           IF (ICG == OL%NCG0(IOR0)) THEN
+                           IF (ICG == OL%GHOST_FIRST(IOR0)) THEN
                               ICE2 = OG%ICG_TO_ICE(ICG+1)
                               IF (G%LOCAL_TO_GLOBAL(ICE2) == ICN) A%COL(IP) = ICE2
-                           ELSE IF (ICG == OL%NCG(IOR0)) THEN
+                           ELSE IF (ICG == OL%GHOST_LAST(IOR0)) THEN
                               ICE1 = OG%ICG_TO_ICE(ICG-1)
                               IF (G%LOCAL_TO_GLOBAL(ICE1) == ICN) A%COL(IP) = ICE1
                            ELSE
@@ -5287,7 +5299,7 @@ WRITE(MSG%LU_DEBUG,'(A,7I6,E12.4)') '       ----> B: ICG, ICE, ICOL, IP, ROW, CO
                   ELSE
 
                      DO ICOL = OA%ROW(ICG), OA%ROW(ICG+1)-1
-                        A%COL(IP) = ABS(OA%COL(ICOL))      
+                        A%COL(IP) = -OA%COL(ICOL)   
                         A%COLG(IP) = ABS(OA%COLG(ICOL))      
                         A%VAL(IP) = OA%VAL(ICOL)
 #ifdef WITH_SCARC_DEBUG
@@ -5408,7 +5420,7 @@ SELECT_STORAGE_TYPE: SELECT CASE (SCARC_MATRIX_LEVEL(NL))
       G%POISSONC%ROW(G%NC+1) = IP
       G%POISSONC%N_VAL       = IP-1                         ! set correct number of matrix entries
    
-      CALL SCARC_RESIZE_CMATRIX(G%POISSONC, G%POISSONC%N_VAL, G%POISSONC%N_ROW, 'AC')
+      CALL SCARC_REDUCE_CMATRIX(G%POISSONC, G%POISSONC%N_VAL, G%POISSONC%N_ROW, 'AC')
    
    !
    ! ---------- bandwise storage technique
@@ -6427,7 +6439,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          IF (NOM /= NMESHES) CYCLE                      ! only check for common matrix entries with last mesh
          CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
 
-         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+         DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
 
             ICW = OG%ICG_TO_ICW(ICG)
             ICE = OG%ICG_TO_ICE(ICG)
@@ -8498,7 +8510,7 @@ SELECT_MATRIX_SIZE: SELECT CASE (NTYPE)
       !
       ! -------- Exchange matrix sizes in case of a multi-mesh geometry
       !
-      IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_SIZE, NSCARC_MATRIX_POISSON, NL)
+      IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_SIZES, NSCARC_MATRIX_POISSON, NL)
 
 END SELECT SELECT_MATRIX_SIZE
 
@@ -8701,7 +8713,7 @@ TNOW = CURRENT_TIME()
 ! If this call is related to a globally acting solver, exchange internal boundary values of
 ! vector1 such that the ghost values contain the corresponding overlapped values of adjacent neighbor
 !
-IF (TYPE_MATVEC == NSCARC_MATVEC_GLOBAL) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_VECTOR, NV1, NL)
+IF (TYPE_MATVEC == NSCARC_MATVEC_GLOBAL) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_VECTORS, NV1, NL)
 
 !
 ! Perform global matrix-vector product:
@@ -8782,7 +8794,7 @@ SELECT_MATRIX_TYPE: SELECT CASE (SCARC_MATRIX_LEVEL(NL))
                   DO INBR = 1, F%N_NEIGHBORS
                      NOM = F%NEIGHBORS(INBR)
                      CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
-                     DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+                     DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
                         ICW = OG%ICG_TO_ICW(ICG)
                         ICE = OG%ICG_TO_ICE(ICG)
                         V2(ICW) = V2(ICW) + F%SCAL_FACE * V1(ICE)
@@ -9538,7 +9550,7 @@ SELECT CASE (ITYPE)
    CASE (NSCARC_RELAX_FFTO)
 
       ! Exchange overlapping parts
-      CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_VECTOR, NV1, NL)
+      CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_VECTORS, NV1, NL)
 
       DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -9676,7 +9688,7 @@ SELECT CASE (ITYPE)
       ENDDO
 
       ! Exchange overlapping parts
-      CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_VECTOR_MEAN, NV2, NL)
+      CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MEAN_VECTORS, NV2, NL)
 
 
 #ifdef WITH_MKL
@@ -9839,7 +9851,7 @@ WRITE(MSG%LU_DEBUG,*) 'CLUSTER, POST, V2:', V2
 #endif
 ENDDO MESHES_LOOP
 
-CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_VECTOR, X, NL)
+CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_VECTORS, X, NL)
 
 IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) THEN
    CALL SCARC_UPDATE_MAINCELLS (NLEVEL_MIN)
@@ -11738,7 +11750,7 @@ ENDDO
 ! Perform data exchange to achieve consistency of ghost values along internal boundaries
 ! Note: this is no longer necessary because MESH_EXCHANGE(5) is used after the call of ScaRC
 ! -----------------------------------------------------------------------------------------------
-CALL SCARC_EXCHANGE(NSCARC_EXCHANGE_PRESSURE, NSCARC_NONE, NL)
+CALL SCARC_EXCHANGE(NSCARC_EXCHANGE_PRESSURES, NSCARC_NONE, NL)
 
 !IF (MYID == 0) THEN
 !WRITE(*,*) 'UPDATE_MAIN2:'
@@ -11751,17 +11763,22 @@ END SUBROUTINE SCARC_UPDATE_GHOSTCELLS
 ! ------------------------------------------------------------------------------------------------
 ! Perform data exchange corresponding to requested exchange type 
 ! 
-! NSCARC_EXCHANGE_ZONES:      aggregate numbers during SAMG setup
-! NSCARC_EXCHANGE_SETUP:           Setup of initial communication data
-! NSCARC_EXCHANGE_PRESSURE:        Pressure vector (H or HS) from predictor/corrector 
-! NSCARC_EXCHANGE_VECTOR:          Specified working vector for mat-vec product
-! NSCARC_EXCHANGE_VECTOR_MEAN:     Specified working vector for mat-vec product with summing up
-! NSCARC_EXCHANGE_CELL_WIDTH:      Cell width information of overlapping parts 
-! NSCARC_EXCHANGE_CELL_NUMBER:     Cell number information of overlapped parts 
-! NSCARC_EXCHANGE_MATRIX_SIZE:     Size of overlapped matrix
-! NSCARC_EXCHANGE_MATRIX_DIAG:     Diagonal matrix elements of neighboring matrix
-! NSCARC_EXCHANGE_MATRIX_SUBDIAG:  Overlapping diagonal 'leg' of neighboring matrix
-! NSCARC_EXCHANGE_MATRIX_VALS:     Overlapping stencils of neighboring matrix
+! NSCARC_EXCHANGE_CELL_NEIGHBORS :  exchange neighboring cell numbers on overlap
+! NSCARC_EXCHANGE_CELL_NUMBERS   :  exchange neighboring grid widths on overlap
+! NSCARC_EXCHANGE_CELL_SIZES     :  exchange neighboring grid widths on overlap
+! NSCARC_EXCHANGE_INITIAL_SIZES  :  exchange initial information about interface sizes
+! NSCARC_EXCHANGE_MATRIX_COLUMNS :  exchange columns of neighboring matrix on overlap
+! NSCARC_EXCHANGE_MATRIX_COLUMNSG:  exchange columns of neighboring matrix on overlap
+! NSCARC_EXCHANGE_MATRIX_DIAGS   :  exchange size of neighboring matrix 
+! NSCARC_EXCHANGE_MATRIX_SIZES   :  exchange size of neighboring matrix 
+! NSCARC_EXCHANGE_MATRIX_VALUES  :  exchange values of neighboring matrix on overlap
+! NSCARC_EXCHANGE_MEAN_VECTORS   :  exchange vector for mat-vec-mult including averaging
+! NSCARC_EXCHANGE_NULLSPACES     :  exchange sum of nullspace entries
+! NSCARC_EXCHANGE_PRESSURES      :  exchange vector values along internal boundaries
+! NSCARC_EXCHANGE_VECTORS        :  exchange vector for mat-vec-mult
+! NSCARC_EXCHANGE_ZONE_NEIGHBORS :  exchange number of aggregation zones (SAMG only)
+! NSCARC_EXCHANGE_ZONE_NUMBERS   :  exchange number of aggregation zones (SAMG only)
+! NSCARC_EXCHANGE_ZONE_TYPES     :  exchange aggregation zones (SAMG only)
 ! 
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_EXCHANGE (NTYPE, NPARAM, NL)
@@ -11789,53 +11806,53 @@ RECEIVE_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       SELECT_EXCHANGE_TYPE: SELECT CASE (NTYPE)
 
-         CASE (NSCARC_EXCHANGE_ZONES)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: RECV: CELL_ZONES'
+         CASE (NSCARC_EXCHANGE_CELL_NEIGHBORS)
             CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_INT2)
 
-         CASE (NSCARC_EXCHANGE_CELL_NUMBER)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: RECV: CELL_NUMBER'
+         CASE (NSCARC_EXCHANGE_CELL_NUMBERS)
             CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_INT1)
 
-         CASE (NSCARC_EXCHANGE_CELL_WIDTH)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: RECV: CELL_WIDTH'
+         CASE (NSCARC_EXCHANGE_CELL_SIZES)
             CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_REAL0)
 
-         CASE (NSCARC_EXCHANGE_MATRIX_DIAG)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: RECV: MATRIX_DIAG'
-            CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_REAL1)
+         CASE (NSCARC_EXCHANGE_INITIAL_SIZES)
+            CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_INT0)
 
-         CASE (NSCARC_EXCHANGE_MATRIX_COLS, NSCARC_EXCHANGE_MATRIX_COLSG)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: RECV: MATRIX_COLS'
+         CASE (NSCARC_EXCHANGE_MATRIX_COLUMNS)
             CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_INT7)
 
-         CASE (NSCARC_EXCHANGE_MATRIX_SIZE)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: RECV: MATRIX_SIZE'
+         CASE (NSCARC_EXCHANGE_MATRIX_COLUMNSG)
+            CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_INT7)
+
+         CASE (NSCARC_EXCHANGE_MATRIX_DIAGS)
+            CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_REAL1)
+
+         CASE (NSCARC_EXCHANGE_MATRIX_SIZES)
             CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_INT0)
 
-         CASE (NSCARC_EXCHANGE_MATRIX_VALS)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: RECV: MATRIX_VALS'
+         CASE (NSCARC_EXCHANGE_MATRIX_VALUES)
             CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_REAL7)
 
-         CASE (NSCARC_EXCHANGE_NULLSPACE)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: RECV: MATRIX_NULLSPACE'
-            CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_REAL1)
-
-         CASE (NSCARC_EXCHANGE_PRESSURE)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: RECV: MATRIX_PRESSURE'
-            CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_REAL1)
-
-         CASE (NSCARC_EXCHANGE_SETUP)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: RECV: MATRIX_SETUP'
-            CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_INT0)
-
-         CASE (NSCARC_EXCHANGE_VECTOR)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: RECV: MATRIX_VECTOR'
-            CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_REAL1)
-
-         CASE (NSCARC_EXCHANGE_VECTOR_MEAN)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: RECV: MATRIX_VECTOR_MEAN'
+         CASE (NSCARC_EXCHANGE_MEAN_VECTORS)
             CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_REAL2)
+
+         CASE (NSCARC_EXCHANGE_NULLSPACES)
+            CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_REAL1)
+
+         CASE (NSCARC_EXCHANGE_PRESSURES)
+            CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_REAL1)
+
+         CASE (NSCARC_EXCHANGE_VECTORS)
+            CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_REAL1)
+
+         CASE (NSCARC_EXCHANGE_ZONE_NEIGHBORS)
+            CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_INT2)
+
+         CASE (NSCARC_EXCHANGE_ZONE_NUMBERS)
+            CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_INT7)
+
+         CASE (NSCARC_EXCHANGE_ZONE_TYPES)
+            CALL SCARC_RECV_MESSAGE(NSCARC_BUFFER_INT2)
 
          CASE DEFAULT
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_EXCHANGE_RECV, SCARC_NONE, TYPE_EXCHANGE)
@@ -11865,54 +11882,40 @@ SEND_PACK_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       SEND_PACK_OMESHES_SELECT: SELECT CASE (NTYPE)
 
-         CASE (NSCARC_EXCHANGE_ZONES)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: ZONES'
-            CALL SCARC_PACK_ZONES
-            CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_INT2)
-
-         CASE (NSCARC_EXCHANGE_CELL_NUMBER)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: CELL_NUMBER'
-            CALL SCARC_PACK_CELL_NUMBER
+         CASE (NSCARC_EXCHANGE_CELL_NUMBERS)
+            CALL SCARC_PACK_CELL_NUMBERS
             CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_INT1)
 
-         CASE (NSCARC_EXCHANGE_CELL_WIDTH)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: CELL_WIDTH'
+         CASE (NSCARC_EXCHANGE_CELL_SIZES)
             CALL SCARC_PACK_CELL_WIDTH
             CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_REAL0)
 
-         CASE (NSCARC_EXCHANGE_MATRIX_SIZE)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: MATRIX_SIZE'
+         CASE (NSCARC_EXCHANGE_MATRIX_SIZES)
             CALL SCARC_PACK_MATRIX_SIZE(NL)
             CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_INT0)
 
-         CASE (NSCARC_EXCHANGE_MATRIX_DIAG)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: MATRIX_DIAG'
+         CASE (NSCARC_EXCHANGE_MATRIX_DIAGS)
             CALL SCARC_PACK_MATRIX_DIAG(NSCARC_MATRIX_POISSON)
             CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_REAL1)
 
-         CASE (NSCARC_EXCHANGE_MATRIX_COLS)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: MATRIX_COLS'
+         CASE (NSCARC_EXCHANGE_MATRIX_COLUMNS)
             CALL SCARC_PACK_MATRIX_COLS(NPARAM)
             CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_INT7)
 
-         CASE (NSCARC_EXCHANGE_MATRIX_COLSG)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: MATRIX_COLSG'
+         CASE (NSCARC_EXCHANGE_MATRIX_COLUMNSG)
             CALL SCARC_PACK_MATRIX_COLSG(NPARAM)
             CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_INT7)
 
-         CASE (NSCARC_EXCHANGE_MATRIX_VALS)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: MATRIX_VALS'
+         CASE (NSCARC_EXCHANGE_MATRIX_VALUES)
             CALL SCARC_PACK_MATRIX_VALS(NPARAM, NL)
             CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_REAL7)
 
-         CASE (NSCARC_EXCHANGE_NULLSPACE)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: NULLSPACE'
+         CASE (NSCARC_EXCHANGE_NULLSPACES)
             VC => G%AUX1
             CALL SCARC_PACK_VECTOR_SINGLE(VC)
             CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_REAL1)
 
-         CASE (NSCARC_EXCHANGE_PRESSURE)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: PRESSURE'
+         CASE (NSCARC_EXCHANGE_PRESSURES)
             IF (PREDICTOR) THEN
                HVC => POINT_TO_HVECTOR (NM, NSCARC_VECTOR_H)
             ELSE
@@ -11921,22 +11924,27 @@ WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: PRESSURE'
             CALL SCARC_PACK_PRESSURE(HVC)
             CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_REAL1)
 
-         CASE (NSCARC_EXCHANGE_SETUP)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: SETUP'
-            OS%SEND_INT0(1)=OG%NCG
+         CASE (NSCARC_EXCHANGE_INITIAL_SIZES)
+            CALL SCARC_PACK_INITIAL_SIZES
             CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_INT0)
 
-         CASE (NSCARC_EXCHANGE_VECTOR)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: VECTOR'
+         CASE (NSCARC_EXCHANGE_VECTORS)
             VC => SCARC_POINT_TO_VECTOR(NM, NL, NPARAM)
             CALL SCARC_PACK_VECTOR_SINGLE(VC)
             CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_REAL1)
 
-         CASE (NSCARC_EXCHANGE_VECTOR_MEAN)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: PACK: VECTOR_MEAN'
+         CASE (NSCARC_EXCHANGE_MEAN_VECTORS)
             VC => SCARC_POINT_TO_VECTOR(NM, NL, NPARAM)
             CALL SCARC_PACK_VECTOR_DOUBLE(VC)
             CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_REAL2)
+
+         CASE (NSCARC_EXCHANGE_ZONE_NUMBERS)
+            CALL SCARC_PACK_ZONE_NEIGHBORHIP
+            CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_INT7)
+
+         CASE (NSCARC_EXCHANGE_ZONE_TYPES)
+            CALL SCARC_PACK_ZONES
+            CALL SCARC_SEND_MESSAGE(NSCARC_BUFFER_INT2)
 
          CASE DEFAULT
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_EXCHANGE_SEND, SCARC_NONE, TYPE_EXCHANGE)
@@ -11972,54 +11980,40 @@ SEND_UNPACK_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       SEND_UNPACK_OMESHES_SELECT: SELECT CASE (NTYPE)
 
-         CASE (NSCARC_EXCHANGE_ZONES)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: UNPACK: ZONES'
-            CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_INT2)
-            CALL SCARC_UNPACK_ZONES(NPARAM)
-
-         CASE (NSCARC_EXCHANGE_CELL_WIDTH)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: UNPACK: CELL_WIDTH'
+         CASE (NSCARC_EXCHANGE_CELL_SIZES)
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_REAL0)
             CALL SCARC_UNPACK_CELL_WIDTH
 
-         CASE (NSCARC_EXCHANGE_CELL_NUMBER)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: UNPACK: CELL_NUMBER'
+         CASE (NSCARC_EXCHANGE_CELL_NUMBERS)
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_INT1)
-            CALL SCARC_UNPACK_CELL_NUMBER
+            CALL SCARC_UNPACK_CELL_NUMBERS
 
-         CASE (NSCARC_EXCHANGE_MATRIX_SIZE)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: UNPACK: MATRIX_SIZE'
+         CASE (NSCARC_EXCHANGE_MATRIX_SIZES)
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_INT0)
             CALL SCARC_UNPACK_MATRIX_SIZE(NL)
 
-         CASE (NSCARC_EXCHANGE_MATRIX_DIAG)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: UNPACK: MATRIX_DIAG'
+         CASE (NSCARC_EXCHANGE_MATRIX_DIAGS)
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_REAL1)
             CALL SCARC_UNPACK_MATRIX_DIAG
 
-         CASE (NSCARC_EXCHANGE_MATRIX_COLS)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: UNPACK: MATRIX_COLS'
+         CASE (NSCARC_EXCHANGE_MATRIX_COLUMNS)
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_INT7)
             CALL SCARC_UNPACK_MATRIX_COLS(NPARAM)
 
-         CASE (NSCARC_EXCHANGE_MATRIX_COLSG)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: UNPACK: MATRIX_COLSG'
+         CASE (NSCARC_EXCHANGE_MATRIX_COLUMNSG)
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_INT7)
             CALL SCARC_UNPACK_MATRIX_COLSG(NPARAM)
 
-         CASE (NSCARC_EXCHANGE_MATRIX_VALS)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: UNPACK: MATRIX_VALS'
+         CASE (NSCARC_EXCHANGE_MATRIX_VALUES)
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_REAL7)
             CALL SCARC_UNPACK_MATRIX_VALS(NPARAM, NL)
 
-         CASE (NSCARC_EXCHANGE_NULLSPACE)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: UNPACK: NULLSPACE'
+         CASE (NSCARC_EXCHANGE_NULLSPACES)
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_REAL1)
             VC => G%AUX1
             CALL SCARC_UNPACK_VECTOR_SINGLE(VC)
 
-         CASE (NSCARC_EXCHANGE_PRESSURE)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: UNPACK: PRESSURE'
+         CASE (NSCARC_EXCHANGE_PRESSURES)
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_REAL1)
             IF (PREDICTOR) THEN
                HVC => POINT_TO_HVECTOR (NM, NSCARC_VECTOR_H)
@@ -12028,22 +12022,27 @@ WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: UNPACK: PRESSURE'
             ENDIF
             CALL SCARC_UNPACK_PRESSURE(HVC)
 
-         CASE (NSCARC_EXCHANGE_SETUP)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: UNPACK: SETUP'
+         CASE (NSCARC_EXCHANGE_INITIAL_SIZES)
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_INT0)
-            OG%NCG = RECV_INT0(1)
+            CALL SCARC_UNPACK_INITIAL_SIZES
 
-         CASE (NSCARC_EXCHANGE_VECTOR)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: UNPACK: VECTOR'
+         CASE (NSCARC_EXCHANGE_VECTORS)
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_REAL1)
             VC => SCARC_POINT_TO_VECTOR (NM, NL, NPARAM)
             CALL SCARC_UNPACK_VECTOR_SINGLE(VC)
 
-         CASE (NSCARC_EXCHANGE_VECTOR_MEAN)
-WRITE(MSG%LU_DEBUG,*) 'SCARC_EXCHANGE: UNPACK: VECTOR_MEAN'
+         CASE (NSCARC_EXCHANGE_MEAN_VECTORS)
             CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_REAL2)
             VC => SCARC_POINT_TO_VECTOR (NM, NL, NPARAM)
             CALL SCARC_UNPACK_VECTOR_DOUBLE(VC)
+
+         CASE (NSCARC_EXCHANGE_ZONE_NUMBERS)
+            CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_INT7)
+            CALL SCARC_UNPACK_ZONE_NEIGHBORHIP
+
+         CASE (NSCARC_EXCHANGE_ZONE_TYPES)
+            CALL SCARC_POINT_TO_BUFFER (NM, NOM, NSCARC_BUFFER_INT2)
+            CALL SCARC_UNPACK_ZONES(NPARAM)
 
          CASE DEFAULT
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_EXCHANGE_SEND, SCARC_NONE, TYPE_EXCHANGE)
@@ -12146,12 +12145,12 @@ END SUBROUTINE SCARC_SEND_MESSAGE
 ! ------------------------------------------------------------------------------------------------
 ! Pack and unpack overlapping parts of cell numbers
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_PACK_CELL_NUMBER
+SUBROUTINE SCARC_PACK_CELL_NUMBERS
 USE SCARC_POINTERS, ONLY: L, G, OL, OG
 INTEGER :: IOR0, ICG, IWG, IXW, IYW, IZW
 DO IOR0 = -3, 3
-   IF (OL%NCG(IOR0) == 0) CYCLE
-   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+   DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
       IWG = OG%ICG_TO_IWG(ICG)
       IXW = G%WALL(IWG)%IXW
       IYW = G%WALL(IWG)%IYW
@@ -12162,21 +12161,21 @@ DO IOR0 = -3, 3
          OS%SEND_INT1(ICG) =  G%CELL_NUMBER(IXW, IYW, IZW)
       ENDIF
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,8I6)') 'PACK_CELL_NUMBER: IOR0, ICG, IWG, IXW, IYW, IZW, SEND_INT1', &
+WRITE(MSG%LU_DEBUG,'(A,8I6)') 'PACK_CELL_NUMBERS: IOR0, ICG, IWG, IXW, IYW, IZW, SEND_INT1', &
                                IOR0, ICG, IWG, IXW, IYW, IZW, OS%SEND_INT1(ICG), SIZE(OS%SEND_INT1)
 #endif
    ENDDO
 ENDDO
-END SUBROUTINE SCARC_PACK_CELL_NUMBER
+END SUBROUTINE SCARC_PACK_CELL_NUMBERS
 
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_UNPACK_CELL_NUMBER
+SUBROUTINE SCARC_UNPACK_CELL_NUMBERS
 USE SCARC_POINTERS, ONLY: L, G, OL, OG
 INTEGER :: LL, IOR0, ICG, ICE, IWG, IXG, IYG, IZG
 LL = 1
 DO IOR0 = -3, 3
-   IF (OL%NCG(IOR0) == 0) CYCLE
-   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+   DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
       ICE = OG%ICG_TO_ICE(ICG)
       G%ICE_TO_ICN(ICE) = RECV_INT1(LL)
       IWG = OG%ICG_TO_IWG(ICG)
@@ -12184,7 +12183,7 @@ DO IOR0 = -3, 3
       IYG = G%WALL(IWG)%IYG
       IZG = G%WALL(IWG)%IZG
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,9I6)') 'UNPACK_CELL_NUMBER: IOR0, ICG, ICE, IWG, IXG, IYG, IZG, RECV_INT1', &
+WRITE(MSG%LU_DEBUG,'(A,9I6)') 'UNPACK_CELL_NUMBERS: IOR0, ICG, ICE, IWG, IXG, IYG, IZG, RECV_INT1', &
                                IOR0, ICG, ICE, IWG, IXG, IYG, IZG, RECV_INT1(LL), SIZE(RECV_INT1)
 #endif
       IF (RECV_INT1(ICG) < 0) THEN
@@ -12195,7 +12194,7 @@ WRITE(MSG%LU_DEBUG,'(A,9I6)') 'UNPACK_CELL_NUMBER: IOR0, ICG, ICE, IWG, IXG, IYG
       LL = LL + 1
    ENDDO
 ENDDO
-END SUBROUTINE SCARC_UNPACK_CELL_NUMBER
+END SUBROUTINE SCARC_UNPACK_CELL_NUMBERS
 
 
 ! ------------------------------------------------------------------------------------------------
@@ -12214,13 +12213,30 @@ END SUBROUTINE SCARC_PACK_CELL_WIDTH
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_CELL_WIDTH
 USE SCARC_POINTERS, ONLY: L, OL
-IF (OL%NCG(-1) /= 0) L%DXL(0)    = 0.5_EB*(RECV_REAL0(1) + L%DXL(0))
-IF (OL%NCG( 1) /= 0) L%DXL(L%NX) = 0.5_EB*(RECV_REAL0(2) + L%DXL(L%NX))
-IF (OL%NCG(-2) /= 0) L%DYL(0)    = 0.5_EB*(RECV_REAL0(3) + L%DYL(0))
-IF (OL%NCG( 2) /= 0) L%DYL(L%NY) = 0.5_EB*(RECV_REAL0(4) + L%DYL(L%NY))
-IF (OL%NCG(-3) /= 0) L%DZL(0)    = 0.5_EB*(RECV_REAL0(5) + L%DZL(0))
-IF (OL%NCG( 3) /= 0) L%DZL(L%NZ) = 0.5_EB*(RECV_REAL0(6) + L%DZL(L%NZ))
+IF (OL%GHOST_LAST(-1) /= 0) L%DXL(0)    = 0.5_EB*(RECV_REAL0(1) + L%DXL(0))
+IF (OL%GHOST_LAST( 1) /= 0) L%DXL(L%NX) = 0.5_EB*(RECV_REAL0(2) + L%DXL(L%NX))
+IF (OL%GHOST_LAST(-2) /= 0) L%DYL(0)    = 0.5_EB*(RECV_REAL0(3) + L%DYL(0))
+IF (OL%GHOST_LAST( 2) /= 0) L%DYL(L%NY) = 0.5_EB*(RECV_REAL0(4) + L%DYL(L%NY))
+IF (OL%GHOST_LAST(-3) /= 0) L%DZL(0)    = 0.5_EB*(RECV_REAL0(5) + L%DZL(0))
+IF (OL%GHOST_LAST( 3) /= 0) L%DZL(L%NZ) = 0.5_EB*(RECV_REAL0(6) + L%DZL(L%NZ))
 END SUBROUTINE SCARC_UNPACK_CELL_WIDTH
+
+
+! ------------------------------------------------------------------------------------------------
+! Pack and unpack initial exchange sizes along interfaces
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PACK_INITIAL_SIZES
+USE SCARC_POINTERS, ONLY: OS
+OS%SEND_INT0(1)=OG%NCG
+OS%SEND_INT0(2)=OG%NZG
+END SUBROUTINE SCARC_PACK_INITIAL_SIZES
+
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_UNPACK_INITIAL_SIZES
+USE SCARC_POINTERS, ONLY: OG
+OG%NCG = RECV_INT0(1)
+OG%NZG = RECV_INT0(2)
+END SUBROUTINE SCARC_UNPACK_INITIAL_SIZES
 
 
 ! ------------------------------------------------------------------------------------------------
@@ -12232,8 +12248,8 @@ USE SCARC_POINTERS, ONLY: OL, OG, OS
 REAL(EB), DIMENSION(:,:,:), POINTER :: VC
 INTEGER :: IOR0, ICG, IWG
 DO IOR0 = -3, 3
-   IF (OL%NCG(IOR0) == 0) CYCLE
-   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+   DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
       IWG = OG%ICG_TO_IWG(ICG)
       OS%SEND_REAL1(ICG) = VC(G%WALL(IWG)%IXW, G%WALL(IWG)%IYW, G%WALL(IWG)%IZW)
    ENDDO
@@ -12247,8 +12263,8 @@ REAL(EB), DIMENSION(:,:,:), POINTER :: VC
 INTEGER :: LL, IOR0, IWG, IXG, IYG, IZG, ICG
 LL = 1
 DO IOR0 = -3, 3
-   IF (OL%NCG(IOR0) == 0) CYCLE
-   UNPACK_PRESSURE: DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+   UNPACK_PRESSURE: DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
       IWG = OG%ICG_TO_IWG(ICG)
       IXG=G%WALL(IWG)%IXG
       IYG=G%WALL(IWG)%IYG
@@ -12269,16 +12285,16 @@ REAL(EB), DIMENSION(:), POINTER :: VC
 INTEGER :: IOR0, ICG, ICW
 IF (IS_STRUCTURED) THEN
    DO IOR0 = -3, 3
-      IF (OL%NCG(IOR0) == 0) CYCLE
-      DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+      IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+      DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
          ICW = OG%ICG_TO_ICW(ICG)
          OS%SEND_REAL1(ICG) = VC(ICW)
       ENDDO
    ENDDO
 ELSE
    DO IOR0 = -3, 3
-      IF (OL%NCG(IOR0) == 0) CYCLE
-      DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+      IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+      DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
          ICW = OG%ICG_TO_ICW(ICG)
          IF (ICW > 0) THEN
             OS%SEND_REAL1(ICG) = VC(ICW)
@@ -12297,8 +12313,8 @@ REAL(EB), DIMENSION(:), POINTER :: VC
 INTEGER :: IOR0, ICG, LL
 LL = 1
 DO IOR0 = -3, 3
-   IF (OL%NCG(IOR0) == 0) CYCLE
-   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+   DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
       VC(OG%ICG_TO_ICE(ICG)) = RECV_REAL1(LL)
       LL = LL + 1
    ENDDO
@@ -12317,13 +12333,13 @@ SELECT CASE (TYPE_GRID)
    CASE (NSCARC_GRID_STRUCTURED)
       LL = 1
       DO IOR0 = -3, 3
-         IF (OL%NCG(IOR0) == 0) CYCLE
-         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+         IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+         DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
             ICW = OG%ICG_TO_ICW(ICG)
             OS%SEND_REAL2(LL) = VC(ICW)
             LL = LL + 1
          ENDDO
-         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+         DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
             ICE = OG%ICG_TO_ICE(ICG)
             OS%SEND_REAL2(LL) = VC(ICE)
             LL = LL + 1
@@ -12331,8 +12347,8 @@ SELECT CASE (TYPE_GRID)
       ENDDO
    CASE (NSCARC_GRID_UNSTRUCTURED)
       DO IOR0 = -3, 3
-         IF (OL%NCG(IOR0) == 0) CYCLE
-         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+         IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+         DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
             ICE = OG%ICG_TO_ICE(ICG)
             IF (ICW > 0) THEN
                OS%SEND_REAL2(ICG) = VC(ICE)
@@ -12352,13 +12368,13 @@ REAL(EB), DIMENSION(:), POINTER :: VC
 INTEGER :: IOR0, ICG, LL
 LL = 1
 DO IOR0 = -3, 3
-   IF (OL%NCG(IOR0) == 0) CYCLE
-   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+   DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
       !VC(OG%ICG_TO_ICE(ICG)) = 0.5_EB * (VC(OG%ICG_TO_ICE(ICG)) + RECV_REAL2(LL))
       VC(OG%ICG_TO_ICE(ICG)) = 1.0_EB/3.0_EB * VC(OG%ICG_TO_ICE(ICG)) + 2.0_EB/3.0_EB * RECV_REAL2(LL)
       LL = LL + 1
    ENDDO
-   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+   DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
       !VC(OG%ICG_TO_ICW(ICG)) = 0.5_EB * (VC(OG%ICG_TO_ICW(ICG)) + RECV_REAL2(LL))
       VC(OG%ICG_TO_ICW(ICG)) = 2.0_EB/3.0_EB * VC(OG%ICG_TO_ICW(ICG)) + 1.0_EB/3.0_EB * RECV_REAL2(LL)
       LL = LL + 1
@@ -12392,11 +12408,11 @@ SELECT CASE (TYPE_GRID)
    CASE (NSCARC_GRID_STRUCTURED)
 
       DO IOR0 = -3, 3
-         IF (OL%NCG(IOR0) == 0) CYCLE
+         IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '============= PACK_MATRIX_COLS: SEND: NCG0, NCG:', OL%NCG0(IOR0), OL%NCG(IOR0)
+WRITE(MSG%LU_DEBUG,*) '============= PACK_MATRIX_COLS: SEND: GHOST_FIRST, NCG:', OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
 #endif
-         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+         DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
             ICW = OG%ICG_TO_ICW(ICG)
             
             ICOL = A%ROW(ICW)
@@ -12421,9 +12437,9 @@ WRITE(MSG%LU_DEBUG,'(A,5I5)') 'PACK_MATRIX_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL
    CASE (NSCARC_GRID_UNSTRUCTURED)
 
       DO IOR0 = -3, 3
-         IF (OL%NCG(IOR0) == 0) CYCLE
+         IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
 
-         DO ICG= OL%NCG0(IOR0), OL%NCG(IOR0)
+         DO ICG= OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
             ICW = OG%ICG_TO_ICW(ICG)
             IF (ICW > 0) THEN
                ICOL = A%ROW(ICW)
@@ -12465,12 +12481,12 @@ WRITE(MSG%LU_DEBUG,*) 'UNPACK_MATRIX_COLS: OA%N_ROW, OA%N_VAL=',OA%N_ROW, OA%N_V
 LL = 1                                 
 ICP = 1
 DO IOR0 = -3, 3
-   IF (OL%NCG(IOR0) == 0) CYCLE
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 12I4)') 'UNPACK_MATRIX_COLS: NCG0, NCG:', OL%NCG0(IOR0), OL%NCG(IOR0), RECV_INT7(1:10)
+WRITE(MSG%LU_DEBUG,'(A, 12I4)') 'UNPACK_MATRIX_COLS: GHOST_FIRST, NCG:', OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0), RECV_INT7(1:10)
 #endif
    OA%ROW(ICP) = 1
-   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+   DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
       ICE = OG%ICG_TO_ICE(ICG)
       OA%COL(LL) = ABS(RECV_INT7(LL))
 #ifdef WITH_SCARC_DEBUG
@@ -12528,11 +12544,11 @@ SELECT CASE (TYPE_GRID)
    CASE (NSCARC_GRID_STRUCTURED)
 
       DO IOR0 = -3, 3
-         IF (OL%NCG(IOR0) == 0) CYCLE
+         IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '============= PACK_MATRIX_COLSG: SEND: NCG0, NCG:', OL%NCG0(IOR0), OL%NCG(IOR0)
+WRITE(MSG%LU_DEBUG,*) '============= PACK_MATRIX_COLSG: SEND: GHOST_FIRST, NCG:', OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
 #endif
-         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+         DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
             ICW = OG%ICG_TO_ICW(ICG)
             
             ICOL = A%ROW(ICW)
@@ -12559,9 +12575,9 @@ WRITE(MSG%LU_DEBUG,'(A,5I5)') 'PACK_MATRIX_COLSG: SEND: IOR0, ICG, ICW, ICOL, VA
    CASE (NSCARC_GRID_UNSTRUCTURED)
 
       DO IOR0 = -3, 3
-         IF (OL%NCG(IOR0) == 0) CYCLE
+         IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
 
-         DO ICG= OL%NCG0(IOR0), OL%NCG(IOR0)
+         DO ICG= OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
             ICW = OG%ICG_TO_ICW(ICG)
             IF (ICW > 0) THEN
                ICOL = A%ROW(ICW)
@@ -12605,12 +12621,12 @@ WRITE(MSG%LU_DEBUG,*) 'UNPACK_MATRIX_COLSG: OA%N_ROW, OA%N_VAL=',OA%N_ROW, OA%N_
 LL = 1                                 
 ICP = 1
 DO IOR0 = -3, 3
-   IF (OL%NCG(IOR0) == 0) CYCLE
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 12I4)') 'UNPACK_MATRIX_COLSG: NCG0, NCG:', OL%NCG0(IOR0), OL%NCG(IOR0), RECV_INT7(1:10)
+WRITE(MSG%LU_DEBUG,'(A, 12I4)') 'UNPACK_MATRIX_COLSG: GHOST_FIRST, NCG:', OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0), RECV_INT7(1:10)
 #endif
    OA%ROW(ICP) = 1
-   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+   DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
       ICE = OG%ICG_TO_ICE(ICG)
       OA%COLG(LL) = ABS(RECV_INT7(LL))
 #ifdef WITH_SCARC_DEBUG
@@ -12659,8 +12675,8 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
    ! Bandwise matrix on level NL
    CASE (NSCARC_MATRIX_BANDWISE)                
       DO IOR0 = -3, 3
-         IF (OL%NCG(IOR0) == 0) CYCLE
-         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+         IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+         DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
             ICW = OG%ICG_TO_ICW(ICG)
             DO ID = 1, AB%N_STENCIL
                OS%SEND_REAL7(LL) = AB%VAL(ICW, ID)
@@ -12677,16 +12693,16 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
          CASE (NSCARC_GRID_STRUCTURED)
 
             DO IOR0 = -3, 3
-               IF (OL%NCG(IOR0) == 0) CYCLE
+               IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '============= EXCHANGE_MATRIX_VALS: NCG0, NCG:', OL%NCG0(IOR0), OL%NCG(IOR0)
+WRITE(MSG%LU_DEBUG,*) '============= EXCHANGE_MATRIX_VALUES: GHOST_FIRST, NCG:', OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
 #endif
-               DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+               DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
                   ICW = OG%ICG_TO_ICW(ICG)
                   DO ICOL = A%ROW(ICW), A%ROW(ICW+1)-1
                      OS%SEND_REAL7(LL) = A%VAL(ICOL)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 4I5,E12.4)') 'EXCHANGE_MATRIX_VALS: SEND: IOR0, ICG, ICW, ICOL, VAL:', IOR0, ICG, ICW, ICOL, A%VAL(ICOL)
+WRITE(MSG%LU_DEBUG,'(A, 4I5,E12.4)') 'EXCHANGE_MATRIX_VALUES: SEND: IOR0, ICG, ICW, ICOL, VAL:', IOR0, ICG, ICW, ICOL, A%VAL(ICOL)
 #endif
                      LL = LL + 1
                   ENDDO
@@ -12696,8 +12712,8 @@ WRITE(MSG%LU_DEBUG,'(A, 4I5,E12.4)') 'EXCHANGE_MATRIX_VALS: SEND: IOR0, ICG, ICW
          CASE (NSCARC_GRID_UNSTRUCTURED)
 
             DO IOR0 = -3, 3
-               IF (OL%NCG(IOR0) == 0) CYCLE
-               DO ICG= OL%NCG0(IOR0), OL%NCG(IOR0)
+               IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+               DO ICG= OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
                   ICW = OG%ICG_TO_ICW(ICG)
                   IF (ICW > 0) THEN
                      DO ICOL = A%ROW(ICW), A%ROW(ICW+1)-1
@@ -12731,8 +12747,8 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
 
       LL = 1
       DO IOR0 = -3, 3
-         IF (OL%NCG(IOR0) == 0) CYCLE
-         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+         IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+         DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
             DO ID = 1, OAB%N_STENCIL
                OAB%VAL(ICG, ID) = RECV_REAL7(LL)
                LL = LL + 1
@@ -12744,8 +12760,8 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
    CASE (NSCARC_MATRIX_COMPACT)
 
       DO IOR0 = -3, 3
-         IF (OL%NCG(IOR0) == 0) CYCLE
-         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+         IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+         DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'UNPACK_MATRIX_VALS: ICG, OA%ROW(ICG)', ICG, OA%ROW(ICG)
 #endif
@@ -12815,8 +12831,8 @@ A => SCARC_POINT_TO_CMATRIX(G, NTYPE)
 
 IF (IS_STRUCTURED) THEN
    DO IOR0 = -3, 3
-      IF (OL%NCG(IOR0) == 0) CYCLE
-      DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+      IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+      DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
          ICW = OG%ICG_TO_ICW(ICG)
          ICE = OG%ICG_TO_ICE(ICG)
          ICOL = A%ROW(ICW)
@@ -12829,8 +12845,8 @@ WRITE(MSG%LU_DEBUG,'(A, 5I4,E12.4)') 'PACK_MATRIX_DIAG: IOR0, ICG, ICW, ICE, ICO
    ENDDO
 ELSE
    DO IOR0 = -3, 3
-      IF (OL%NCG(IOR0) == 0) CYCLE
-      DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+      IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+      DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
          ICW = OG%ICG_TO_ICW(ICG)
          IF (ICW > 0) THEN
             ICE = OG%ICG_TO_ICE(ICG)
@@ -12850,8 +12866,8 @@ USE SCARC_POINTERS, ONLY: G, OL, OG
 INTEGER :: IOR0, ICG, ICE, LL
 LL = 1
 DO IOR0 = -3, 3
-   IF (OL%NCG(IOR0) == 0) CYCLE
-   DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+   DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
       ICE = OG%ICG_TO_ICE(ICG)
       G%DIAG(ICE) = RECV_REAL1(LL)
 #ifdef WITH_SCARC_DEBUG
@@ -12863,6 +12879,204 @@ WRITE(MSG%LU_DEBUG,'(A, 3I4,E12.4)') 'UNPACK_MATRIX_DIAG: NOM, IOR0, ICG, ICE, D
 ENDDO
 END SUBROUTINE SCARC_UNPACK_MATRIX_DIAG
 
+! ------------------------------------------------------------------------------------------------
+! Pack and unpack zones numbers along interfaces
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PACK_CELL_NEIGHBORHIP
+USE SCARC_POINTERS, ONLY: G, OL, OG, A
+INTEGER :: IOR0, IG, ICL, ICG, IZL, IZG, ICOL, LL
+
+A => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_POISSON)
+OS%SEND_INT2 = 0
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'PACK_CELL_NEIGHBORHIP: SIZE(SEND_INT7)=', SIZE(OS%SEND_INT7)
+WRITE(MSG%LU_DEBUG,*) 'PACK_CELL_NEIGHBORHIP: G%ZONES_GLOBAL:'
+WRITE(MSG%LU_DEBUG,'(8I6)') G%ZONES_GLOBAL
+WRITE(MSG%LU_DEBUG,*) 'PACK_CELL_NEIGHBORHIP: OL%GHOST_FIRST(IOR0) =', OL%GHOST_FIRST(IOR0)
+WRITE(MSG%LU_DEBUG,*) 'PACK_CELL_NEIGHBORHIP: OL%GHOST_LAST (IOR0) =', OL%GHOST_LAST (IOR0)
+#endif
+   DO IG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
+      ICL = OG%ICG_TO_ICW(IG)                                 ! local cell number adjacent to interface
+      ICG = G%LOCAL_TO_GLOBAL(ICL)                            ! global cell number adjacent to interface
+      IZL = G%ZONES_LOCAL(ICL)                                ! local zone number adjacent to interface
+      IZG = G%ZONES_GLOBAL(ICL)                               ! global zone number adjacent to interface
+      OS%SEND_INT7(LL)   = -ICL
+      OS%SEND_INT7(LL+1) =  ICG
+      OS%SEND_INT7(LL+2) =  IZL
+      OS%SEND_INT7(LL+3) =  IZG
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'PACK_CELL_NEIGHBORHIP:A: IOR0, LL, ICL, ICG, IZL, IZG:', &
+                               IOR0, LL, OS%SEND_INT7(LL:LL+3)
+#endif
+      LL = LL + 4
+   ENDDO
+   DO IG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
+      ICL = OG%ICG_TO_ICW(IG)                                 ! local cell number adjacent to interface
+      DO ICOL = A%ROW(ICL)+1, A%ROW(ICL+1)-1
+         ICL = A%COL(ICOL)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '       ----- Testing ICL=',ICL
+#endif
+         IF (SCARC_FORBIDDEN_CELL(OG%ICG_TO_ICW, ICL, IG, OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0), G%NC)) CYCLE
+         ICG = G%LOCAL_TO_GLOBAL(ICL)                     
+         IZL = G%ZONES_LOCAL(ICL)                       
+         IZG = G%ZONES_GLOBAL(ICL)                      
+         IF (.NOT. SCARC_FORBIDDEN_ZONE (OS%SEND_INT7, IZG, OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0))) THEN
+            OS%SEND_INT7(LL)   = ICL
+            OS%SEND_INT7(LL+1) = ICG
+            OS%SEND_INT7(LL+2) = IZL
+            OS%SEND_INT7(LL+3) = IZG
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'PACK_CELL_NEIGHBORHIP:B: IOR0, LL, ICL, ICG, IZL, IZG:', &
+                               IOR0, LL, OS%SEND_INT7(LL:LL+3)
+#endif
+            LL = LL + 4
+         ENDIF
+      ENDDO
+   ENDDO
+   OS%SEND_INT7(1) = (LL - 1)/4
+ENDDO
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'N_GHOST_ZONES=', OS%SEND_INT7(1)
+WRITE(MSG%LU_DEBUG,'(8I6)') OS%SEND_INT7
+#endif
+END SUBROUTINE SCARC_PACK_CELL_NEIGHBORHIP
+
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_UNPACK_CELL_NEIGHBORHIP
+USE SCARC_POINTERS, ONLY: OL, OG
+INTEGER :: IGZ, IOR0, LL
+
+OL%N_GHOST_ZONES = RECV_INT7(1) 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'UNPACK_CELL_NEIGHBORHIP:NLEN=',OL%N_GHOST_ZONES
+WRITE(MSG%LU_DEBUG,*) RECV_INT7(1:RECV_INT7(1))
+#endif
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_LCELL, 1, OL%N_GHOST_ZONES, NSCARC_INIT_ZERO, 'G%ICG_TO_LCELL')
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_GCELL, 1, OL%N_GHOST_ZONES, NSCARC_INIT_ZERO, 'G%ICG_TO_GCELL')
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_LZONE, 1, OL%N_GHOST_ZONES, NSCARC_INIT_ZERO, 'G%ICG_TO_LZONE')
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_GZONE, 1, OL%N_GHOST_ZONES, NSCARC_INIT_ZERO, 'G%ICG_TO_GZONE')
+
+LL = 2
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+   DO IGZ = 1, OL%N_GHOST_ZONES
+      OG%ICG_TO_LCELL(IGZ) = RECV_INT7(LL)
+      OG%ICG_TO_GCELL(IGZ) = RECV_INT7(LL+1)
+      OG%ICG_TO_LZONE(IGZ) = RECV_INT7(LL+2)
+      OG%ICG_TO_GZONE(IGZ) = RECV_INT7(LL+3)
+      LL = LL + 4
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'UNPACK_CELL_NEIGHBORHIP: IOR0, ICG_TO_LCELL:',IOR0,OG%ICG_TO_LCELL(IGZ)
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'UNPACK_CELL_NEIGHBORHIP: IOR0, ICG_TO_GCELL:',IOR0,OG%ICG_TO_GCELL(IGZ)
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'UNPACK_CELL_NEIGHBORHIP: IOR0, ICG_TO_LZONE:',IOR0,OG%ICG_TO_LZONE(IGZ)
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'UNPACK_CELL_NEIGHBORHIP: IOR0, ICG_TO_GZONE:',IOR0,OG%ICG_TO_GZONE(IGZ)
+#endif
+   ENDDO
+ENDDO
+END SUBROUTINE SCARC_UNPACK_CELL_NEIGHBORHIP
+
+! ------------------------------------------------------------------------------------------------
+! Pack and unpack zones numbers along interfaces
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PACK_ZONE_NEIGHBORHIP
+USE SCARC_POINTERS, ONLY: G, OL, OG, A
+INTEGER :: IOR0, IG, ICL, ICG, IZL, IZG, ICOL, LL
+A => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_POISSON)
+OS%SEND_INT7 = 0
+LL = 2
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'PACK_ZONE_NEIGHBORHIP: SIZE(SEND_INT7)=', SIZE(OS%SEND_INT7)
+WRITE(MSG%LU_DEBUG,*) 'PACK_ZONE_NEIGHBORHIP: G%ZONES_GLOBAL:'
+WRITE(MSG%LU_DEBUG,'(8I6)') G%ZONES_GLOBAL
+WRITE(MSG%LU_DEBUG,*) 'PACK_ZONE_NEIGHBORHIP: OL%GHOST_FIRST(IOR0) =', OL%GHOST_FIRST(IOR0)
+WRITE(MSG%LU_DEBUG,*) 'PACK_ZONE_NEIGHBORHIP: OL%GHOST_LAST (IOR0) =', OL%GHOST_LAST (IOR0)
+#endif
+   DO IG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
+      ICL = OG%ICG_TO_ICW(IG)                                 ! local cell number adjacent to interface
+      ICG = G%LOCAL_TO_GLOBAL(ICL)                            ! global cell number adjacent to interface
+      IZL = G%ZONES_LOCAL(ICL)                                ! local zone number adjacent to interface
+      IZG = G%ZONES_GLOBAL(ICL)                               ! global zone number adjacent to interface
+      OS%SEND_INT7(LL)   = -ICL
+      OS%SEND_INT7(LL+1) =  ICG
+      OS%SEND_INT7(LL+2) =  IZL
+      OS%SEND_INT7(LL+3) =  IZG
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'PACK_ZONE_NEIGHBORHIP:A: IOR0, LL, ICL, ICG, IZL, IZG:', &
+                               IOR0, LL, OS%SEND_INT7(LL:LL+3)
+#endif
+      LL = LL + 4
+   ENDDO
+   DO IG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
+      ICL = OG%ICG_TO_ICW(IG)                                 ! local cell number adjacent to interface
+      DO ICOL = A%ROW(ICL)+1, A%ROW(ICL+1)-1
+         ICL = A%COL(ICOL)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '       ----- Testing ICL=',ICL
+#endif
+         IF (SCARC_FORBIDDEN_CELL(OG%ICG_TO_ICW, ICL, IG, OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0), G%NC)) CYCLE
+         ICG = G%LOCAL_TO_GLOBAL(ICL)                     
+         IZL = G%ZONES_LOCAL(ICL)                       
+         IZG = G%ZONES_GLOBAL(ICL)                      
+         IF (.NOT. SCARC_FORBIDDEN_ZONE (OS%SEND_INT7, IZG, OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0))) THEN
+            OS%SEND_INT7(LL)   = ICL
+            OS%SEND_INT7(LL+1) = ICG
+            OS%SEND_INT7(LL+2) = IZL
+            OS%SEND_INT7(LL+3) = IZG
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'PACK_ZONE_NEIGHBORHIP:B: IOR0, LL, ICL, ICG, IZL, IZG:', &
+                               IOR0, LL, OS%SEND_INT7(LL:LL+3)
+#endif
+            LL = LL + 4
+         ENDIF
+      ENDDO
+   ENDDO
+   OS%SEND_INT7(1) = (LL - 1)/4
+ENDDO
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'N_GHOST_ZONES=', OS%SEND_INT7(1)
+WRITE(MSG%LU_DEBUG,'(8I6)') OS%SEND_INT7
+#endif
+END SUBROUTINE SCARC_PACK_ZONE_NEIGHBORHIP
+
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_UNPACK_ZONE_NEIGHBORHIP
+USE SCARC_POINTERS, ONLY: OL, OG
+INTEGER :: IGZ, IOR0, LL
+
+OL%N_GHOST_ZONES = RECV_INT7(1) 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'UNPACK_ZONE_NEIGHBORHIP:NLEN=',OL%N_GHOST_ZONES
+WRITE(MSG%LU_DEBUG,*) RECV_INT7(1:RECV_INT7(1))
+#endif
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_LCELL, 1, OL%N_GHOST_ZONES, NSCARC_INIT_ZERO, 'G%ICG_TO_LCELL')
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_GCELL, 1, OL%N_GHOST_ZONES, NSCARC_INIT_ZERO, 'G%ICG_TO_GCELL')
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_LZONE, 1, OL%N_GHOST_ZONES, NSCARC_INIT_ZERO, 'G%ICG_TO_LZONE')
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_GZONE, 1, OL%N_GHOST_ZONES, NSCARC_INIT_ZERO, 'G%ICG_TO_GZONE')
+
+LL = 2
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+   DO IGZ = 1, OL%N_GHOST_ZONES
+      OG%ICG_TO_LCELL(IGZ) = RECV_INT7(LL)
+      OG%ICG_TO_GCELL(IGZ) = RECV_INT7(LL+1)
+      OG%ICG_TO_LZONE(IGZ) = RECV_INT7(LL+2)
+      OG%ICG_TO_GZONE(IGZ) = RECV_INT7(LL+3)
+      LL = LL + 4
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'UNPACK_ZONE_NEIGHBORHIP: IOR0, ICG_TO_LCELL:',IOR0,OG%ICG_TO_LCELL(IGZ)
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'UNPACK_ZONE_NEIGHBORHIP: IOR0, ICG_TO_GCELL:',IOR0,OG%ICG_TO_GCELL(IGZ)
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'UNPACK_ZONE_NEIGHBORHIP: IOR0, ICG_TO_LZONE:',IOR0,OG%ICG_TO_LZONE(IGZ)
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'UNPACK_ZONE_NEIGHBORHIP: IOR0, ICG_TO_GZONE:',IOR0,OG%ICG_TO_GZONE(IGZ)
+#endif
+   ENDDO
+ENDDO
+END SUBROUTINE SCARC_UNPACK_ZONE_NEIGHBORHIP
+
 
 ! ------------------------------------------------------------------------------------------------
 ! Pack ZONES information into send vector
@@ -12873,10 +13087,10 @@ INTEGER :: IOR0, ICG, ICW, ICE, LL
 LL = 1
 OS%SEND_INT2 = 0
 DO IOR0 = -3, 3
-   IF (OL%NCG(IOR0) == 0) CYCLE
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
 
    !IF (NTYPE == NSCARC_ZONES_SEND) THEN
-      DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+      DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
          ICW = OG%ICG_TO_ICW(ICG)
          ICE = OG%ICG_TO_ICE(ICG)
          IF (G%ZONES_LOCAL(ICW) /= 0) THEN
@@ -12924,10 +13138,10 @@ WRITE(MSG%LU_DEBUG,'(7I8)') OS%RECV_INT2
 #endif
 LL = 1
 DO IOR0 = -3, 3
-   IF (OL%NCG(IOR0) == 0) CYCLE
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
    !SELECT CASE (NTYPE)
    !   CASE (NSCARC_ZONES_INITIAL, NSCARC_ZONES_FILLUP)
-   !      DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+   !      DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
    !         ICE = OG%ICG_TO_ICE(ICG)
    !         IF (G%ZONES_LOCAL(ICE) == 0) G%ZONES_LOCAL(ICE) = RECV_INT2(LL)
 !#ifdef WITH_SCARC_DEBUG
@@ -12937,7 +13151,7 @@ DO IOR0 = -3, 3
 !            LL = LL + 2
 !         ENDDO
 !      CASE (NSCARC_ZONES_COMPLETE) 
-         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+         DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
             ICW = OG%ICG_TO_ICW(ICG)
             ICE = OG%ICG_TO_ICE(ICG)
             IF (G%ZONES_LOCAL(ICE) == 0) G%ZONES_LOCAL(ICE) = -ABS(RECV_INT2(LL))
@@ -12951,6 +13165,143 @@ WRITE(MSG%LU_DEBUG,'(A, 8I8)') 'UNPACK_ZONES:B: IOR0, ICG, ICW, ICE, NZONE, AGG(
 !   END SELECT
 ENDDO
 END SUBROUTINE SCARC_UNPACK_ZONES
+
+! ------------------------------------------------------------------------------------------------
+! Determine if cell should be considered during zone-numbers packaging
+! ------------------------------------------------------------------------------------------------
+LOGICAL FUNCTION SCARC_FORBIDDEN_CELL(ICG_TO_ICW, JC, ICG, ICG1, ICG2, NC)
+INTEGER, DIMENSION(:), INTENT(IN) :: ICG_TO_ICW
+INTEGER, INTENT(IN) :: JC, ICG, ICG1, ICG2, NC
+SCARC_FORBIDDEN_CELL = .TRUE.
+IF (JC > NC) RETURN
+IF (ICG == ICG1 .AND. ICG < ICG2) THEN
+   IF (JC == ICG_TO_ICW(ICG) .OR. JC == ICG_TO_ICW(ICG+1)) RETURN
+ELSE IF (ICG > ICG1 .AND. ICG == ICG2) THEN
+   IF (JC == ICG_TO_ICW(ICG-1) .OR. JC == ICG_TO_ICW(ICG)) RETURN
+ELSE IF (ICG > ICG1 .AND. ICG < ICG2) THEN
+   IF (JC == ICG_TO_ICW(ICG-1) .OR. JC == ICG_TO_ICW(ICG) .OR. JC == ICG_TO_ICW(ICG+1)) RETURN
+ELSE
+   WRITE(*,*) 'SCARC_FORBIDDEN_CELL: WRONG VALUE OF JC =',JC
+ENDIF
+SCARC_FORBIDDEN_CELL = .FALSE.
+RETURN
+END FUNCTION SCARC_FORBIDDEN_CELL
+
+! ------------------------------------------------------------------------------------------------
+! Determine if cell should be considered during zone-numbers packaging
+! ------------------------------------------------------------------------------------------------
+LOGICAL FUNCTION SCARC_FORBIDDEN_ZONE(SEND_INT, IZ, ICG1, ICG2)
+INTEGER, DIMENSION(:), INTENT(IN) :: SEND_INT
+INTEGER, INTENT(IN) :: IZ, ICG1, ICG2
+INTEGER :: LL, ICG
+
+SCARC_FORBIDDEN_ZONE = .FALSE.
+LL = 5
+DO ICG = ICG1, ICG2
+   IF (SEND_INT(LL) == IZ) THEN
+      SCARC_FORBIDDEN_ZONE = .TRUE.
+      RETURN
+   ENDIF
+   LL = LL + 4
+ENDDO
+END FUNCTION SCARC_FORBIDDEN_ZONE
+
+! ------------------------------------------------------------------------------------------------
+! Pack and unpack zones numbers along interfaces
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PACK_ZONE_NEIGHBORHIP2
+USE SCARC_POINTERS, ONLY: G, OL, OG, A
+INTEGER :: IOR0, IG, ICL, ICG, IZL, IZG, ICOL, LL
+A => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_POISSON)
+OS%SEND_INT7 = 0
+LL = 2
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'PACK_ZONE_NEIGHBORHIP: SIZE(SEND_INT7)=', SIZE(OS%SEND_INT7)
+WRITE(MSG%LU_DEBUG,*) 'PACK_ZONE_NEIGHBORHIP: G%ZONES_GLOBAL:'
+WRITE(MSG%LU_DEBUG,'(8I6)') G%ZONES_GLOBAL
+#endif
+   DO IG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
+      ICL = OG%ICG_TO_ICW(IG)                                 ! local cell number adjacent to interface
+      ICG = G%LOCAL_TO_GLOBAL(ICL)                            ! global cell number adjacent to interface
+      IZL = G%ZONES_LOCAL(ICL)                                ! local zone number adjacent to interface
+      IZG = G%ZONES_GLOBAL(ICL)                               ! global zone number adjacent to interface
+      IF (.NOT. SCARC_FORBIDDEN_ZONE (OS%SEND_INT7, IZG, OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0))) THEN
+         OS%SEND_INT7(LL)   = -ICL
+         OS%SEND_INT7(LL+1) =  ICG
+         OS%SEND_INT7(LL+2) =  IZL
+         OS%SEND_INT7(LL+3) =  IZG
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'PACK_ZONE_NEIGHBORHIP:A: IOR0, LL, ICL, ICG, IZL, IZG:', &
+                               IOR0, LL, OS%SEND_INT7(LL:LL+3)
+#endif
+         LL = LL + 4
+      ENDIF
+      DO ICOL = A%ROW(ICL)+1, A%ROW(ICL+1)-1
+         ICL = A%COL(ICOL)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '       ----- Testing ICL=',ICL
+#endif
+         IF (SCARC_FORBIDDEN_CELL(OG%ICG_TO_ICW, ICL, IG, OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0), G%NC)) CYCLE
+         ICG = G%LOCAL_TO_GLOBAL(ICL)                     
+         IZL = G%ZONES_LOCAL(ICL)                       
+         IZG = G%ZONES_GLOBAL(ICL)                      
+         IF (.NOT. SCARC_FORBIDDEN_ZONE (OS%SEND_INT7, IZG, OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0))) THEN
+            OS%SEND_INT7(LL)   = ICL
+            OS%SEND_INT7(LL+1) = ICG
+            OS%SEND_INT7(LL+2) = IZL
+            OS%SEND_INT7(LL+3) = IZG
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'PACK_ZONE_NEIGHBORHIP:B: IOR0, LL, ICL, ICG, IZL, IZG:', &
+                               IOR0, LL, OS%SEND_INT7(LL:LL+3)
+#endif
+            LL = LL + 4
+         ENDIF
+      ENDDO
+   ENDDO
+   OS%SEND_INT7(1) = (LL - 1)/4
+ENDDO
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'N_GHOST_ZONES=', OS%SEND_INT7(1)
+WRITE(MSG%LU_DEBUG,'(8I6)') OS%SEND_INT7
+#endif
+END SUBROUTINE SCARC_PACK_ZONE_NEIGHBORHIP2
+
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_UNPACK_ZONE_NEIGHBORHIP2
+USE SCARC_POINTERS, ONLY: OL, OG
+INTEGER :: IGZ, IOR0, LL
+
+OL%N_GHOST_ZONES = RECV_INT7(1) 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'UNPACK_ZONE_NEIGHBORHIP:NLEN=',OL%N_GHOST_ZONES
+WRITE(MSG%LU_DEBUG,*) RECV_INT7(1:RECV_INT7(1))
+#endif
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_LCELL, 1, OL%N_GHOST_ZONES, NSCARC_INIT_ZERO, 'G%ICG_TO_LCELL')
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_GCELL, 1, OL%N_GHOST_ZONES, NSCARC_INIT_ZERO, 'G%ICG_TO_GCELL')
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_LZONE, 1, OL%N_GHOST_ZONES, NSCARC_INIT_ZERO, 'G%ICG_TO_LZONE')
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_GZONE, 1, OL%N_GHOST_ZONES, NSCARC_INIT_ZERO, 'G%ICG_TO_GZONE')
+
+LL = 2
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LAST(IOR0) == 0) CYCLE
+   DO IGZ = 1, OL%N_GHOST_ZONES
+      OG%ICG_TO_LCELL(IGZ) = RECV_INT7(LL)
+      OG%ICG_TO_GCELL(IGZ) = RECV_INT7(LL+1)
+      OG%ICG_TO_LZONE(IGZ) = RECV_INT7(LL+2)
+      OG%ICG_TO_GZONE(IGZ) = RECV_INT7(LL+3)
+      LL = LL + 4
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'UNPACK_ZONE_NEIGHBORHIP: IOR0, ICG_TO_LCELL:',IOR0,OG%ICG_TO_LCELL(IGZ)
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'UNPACK_ZONE_NEIGHBORHIP: IOR0, ICG_TO_GCELL:',IOR0,OG%ICG_TO_GCELL(IGZ)
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'UNPACK_ZONE_NEIGHBORHIP: IOR0, ICG_TO_LZONE:',IOR0,OG%ICG_TO_LZONE(IGZ)
+WRITE(MSG%LU_DEBUG,'(A,6I6)') 'UNPACK_ZONE_NEIGHBORHIP: IOR0, ICG_TO_GZONE:',IOR0,OG%ICG_TO_GZONE(IGZ)
+#endif
+   ENDDO
+ENDDO
+END SUBROUTINE SCARC_UNPACK_ZONE_NEIGHBORHIP2
+
 
 
 ! ------------------------------------------------------------------------------------------------
@@ -13051,28 +13402,6 @@ L => S%LEVEL(NL)
 END SUBROUTINE SCARC_POINT_TO_LEVEL
 
 
-! -----------------------------------------------------------------------------
-! This routine sets the requested combination of mesh and level 
-! -----------------------------------------------------------------------------
-SUBROUTINE SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
-USE SCARC_POINTERS, ONLY : OS, OL, OLF, OG, OGF
-INTEGER, INTENT(IN) :: NM, NOM, NL
-
-OS  => SCARC(NM)%OSCARC(NOM)
-OL  => OS%LEVEL(NL)
-OLF => OS%LEVEL(NL)
-
-SELECT CASE(TYPE_GRID)
-   CASE (NSCARC_GRID_STRUCTURED)
-      OG  => OL%STRUCTURED
-      OGF => OLF%STRUCTURED
-   CASE (NSCARC_GRID_UNSTRUCTURED)
-      OG  => OL%UNSTRUCTURED
-      OGF => OLF%UNSTRUCTURED
-END SELECT
-
-END SUBROUTINE SCARC_POINT_TO_OTHER_GRID
-
 ! ----------------------------------------------------------------------------------------------------
 ! Unset all pointers - 
 ! mainly used to test the correctness of the pointer settings in the different routines
@@ -13119,7 +13448,6 @@ W => G%WALL
 
 END SUBROUTINE SCARC_POINT_TO_GRID
 
-
 ! ----------------------------------------------------------------------------------------------------
 ! This routine sets the requested combination of mesh, level and discretization
 ! ----------------------------------------------------------------------------------------------------
@@ -13145,6 +13473,51 @@ SELECT CASE(TYPE_GRID)
 END SELECT
 
 END SUBROUTINE SCARC_POINT_TO_MULTIGRID
+
+! -----------------------------------------------------------------------------
+! This routine sets the requested combination of mesh and level 
+! -----------------------------------------------------------------------------
+SUBROUTINE SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
+USE SCARC_POINTERS, ONLY : OS, OL, OLF, OG, OGF
+INTEGER, INTENT(IN) :: NM, NOM, NL
+
+OS  => SCARC(NM)%OSCARC(NOM)
+OL  => OS%LEVEL(NL)
+OLF => OS%LEVEL(NL)
+
+SELECT CASE(TYPE_GRID)
+   CASE (NSCARC_GRID_STRUCTURED)
+      OG  => OL%STRUCTURED
+      OGF => OLF%STRUCTURED
+   CASE (NSCARC_GRID_UNSTRUCTURED)
+      OG  => OL%UNSTRUCTURED
+      OGF => OLF%UNSTRUCTURED
+END SELECT
+
+END SUBROUTINE SCARC_POINT_TO_OTHER_GRID
+
+
+! -----------------------------------------------------------------------------
+! This routine sets the requested combination of mesh and level 
+! -----------------------------------------------------------------------------
+SUBROUTINE SCARC_POINT_TO_OTHER_MULTIGRID(NM, NOM, NL1, NL2)
+USE SCARC_POINTERS, ONLY : OS, OLC, OLF, OGC, OGF
+INTEGER, INTENT(IN) :: NM, NOM, NL1, NL2
+
+OS  => SCARC(NM)%OSCARC(NOM)
+OLF => OS%LEVEL(NL1)
+OLC => OS%LEVEL(NL2)
+
+SELECT CASE(TYPE_GRID)
+   CASE (NSCARC_GRID_STRUCTURED)
+      OGF => OLF%STRUCTURED
+      OGC => OLC%STRUCTURED
+   CASE (NSCARC_GRID_UNSTRUCTURED)
+      OGF => OLF%UNSTRUCTURED
+      OGC => OLC%UNSTRUCTURED
+END SELECT
+
+END SUBROUTINE SCARC_POINT_TO_OTHER_MULTIGRID
 
 
 ! ----------------------------------------------------------------------------------------------------
@@ -13588,6 +13961,7 @@ WRITE(MSG%LU_DEBUG,*) '========================================================'
       CALL SCARC_SETUP_MATRIX_MKL(NM, NL+1)
    ENDDO
 #endif
+!  CALL SCARC_SAMG_CLEAN_WORKSPACE(NL)
       
    NL = NL + 1
    IF (NL == NLEVEL_MAX) FURTHER_COARSENING_REQUIRED = .FALSE.
@@ -13616,6 +13990,7 @@ DO NM = 1, NMESHES
    WRITE(MSG%LU_DEBUG,*) 'NM, SUB%NEIGHBORS =', SUB%NEIGHBORS(1:SUB%N_NEIGHBORS(NM), NM)
 ENDDO
 #endif
+
 ICYCLE = 1
 DO WHILE (ANY(NOT_AGGREGATED)) 
    SUB%ORDER(1:NMESHES, ICYCLE) = NSCARC_ORDER_UNASSIGNED
@@ -13642,6 +14017,7 @@ WRITE(MSG%LU_DEBUG,*) '----------- ICYCLE, NOT_AGGREGATED:', ICYCLE, NOT_AGGREGA
 ENDDO
 
 SUB%N_CYCLES = ICYCLE - 1
+
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'SUB%N_CYCLES :', SUB%N_CYCLES
 DO ICYCLE = 1, SUB%N_CYCLES
@@ -13683,7 +14059,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 ENDDO MESHES_LOOP
 
 ! If there are multiple meshes exchange diagonal matrix on overlapping parts
-IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_DIAG, NSCARC_NONE, NL)
+IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_DIAGS, NSCARC_NONE, NL)
 
 END SUBROUTINE SCARC_EXTRACT_MATRIX_DIAGONAL
 
@@ -13724,7 +14100,7 @@ END SUBROUTINE SCARC_INVERT_MATRIX_DIAGONAL
 SUBROUTINE SCARC_SETUP_STRENGTH_OF_CONNECTION(NL)
 USE SCARC_POINTERS, ONLY: G, A, S, OG
 INTEGER, INTENT(IN) :: NL
-REAL(EB):: VAL, EPS, THETA = 0.19_EB, SCAL, CVAL_MAX
+REAL(EB):: VAL, EPS, THETA = 0.1_EB, SCAL, CVAL_MAX
 INTEGER :: NM, NOM, IC, JC, ICOL, IZONE, INBR
 
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -13843,9 +14219,9 @@ ENDDO MESHES_LOOP
    
 ! If there are multiple meshes, exchange strength matrix on overlapping parts
 IF (NMESHES > 1) THEN
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLS,  NSCARC_MATRIX_CONNECTION, NL)
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLSG, NSCARC_MATRIX_CONNECTION, NL)
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALS,  NSCARC_MATRIX_CONNECTION, NL)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLUMNS,  NSCARC_MATRIX_CONNECTION, NL)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLUMNSG, NSCARC_MATRIX_CONNECTION, NL)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALUES,  NSCARC_MATRIX_CONNECTION, NL)
 ENDIF
 
 END SUBROUTINE SCARC_SETUP_STRENGTH_OF_CONNECTION
@@ -13972,7 +14348,7 @@ END SUBROUTINE SCARC_SETUP_AGGREGATION_PASS3
 SUBROUTINE SCARC_SETUP_AGGREGATION_ZONES(NL)
 USE SCARC_POINTERS, ONLY: SUB, C, G, LF, FF, GF, GC
 INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, NM2, NOM, ICYCLE, IC, IOR0, ICG, ICE, IZ, IZ_PREV, INBR
+INTEGER :: NM, NM2, NOM, ICYCLE, IC, IOR0, IG, IZL, IZG, INBR, ICL
 
 SUB => SUBDIVISION
 MESH_INT = -1
@@ -13997,7 +14373,7 @@ WRITE(MSG%LU_DEBUG,*) 'HUGE(ICYCLE) =', HUGE(ICYCLE)
 
    ENDDO
    
-   IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONES, NSCARC_ZONES_SEND, NL)
+   IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONE_TYPES, NSCARC_ZONES_SEND, NL)
 
    ! ----------------------- Passive meshes
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -14013,7 +14389,7 @@ WRITE(MSG%LU_DEBUG,*) 'HUGE(ICYCLE) =', HUGE(ICYCLE)
 
    ENDDO
 
-   IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONES, NSCARC_ZONES_SEND, NL)
+   IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONE_TYPES, NSCARC_ZONES_SEND, NL)
 
 ENDDO
 #ifdef WITH_SCARC_DEBUG
@@ -14029,11 +14405,14 @@ IF (TRIM(CHID) == 'b1') THEN
    MESH_INT(1) = 6
 ENDIF
 
+!
+! Prepare coarse grid level
+!
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   CALL SCARC_POINT_TO_MULTIGRID(NM, NL, NL+1)                    ! Point to coarser grid level
+   CALL SCARC_POINT_TO_MULTIGRID(NM, NL, NL+1)         
 
-   ! Set grid dimensions on coarse level
+   ! Setup grid dimensions on coarse level 
    GC%NC_LOCAL(1:NMESHES) = MESH_INT(1:NMESHES)
    GC%NC_GLOBAL = SUM(MESH_INT(1:NMESHES))
    GC%NC = GC%NC_LOCAL(NM)
@@ -14056,10 +14435,10 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ! Setup mapping from local zones to global zones
    ! TODO Reduce GC%LOCAL_TO_GLOBAL in length 
    CALL SCARC_ALLOCATE_INT1(GC%LOCAL_TO_GLOBAL, 1, GF%NCE, NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL')
-   DO IZ = 1, GC%NC
-      GC%LOCAL_TO_GLOBAL(IZ) = IZ + GC%NC_OFFSET(NM)
+   DO IZL = 1, GC%NC
+      GC%LOCAL_TO_GLOBAL(IZL) = IZL + GC%NC_OFFSET(NM)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'GC%LOCAL_TO_GLOBAL(',IZ,')=',GC%LOCAL_TO_GLOBAL(IZ)
+WRITE(MSG%LU_DEBUG,*) 'GC%LOCAL_TO_GLOBAL(',IZL,')=',GC%LOCAL_TO_GLOBAL(IZL)
 #endif
    ENDDO
 
@@ -14067,32 +14446,52 @@ WRITE(MSG%LU_DEBUG,*) 'GC%LOCAL_TO_GLOBAL(',IZ,')=',GC%LOCAL_TO_GLOBAL(IZ)
       GF%ZONES_GLOBAL(IC) = GF%ZONES_LOCAL(IC) + GC%NC_OFFSET(NM)
    ENDDO
 
-   GC%NCE = GC%NC
+ENDDO
+
+IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONE_NUMBERS, NSCARC_ZONES_SEND, NL)
+
+! Determine number of extended cells on coarser level
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+   CALL SCARC_POINT_TO_MULTIGRID(NM, NL, NL+1)         
+
+   ICL = GF%NC                            ! current max number of local cells
+   IZL = GC%NC_LOCAL(NM)                  ! current max number of local zones
    DO IOR0 = -3, 3
       FF => LF%FACE(IOR0)
       DO INBR = 1, FF%N_NEIGHBORS
          NOM = FF%NEIGHBORS(INBR)
-         CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
-         IZ_PREV = 0
-         IF (OL%NCG(IOR0) == 0) CYCLE
-         DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
-            ICE = OG%ICG_TO_ICE(ICG)
-            IZ = GF%ZONES_LOCAL(ICE)
-            IF (IZ /= IZ_PREV) THEN
-               GC%NCE = GC%NCE + 1
-               IZ_PREV = IZ
-            ENDIF
-            GF%ZONES_GLOBAL(ICE) = ABS(GF%ZONES_LOCAL(ICE)) + GC%NC_OFFSET(NOM)
-            GC%LOCAL_TO_GLOBAL(GC%NCE) = GF%ZONES_GLOBAL(ICE)
+         CALL SCARC_POINT_TO_OTHER_MULTIGRID(NM, NOM, NL, NL+1)
+
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,9I6)') 'ZONES_OVERLAP: NM, NOM, IOR0, ICG, ICE, NCE, OFFSET, LOCAL, GLOBAL:', &
-                      NM, NOM, IOR0, ICG, ICE, GC%NCE, GC%NC_OFFSET(NOM), GF%ZONES_LOCAL(ICE), GF%ZONES_GLOBAL(ICE)
+WRITE(MSG%LU_DEBUG,*) '================= UNPACKING ZONE_NUMBERS: NM, NOM, IOR0:', NM, NOM, IOR0, ICL, IZL
+WRITE(MSG%LU_DEBUG,*) 'ICG_TO_LCELL:', OGF%ICG_TO_LCELL
+WRITE(MSG%LU_DEBUG,*) 'ICG_TO_GCELL:', OGF%ICG_TO_GCELL
+WRITE(MSG%LU_DEBUG,*) 'ICG_TO_LZONE:', OGF%ICG_TO_LZONE
+WRITE(MSG%LU_DEBUG,*) 'ICG_TO_GZONE:', OGF%ICG_TO_GZONE
+#endif
+
+         DO IG = 1, OLF%N_GHOST_ZONES
+            ICL = ICL + 1
+            IZL = IZL + 1
+            IZG = OGF%ICG_TO_GZONE(IG)
+            GF%ZONES_LOCAL(ICL)  = IZL 
+            GF%ZONES_GLOBAL(ICL) = IZG 
+            GC%LOCAL_TO_GLOBAL(IZL) = IZG
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,9I6)') 'ZONES_OVERLAP: NM, NOM, IOR0, IG, ICL, IZL, IZG, LOCAL_TO_GLOBAL:',&
+                      NM, NOM, IOR0, IG, ICL, IZL, IZG, GC%LOCAL_TO_GLOBAL(IZL)
 #endif
          ENDDO
+         GC%NCE  = IZL
+         GF%N_COARSE  = IZL
+         GF%NCEZ = ICL
       ENDDO
    ENDDO
 
-   CALL SCARC_RESIZE_INT1(GC%LOCAL_TO_GLOBAL, GC%NCE, 'GC%LOCAL_TO_GLOBAL')
+   CALL SCARC_REDUCE_INT1(GF%ZONES_LOCAL, GF%NCE, 'GC%LOCAL_TO_GLOBAL')
+   CALL SCARC_REDUCE_INT1(GF%ZONES_GLOBAL, GF%NCE, 'GC%LOCAL_TO_GLOBAL')
+   CALL SCARC_REDUCE_INT1(GC%LOCAL_TO_GLOBAL, GC%NCE, 'GC%LOCAL_TO_GLOBAL')
 
    CALL SCARC_DEBUG_ZONES(GF, -1, 1, 'AFTER SETUP_AGGREGATION_ZONES ')
    CALL SCARC_DEBUG_ZONES(GF, -1, 2, 'AFTER SETUP_AGGREGATION_ZONES ')
@@ -14110,6 +14509,10 @@ WRITE(MSG%LU_DEBUG,'(A,9I6)') 'ZONES_OVERLAP: NM, NOM, IOR0, ICG, ICE, NCE, OFFS
    WRITE(MSG%LU_DEBUG,'(8I6)') GF%ZONES_GLOBAL
    WRITE(MSG%LU_DEBUG,*) 'GC%LOCAL_TO_GLOBAL  ='
    WRITE(MSG%LU_DEBUG,'(8I6)') GC%LOCAL_TO_GLOBAL
+#endif
+
+#ifdef WITH_SCARC_DEBUG
+   CALL SCARC_BLENDER_ZONES(NM, NL, 'ZONES')
 #endif
 
 ENDDO
@@ -14147,264 +14550,6 @@ END SUBROUTINE SCARC_DEBUG_ZONES
 
 
 ! ------------------------------------------------------------------------------------------------------
-! Multimesh-version
-! Compute ZONES for a compact matrix AC
-! Returns the number of ZONES (== max(x[:]) + 1 )
-! Unaggregated nodes are marked with a -1
-! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_AGGREGATION_ZONES0(NL)
-USE SCARC_POINTERS, ONLY: GF, GC, CF
-INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, NM2, IC, JC, ICOL, IZONE, JZONE, NMZ
-INTEGER :: ACTIVE_MESH, N_ZONES_LOCAL, N_ZONES_PREVIOUS = 0
-LOGICAL :: HAS_NEIGHBORS, HAS_AGGREGATED_NEIGHBORS
-INTEGER, ALLOCATABLE, DIMENSION(:) :: ZONES_UP_TO_MESH
-
-MESH_INT = 0
-
-CALL SCARC_ALLOCATE_INT1 (ZONES_UP_TO_MESH, 1, NMESHES, NSCARC_INIT_ZERO, 'ZONES_UP_TO_MESH')
-
-MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   ACTIVE_MESH = 1
-   ZONES_LOOP: DO NMZ = 1, NMESHES
-
-#ifdef WITH_SCARC_DEBUG
-      WRITE(MSG%LU_DEBUG,*) '================================================================='
-      WRITE(MSG%LU_DEBUG,*) '=============== AGGREGATING ON MESH ',NM,' FOR NMZ ', NMZ
-      WRITE(MSG%LU_DEBUG,*) '================================================================='
-#endif
-      ! ---------- on the active mesh perform aggregation of internal cells and broadcast interfaces to neighbors
-      ACTIVE_MESH_IF: IF (NM == ACTIVE_MESH) THEN
-
-         N_ZONES_LOCAL = 0
-         CALL SCARC_POINT_TO_MULTIGRID(NM, NL, NL+1)                    ! Sets grid pointers GF and GC
-         CF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_CONNECTION)
-
-         GF%N_FINE = GF%NCE
-         IF (NM > 1) THEN
-            N_ZONES_PREVIOUS = ZONES_UP_TO_MESH(NM-1)               ! store previous number of zones
-            GF%N_ZONES = N_ZONES_PREVIOUS + 1                       ! note: already been initialized to 1 on mesh 1 
-         ENDIF
-
-         !
-         ! ----------- Pass 1:  Perform aggregation on internal cells of active mesh
-         !
-         PASS1_LOOP: DO IC = 1, GF%NC
-
-            IF (GF%ZONES_GLOBAL(IC) /= 0) CYCLE                   ! has cell already been aggregated?
-
-            HAS_NEIGHBORS = .FALSE.
-            HAS_AGGREGATED_NEIGHBORS = .FALSE.
-
-            DO ICOL = CF%ROW(IC), CF%ROW(IC+1)-1                  ! are all neighbors free (not already aggregated)?
-               JC = CF%COL(ICOL)
-               IF (IC /= JC .AND. JC <= GF%NC) THEN               ! only consider internal cells here
-                  HAS_NEIGHBORS = .TRUE.
-                  IF (GF%ZONES_GLOBAL(JC) /= 0) THEN
-                     HAS_AGGREGATED_NEIGHBORS = .TRUE.
-                     EXIT
-                  ENDIF
-               ENDIF
-            ENDDO
-
-            IF (.NOT. HAS_NEIGHBORS) THEN                        ! do not aggregate isolated cells
-               GF%ZONES_GLOBAL(IC) = NSCARC_HUGE_INT
-            ELSE IF (.NOT. HAS_AGGREGATED_NEIGHBORS) THEN        ! build aggregate of this cell and its neighbors
-               GF%ZONES_GLOBAL(IC) = GF%N_ZONES
-               GF%CPOINTS(GF%N_ZONES) = IC                
-               DO ICOL = CF%ROW(IC), CF%ROW(IC+1)-1 
-                  JC = CF%COL(ICOL)
-                  IF (JC <= GF%NC) GF%ZONES_GLOBAL(CF%COL(ICOL)) = GF%N_ZONES
-               ENDDO
-               GF%N_ZONES = GF%N_ZONES + 1
-            ENDIF
-
-#ifdef WITH_SCARC_DEBUG
-            WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATION_ZONES_INTERNAL: =============  IC:',IC
-            WRITE(MSG%LU_DEBUG,*) 'ZONES:'
-            WRITE(MSG%LU_DEBUG,CFORM_INT) GF%ZONES_GLOBAL(1:GF%NC)
-            WRITE(MSG%LU_DEBUG,*) '-------------- overlap:'
-            WRITE(MSG%LU_DEBUG,'(10I4)') GF%ZONES_GLOBAL(GF%NC+1: GF%NCE)
-            WRITE(MSG%LU_DEBUG,*) 'CPOINTS:'
-            WRITE(MSG%LU_DEBUG,CFORM_INT) GF%CPOINTS
-#endif
-
-         ENDDO PASS1_LOOP
-   
-         IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONES, NSCARC_ZONES_INITIAL, NL)
-
-         !
-         ! ----------- Pass 2:  Add unaggregated nodes to neighboring aggregate
-         !
-         PASS2_LOOP: DO IC = 1, GF%NC
-            IF (GF%ZONES_GLOBAL(IC) /= 0) CYCLE            
-            DO ICOL = CF%ROW(IC), CF%ROW(IC+1)-1
-               JC = CF%COL(ICOL)
-               JZONE = GF%ZONES_GLOBAL(JC)
-               IF (JZONE > 0) THEN
-                  IF (JC >= GF%NC .OR. GF%CPOINTS(JZONE)>0) THEN
-                     GF%ZONES_GLOBAL(IC) = -JZONE
-                     EXIT
-                  ENDIF
-               ENDIF
-            ENDDO
-         ENDDO PASS2_LOOP
-         GF%N_ZONES = GF%N_ZONES - 1
-         !GF%ZONES = ABS(GF%ZONES)
-   
-#ifdef WITH_SCARC_DEBUG
-         WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATION_ZONES_PASS2: =============  ', N_ZONES_LOCAL
-         WRITE(MSG%LU_DEBUG,CFORM_INT) GF%ZONES_GLOBAL(1:GF%NC)
-         WRITE(MSG%LU_DEBUG,*) '-------------- overlap:'
-         WRITE(MSG%LU_DEBUG,'(10I4)') GF%ZONES_GLOBAL(GF%NC+1: GF%NCE)
-#endif
-
-         !
-         ! ----------- Pass 3  Process remaining nodes which have not been aggregated yet
-         !
-         PASS3_LOOP: DO IC = 1, GF%NC
-   
-            IZONE = GF%ZONES_GLOBAL(IC)
-   
-            ! cell IC has not been aggregated
-            IF (IZONE /= 0) THEN
-               IF (IZONE > 0) THEN
-                  GF%ZONES_GLOBAL(IC) = IZONE 
-               ELSE IF (IZONE == NSCARC_HUGE_INT ) THEN
-                  GF%ZONES_GLOBAL(IC) = -1
-               ELSE
-                  GF%ZONES_GLOBAL(IC) = -IZONE 
-               ENDIF
-               CYCLE PASS3_LOOP
-            ENDIF
-   
-            GF%ZONES_GLOBAL(IC) = GF%N_ZONES
-            GF%CPOINTS(GF%N_ZONES) = IC
-   
-            DO ICOL = CF%ROW(IC), CF%ROW(IC+1)-1
-               JC = CF%COL(ICOL)
-               IF (JC <= GF%NC .AND. GF%ZONES_GLOBAL(JC) == 0) GF%ZONES_GLOBAL(JC) = GF%N_ZONES
-            ENDDO
-            GF%N_ZONES = GF%N_ZONES + 1
-   
-         ENDDO PASS3_LOOP
-   
-#ifdef WITH_SCARC_DEBUG
-         WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATION_ZONES_PASS3: =============  ', N_ZONES_LOCAL
-         WRITE(MSG%LU_DEBUG,CFORM_INT) GF%ZONES_GLOBAL(1:GF%NC)
-         WRITE(MSG%LU_DEBUG,*) '-------------- overlap:'
-         WRITE(MSG%LU_DEBUG,'(10I4)') GF%ZONES_GLOBAL(GF%NC+1: GF%NCE)
-#endif
-   
-         ! Initialize number of coarse and fine grid cells on current SAMG level 
-         GF%N_COARSE = GF%N_ZONES
-         GC%N_FINE   = GF%N_ZONES
-         ZONES_UP_TO_MESH(ACTIVE_MESH) = GF%N_ZONES
-      
-         GC%NC_LOCAL(NM) = GF%N_ZONES - N_ZONES_PREVIOUS 
-         MESH_INT(NM) = GC%NC_LOCAL(NM)
- 
-         ! only ACTIVE_MESH broadcasts its whole zone information along interfaces
-         ! in order to make zones consistent along interfaces 
-         IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONES, NSCARC_ZONES_INITIAL, NL)
-         IF (N_MPI_PROCESSES>1) &
-            CALL MPI_ALLGATHERV(MPI_IN_PLACE, 1, MPI_INTEGER, ZONES_UP_TO_MESH, COUNTS, DISPLS, &
-                                MPI_INTEGER, MPI_COMM_WORLD, IERROR)
-      
-         ACTIVE_MESH = ACTIVE_MESH + 1
-      !
-      ! ---------- NM is NOT the active mesh
-      ! if NM > ACTIVE_MESH, then the complete zone information must be received for both the overlapping 
-      ! cells and the adjacent inner cells
-      ! if NM < ACTIVE_MESH, then an initial exchange has already taken place and only the overlapping cells
-      ! still have to be filled up by the zones of the respective neighbours that have been calculated before
-      !
-      ELSE ACTIVE_MESH_IF
-
-         IF (NMESHES > 1) THEN
-            IF (NM > ACTIVE_MESH) THEN
-               CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONES, NSCARC_ZONES_COMPLETE, NL)
-            ELSE IF (NM < ACTIVE_MESH) THEN
-               CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONES, NSCARC_ZONES_FILLUP, NL)
-            ENDIF
-         ENDIF
-         IF (N_MPI_PROCESSES>1) &
-            CALL MPI_ALLGATHERV(MPI_IN_PLACE, 1, MPI_INTEGER, ZONES_UP_TO_MESH, COUNTS, DISPLS, &
-                                MPI_INTEGER, MPI_COMM_WORLD, IERROR)
-
-         ACTIVE_MESH = ACTIVE_MESH + 1
-
-      ENDIF ACTIVE_MESH_IF
-   ENDDO ZONES_LOOP
-ENDDO MESHES_LOOP
-
-DEALLOCATE (ZONES_UP_TO_MESH)
-
-IF (TRIM(CHID) == 'b1') THEN
-   CALL SCARC_PRESET_B1_CASE
-   MESH_INT(1) = 6
-ENDIF
-
-!
-! Broadcast number of local mesh cells on level NL to all and build global sum
-!
-IF (N_MPI_PROCESSES > 1) &
-   CALL MPI_ALLGATHERV(MPI_IN_PLACE, 1, MPI_INTEGER, MESH_INT, COUNTS, DISPLS, MPI_INTEGER, MPI_COMM_WORLD, IERROR)
-
-!
-! Store information on local and global cells numbers on data structure of corresponding discretization type
-!
-MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-   CALL SCARC_POINT_TO_MULTIGRID(NM, NL, NL+1)
-
-   GC%NC_LOCAL = MESH_INT
-   GC%NC_GLOBAL = SUM(MESH_INT)
-
-   IF (TRIM(CHID) == 'b1') THEN
-      GF%NC = 24
-      GF%NCE = 24
-      GC%NC_LOCAL  = 6
-      GC%NC_GLOBAL = 6
-      GC%NC = 6
-      GC%NCE = 6
-   ENDIF
-   CALL SCARC_RESIZE_INT1(GF%CPOINTS, GF%N_ZONES, 'GF%CPOINTS')     
-
-#ifdef WITH_SCARC_DEBUG
-      WRITE(MSG%LU_DEBUG,*) 'GC%NC_LOCAL=', GC%NC_LOCAL
-      WRITE(MSG%LU_DEBUG,*) 'GC%NC_GLOBAL=', GC%NC_GLOBAL
-#endif
-
-   DO IC = GF%NC+1, GF%NCE
-      GF%ZONES_GLOBAL(IC) = ABS(GF%ZONES_GLOBAL(IC))
-   ENDDO
-   !IF (MINVAL(GF%ZONES) <= 0) CALL SCARC_SHUTDOWN(NSCARC_ERROR_AGGREGATION, SCARC_NONE, -1)
-
-   IF (NMESHES > 1) THEN
-      DO NM2=2,NMESHES
-         GC%NC_OFFSET(NM2) = GC%NC_OFFSET(NM2-1) + GC%NC_LOCAL(NM2-1)
-      ENDDO
-   ENDIF
-
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'NC_GLOBAL(',NL+1,')=', NC_GLOBAL(NL+1)
-WRITE(MSG%LU_DEBUG,*) 'GC%NC_LOCAL :', GC%NC_LOCAL
-WRITE(MSG%LU_DEBUG,*) 'GC%NC_GLOBAL:', GC%NC_GLOBAL
-WRITE(MSG%LU_DEBUG,*) 'GC%NC_OFFSET:', GC%NC_OFFSET
-#endif
-
-#ifdef WITH_SCARC_DEBUG
-   CALL SCARC_PYTHON_ZONES(NM, NL, 'Agg')
-   CALL SCARC_BLENDER_ZONES(NM, NL, 'ZONES')
-#endif
-
-ENDDO MESHES_LOOP2
-
-END SUBROUTINE SCARC_SETUP_AGGREGATION_ZONES0
-
-
-! ------------------------------------------------------------------------------------------------------
 ! Remove workspace on level 'NL' which will no longer be needed
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SAMG_CLEAN_WORKSPACE(NL)
@@ -14412,17 +14557,12 @@ INTEGER, INTENT(IN) :: NL
 INTEGER:: NM
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
    CALL SCARC_POINT_TO_GRID (NM, NL)
-
    DEALLOCATE (G%CPOINTS, STAT = IERROR)
-
    DEALLOCATE (G%AUX1, STAT = IERROR)
    DEALLOCATE (G%AUX2, STAT = IERROR)
-
-   DEALLOCATE(G%RR, STAT = IERROR)
-   DEALLOCATE(G%QQ, STAT = IERROR)
-
+   DEALLOCATE (G%RR, STAT = IERROR)
+   DEALLOCATE (G%QQ, STAT = IERROR)
 ENDDO
 
 END SUBROUTINE SCARC_SAMG_CLEAN_WORKSPACE
@@ -14604,11 +14744,9 @@ END SUBROUTINE SCARC_RELAX_NULLSPACE
 ! The values are still missing and are set in a later step
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_ZONE_OPERATOR(NL)
-USE SCARC_POINTERS, ONLY: GF, GC, AF, ZF !, LF, OLF, OGF, FF
+USE SCARC_POINTERS, ONLY: GF, GC, AF, ZF
 INTEGER, INTENT(IN) :: NL
-INTEGER :: ICC_GLOBAL, ICC, IC, IP, NM, N_ROW, N_VAL, ICC1, ICC2
-INTEGER :: IZL, IZG, IZONE_MAX
-!INTEGER :: NOM, INBR, IFACE, ICG, ICE, IOR0
+INTEGER :: NM, ICCG, ICC, IC, IP, N_ROW, N_VAL
 LOGICAL :: IS_INCLUDED 
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -14618,7 +14756,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    AF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_POISSON)
    ZF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_ZONES)
 
-   ! first use very conservative bounds for the size of the aggretate operator matrix 
+   ! first use very conservative bounds for the size of the zones operator matrix 
    ! reduce it later once the real size is known
    ZF%N_VAL = AF%N_VAL                  
    ZF%N_ROW = AF%N_VAL                  
@@ -14627,45 +14765,32 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ! Again conservative upper bound for length - to be reduced later 
    CALL SCARC_ALLOCATE_INT1(GF%ZONES_LOCAL, 1, GF%NCE, NSCARC_INIT_ZERO, 'GF%ZONES_LOCAL')
 
-   ! TODO Reduce length of LOCAL_TO_GLOBAL 
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) '=================== SETUP_ZONE_OPERATOR:'
-   WRITE(MSG%LU_DEBUG,*) 'ZF%ROW:', ZF%N_ROW, ZF%N_VAL, SIZE(ZF%ROW), SIZE(ZF%VAL)
-#endif
-
-   !IF (NM == 1) THEN
-   !   ICC1 = 1                                  ! on first mesh start with number 1
-   !ELSE
-   !   ICC1 = GC%NC_LOCAL(NM-1) + 1              ! on all subsequent meshes start with number of last mesh plus 1
-   !ENDIF
-   !ICC2 = ICC1 + GC%NC_LOCAL(NM) - 1
-
-   ICC1 = 1
-   ICC2 = GC%NC_GLOBAL
 
 #ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '=================== SETUP_ZONE_OPERATOR:'
+WRITE(MSG%LU_DEBUG,*) 'ZF%ROW:', ZF%N_ROW, ZF%N_VAL, SIZE(ZF%ROW), SIZE(ZF%VAL)
 WRITE(MSG%LU_DEBUG,*) 'SETUP_ZONE_OPERATOR: GC%NC_LOCAL:', GC%NC_LOCAL
-WRITE(MSG%LU_DEBUG,*) 'SETUP_ZONE_OPERATOR: ICC1, ICC2:', ICC1, ICC2
 WRITE(MSG%LU_DEBUG,*) 'SETUP_ZONE_OPERATOR: N_FINE, NC, NCE:', GF%N_FINE, GF%NC, GF%NCE
 #endif
 
+   ! Based on global zone numbers determine local zone numers within mesh
    IP = 1
    ICC = 1
    ZF%ROW(ICC) = 1
-   DO ICC_GLOBAL = ICC1, ICC2
+   DO ICCG = 1, GC%NC_GLOBAL
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,3I4)') 'SETUP_ZONE_OPERATOR: ICC, N_COARSE, NC_OFFSET(NM)=',ICC, GF%N_COARSE, GC%NC_OFFSET(NM)
 #endif
       IS_INCLUDED = .FALSE.
-      DO IC = 1, GF%N_FINE
-         IF (GF%ZONES_GLOBAL(IC) /= ICC_GLOBAL) CYCLE
+      DO IC = 1, GF%NCEZ
+         IF (GF%ZONES_GLOBAL(IC) /= ICCG) CYCLE
          GF%ZONES_LOCAL(IC) = ICC
          IS_INCLUDED = .TRUE.
          ZF%COL(IP) = IC
+
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,5I4)') '         bingo, IC, IP, ICC_GLOBAL, ICC, IS_INCLUDED:', &
-                                               IC, IP, ICC_GLOBAL, ICC, GF%ZONES_LOCAL(IC)
+WRITE(MSG%LU_DEBUG,'(A,5I4)') '     bingo, IC, IP, ICCG, ICC, IS_INCLUDED:',IC,IP,ICCG,ICC,GF%ZONES_LOCAL(IC)
 #endif
          IP = IP + 1
       ENDDO
@@ -14678,38 +14803,16 @@ WRITE(MSG%LU_DEBUG,'(A,5I4)') '         bingo, IC, IP, ICC_GLOBAL, ICC, IS_INCLU
    N_ROW = ICC
    N_VAL = IP - 1
 
-   ! TODO resize aggregation matrices !!!
-   ZF%N_ROW = N_ROW
-   ZF%N_VAL = N_VAL
+   ZF%N_ROW=N_ROW
+   ZF%N_VAL=N_VAL
+
+   !TODO Resize ZF
+   CALL SCARC_REDUCE_CMATRIX(ZF, N_VAL, N_ROW, 'ZF')
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'MAPPING: GF%ZONES_LOCAL ='
-WRITE(MSG%LU_DEBUG,'(8I6)') GF%ZONES_LOCAL
-WRITE(MSG%LU_DEBUG,*) 'MAPPING: GF%ZONES_GLOBAL ='
-WRITE(MSG%LU_DEBUG,'(8I6)') GF%ZONES_GLOBAL
-#endif
-   ! Get mapping from global to local aggregate numbers
-   IZONE_MAX = 0
-   DO IC = 1, GF%NCE
-      IZG = GF%ZONES_GLOBAL(IC)              ! This is the global aggregation zone number for cell IC
-      IZL = GF%ZONES_LOCAL(IC)               ! This is the local  aggregation zone number for cell IC
-      IZONE_MAX = MAX(IZL, IZONE_MAX)
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'MAPPING: IC, IZG, IZL, IZONE_MAX:', IC, IZG, IZL, IZONE_MAX
-#endif
-      !IF (GC%LOCAL_TO_GLOBAL(IZL) /= 0) THEN
-      !   IF (GC%LOCAL_TO_GLOBAL(IZL) /= IZG) WRITE(*,*) 'ERROR IN MAPPING OF GAGG TO IZONE FOR CELL ', IC
-      !ELSE
-         GC%LOCAL_TO_GLOBAL(IZL) = IZG
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) ' ---------> LOCAL_TO_GLOBAL(',IZL,')=', IZG
-#endif
-      !ENDIF
-   ENDDO
-         
-
-#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'GF%NCE=',GF%NCE
 WRITE(MSG%LU_DEBUG,*) 'GF%N_COARSE=',GF%N_COARSE
+WRITE(MSG%LU_DEBUG,*) 'GC%NCE=',GC%NCE
 WRITE(MSG%LU_DEBUG,*) 'ZF%N_ROW=',ZF%N_ROW
 WRITE(MSG%LU_DEBUG,*) 'ZF%N_VAL=',ZF%N_VAL
 WRITE(MSG%LU_DEBUG,*) 'ZONES_GLOBAL:'
@@ -14718,31 +14821,8 @@ WRITE(MSG%LU_DEBUG,*) 'ZONES_LOCAL:'
 WRITE(MSG%LU_DEBUG,'(8I6)') GF%ZONES_LOCAL(1:GF%NCE)
 WRITE(MSG%LU_DEBUG,*) 'LOCAL_TO_GLOBAL:'
 WRITE(MSG%LU_DEBUG,*) GC%LOCAL_TO_GLOBAL(1:GC%NCE)
-#endif
 CALL SCARC_DEBUG_MATRIX (ZF, 'ZONES','AFTER SETUP AGGREGATION ZONES ')
-
-!   DO IFACE = 1, 6                         
-
-!      IOR0 = FACE_ORIENTATION(IFACE)
-!      FF => LF%FACE(IOR0)
-
-!      DO INBR = 1, FF%N_NEIGHBORS
-
-!         NOM = FF%NEIGHBORS(INBR)
-!         CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
-!
-!         CALL SCARC_ALLOCATE_INT1(OGF%ICG_TO_GZONE, OLF%NCG0(IOR0), OLF%NCG(IOR0), NSCARC_INIT_ZERO, 'OG%ICG_TO_GZONE')
-!         CALL SCARC_ALLOCATE_INT1(OGF%ICG_TO_LZONE, OLF%NCG0(IOR0), OLF%NCG(IOR0), NSCARC_INIT_ZERO, 'OG%ICG_TO_LZONE')
-
-!         DO ICG = OLF%NCG0(IOR0), OLF%NCG(IOR0)
-!            ICE = OGF%ICG_TO_ICE(ICG)
-!            OGF%ICG_TO_GZONE(ICG) = GF%ZONES_GLOBAL(ICE)
-!            OGF%ICG_TO_LZONE(ICG) = GF%ZONES_LOCAL(ICE)
-!         ENDDO
-!CALL SCARC_DEBUG_INT1(OGF%ICG_TO_GZONE, OLF%NCG0(IOR0), OLF%NCG(IOR0), 'ICG_TO_GZONE', 'SETUP_ZONE_OPERATOR')
-!CALL SCARC_DEBUG_INT1(OGF%ICG_TO_LZONE, OLF%NCG0(IOR0), OLF%NCG(IOR0), 'ICG_TO_LZONE', 'SETUP_ZONE_OPERATOR')
-!      ENDDO
-!   ENDDO
+#endif
 
 ENDDO
 
@@ -14797,10 +14877,6 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_ALLOCATE_REAL1(G%QQ, 1, G%N_FINE+1, NSCARC_INIT_ZERO, 'G%QQ')
    CALL SCARC_ALLOCATE_REAL1(G%RR, 1, G%N_FINE+1, NSCARC_INIT_ZERO, 'G%RR')     ! TODO check length!
 
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'SETUP_PROLONGATION: G%N_COARSE = ', G%N_COARSE, Z%N_ROW-1
-#endif
-
 
    !
    ! Copy blocks into Q according to aggregation zones and compute norms for single ZONES
@@ -14808,26 +14884,17 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    IQ = 1
    G%AUX1 = 0.0_EB
    DO ICC = 1, Z%N_ROW-1
-   
       DSUM = 0.0_EB
       DO ICOL = Z%ROW(ICC), Z%ROW(ICC+1)-1
          IC = Z%COL(ICOL)
          G%QQ(IQ) = G%NULLSPACE(IC)
          DSUM = DSUM + G%QQ(IQ)**2
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,'(A,4I5,E12.4)') 'SETUP_PROL: --- ICC, ICOL, IC, IQ, G%QQ(IC):', ICC, ICOL, IC, IQ, G%QQ(IQ)
-#endif
          IQ = IQ + 1
       ENDDO
       DO ICOL = Z%ROW(ICC), Z%ROW(ICC+1)-1
          G%AUX1(Z%COL(ICOL)) = DSUM
       ENDDO
       G%RR(ICC) = DSUM
-   
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'A:   G%RR(',ICC,')=',G%RR(ICC)
-#endif 
-   
    ENDDO
 
 ENDDO
@@ -14835,23 +14902,20 @@ ENDDO
 !
 ! Exchange sums of nullspace entries within single aggregation zones
 !
-IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_NULLSPACE, NSCARC_NONE, NL)
+IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_NULLSPACES, NSCARC_NONE, NL)
    
 !
 ! Build norms over single zones and scale Q-entries by norms
 !
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+   CALL SCARC_POINT_TO_GRID (NM, NL)                          
    Z => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_ZONES)
 
    DO ICC = 1, Z%N_ROW-1
       ICOL = Z%ROW(ICC)
       IC = Z%COL(ICOL)
       G%RR(ICC) = SQRT(G%AUX1(IC))
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'B:   G%RR(',ICC,')=',G%RR(ICC)
-#endif 
    ENDDO
 
    IQ = 1
@@ -14859,12 +14923,10 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       DO ICOL = Z%ROW(ICC), Z%ROW(ICC+1)-1
          IC = Z%COL(ICOL)
          G%QQ(IQ) = G%QQ(IQ)/G%RR(ICC)
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,'(A,3I5,E12.4)') '--- ICC, ICOL, IC, G%QQ(IC):', ICC, ICOL, IC, G%QQ(IQ)
-#endif
          IQ = IQ + 1
       ENDDO
    ENDDO
+
 ENDDO
    
 ! ----------- Relax prolongator:
@@ -14936,9 +14998,6 @@ CALL SCARC_DEBUG_MATRIX(P, 'PROLONGATION','AFTER RESORT PROL ')
       DO ICCOL = Z%ROW(ICC), Z%ROW(ICC+1) - 1
          IC = Z%COL(ICCOL)
 
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,'(A, 5I5)') '--------  ICC, ICCOL, IC:', ICC, ICCOL, IC
-#endif
          IF (IC > G%NC) CYCLE
          DO JCCOL = P%ROW(IC), P%ROW(IC+1) - 1
             JCC = P%COL(JCCOL)
@@ -14960,14 +15019,14 @@ CALL SCARC_DEBUG_MATRIX(P, 'PROLONGATION','AFTER RESORT PROL ')
    CALL SCARC_DEBUG_MATRIX(P, 'G%PROLONGATION','SETUP_PROLONGATION: BEFORE LAST EXCHANGE')
 ENDDO
 
+!
+! Determine global columns array for prolongation matrix
+!
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)                                   ! Sets grid pointer G
+   CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)                
    PF => SCARC_POINT_TO_CMATRIX(GF, NSCARC_MATRIX_PROLONGATION)
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'PROL: GC%LOCAL_TO_GLOBAL: ', PF%N_ROW-1
-WRITE(MSG%LU_DEBUG,*) GC%LOCAL_TO_GLOBAL
-#endif
+
    DO IC = 1, GF%NC
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'PROL: ------------ IC =', IC
@@ -14982,22 +15041,23 @@ WRITE(MSG%LU_DEBUG,*) 'PROL: LOCAL_TO_GLOBAL: IC, JCCOL, JCC, RES:', IC, JCCOL, 
    ENDDO
    CALL SCARC_DEBUG_MATRIX(PF, 'G%PROLONGATION','SETUP_PROLONGATION: AFTER LAST EXCHANGE')
 ENDDO
+
 !
 ! Exchange resulting columns and values of prolongation matrix and extract exchanged data from 
 ! overlapping parts with single neighbors and attach them to main matrix
 !
 IF (NMESHES > 1) THEN
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLS,  NSCARC_MATRIX_PROLONGATION, NL)
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLSG, NSCARC_MATRIX_PROLONGATION, NL)
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALS,  NSCARC_MATRIX_PROLONGATION, NL)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLUMNS,  NSCARC_MATRIX_PROLONGATION, NL)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLUMNSG, NSCARC_MATRIX_PROLONGATION, NL)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALUES,  NSCARC_MATRIX_PROLONGATION, NL)
    CALL SCARC_EXTRACT_MATRIX_OVERLAPS(NSCARC_MATRIX_PROLONGATION, NL)
 ENDIF
    
 WRITE(*,*) 'TODO: RESIZE PROL'
 !WRITE(*,*) 'SETUP_PROLONGATION: SECOND EXCHANGE OF PROL MATRIX: REALLY NECESSARY?'
 !IF (NMESHES > 1) THEN
-!   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLS, NSCARC_MATRIX_PROLONGATION, NL)
-!   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALS, NSCARC_MATRIX_PROLONGATION, NL)
+!   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLUMNS, NSCARC_MATRIX_PROLONGATION, NL)
+!   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALUES, NSCARC_MATRIX_PROLONGATION, NL)
 !ENDIF
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
@@ -15028,7 +15088,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       GC%NCE = ZF%N_ROW-1
       CALL SCARC_ALLOCATE_REAL1(GC%NULLSPACE, 1, GC%NCE, NSCARC_INIT_ZERO, 'GC%NULLSPACE')
       GC%NULLSPACE(1:GC%NCE) = GF%RR(1:GC%NCE)
-      CALL SCARC_RESIZE_INT1(GC%LOCAL_TO_GLOBAL, GC%NCE, 'GC%LOCAL_TO_GLOBAL')
+      CALL SCARC_REDUCE_INT1(GC%LOCAL_TO_GLOBAL, GC%NCE, 'GC%LOCAL_TO_GLOBAL')
    ENDIF
 
 #ifdef WITH_SCARC_DEBUG
@@ -15076,7 +15136,7 @@ END FUNCTION SCARC_MATCH_MATRIX_COLUMN
 SUBROUTINE SCARC_SETUP_RESTRICTION(NL)
 USE SCARC_POINTERS, ONLY: GC, GF, RF, PF
 INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, IC, IRROW, IRCOL, IPCOL, ICC_GLOBAL, IPC
+INTEGER :: NM, IC, IRROW, IRCOL, IPCOL, IPC, ICCG, IFOUND 
 LOGICAL :: IS_INCLUDED
 
 ! Allocate restriction matrix R on internal mesh part
@@ -15104,21 +15164,26 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    IRCOL = 1                             ! counter of current column of restriction matrix
    RF%ROW(IRROW) = IRCOL
 
-   DO WHILE (IRROW <= GC%NCE)
+   !DO WHILE (IRROW <= GC%NCE)
+   DO ICCG = 1, GC%NC_GLOBAL
 
-      ICC_GLOBAL = GC%LOCAL_TO_GLOBAL(IRROW)
+      IFOUND = -1
+      IFOUND = FINDLOC(PF%COLG, VALUE = ICCG, DIM=1)
+      IF (IFOUND == -1) CYCLE
+
+      !ICCG = GC%LOCAL_TO_GLOBAL(IRROW)
       IS_INCLUDED = .FALSE.
 
       DO IC = 1, GF%NCE                  ! counter of fine cell (including overlaps)
 
 #ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) '================= ICC_GLOBAL, IC = ', ICC_GLOBAL, IC
+   WRITE(MSG%LU_DEBUG,*) '================= ICCG, IC = ', ICCG, IC
 #endif
          ROW_LOOP: DO IPCOL = PF%ROW(IC), PF%ROW(IC+1)-1
             !IPC = PF%COL(IPCOL)
-            !IF (GC%LOCAL_TO_GLOBAL(IPC) == ICC_GLOBAL) THEN
+            !IF (GC%LOCAL_TO_GLOBAL(IPC) == ICCG) THEN
             IPC = PF%COLG(IPCOL)
-            IF (IPC == ICC_GLOBAL) THEN
+            IF (IPC == ICCG) THEN
                IS_INCLUDED = .TRUE.
                RF%VAL(IRCOL) = PF%VAL(IPCOL)
                RF%COL(IRCOL) = IC
@@ -15149,19 +15214,19 @@ END SUBROUTINE SCARC_SETUP_RESTRICTION
 
 ! ------------------------------------------------------------------------------------------------------
 ! ------------------------------------------------------------------------------------------------------
-INTEGER FUNCTION SCARC_FIND_MATCHING_COLUMN(A, ICC, JC)
+INTEGER FUNCTION SCARC_FIND_MATCHING_COLUMN(A, JC, ICCG)
 TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: A
-INTEGER, INTENT(IN) :: ICC, JC
+INTEGER, INTENT(IN) :: JC, ICCG
 INTEGER :: IPCOL
 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'FIND_MATCHING_COLUMN: ICC, JC:', ICC, JC
+#ifdef WITH_SCARC_DEBUG2
+WRITE(MSG%LU_DEBUG,*) 'FIND_MATCHING_COLUMN: ICCG, JC:', ICCG, JC
 #endif
 SCARC_FIND_MATCHING_COLUMN = -1
 DO IPCOL = A%ROW(JC), A%ROW(JC+1)-1
-   IF (A%COLG(IPCOL) == ICC) THEN
+   IF (A%COLG(IPCOL) == ICCG) THEN
       SCARC_FIND_MATCHING_COLUMN = IPCOL
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) ' -----------> ICOL:', IPCOL
 #endif
    ENDIF
@@ -15175,94 +15240,135 @@ END FUNCTION SCARC_FIND_MATCHING_COLUMN
 ! Determine coarse grid matrix ACC which is computed as Galerkin operator R*A*P
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_AP(NL)
-USE SCARC_POINTERS, ONLY: G, A, P, AP, OA, OAP
+USE SCARC_POINTERS, ONLY: GC, GF, AF, PF, APF, OA, OAP
 INTEGER, INTENT(IN) :: NL
-INTEGER  :: NM, IC, JC, IACOL, IPCOL, IP, ICC, INBR, NOM
+INTEGER  :: NM, NOM, IC, JC, IACOL, IPCOL, IP, ICCG, INBR, IFOUND
 REAL(EB) :: DSUM, TOL = 1E-12_EB
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   CALL SCARC_POINT_TO_GRID (NM, NL)
+   CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)
 
-   A  => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)          
-   P  => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_PROLONGATION)     
-   AP => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_AP)         
+   AF  => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_POISSON)          
+   PF  => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_PROLONGATION)     
+   APF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_AP)         
+
+   CALL SCARC_DEBUG_MATRIX (AF, 'POISSON-FINE', 'START OF SETUP_AP')
+   CALL SCARC_DEBUG_MATRIX (PF, 'PROLONGATION-FINE', 'START OF SETUP_AP')
 
    ! TODO  Reduce size of AP
-   AP%N_ROW = A%N_ROW
-   AP%N_VAL = AP%N_ROW*20            ! only temporarily
-   CALL SCARC_ALLOCATE_CMATRIX(AP, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'AP')
+   APF%N_ROW = AF%N_ROW
+   APF%N_VAL = APF%N_ROW*20            ! only temporarily
+   CALL SCARC_ALLOCATE_CMATRIX(APF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'APF')
 
    DO INBR = 1, SCARC(NM)%N_NEIGHBORS
 
-      NOM = S%NEIGHBORS(INBR)
+      NOM = SCARC(NM)%NEIGHBORS(INBR)
       CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
 
-      OA  => SCARC_POINT_TO_OTHER_CMATRIX(OG, NSCARC_MATRIX_POISSON)
-      OAP => SCARC_POINT_TO_OTHER_CMATRIX(OG, NSCARC_MATRIX_AP)
+      OA  => SCARC_POINT_TO_OTHER_CMATRIX(OGF, NSCARC_MATRIX_POISSON)
+      OAP => SCARC_POINT_TO_OTHER_CMATRIX(OGF, NSCARC_MATRIX_AP)
 
-      OAP%N_VAL = A%N_VAL              ! TODO : CHECK : MUCH TOO BIG !!!
-      OAP%N_ROW = G%NCE + 1            ! TODO : CHECK : MUCH TOO BIG !!!
+      OAP%N_VAL = AF%N_VAL              ! TODO : CHECK : MUCH TOO BIG !!!
+      OAP%N_ROW = GF%NCE + 1            ! TODO : CHECK : MUCH TOO BIG !!!
       CALL SCARC_ALLOCATE_CMATRIX(OAP, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OG%AP')
 
    ENDDO
 
    IP = 1
-   AP%ROW(1) = IP
+   APF%ROW(1) = IP
 
-   DO IC = 1, G%NC
+   DO IC = 1, GF%NCE
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '=================== IC = ', IC ,' ======================='
 #endif
-      DO ICC = 1, G%NCE
+      !DO ICC = 1, GC%NC_GLOBAL
+         !ICCG = GC%LOCAL_TO_GLOBAL(ICC)
 
+      DO ICCG = 1, GC%NC_GLOBAL
+         IFOUND = -1
+         IFOUND = FINDLOC(PF%COLG, VALUE=ICCG, DIM=1)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '------------------- ICC = ', ICC , A%ROW(IC), A%ROW(IC+1)-1
+WRITE(MSG%LU_DEBUG,*) '------------------- ICCG = ', ICCG,' IFOUND =',IFOUND
 #endif
+         IF (IFOUND == -1) CYCLE
+      
 
          DSUM = 0.0_EB
-         DO IACOL = A%ROW(IC), A%ROW(IC+1)-1
-            JC = A%COLG(IACOL)
-            IPCOL = SCARC_FIND_MATCHING_COLUMN(P, ICC, JC) 
+         DO IACOL = AF%ROW(IC), AF%ROW(IC+1)-1
+            JC = AF%COL(IACOL)
+            IF (JC < 0) CYCLE
+            IPCOL = SCARC_FIND_MATCHING_COLUMN(PF, JC, ICCG) 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '------------------- JC, IPCOL =', JC, IPCOL
+WRITE(MSG%LU_DEBUG,*) '                JC, IPCOL =', JC, IPCOL
 #endif
             IF (IPCOL /= -1) THEN
-               DSUM = DSUM + A%VAL(IACOL) * P%VAL(IPCOL)
+               DSUM = DSUM + AF%VAL(IACOL) * PF%VAL(IPCOL)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,2I6,3E12.4)') 'SETUP_AP:, JC, P%COL(IPCOL), A%VAL(IACOL), P%VAL(IPCOL), DSUM:', &
-                                     JC, P%COL(IPCOL), A%VAL(IACOL), P%VAL(IPCOL), DSUM
+WRITE(MSG%LU_DEBUG,'(A,2I6,3E12.4)') 'SETUP_AP:, JC, PF%COL(IPCOL), AF%VAL(IACOL), PF%VAL(IPCOL), DSUM:', &
+                                     JC, PF%COL(IPCOL), AF%VAL(IACOL), PF%VAL(IPCOL), DSUM
 #endif
             ENDIF
          ENDDO
 
          IF (ABS(DSUM) > TOL) THEN
-            AP%COL(IP) = ICC
-            AP%COLG(IP) = ICC
-            AP%VAL(IP) = DSUM
+            APF%COL(IP)  = ICCG
+            !APF%COLG(IP) = GC%LOCAL_TO_GLOBAL(ICC)
+            APF%COLG(IP) = ICCG
+            APF%VAL(IP)  = DSUM
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,2I6,E12.4)') ' -------- bingo: IP, COL, VAL :', IP, ICC, DSUM
+WRITE(MSG%LU_DEBUG,'(A,2I6,E12.4)') '      bingo: IP, COL, VAL :', IP, ICCG, DSUM
 #endif
             IP = IP + 1
          ENDIF
 
       ENDDO
-      AP%ROW(IC+1) = IP
+      APF%ROW(IC+1) = IP
 
    ENDDO
 
-CALL SCARC_DEBUG_MATRIX (AP, 'AP','SETUP_AP')
+CALL SCARC_DEBUG_MATRIX (APF, 'AP-FINE','END SETUP_AP')
 ENDDO
 
 IF (NMESHES > 1) THEN
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLS,  NSCARC_MATRIX_AP, NL)
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLSG, NSCARC_MATRIX_AP, NL)
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALS,  NSCARC_MATRIX_AP, NL)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLUMNS,  NSCARC_MATRIX_AP, NL)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLUMNSG, NSCARC_MATRIX_AP, NL)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALUES,  NSCARC_MATRIX_AP, NL)
    CALL SCARC_EXTRACT_MATRIX_OVERLAPS(NSCARC_MATRIX_AP, NL)
 ENDIF
 
 END SUBROUTINE SCARC_SETUP_AP
+
+! ------------------------------------------------------------------------------------------------------
+! ------------------------------------------------------------------------------------------------------
+INTEGER FUNCTION SCARC_MAP_GLOBAL_TO_LOCAL(G, ICG, NM, NL)
+USE SCARC_POINTERS, ONLY: SUB
+TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
+INTEGER, INTENT(IN) :: ICG, NM, NL
+INTEGER :: NOM, IOR0
+
+SUB => SUBDIVISION
+SCARC_MAP_GLOBAL_TO_LOCAL = -1
+
+MESHES_LOOP: DO NOM = 1, NMESHES
+   IF (G%NC_OFFSET(NM) < ICG .AND. ICG <= G%NC_OFFSET(NM) + G%NC_LOCAL(NM)) THEN
+      EXIT MESHES_LOOP
+   ENDIF
+ENDDO MESHES_LOOP
+
+IF (ARE_NEIGHBORS(NM, NOM)) THEN
+   DO IOR0 = -3, 3
+      CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
+      !DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
+      !   ICE = OG%ICG_TO_ICE(ICG)
+      !   
+      !ENDDO
+   ENDDO
+ENDIF
+
+
+END FUNCTION SCARC_MAP_GLOBAL_TO_LOCAL
 
 ! ------------------------------------------------------------------------------------------------------
 !
@@ -15281,8 +15387,8 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    RF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_RESTRICTION)         
    AC => SCARC_POINT_TO_CMATRIX (GC, NSCARC_MATRIX_POISSON)         
 
-CALL SCARC_DEBUG_MATRIX(AP, 'AP', 'START OF RAP')
-CALL SCARC_DEBUG_MATRIX(RF, 'RF', 'START OF RAP')
+   CALL SCARC_DEBUG_MATRIX (AP, 'AP-FINE', 'START OF SETUP_RAP')
+   CALL SCARC_DEBUG_MATRIX (RF, 'RESTRICTION-FINE', 'START OF SETUP_RAP')
 
    IF (.NOT.ALLOCATED (AC%VAL)) THEN
       AC%N_ROW = GC%NCE+1
@@ -15306,7 +15412,7 @@ WRITE(MSG%LU_DEBUG,*) '--------------- JCC = ', JCC
          DSUM = 0.0_EB
          DO IRCOL = RF%ROW(ICC), RF%ROW(ICC+1)-1
             JC = RF%COL(IRCOL)
-            IAPCOL = SCARC_FIND_MATCHING_COLUMN(AP, JCC, JC) 
+            IAPCOL = SCARC_FIND_MATCHING_COLUMN(AP, JC, JCC) 
             IF (IAPCOL /= -1) THEN
                DSUM = DSUM + RF%VAL(IRCOL) * AP%VAL(IAPCOL)
 #ifdef WITH_SCARC_DEBUG
@@ -15329,14 +15435,14 @@ WRITE(MSG%LU_DEBUG,'(A,2I6,E12.4)') ' -------- bingo: IP, COL, VAL :', IP, JCC, 
 
    ENDDO
 
-CALL SCARC_DEBUG_MATRIX (AC, 'AC','END OF RAP')
+CALL SCARC_DEBUG_MATRIX (AC, 'POISSON-COARSE','END OF RAP')
 
 ENDDO
 
 IF (NMESHES > 99999) THEN
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLS,  NSCARC_MATRIX_POISSON, NL+1)
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLSG, NSCARC_MATRIX_POISSON, NL+1)
-   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALS,  NSCARC_MATRIX_POISSON, NL+1)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLUMNS,  NSCARC_MATRIX_POISSON, NL+1)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLUMNSG, NSCARC_MATRIX_POISSON, NL+1)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALUES,  NSCARC_MATRIX_POISSON, NL+1)
    CALL SCARC_EXTRACT_MATRIX_OVERLAPS(NSCARC_MATRIX_POISSON, NL+1)
 ENDIF
 
@@ -15925,7 +16031,7 @@ END SUBROUTINE SCARC_ALLOCATE_REAL3
 ! ------------------------------------------------------------------------------------------------
 ! Reduce size of integer vector
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_RESIZE_INT1(WORKSPACE, NSIZE, CNAME)
+SUBROUTINE SCARC_REDUCE_INT1(WORKSPACE, NSIZE, CNAME)
 INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NSIZE
 CHARACTER(*), INTENT(IN) :: CNAME
@@ -15948,12 +16054,36 @@ ENDIF
 WRITE(MSG%LU_VERBOSE,1000) CNAME, NSIZE
 1000 FORMAT('Resizing   integer vector ',A20,' to size ',I8)
 #endif
-END SUBROUTINE SCARC_RESIZE_INT1
+END SUBROUTINE SCARC_REDUCE_INT1
 
 ! ------------------------------------------------------------------------------------------------
 ! Reduce size of integer vector
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_RESIZE_REAL1(WORKSPACE, NSIZE, CNAME)
+SUBROUTINE SCARC_EXPAND_INT1(WORKSPACE, WORKSPACE_ADD, NSIZE, NSIZE_ADD, CNAME)
+INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(INOUT) :: WORKSPACE, WORKSPACE_ADD
+INTEGER, INTENT(IN) :: NSIZE, NSIZE_ADD
+CHARACTER(*), INTENT(IN) :: CNAME
+INTEGER, ALLOCATABLE, DIMENSION(:) :: AUX
+
+CALL SCARC_ALLOCATE_INT1(AUX, 1, NSIZE + NSIZE_ADD, NSCARC_INIT_NONE, TRIM(CNAME))
+AUX(1:NSIZE) = WORKSPACE(1:NSIZE)
+AUX(NSIZE+1:NSIZE+NSIZE_ADD) = WORKSPACE_ADD(NSIZE+1:NSIZE+NSIZE_ADD)
+DEALLOCATE(WORKSPACE)
+
+CALL SCARC_ALLOCATE_INT1(WORKSPACE, 1, NSIZE + NSIZE_ADD, NSCARC_INIT_NONE, TRIM(CNAME))
+WORKSPACE(1:NSIZE+NSIZE_ADD) = AUX(1:NSIZE+NSIZE_ADD)
+DEALLOCATE(AUX)
+
+#ifdef WITH_SCARC_VERBOSE
+WRITE(MSG%LU_VERBOSE,1000) CNAME, NSIZE + NSIZE_ADD
+1000 FORMAT('Resizing   integer vector ',A20,' to size ',I8)
+#endif
+END SUBROUTINE SCARC_EXPAND_INT1
+
+! ------------------------------------------------------------------------------------------------
+! Reduce size of integer vector
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_REDUCE_REAL1(WORKSPACE, NSIZE, CNAME)
 REAL(EB), ALLOCATABLE, DIMENSION(:), INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NSIZE
 CHARACTER(*), INTENT(IN) :: CNAME
@@ -15976,7 +16106,7 @@ ENDIF
 WRITE(MSG%LU_VERBOSE,1000) CNAME, NSIZE
 1000 FORMAT('Resizing   integer vector ',A20,' to size ',I8)
 #endif
-END SUBROUTINE SCARC_RESIZE_REAL1
+END SUBROUTINE SCARC_REDUCE_REAL1
 
 ! ------------------------------------------------------------------------------------------------
 ! COMPACT storage format:
@@ -16054,7 +16184,7 @@ END SUBROUTINE SCARC_DEALLOCATE_CMATRIX
 ! COMPACT storage format:
 ! Reduce size of matrix to specified size
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_RESIZE_CMATRIX(A, NVAL, NROW, CNAME)
+SUBROUTINE SCARC_REDUCE_CMATRIX(A, NVAL, NROW, CNAME)
 TYPE (SCARC_MATRIX_COMPACT_TYPE), INTENT(INOUT) :: A
 INTEGER, INTENT(IN) :: NVAL, NROW
 CHARACTER(*), INTENT(IN) :: CNAME
@@ -16127,7 +16257,7 @@ ENDIF
 WRITE(MSG%LU_VERBOSE,1000) A%CNAME
 1000 FORMAT('Resizing   COMPACT matrix ',A20)
 #endif
-END SUBROUTINE SCARC_RESIZE_CMATRIX
+END SUBROUTINE SCARC_REDUCE_CMATRIX
 
 
 ! ------------------------------------------------------------------------------------------------
@@ -17376,7 +17506,7 @@ SELECT CASE (NTYPE)
                   WRITE(MSG%LU_DEBUG,*) 'NOM:', NOM
                   WRITE(MSG%LU_DEBUG,*) 'SIZE(OG%ICG_TO_IWG)=',SIZE(OG%ICG_TO_IWG)
                   WRITE(MSG%LU_DEBUG,*) 'SIZE(OG%ICG_TO_ICE)=',SIZE(OG%ICG_TO_ICE)
-                  WRITE(MSG%LU_DEBUG,'(a,i8,a,2i8)') '---OG(',NOM,')%NCG(.):',OG%NCG
+                  WRITE(MSG%LU_DEBUG,'(a,i8,a,2i8)') '---OG(',NOM,')%GHOST_LAST(.):',OG%NCG
                   WRITE(MSG%LU_DEBUG,*)
                   WRITE(MSG%LU_DEBUG,'(a,i8,a)') '------OG(',NOM,')%ICG_TO_IWG:'
                   DO IW = 1, OG%NCG
@@ -17980,7 +18110,7 @@ DO IFACE = 1, 6
       NOM = F%NEIGHBORS(INBR)
       CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
 
-      DO ICG = OL%NCG0(IOR0), OL%NCG(IOR0)
+      DO ICG = OL%GHOST_FIRST(IOR0), OL%GHOST_LAST(IOR0)
          ICW = OG%ICG_TO_ICW(ICG)
          ICE = OG%ICG_TO_ICE(ICG)
          II = G%ICX(ICW) 
@@ -17996,7 +18126,8 @@ WRITE(MSG%LU_DEBUG,*) 'PY: ICG, ICW, ICE, II, JJ, KK:', ICG, ICW, ICE, II, JJ, K
          ELSE
             YCOR0 = YCOR(JJ-1) + INCY
          ENDIF
-         IZONE = ABS(G%ZONES_GLOBAL(ICE))
+WRITE(*,*) 'TODO: FIX BLENDER OUTPUT'
+         !IZONE = ABS(G%ZONES_GLOBAL(ICE))
          WRITE(MAGG,1000) ICE, IZONE, XCOR0, YCOR0, ZCOR0
       ENDDO
 
