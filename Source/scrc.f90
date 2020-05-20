@@ -5370,7 +5370,7 @@ END FUNCTION SCARC_WITHIN_MESH
 SUBROUTINE SCARC_SETUP_MATRIX (NM, NL)
 USE SCARC_POINTERS, ONLY: L, G, OG, A, AB, OA, OAB
 INTEGER, INTENT(IN) :: NM, NL
-INTEGER :: IX, IY, IZ, IC, IP, INBR, NOM
+INTEGER :: IX, IY, IZ, IC, IP, INBR, NOM, N_VAL, N_ROW
 
 !
 ! Compute single matrix entries and corresponding row and column pointers
@@ -5429,10 +5429,11 @@ SELECT_STORAGE_TYPE: SELECT CASE (SCARC_MATRIX_LEVEL(NL))
       ENDDO
    
       G%POISSONC%ROW(G%NC+1) = IP
-      G%POISSONC%N_VAL       = IP-1                         ! set correct number of matrix entries
    
-      CALL SCARC_REDUCE_CMATRIX(G%POISSONC, G%POISSONC%N_VAL, G%POISSONC%N_ROW, 'AC')
-      CALL SCARC_DEBUG_MATRIX (G%POISSONC, 'POISSONC', 'POISSON AFTER SETUP')
+      N_VAL = IP - 1
+      N_ROW = A%N_ROW
+      CALL SCARC_REDUCE_CMATRIX(A, N_VAL, N_ROW, 'POISSONC')
+      CALL SCARC_DEBUG_MATRIX (A, 'POISSONC', 'POISSON AFTER SETUP')
    
    !
    ! ---------- bandwise storage technique
