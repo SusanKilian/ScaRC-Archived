@@ -1,6 +1,6 @@
 &HEAD CHID='b1',TITLE='AMG test 2-mesh case' /
 
-&MESH IJK=6,1,4,  XB=0.0,0.6,-0.01,0.01,0.0,0.4 /
+&MESH IJK=12,1,8,  XB=0.0,0.6,-0.01,0.01,0.0,0.4 /
 
 &MISC NOISE = .FALSE. 
       DNS   = .TRUE./
@@ -14,7 +14,7 @@
       SCARC_SMOOTH_ITERATIONS = 1
       SCARC_MULTIGRID_LEVEL = 2 /
 
-&TIME T_END=0.5, DT=0.002 /
+&TIME T_END=0.05, DT=0.002 /
 
 &SURF ID='INFLOW2',VEL=-2.0, RAMP_V='IN2' /
 
