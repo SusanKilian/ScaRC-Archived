@@ -1,6 +1,6 @@
 &HEAD CHID='b14',TITLE='AMG test 2-mesh case' /
 
-&MESH IJK=12,1,12,  XB=0.0,0.6,-0.01,0.01,0.0,0.6 /
+&MESH IJK=12,1,9,  XB=0.0,1.2,-0.01,0.01,0.0,0.9 /
 
 &MISC NOISE = .FALSE. 
       DNS   = .TRUE./
