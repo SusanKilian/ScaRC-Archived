@@ -215,7 +215,8 @@ INTEGER, PARAMETER :: NSCARC_RELAX_JAC               =  1, &    ! preconditionin
                       NSCARC_RELAX_FFT               =  9, &    ! preconditioning by local FFT-methods
                       NSCARC_RELAX_FFTO              = 10, &    ! preconditioning by local FFT-methods
                       NSCARC_RELAX_GMG               = 11, &    ! preconditioning by local GMG-methods
-                      NSCARC_RELAX_MKL               = 12       ! preconditioning by local LU-decompositions (MKL)
+                      NSCARC_RELAX_AMG               = 12, &    ! preconditioning by local AMG-methods
+                      NSCARC_RELAX_MKL               = 13       ! preconditioning by local LU-decompositions (MKL)
 
 INTEGER, PARAMETER :: NSCARC_RHS_HOMOGENEOUS         =  1, &    ! homogeneous boundary conditions for global problem
                       NSCARC_RHS_INHOMOGENEOUS       =  2, &    ! inhomogeneous boundary conditions for global problem
@@ -258,7 +259,8 @@ INTEGER, PARAMETER :: NSCARC_TWOLEVEL_NONE           =  0, &    ! no two levels,
                       NSCARC_TWOLEVEL_MUL            =  2, &    ! multiplicative 2-level method
                       NSCARC_TWOLEVEL_MUL2           =  3, &    ! multiplicative 2-level method
                       NSCARC_TWOLEVEL_COARSE         =  4, &    ! only coarse grid
-                      NSCARC_TWOLEVEL_MACRO          =  5       ! 2. level is macro solver 
+                      NSCARC_TWOLEVEL_MACRO          =  5, &    ! 2. level is macro solver 
+                      NSCARC_TWOLEVEL_SAMG           =  6       ! Coarse level based on SAMG-aggregation
 
 INTEGER, PARAMETER :: NSCARC_VECTOR_ONE_X            =  1, &    ! selection parameter for 1-stage vector X
                       NSCARC_VECTOR_ONE_B            =  2, &    !       ...                              F
@@ -399,13 +401,15 @@ LOGICAL :: SCARC_DUMP = .TRUE.                             ! Dump out several ar
 ! 
 LOGICAL :: IS_STRUCTURED      = .FALSE.                     ! is structured discretization?
 LOGICAL :: IS_UNSTRUCTURED    = .FALSE.                     ! is unstructured discretization?
-LOGICAL :: IS_PURE_NEUMANN    = .FALSE.                     ! pure Neumann system
+LOGICAL :: IS_PURE_NEUMANN    = .FALSE.                     ! is pure Neumann system?
 LOGICAL :: IS_CG              = .FALSE.                     ! is Krylov-method?
-LOGICAL :: IS_CG_GMG          = .FALSE.                     ! is Krylov-method with GMG-preconditioning?
 LOGICAL :: IS_CG_ADD          = .FALSE.                     ! is additive twolevel-Krylov-method?
-LOGICAL :: IS_CG_MUL          = .FALSE.                     ! is multiplicative Twolevel-Krylov-method ?
+LOGICAL :: IS_CG_AMG          = .FALSE.                     ! is Krylov-method with AMG-preconditioning?
 LOGICAL :: IS_CG_COARSE       = .FALSE.                     ! is only coarse grid preconditiner?
+LOGICAL :: IS_CG_GMG          = .FALSE.                     ! is Krylov-method with GMG-preconditioning?
+LOGICAL :: IS_CG_MUL          = .FALSE.                     ! is multiplicative Twolevel-Krylov-method ?
 LOGICAL :: IS_CG_MACRO        = .FALSE.                     ! is macro coarse grid solver
+LOGICAL :: IS_CG_SAMG         = .FALSE.                     ! is Krylov method with additive SAMG-coarse grid?
 LOGICAL :: IS_MG              = .FALSE.                     ! is Multigrid-method?
 LOGICAL :: IS_GMG             = .FALSE.                     ! is Geometric Multigrid-method?
 LOGICAL :: IS_AMG             = .FALSE.                     ! is Algebraic Multigrid-method?
@@ -424,8 +428,8 @@ LOGICAL :: HAS_MULTI_GRIDS    = .FALSE.                     ! has multiple discr
 ! ---------- Globally used types for description of different solvers
 ! 
 INTEGER :: TYPE_ACCURACY           = NSCARC_ACCURACY_ABSOLUTE    ! default type of requested accuracy
-INTEGER :: TYPE_AGGREGATE          = NSCARC_ZONES_INITIAL    ! default aggregation type for exchange
-INTEGER :: TYPE_COARSE             = NSCARC_COARSE_ITERATIVE     ! default type of coarse grid solver for multigrid method
+INTEGER :: TYPE_AGGREGATE          = NSCARC_ZONES_INITIAL        ! default aggregation type for exchange
+INTEGER :: TYPE_COARSE             = NSCARC_COARSE_DIRECT        ! default type of coarse grid solver for multigrid method
 INTEGER :: TYPE_COARSENING         = NSCARC_UNDEF_INT            ! no default type of coarsening algorithm for AMG
 INTEGER :: TYPE_CYCLING            = NSCARC_CYCLING_V            ! default type of cycling for multigrid method
 INTEGER :: TYPE_GRID               = NSCARC_GRID_STRUCTURED      ! default type of discretization (structured/unstructured)
@@ -986,7 +990,7 @@ TYPE SCARC_SOLVER_TYPE
 
    ! Types of different solver components
    INTEGER :: TYPE_ACCURACY      = NSCARC_ACCURACY_ABSOLUTE    ! Default type of requested accuracy
-   INTEGER :: TYPE_COARSE        = NSCARC_COARSE_ITERATIVE     ! Default type of coarse grid solver for multigrid method
+   INTEGER :: TYPE_COARSE        = NSCARC_COARSE_DIRECT        ! Default type of coarse grid solver for multigrid method
    INTEGER :: TYPE_COARSENING    = NSCARC_UNDEF_INT            ! No default type of coarsening algorithm for AMG
    INTEGER :: TYPE_CYCLING       = NSCARC_CYCLING_V            ! Default type of cycling for multigrid method
    INTEGER :: TYPE_GRID          = NSCARC_GRID_STRUCTURED      ! Default type of discretization (structured/unstructured)
@@ -1309,7 +1313,12 @@ ENDIF
 CALL SCARC_SETUP_EXCHANGES                  ; IF (STOP_STATUS==SETUP_STOP) RETURN
 CALL SCARC_SETUP_SYSTEMS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
 
-IF (IS_AMG) CALL SCARC_SETUP_SAMG          ; IF (STOP_STATUS==SETUP_STOP) RETURN
+IF (IS_AMG .OR. IS_CG_AMG .OR. IS_CG_SAMG) THEN
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SETUP_SAMG'
+#endif
+   CALL SCARC_SETUP_SAMG                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
+ENDIF
 
 CALL SCARC_SETUP_METHODS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
 CALL SCARC_SETUP_VECTORS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
@@ -1614,6 +1623,8 @@ SELECT CASE (TRIM(SCARC_METHOD))
             TYPE_TWOLEVEL = NSCARC_TWOLEVEL_MUL2
          CASE ('COARSE')
             TYPE_TWOLEVEL = NSCARC_TWOLEVEL_COARSE
+         CASE ('SAMG')
+            TYPE_TWOLEVEL = NSCARC_TWOLEVEL_SAMG
          CASE DEFAULT
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_TWOLEVEL, NSCARC_NONE)
       END SELECT
@@ -1938,28 +1949,36 @@ END SELECT
 !
 ! -------- define some logical variables - just for notational convenience
 !
-IS_STRUCTURED   = TYPE_GRID == NSCARC_GRID_STRUCTURED
-IS_UNSTRUCTURED = TYPE_GRID == NSCARC_GRID_UNSTRUCTURED
+IS_STRUCTURED   = (TYPE_GRID == NSCARC_GRID_STRUCTURED)
+IS_UNSTRUCTURED = (TYPE_GRID == NSCARC_GRID_UNSTRUCTURED)
 
-IS_CG     = TYPE_METHOD == NSCARC_METHOD_KRYLOV
-IS_CG_GMG = IS_CG .AND. TYPE_PRECON == NSCARC_RELAX_GMG .AND. TYPE_MULTIGRID == NSCARC_MULTIGRID_GEOMETRIC
+IS_CG     = (TYPE_METHOD == NSCARC_METHOD_KRYLOV)
+IS_CG_GMG = (TYPE_PRECON == NSCARC_RELAX_GMG) .AND. (TYPE_MULTIGRID == NSCARC_MULTIGRID_GEOMETRIC) .AND. IS_CG
+IS_CG_AMG = (TYPE_PRECON == NSCARC_RELAX_AMG) .AND. (TYPE_MULTIGRID == NSCARC_MULTIGRID_ALGEBRAIC) .AND. IS_CG
 
-IS_MG  = TYPE_METHOD == NSCARC_METHOD_MULTIGRID
-IS_GMG = IS_MG .AND. TYPE_MULTIGRID == NSCARC_MULTIGRID_GEOMETRIC
-IS_AMG = IS_MG .AND. TYPE_MULTIGRID == NSCARC_MULTIGRID_ALGEBRAIC
+IS_MG  = (TYPE_METHOD == NSCARC_METHOD_MULTIGRID)
+IS_GMG = (TYPE_MULTIGRID == NSCARC_MULTIGRID_GEOMETRIC) .AND. IS_MG
+IS_AMG = (TYPE_MULTIGRID == NSCARC_MULTIGRID_ALGEBRAIC) .AND. IS_MG
 
-HAS_TWO_LEVELS   = IS_CG .AND. TYPE_PRECON /= NSCARC_RELAX_GMG .AND. TYPE_TWOLEVEL > NSCARC_TWOLEVEL_NONE
+HAS_TWO_LEVELS   = IS_CG .AND. (TYPE_PRECON /= NSCARC_RELAX_GMG) .AND. (TYPE_TWOLEVEL > NSCARC_TWOLEVEL_NONE)
 HAS_MULTI_LEVELS = IS_MG .OR. IS_CG_GMG .OR. HAS_TWO_LEVELS 
 
-IS_CG_ADD    = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_ADD
-IS_CG_MUL    = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MUL
-IS_CG_COARSE = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_COARSE
-IS_CG_MACRO  = HAS_TWO_LEVELS .AND. TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MACRO
+IS_CG_ADD    = HAS_TWO_LEVELS .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_ADD)
+IS_CG_MUL    = HAS_TWO_LEVELS .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MUL)
+IS_CG_COARSE = HAS_TWO_LEVELS .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_COARSE)
+IS_CG_MACRO  = HAS_TWO_LEVELS .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MACRO)
+IS_CG_SAMG   = HAS_TWO_LEVELS .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_SAMG)
 
-IS_FFT =  TYPE_PRECON == NSCARC_RELAX_FFT  .OR.  TYPE_SMOOTH == NSCARC_RELAX_FFT
-IS_FFTO=  TYPE_PRECON == NSCARC_RELAX_FFTO .OR.  TYPE_SMOOTH == NSCARC_RELAX_FFTO
-IS_MKL = (TYPE_PRECON >= NSCARC_RELAX_MKL) .OR. (TYPE_SMOOTH >= NSCARC_RELAX_MKL) .OR. &
-   (HAS_MULTI_LEVELS .AND. TYPE_COARSE == NSCARC_COARSE_DIRECT)
+IS_FFT = (TYPE_PRECON == NSCARC_RELAX_FFT)  .OR. (TYPE_SMOOTH == NSCARC_RELAX_FFT)
+IS_FFTO= (TYPE_PRECON == NSCARC_RELAX_FFTO) .OR. (TYPE_SMOOTH == NSCARC_RELAX_FFTO)
+IS_MKL = (TYPE_PRECON >= NSCARC_RELAX_MKL)  .OR. &
+         (TYPE_SMOOTH >= NSCARC_RELAX_MKL)  .OR. &
+         (HAS_MULTI_LEVELS .AND. TYPE_COARSE == NSCARC_COARSE_DIRECT)
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'TYPE_TWOLEVEL=',TYPE_TWOLEVEL
+WRITE(MSG%LU_DEBUG,*) 'IS_CG_SAMG=',IS_CG_SAMG
+#endif
 
 #ifdef WITH_SCARC_MGM
 IS_MGM = TYPE_METHOD == NSCARC_METHOD_MGM
@@ -3310,7 +3329,7 @@ IS_PURE_NEUMANN = N_DIRIC_GLOBAL(NLEVEL_MIN) == 0 .AND. &
 ! (twolevel-CG or GMG-method as main solver or preconditioner):
 ! Determine WALL, FACE and OSCARC types for coarser levels
 !
-MULTI_LEVEL_IF: IF (HAS_MULTI_LEVELS .AND. .NOT.IS_AMG) THEN
+MULTI_LEVEL_IF: IF (HAS_MULTI_LEVELS .AND. .NOT.IS_AMG .AND. .NOT.IS_CG_AMG) THEN
 
    MESHES_LOOP3: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -4890,7 +4909,7 @@ SELECT_SCARC_METHOD_SIZES: SELECT CASE (TYPE_METHOD)
       CALL SCARC_ASSIGN_GRID_TYPE (TYPE_GRID)                      ! process specified discretization type
       CALL SCARC_SETUP_POISSON_SIZES (NLEVEL_MIN)                  ! setup sizes on finest level
    
-      IF (HAS_TWO_LEVELS) &                                                  
+      IF (HAS_TWO_LEVELS .AND. .NOT. IS_CG_SAMG) &                                                  
          CALL SCARC_SETUP_POISSON_SIZES (NLEVEL_MAX)               ! twolevel-precon: also setup size for coarse level
    
       IF (IS_CG_GMG) THEN                                                   
@@ -5005,7 +5024,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
                CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
 
-               IF (HAS_TWO_LEVELS) THEN
+               IF (HAS_TWO_LEVELS .AND. .NOT.IS_CG_SAMG) THEN
                   CALL SCARC_SETUP_POISSON (NM, NLEVEL_MAX)
                   CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MAX)
 #ifdef WITH_MKL
@@ -5113,7 +5132,9 @@ NMESHES_IF: IF (NMESHES > 1) THEN
             CALL SCARC_REDUCE_CMATRIX(OA, 'OG%POISSONC')
          ENDDO OMESHES_FINE_LOOP
 
+#ifdef WITH_SCARC_DEBUG
          CALL SCARC_DEBUG_CMATRIX(A, 'G%POISSONC', 'SETUP_SYSTEMS: AFTER EXTRAXT_MATRIX_OVERLAPS')
+#endif
 
       ENDDO MESHES_FINE_LOOP
     
@@ -5139,7 +5160,9 @@ NMESHES_IF: IF (NMESHES > 1) THEN
                   CALL SCARC_REDUCE_CMATRIX(OA, 'OG%POISSONC')
                ENDDO OMESHES_COARSE_LOOP
 
+#ifdef WITH_SCARC_DEBUG
                CALL SCARC_DEBUG_CMATRIX(A, 'G%POISSONC', 'SETUP_SYSTEMS: AFTER EXTRAXT_MATRIX_OVERLAPS')
+#endif
 
             ENDDO MESHES_COARSE_LOOP
          ENDDO
@@ -6786,7 +6809,7 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
             CALL SCARC_SETUP_FFTO(NLEVEL_MIN, NLEVEL_MIN)
 
 #ifdef WITH_MKL
-         ! LU-preconditioning based on MKL (either locally or Globally acting depending on user specification)
+         ! LU-preconditioning based on MKL (either locally or globally acting depending on user specification)
          CASE (NSCARC_RELAX_MKL)
             STACK(NSTACK)%SOLVER => PRECON_MKL
 
@@ -6888,7 +6911,7 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
       !
       ! If two-level Krylov, allocate intermediate structures for interpolation and workspace for global coarse solver
       !
-      IF (HAS_TWO_LEVELS) THEN
+      IF (HAS_TWO_LEVELS .AND. .NOT.IS_CG_SAMG) THEN
 
          CALL SCARC_SETUP_INTERPOLATION(NSCARC_STAGE_ONE, NLEVEL_MIN+1, NLEVEL_MAX)
 
@@ -13099,7 +13122,7 @@ WRITE(MSG%LU_DEBUG,'(A,5I5)') 'PACK_POISSON_COLS: SEND: IOR0, ICG, ICW, ICOL, VA
       ENDDO
 
 END SELECT
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'SEND_BUFFER:'
 WRITE(MSG%LU_DEBUG,'(10I6)') OS%SEND_BUFFER_INT
 #endif
@@ -14809,6 +14832,196 @@ CALL SCARC_DEBUG_ZONES(G, -1, 1, 'AFTER ACTIVE PASS3')
 
 END SUBROUTINE SCARC_SETUP_AGGREGATION_PASS3
 
+! ------------------------------------------------------------------------------------------------------
+! GMG-like aggregation
+! ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_AGGREGATION_GMG(L, G)
+TYPE (SCARC_LEVEL_TYPE), POINTER, INTENT(IN) :: L
+TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
+INTEGER :: NXM, NYM, NZM, NXD, NYD, NZD, NXI, NYI, NZI
+INTEGER :: IX, IY, IZ, IXZ, IYZ, IZZ, IXP, IYP, IZP, IX0, IY0, IZ0, IC
+INTEGER, DIMENSION(:), ALLOCATABLE :: OFFX, OFFY, OFFZ
+LOGICAL :: BFIRST
+
+NXM = MOD(L%NX,2)
+NXD = L%NX/2
+
+IF (TWO_D) THEN
+   NYM = 0
+   NYD = 1
+ELSE
+   NYM = MOD(L%NY,2)
+   NYD = L%NY/2
+ENDIF
+
+NZM = MOD(L%NZ,2)
+NZD = L%NZ/2
+
+! Temporarily - to prevent failure of following algorithm
+IF ((L%NX < 6) .OR. (.NOT.TWO_D .AND. L%NY < 6) .OR. (L%NZ < 6)) THEN 
+   WRITE(*,*) 'Grid dimensions too small für GMG-like aggregation'
+   CALL MPI_FINALIZE(IERROR)
+   STOP
+ENDIF
+
+CALL SCARC_ALLOCATE_INT1 (OFFX, 1, NXD, NSCARC_INIT_ZERO, 'OFFX')
+CALL SCARC_ALLOCATE_INT1 (OFFY, 1, NXD, NSCARC_INIT_ZERO, 'OFFY')
+CALL SCARC_ALLOCATE_INT1 (OFFZ, 1, NZD, NSCARC_INIT_ZERO, 'OFFZ')
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATION_GMG:'
+WRITE(MSG%LU_DEBUG,*) 'NXD, NXM =', NXD, NXM
+WRITE(MSG%LU_DEBUG,*) 'NYD, NYM =', NYD, NYM
+WRITE(MSG%LU_DEBUG,*) 'NZD, NZM =', NZD, NZM
+#endif
+
+IF (NXM == 0) THEN
+   OFFX = 2
+ELSE
+   NXI = MAX(NXD/4,1)
+   DO IX = 1, NXI
+      OFFX(IX) = 2
+   ENDDO
+   OFFX(NXI+1) = 3
+   DO IX = NXI+2, NXD
+      OFFX(IX) = 2
+   ENDDO
+ENDIF
+
+IF (TWO_D) THEN
+   OFFY = 0
+ELSE
+   IF (NYM == 0) THEN
+      OFFY = 2
+   ELSE
+      NYI = MAX(NYD/3,1)
+      DO IY = 1, NYI
+         OFFY(IY) = 2
+      ENDDO
+      OFFY(NYI+1) = 3
+      DO IY = NYI+2, NYD
+         OFFY(IY) = 2
+      ENDDO
+   ENDIF
+ENDIF
+
+IF (NZM == 0) THEN
+   OFFZ = 2
+ELSE
+   NZI = MAX(NZD/2,1)
+   DO IZ = 1, NZI
+      OFFZ(IZ) = 2
+   ENDDO
+   OFFZ(NZI+1) = 3
+   DO IZ = NZI+2, NZD
+      OFFZ(IZ) = 2
+   ENDDO
+ENDIF
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'OFFX:'
+WRITE(MSG%LU_DEBUG,'(16I6)') OFFX
+WRITE(MSG%LU_DEBUG,*) 'OFFY:'
+WRITE(MSG%LU_DEBUG,'(16I6)') OFFY
+WRITE(MSG%LU_DEBUG,*) 'OFFZ:'
+WRITE(MSG%LU_DEBUG,'(16I6)') OFFZ
+#endif
+
+
+DIMENSION_IF: IF (TWO_D) THEN
+
+   IZ0 = 1
+   DO IZ = 1, NZD
+#ifdef WITH_SCARC_DEBUG
+      WRITE(MSG%LU_DEBUG,*) '--------- IZ, IZ0 =', IZ, IZ0
+#endif
+      IX0 = 1
+      DO IX = 1, NXD
+
+#ifdef WITH_SCARC_DEBUG
+         WRITE(MSG%LU_DEBUG,*) '                 IX, IX0 =', IX, IX0
+#endif
+         BFIRST = .TRUE.
+         DO IZZ = 0, OFFZ(IZ)-1
+            DO IXZ = 0, OFFX(IX)-1
+               IXP = IX0 + IXZ
+               IZP = IZ0 + IZZ
+               IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(IXP, 1, IZP)) CYCLE
+               IC = G%CELL_NUMBER(IXP, 1, IZP)
+               IF (BFIRST) THEN
+                  G%N_ZONES = G%N_ZONES + 1
+                  BFIRST = .FALSE. 
+                  G%CPOINTS(G%N_ZONES) = IC
+               ENDIF
+               G%ZONES_LOCAL(IC) = G%N_ZONES
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,9I6)') 'IX, 1, IZ, IXP, 1, IZP, IC, ZONES_LOCAL(IC), N_ZONES:', &
+                               IX, 1, IZ, IXP, 1, IZP, IC, G%ZONES_LOCAL(IC), G%N_ZONES
+#endif
+            ENDDO
+         ENDDO
+         IX0 = IX0 + OFFX(IX)
+      ENDDO
+      IZ0 = IZ0 + OFFZ(IZ)
+   ENDDO
+
+ELSE
+
+   IZ0 = 1
+   DO IZ = 1, NZD
+#ifdef WITH_SCARC_DEBUG
+      WRITE(MSG%LU_DEBUG,*) '--------- IZ, IZ0 =', IZ, IZ0
+#endif
+      IY0 = 1
+      DO IY = 1, NYD
+#ifdef WITH_SCARC_DEBUG
+         WRITE(MSG%LU_DEBUG,*) '             IY, IY0 =', IY, IY0
+#endif
+         IX0 = 1
+         DO IX = 1, NXD
+
+#ifdef WITH_SCARC_DEBUG
+            WRITE(MSG%LU_DEBUG,*) '                 IX, IX0 =', IX, IX0
+#endif
+            BFIRST = .TRUE.
+            DO IZZ = 0, OFFZ(IZ)-1
+               DO IYZ = 0, OFFY(IY)-1
+                  DO IXZ = 0, OFFX(IX)-1
+                     IXP = IX0 + IXZ
+                     IYP = IY0 + IYZ
+                     IZP = IZ0 + IZZ
+                     IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(IXP, IYP, IZP)) CYCLE
+                     IF (BFIRST) THEN
+                        G%N_ZONES = G%N_ZONES + 1
+                        BFIRST = .FALSE. 
+                     ENDIF
+                     IC = G%CELL_NUMBER(IXP, IYP, IZP)
+                     G%ZONES_LOCAL(IC) = G%N_ZONES
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,9I6)') 'IX, IY, IZ, IXP, IYP, IZP, IC, ZONES_LOCAL(IC), N_ZONES:', &
+                               IX, IY, IZ, IXP, IYP, IZP, IC, G%ZONES_LOCAL(IC), G%N_ZONES
+#endif
+                  ENDDO
+               ENDDO
+            ENDDO
+            IX0 = IX0 + OFFX(IX)
+         ENDDO
+         IY0 = IY0 + OFFY(IY)
+      ENDDO
+      IZ0 = IZ0 + OFFZ(IZ)
+   ENDDO
+ENDIF DIMENSION_IF
+
+DEALLOCATE(OFFX)
+DEALLOCATE(OFFY)
+DEALLOCATE(OFFZ)
+
+#ifdef WITH_SCARC_DEBUG
+   CALL SCARC_DEBUG_ZONES(G, IC, 1, 'AFTER GMG-AGG ')
+#endif
+END SUBROUTINE SCARC_SETUP_AGGREGATION_GMG
+
+
 
 ! ------------------------------------------------------------------------------------------------------
 ! Setup aggregation zones for Smoothed Aggregation Algebraic Multigrid Method
@@ -14816,61 +15029,83 @@ END SUBROUTINE SCARC_SETUP_AGGREGATION_PASS3
 SUBROUTINE SCARC_SETUP_AGGREGATION_ZONES(NL)
 USE SCARC_POINTERS, ONLY: SUB, C, CF, G, GF, GC
 INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, NM2, ICYCLE, IC, IZL
+INTEGER :: NM, NM2, ICYCLE, IC, IZL, ITYPE
 
 SUB => SUBDIVISION
 MESH_INT = -1
 
-DO ICYCLE = 1, SUB%N_CYCLES
+!
+! ---- Default aggregation procedure for SAMG
+!
+ITYPE = 1
+IF (ITYPE == 0) THEN
 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '================================= ICYCLE =', ICYCLE, SUB%N_CYCLES
-WRITE(MSG%LU_DEBUG,*) 'SUB%ORDER(.,ICYCLE):'
-WRITE(MSG%LU_DEBUG,'(20I6)') SUB%ORDER(1:NMESHES,ICYCLE)
-#endif
-
-   DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-      IF (SUB%ORDER(NM, ICYCLE) == NSCARC_ORDER_ACTIVE) THEN
-         CALL SCARC_POINT_TO_GRID(NM, NL)
-         C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
-         CALL SCARC_SETUP_AGGREGATION_PASS1(G, C)
-         CALL SCARC_SETUP_AGGREGATION_PASS2(G, C)
-         CALL SCARC_SETUP_AGGREGATION_PASS3(G, C)
-         MESH_INT (NM) = G%N_ZONES
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'ACTIVE: G%N_ZONES, MESH_INT:', G%N_ZONES, MESH_INT
-#endif
-      ENDIF
-
-   ENDDO
+   CYCLES_LOOP1: DO ICYCLE = 1, SUB%N_CYCLES
    
-   IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONE_TYPES, NSCARC_ZONES_SEND, NL)
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '================================= ICYCLE =', ICYCLE, SUB%N_CYCLES
+   WRITE(MSG%LU_DEBUG,*) 'SUB%ORDER(.,ICYCLE):'
+   WRITE(MSG%LU_DEBUG,'(20I6)') SUB%ORDER(1:NMESHES,ICYCLE)
+#endif
+   
+      DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   
+         IF (SUB%ORDER(NM, ICYCLE) == NSCARC_ORDER_ACTIVE) THEN
+            CALL SCARC_POINT_TO_GRID(NM, NL)
+            C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
+            CALL SCARC_SETUP_AGGREGATION_PASS1(G, C)
+            CALL SCARC_SETUP_AGGREGATION_PASS2(G, C)
+            CALL SCARC_SETUP_AGGREGATION_PASS3(G, C)
+            MESH_INT (NM) = G%N_ZONES
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) 'ACTIVE: G%N_ZONES, MESH_INT:', G%N_ZONES, MESH_INT
+#endif
+         ENDIF
+   
+      ENDDO
+      
+      IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONE_TYPES, NSCARC_ZONES_SEND, NL)
+   
+      ! ----------------------- Passive meshes
+      DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   
+         IF (SUB%ORDER (NM, ICYCLE) /= NSCARC_ORDER_ACTIVE) THEN
+            CALL SCARC_POINT_TO_GRID(NM, NL)
+            C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
+            CALL SCARC_SETUP_AGGREGATION_PASS1(G, C)
+            CALL SCARC_SETUP_AGGREGATION_PASS2(G, C)
+            CALL SCARC_SETUP_AGGREGATION_PASS3(G, C)
+            MESH_INT (NM) = G%N_ZONES
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) 'PASSIVE: G%N_ZONES, MESH_INT:', G%N_ZONES, MESH_INT
+#endif
+         ENDIF
+   
+      ENDDO
+   
+      IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONE_TYPES, NSCARC_ZONES_SEND, NL)
+   
+   ENDDO CYCLES_LOOP1
+   
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) 'MESH_INT=',MESH_INT
+#endif
+   
+!
+! ---- GMG-like aggregation procedure 
+!
+ELSE
 
-   ! ----------------------- Passive meshes
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-      IF (SUB%ORDER (NM, ICYCLE) /= NSCARC_ORDER_ACTIVE) THEN
-         CALL SCARC_POINT_TO_GRID(NM, NL)
-         C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
-         CALL SCARC_SETUP_AGGREGATION_PASS1(G, C)
-         CALL SCARC_SETUP_AGGREGATION_PASS2(G, C)
-         CALL SCARC_SETUP_AGGREGATION_PASS3(G, C)
-         MESH_INT (NM) = G%N_ZONES
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'PASSIVE: G%N_ZONES, MESH_INT:', G%N_ZONES, MESH_INT
-#endif
-      ENDIF
-
+      CALL SCARC_POINT_TO_GRID(NM, NL)
+      CALL SCARC_SETUP_AGGREGATION_GMG(L, G)
+      MESH_INT (NM) = G%N_ZONES
    ENDDO
-
+      
    IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONE_TYPES, NSCARC_ZONES_SEND, NL)
+   
+ENDIF
 
-ENDDO
-
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'MESH_INT=',MESH_INT
-#endif
 
 ! Broadcast states of all meshes
 IF (N_MPI_PROCESSES>1) &
@@ -15958,7 +16193,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CALL SCARC_REDUCE_CMATRIX(OP, 'OP%PROLONGATION')
    ENDDO
 
+#ifdef WITH_SCARC_DEBUG
    CALL SCARC_DEBUG_CMATRIX(P, 'G%PROLONGATION','SETUP_PROLONGATION: FINAL')
+#endif
 
 ENDDO
 
@@ -18520,7 +18757,8 @@ IF (ALLOCATED(A%VAL)) THEN
 WRITE(MSG%LU_DEBUG,*) "------------->", TRIM(CNAME),'%VAL:'
 DO IC = 1, A%N_ROW-1
    IF (A%ROW(IC) == 0) CYCLE
-   WRITE(MSG%LU_DEBUG,'(I4,A,40E12.3)') IC,':', (A%VAL(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
+   !WRITE(MSG%LU_DEBUG,'(I4,A,40E12.3)') IC,':', (A%VAL(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
+   WRITE(MSG%LU_DEBUG,*) IC,':', (A%VAL(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
 ENDDO
 WRITE(MSG%LU_DEBUG,*) '============ END DEBUGGING MATRIX ', CNAME, ' AT ', TRIM(CTEXT)
 ENDIF
