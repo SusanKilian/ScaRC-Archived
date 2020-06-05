@@ -2167,7 +2167,7 @@ SELECT_LEVEL_TYPE: SELECT CASE (NTYPE)
       ENDDO
    
       NLEVEL_MIN  = 1
-      IF (IS_GMG.OR.IS_CG_GMG.OR.IS_AMG) THEN
+      IF (IS_GMG.OR.IS_AMG.OR.IS_CG_GMG.OR.IS_CG_AMG.OR.IS_CG_SAMG) THEN
 
          IF (SCARC_MULTIGRID_LEVEL /= -1) THEN
             NLEVEL_MAX  = NLEVEL_MIN + SCARC_MULTIGRID_LEVEL - 1
@@ -3154,7 +3154,7 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          ENDDO
 
          G%NCE  = G%NCE  + 1                                          ! increase number of extended grid cells
-         IF (IS_AMG) G%NCE2 = G%NCE2 + 2                              ! increase number of extended grid cells type2
+         IF (IS_AMG .OR. IS_CG_SAMG) G%NCE2 = G%NCE2 + 2              ! increase number of extended grid cells type2
          CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NLEVEL_MIN)
 
          IF (ANY(IS_KNOWN)) OG%NCG = OG%NCG + 1                       ! increase counter for local ghost cells
@@ -3170,7 +3170,7 @@ WRITE(MSG%LU_DEBUG,*) 'NM, NOM, IWG, IOR0, NCG, NCE2:', NM, NOM, IWG, IOR0, OG%N
       ENDIF
 
    ENDDO EXTERNAL_WALL_CELLS_LOOP1
-   IF (IS_AMG) G%ICE2 = G%NCE                           ! initialize counter for second layer ghost cells
+   IF (IS_AMG .OR. IS_CG_SAMG) G%ICE2 = G%NCE                           ! initialize counter for second layer ghost cells
 
    !
    ! Then process internal wall cells
@@ -3214,7 +3214,7 @@ WRITE(MSG%LU_DEBUG,*) 'NM, NOM, IWG, IOR0, NCG, NCE2:', NM, NOM, IWG, IOR0, OG%N
          CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NLEVEL_MIN)
 
          CALL SCARC_ALLOCATE_INT1 (OG%ICG_TO_IWG, 1, OG%NCG, NSCARC_INIT_ZERO, 'OG%ICG_TO_IWG')
-         IF (IS_AMG) THEN
+         IF (IS_AMG .OR. IS_CG_SAMG) THEN
 #ifdef WITH_SCARC_DEBU
 WRITE(MSG%LU_DEBUG,*) 'ALLOCATING ICG_TO_ICE FOR A: ', NOM,': in length ', OG%NCG, 2
 #endif
@@ -3329,7 +3329,7 @@ IS_PURE_NEUMANN = N_DIRIC_GLOBAL(NLEVEL_MIN) == 0 .AND. &
 ! (twolevel-CG or GMG-method as main solver or preconditioner):
 ! Determine WALL, FACE and OSCARC types for coarser levels
 !
-MULTI_LEVEL_IF: IF (HAS_MULTI_LEVELS .AND. .NOT.IS_AMG .AND. .NOT.IS_CG_AMG) THEN
+MULTI_LEVEL_IF: IF (HAS_MULTI_LEVELS .AND. .NOT.IS_AMG .AND. .NOT.IS_CG_SAMG) THEN
 
    MESHES_LOOP3: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -3560,7 +3560,7 @@ IF (NMESHES > 1) THEN
    CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_NUMBERS, NSCARC_NONE, NLEVEL_MIN)
    CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_SIZES,   NSCARC_NONE, NLEVEL_MIN)
 
-   IF (HAS_MULTI_LEVELS .AND. .NOT.IS_AMG) THEN
+   IF (HAS_MULTI_LEVELS .AND. .NOT.IS_AMG .AND. .NOT.IS_CG_SAMG) THEN
       DO NL = NLEVEL_MIN+1, NLEVEL_MAX
          CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_NUMBERS, NSCARC_NONE, NL)
          CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_SIZES,   NSCARC_NONE, NL)
@@ -5139,7 +5139,7 @@ NMESHES_IF: IF (NMESHES > 1) THEN
       ENDDO MESHES_FINE_LOOP
     
 
-      MULTI_LEVEL_IF: IF (HAS_MULTI_LEVELS .AND. .NOT.IS_AMG) THEN
+      MULTI_LEVEL_IF: IF (HAS_MULTI_LEVELS .AND. .NOT.IS_AMG .AND. .NOT.IS_CG_SAMG) THEN
 
          DO NL = NLEVEL_MIN+1, NLEVEL_MAX
 
@@ -5193,7 +5193,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_GRID (NM, NL)             ! set grid pointer G
 
-   IF (IS_AMG) THEN                              ! AMG: consider two overlapping layers
+   IF (IS_AMG .OR. IS_CG_SAMG) THEN              ! AMG: consider two overlapping layers
       CALL SCARC_ALLOCATE_INT1 (G%LOCAL_TO_GLOBAL, 1, G%NCE2, NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL')
    ELSE                                          ! else: only consider one overlapping layer
       CALL SCARC_ALLOCATE_INT1 (G%LOCAL_TO_GLOBAL, 1, G%NCE , NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL')
@@ -5279,7 +5279,7 @@ WRITE(MSG%LU_DEBUG,*) 'EXTRACT_MATRIX_OVERLAPS: NM=', NM,': IP=',IP, G%POISSONC%
          !==============================
          !==============================
          IF ( (NMATRIX /= NSCARC_MATRIX_POISSON) .OR. &
-              (NMATRIX == NSCARC_MATRIX_POISSON .AND. .NOT.(IS_AMG .AND. NL>NLEVEL_MIN))) THEN
+              (NMATRIX == NSCARC_MATRIX_POISSON .AND. .NOT.((IS_AMG.OR.IS_CG_SAMG) .AND. NL>NLEVEL_MIN))) THEN
 
          FACE_LOOP: DO IFACE = 1, 6                          ! check if this face has connection to last cell
 
@@ -5313,7 +5313,7 @@ WRITE(MSG%LU_DEBUG,'(8E12.4)') OA%VAL
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '====================== ICG, ICE, IP =', ICG, ICE, IP
 #endif
-                  IF (NMATRIX == NSCARC_MATRIX_POISSON .AND. .NOT.(IS_AMG .AND. NL>NLEVEL_MIN)) THEN
+                  IF (NMATRIX == NSCARC_MATRIX_POISSON .AND. .NOT.((IS_AMG.OR.IS_CG_SAMG) .AND. NL>NLEVEL_MIN)) THEN
 
                      ICOL = OA%ROW(ICG)
                      ICN = ABS(OA%COLG(ICOL))
@@ -5390,7 +5390,7 @@ WRITE(MSG%LU_DEBUG,'(6E12.4)') A%VAL
          !=============================
          !=============================
          !=============================
-         ELSE IF (NMATRIX == NSCARC_MATRIX_POISSON .AND. IS_AMG .AND. NL > NLEVEL_MIN) THEN
+         ELSE IF (NMATRIX == NSCARC_MATRIX_POISSON .AND. (IS_AMG.OR.IS_CG_SAMG) .AND. NL > NLEVEL_MIN) THEN
 
 
          FACE_LOOP2: DO IFACE = 1, 6                          ! check if this face has connection to last cell
@@ -14449,7 +14449,7 @@ SUBROUTINE SCARC_SETUP_SAMG
 INTEGER :: NL
 LOGICAL :: FURTHER_COARSENING_REQUIRED
 
-IF (.NOT.IS_CG_SAMG .OR. .NOT.IS_AMG) RETURN
+IF (.NOT.IS_CG_SAMG .AND. .NOT.IS_AMG) RETURN
 FURTHER_COARSENING_REQUIRED = .TRUE.
 
 NL = NLEVEL_MIN
@@ -18790,7 +18790,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    WRITE(MSG%LU_DEBUG,2001) CVEC, NM, NL
    WRITE(MSG%LU_DEBUG,2002) G%NC, NNX, NNY, NNZ, NV, SIZE(VC)
    WRITE(MSG%LU_DEBUG,*) '=========================================================='
-   IF (IS_AMG .AND. NL > NLEVEL_MIN) THEN
+   IF ((IS_AMG.OR.IS_CG_SAMG) .AND. NL > NLEVEL_MIN) THEN
 
       WRITE(MSG%LU_DEBUG, '(6E14.6)') VC
 
