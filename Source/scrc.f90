@@ -5014,12 +5014,12 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    
                      CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
                      CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
-                     CALL SCARC_SETUP_POISSON_MKL (NM, NL)
+                     CALL SCARC_SETUP_POISSON_MKL (NM, NLEVEL_MIN)
    
-                     IF (HAS_TWO_LEVELS) THEN
+                     IF (HAS_TWO_LEVELS .AND. .NOT.IS_CG_AMG .AND. .NOT.IS_CG_SAMG) THEN
                         CALL SCARC_SETUP_POISSON (NM, NLEVEL_MAX)
                         CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MAX)
-                        IF (TYPE_COARSE == NSCARC_COARSE_DIRECT) CALL SCARC_SETUP_POISSON_MKL (NM, NL)
+                        IF (TYPE_COARSE == NSCARC_COARSE_DIRECT) CALL SCARC_SETUP_POISSON_MKL (NM, NLEVEL_MAX)
                      ENDIF
 
                   ! Globally acting: Cluster_Sparse_Solver from MKL as preconditioner
@@ -5027,7 +5027,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    
                      CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
                      CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
-                     CALL SCARC_SETUP_POISSON_MKL (NM, NL)
+                     CALL SCARC_SETUP_POISSON_MKL (NM, NLEVEL_MIN)
    
                END SELECT SELECT_KRYLOV_PRECON_MKL
 #endif
