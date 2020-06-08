@@ -434,7 +434,7 @@ LOGICAL :: HAS_MULTI_GRIDS    = .FALSE.                     ! has multiple discr
 INTEGER :: TYPE_ACCURACY           = NSCARC_ACCURACY_ABSOLUTE    ! default type of requested accuracy
 INTEGER :: TYPE_AGGREGATE          = NSCARC_ZONES_INITIAL        ! default aggregation type for exchange
 INTEGER :: TYPE_COARSE             = NSCARC_COARSE_DIRECT        ! default type of coarse grid solver for multigrid method
-INTEGER :: TYPE_COARSENING         = NSCARC_UNDEF_INT            ! no default type of coarsening algorithm for AMG
+INTEGER :: TYPE_COARSENING         = NSCARC_COARSENING_GMG       ! default GMG-coarsening in case of twolevel method
 INTEGER :: TYPE_CYCLING            = NSCARC_CYCLING_V            ! default type of cycling for multigrid method
 INTEGER :: TYPE_GRID               = NSCARC_GRID_STRUCTURED      ! default type of discretization (structured/unstructured)
 INTEGER :: TYPE_EXCHANGE           = NSCARC_UNDEF_INT            ! no default type of data exchange
@@ -19697,8 +19697,8 @@ CLOSE(MAGG)
 1002 FORMAT(I4)
 END SUBROUTINE SCARC_PYTHON_ZONES
 
-
 #endif
+
 
 ! ------------------------------------------------------------------------------------------------
 ! Print out matrix information on level NL for matlab
