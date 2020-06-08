@@ -14621,7 +14621,7 @@ END SUBROUTINE SCARC_INVERT_MATRIX_DIAGONAL
 SUBROUTINE SCARC_SETUP_STRENGTH_OF_CONNECTION(NL)
 USE SCARC_POINTERS, ONLY: G, A, S, OG
 INTEGER, INTENT(IN) :: NL
-REAL(EB):: VAL, EPS, THETA = 0.15_EB, SCAL, CVAL_MAX
+REAL(EB):: VAL, EPS, THETA = 0.05_EB, SCAL, CVAL_MAX
 INTEGER :: NM, NOM, IC, JC, ICOL, IZONE, INBR
 
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -19732,36 +19732,38 @@ ENDIF
 WRITE(MAGG,1002) L%NX, L%NY, L%NZ
 WRITE(MAGG,1003) L%DX, L%DY, L%DZ
 
-DO KK = 1, L%NZ
-   DO JJ = 1, L%NY
-      DO II=1, L%NX
-         !IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(II,JJ,KK)) THEN
-         !   VALUES(II)=-999999.0_EB
-         !ELSE
-            IC=G%CELL_NUMBER(II,JJ,KK)
-            IZL = ABS(G%ZONES_LOCAL(IC))
-            IZG = ABS(G%ZONES_GLOBAL(IC))
-            ICPT = G%CPOINTS(IZL)      
- 
-            XCOR0 = XCOR(II-1)
-            ZCOR0 = ZCOR(KK-1)
-
-            IF (TWO_D) THEN
-               YCOR0 = 0.0_EB
-            ELSE
-               YCOR0 = YCOR(JJ-1)
-            ENDIF
-
-            IF (IC == ICPT) THEN
-               WRITE(MAGG,1000) IC, -IZG, XCOR0, YCOR0, ZCOR0
-            ELSE
-               WRITE(MAGG,1000) IC,  IZG, XCOR0, YCOR0, ZCOR0
-            ENDIF
-
-         !ENDIF
+IF (NL == NLEVEL_MIN) THEN
+   DO KK = 1, L%NZ
+      DO JJ = 1, L%NY
+         DO II=1, L%NX
+            !IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(II,JJ,KK)) THEN
+            !   VALUES(II)=-999999.0_EB
+            !ELSE
+               IC=G%CELL_NUMBER(II,JJ,KK)
+               IZL = ABS(G%ZONES_LOCAL(IC))
+               IZG = ABS(G%ZONES_GLOBAL(IC))
+               ICPT = G%CPOINTS(IZL)      
+    
+               XCOR0 = XCOR(II-1)
+               ZCOR0 = ZCOR(KK-1)
+   
+               IF (TWO_D) THEN
+                  YCOR0 = 0.0_EB
+               ELSE
+                  YCOR0 = YCOR(JJ-1)
+               ENDIF
+   
+               IF (IC == ICPT) THEN
+                  WRITE(MAGG,1000) IC, -IZG, XCOR0, YCOR0, ZCOR0
+               ELSE
+                  WRITE(MAGG,1000) IC,  IZG, XCOR0, YCOR0, ZCOR0
+               ENDIF
+   
+            !ENDIF
+         ENDDO
       ENDDO
    ENDDO
-ENDDO
+ENDIF
 
 ! If ITYPE == 1 also plot overlapping information
 IF (ITYPE == 1) THEN
