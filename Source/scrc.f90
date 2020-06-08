@@ -3483,6 +3483,21 @@ WRITE(MSG%LU_DEBUG,*) 'ALLOCATING ICE_TO_ICN ON COARSE LEVEL IN LENGTH ', GC%NC+
    ENDDO MESHES_LOOP3
 ENDIF MULTI_LEVEL_IF
 
+
+! -------------------------------------------------------------------------------------------
+! Correct boundary types for cells adjacent to obstructions on ghost cells
+! -------------------------------------------------------------------------------------------
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   IF (IS_UNSTRUCTURED) THEN
+      CALL SCARC_IDENTIFY_INTERNAL_NEUMANNS(NM, NLEVEL_MIN)
+      IF (.NOT.IS_AMG .AND. .NOT.IS_CG_AMG .AND. .NOT.IS_CG_SAMG) THEN
+         DO NL = NLEVEL_MIN+1, NLEVEL_MAX
+            CALL SCARC_IDENTIFY_INTERNAL_NEUMANNS(NM, NL)
+         ENDDO
+      ENDIF
+   ENDIF
+ENDDO
+
 ! -------------------------------------------------------------------------------------------
 ! Debug FACE, WALL and DISCRET structures - only if directive SCARC_DEBUG is set
 ! -------------------------------------------------------------------------------------------
@@ -3580,22 +3595,6 @@ IF (NMESHES > 1) THEN
       ENDDO
    ENDIF
 ENDIF
-
-! TODO: Better extract the following routines into a separate part
-! Get mapping array from local to global numbering
-CALL SCARC_SETUP_GLOBAL_NUMBERING(NLEVEL_MIN)
-
-!
-! Correct boundary types for cells adjacent to obstructions on ghost cells
-!
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   IF (IS_UNSTRUCTURED) THEN
-      CALL SCARC_IDENTIFY_INTERNAL_NEUMANNS(NM, NLEVEL_MIN)
-      DO NL = NLEVEL_MIN+1, NLEVEL_MAX
-         CALL SCARC_IDENTIFY_INTERNAL_NEUMANNS(NM, NL)
-      ENDDO
-   ENDIF
-ENDDO
 
 END SUBROUTINE SCARC_SETUP_EXCHANGES
 
@@ -3914,7 +3913,6 @@ CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid 
 DO IWG = 1, L%N_WALL_CELLS_EXT
 
    GWC => G%WALL(IWG)
-
    IF (GWC%NOM == 0) CYCLE                    ! TODO: equal or not equal ??
 
    IX = GWC%IXW
@@ -4911,9 +4909,13 @@ END SUBROUTINE SCARC_SETUP_DIMENSIONS
 SUBROUTINE SCARC_SETUP_SYSTEMS
 INTEGER :: NM, NOM, NL, INBR
 
+
 ! 
 ! ------ Setup sizes for system matrices
 ! 
+! Get mapping array from local to global numbering
+CALL SCARC_SETUP_GLOBAL_NUMBERING(NLEVEL_MIN)
+
 SELECT_SCARC_METHOD_SIZES: SELECT CASE (TYPE_METHOD)
 
    ! -------- Global Krylov method
@@ -5194,8 +5196,9 @@ CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_CMATRIX, NLEVEL_MIN, 'SYSTEM-MATRIX')
 
 END SUBROUTINE SCARC_SETUP_SYSTEMS
 
+
 ! -------------------------------------------------------------------------------------------
-! Extract overlapping matrix part and add to main matrix
+! Setup mapping vector from local to global numbering
 ! -------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_GLOBAL_NUMBERING(NL)
 USE SCARC_POINTERS, ONLY : G
@@ -14482,10 +14485,10 @@ WRITE(MSG%LU_DEBUG,*) ' SAMG : LEVEL ', NL
 WRITE(MSG%LU_DEBUG,*) '========================================================'
 #endif
 
-   CALL SCARC_SETUP_AGGREGATION_ORDER               ! Determine strength of connection matrix for Poisson matrix
+   CALL SCARC_SETUP_AGGREGATION_ORDER               ! Determine the aggregation order among the meshes
    CALL SCARC_EXTRACT_MATRIX_DIAGONAL(NL)           ! Extract matrix diagonal from Poisson matrix
    CALL SCARC_SETUP_STRENGTH_OF_CONNECTION(NL)      ! Determine strength of connection matrix for Poisson matrix
-   CALL SCARC_INVERT_MATRIX_DIAGONAL(NL)            ! Invert matrix diagonal
+   CALL SCARC_INVERT_MATRIX_DIAGONAL(NL)            ! Store inverted matrix diagonal for later processing
    CALL SCARC_SETUP_AGGREGATION_ZONES(NL)           ! Apply smoothed aggregation heuristic to specify aggregation zones
    CALL SCARC_RELAX_NULLSPACE(NL)                   ! Improve near null space by Jacobi relaxation step
    CALL SCARC_SETUP_ZONE_OPERATOR(NL)               ! Setup final aggregation zones operator
@@ -15049,6 +15052,10 @@ INTEGER :: NM, NM2, ICYCLE, IC, IZL
 
 SUB => SUBDIVISION
 MESH_INT = -1
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'TYPE_COARSENING:', TYPE_COARSENING
+#endif
 
 COARSENING_TYPE_SELECT: SELECT CASE (TYPE_COARSENING)
 
@@ -19736,9 +19743,9 @@ IF (NL == NLEVEL_MIN) THEN
    DO KK = 1, L%NZ
       DO JJ = 1, L%NY
          DO II=1, L%NX
-            !IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(II,JJ,KK)) THEN
-            !   VALUES(II)=-999999.0_EB
-            !ELSE
+            IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(II,JJ,KK)) THEN
+               CYCLE
+            ELSE
                IC=G%CELL_NUMBER(II,JJ,KK)
                IZL = ABS(G%ZONES_LOCAL(IC))
                IZG = ABS(G%ZONES_GLOBAL(IC))
@@ -19759,7 +19766,7 @@ IF (NL == NLEVEL_MIN) THEN
                   WRITE(MAGG,1000) IC,  IZG, XCOR0, YCOR0, ZCOR0
                ENDIF
    
-            !ENDIF
+            ENDIF
          ENDDO
       ENDDO
    ENDDO
