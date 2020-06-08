@@ -38,6 +38,9 @@ INTEGER, PARAMETER :: NSCARC_COARSE_ITERATIVE        =  1, &    ! iterative coar
                       NSCARC_COARSE_LEVEL            =  3, &    ! Coarse grid on specified grid level
                       NSCARC_COARSE_MACRO            =  4       ! Coarse grid on macro decomposition
 
+INTEGER, PARAMETER :: NSCARC_COARSENING_GMG          =  1, &    ! GMG coarsening for multigrid method (AMG only)
+                      NSCARC_COARSENING_SAMG         = 2       ! SAMG coarsening for multigrid method (AMG only)
+
 INTEGER, PARAMETER :: NSCARC_COUPLING_MAX            = 10       ! maximum of possible couplings in stencil
 
 INTEGER, PARAMETER :: NSCARC_CYCLING_F               =  0, &    ! F-cycle for mg-method
@@ -125,8 +128,8 @@ INTEGER, PARAMETER :: NSCARC_EXCHANGE_BASIC_SIZES    =  1, &    ! exchange neigh
                       NSCARC_EXCHANGE_PRESSURE       = 14, &    ! exchange vector values along internal boundaries
                       NSCARC_EXCHANGE_VECTOR_MEAN    = 15, &    ! exchange vector and build mean values with own data
                       NSCARC_EXCHANGE_VECTOR_PLAIN   = 16, &    ! exchange vector and use neighboring data
-                      NSCARC_EXCHANGE_ZONE_NEIGHBORS = 17, &    ! exchange number of aggregation zones (SAMG only)
-                      NSCARC_EXCHANGE_ZONE_TYPES     = 18       ! exchange aggregation zones types (SAMG only)
+                      NSCARC_EXCHANGE_ZONE_NEIGHBORS = 17, &    ! exchange number of aggregation zones (AMG only)
+                      NSCARC_EXCHANGE_ZONE_TYPES     = 18       ! exchange aggregation zones types (AMG only)
 
 INTEGER, PARAMETER :: NSCARC_GRID_STRUCTURED         =  1, &    ! structured discretization
                       NSCARC_GRID_UNSTRUCTURED       =  2       ! unstructured discretization
@@ -162,17 +165,17 @@ INTEGER, PARAMETER :: NSCARC_LEVEL_MIN               =  0, &    ! minimum multig
 INTEGER, PARAMETER :: NSCARC_MATRIX_BANDWISE         =  1, &    ! matrix in bandwise storage 
                       NSCARC_MATRIX_COMPACT          =  2, &    ! matrix in compact storage 
                       NSCARC_MATRIX_CONDENSED        =  3, &    ! matrix condensing for Neumann problems
-                      NSCARC_MATRIX_CONNECTION       =  4, &    ! strength of connection matrix (SAMG only)
+                      NSCARC_MATRIX_CONNECTION       =  4, &    ! strength of connection matrix (AMG only)
                       NSCARC_MATRIX_FULL             =  5, &    ! full matrix allocation
                       NSCARC_MATRIX_GENERAL          =  6, &    ! general matrix (not necessarily symmetric)
                       NSCARC_MATRIX_LIGHT            =  7, &    ! reduced matrix allocation
                       NSCARC_MATRIX_MINIMAL          =  8, &    ! reduced matrix allocation
                       NSCARC_MATRIX_POISSON          =  9, &    ! Poisson matrix in compact storage (default)
-                      NSCARC_MATRIX_POISSON_PROL     = 10, &    ! Poisson matrix times prolongation matrix (SAMG only)
+                      NSCARC_MATRIX_POISSON_PROL     = 10, &    ! Poisson matrix times prolongation matrix (AMG only)
                       NSCARC_MATRIX_POISSON_SYM      = 11, &    ! symmetric Poisson matrix in compact storage (default)
-                      NSCARC_MATRIX_PROLONGATION     = 12, &    ! Prolongation matrix (SAMG only)
-                      NSCARC_MATRIX_RESTRICTION      = 13, &    ! Restriction matrix (SAMG only)
-                      NSCARC_MATRIX_ZONES            = 14       ! aggregation zones matrix (SAMG only)
+                      NSCARC_MATRIX_PROLONGATION     = 12, &    ! Prolongation matrix (AMG only)
+                      NSCARC_MATRIX_RESTRICTION      = 13, &    ! Restriction matrix (AMG only)
+                      NSCARC_MATRIX_ZONES            = 14       ! aggregation zones matrix (AMG only)
 
 INTEGER, PARAMETER :: NSCARC_MATVEC_GLOBAL           =  1, &    ! perform matrix vector product globally
                       NSCARC_MATVEC_LOCAL            =  2, &    ! perform matrix vector product locally
@@ -197,9 +200,9 @@ INTEGER, PARAMETER :: NSCARC_MULTIGRID_GEOMETRIC     =  1, &    ! geometric mult
                       NSCARC_MULTIGRID_MAIN          =  1, &    ! multigrid solver as main solver
                       NSCARC_MULTIGRID_PRECON        =  2       ! multigrid solver as preconditioner
 
-INTEGER, PARAMETER :: NSCARC_ORDER_ACTIVE            =  1, &    !> be next in line for aggregation
-                      NSCARC_ORDER_LOCKED            = -1, &    !> locked for aggregation
-                      NSCARC_ORDER_UNASSIGNED        =  0       !> still not defined for aggregation
+INTEGER, PARAMETER :: NSCARC_ORDER_ACTIVE            =  1, &    ! be next in line for aggregation
+                      NSCARC_ORDER_LOCKED            = -1, &    ! locked for aggregation
+                      NSCARC_ORDER_UNASSIGNED        =  0       ! still not defined for aggregation
 
 INTEGER, PARAMETER :: NSCARC_PRECISION_SINGLE        =  1, &    ! single precision data 
                       NSCARC_PRECISION_DOUBLE        =  2       ! double precision data
@@ -334,11 +337,12 @@ REAL (EB)     :: SCARC_RESIDUAL          =  0.0_EB          ! Residual of global
 !
 ! ---------- Parameters for coarse grid method
 !
-CHARACTER(40) :: SCARC_COARSE            = 'DIRECT'        ! Type of coarse grid solver (ITERATIVE/DIRECT)
+CHARACTER(40) :: SCARC_COARSE            = 'DIRECT'         ! Type of coarse grid solver (ITERATIVE/DIRECT)
 REAL (EB)     :: SCARC_COARSE_ACCURACY   = 1.E-14_EB        ! Requested accuracy for iterative solver
 INTEGER       :: SCARC_COARSE_ITERATIONS = 100              ! Max number of iterations for iterative solver
 INTEGER       :: SCARC_COARSE_LEVEL      =  1               ! Coarse grid level for twolevel-Krylov method (default min level)
 REAL (EB)     :: SCARC_COARSE_OMEGA      = 0.80E+0_EB       ! Relaxation parameter
+
 
 !
 ! ---------- Parameters for Krylov-type methods
@@ -353,7 +357,7 @@ INTEGER       :: SCARC_KRYLOV_ITERATIONS = 1000             ! Max number of iter
 !
 CHARACTER(40) :: SCARC_MULTIGRID            = 'GEOMETRIC'   ! Type of MG-method (GEOMETRIC/ALGEBRAIC)
 REAL (EB)     :: SCARC_MULTIGRID_ACCURACY   = 1.E-8_EB      ! Requested accuracy for convergence
-CHARACTER(40) :: SCARC_MULTIGRID_COARSENING = 'FALGOUT'     ! Coarsening strategy  (Falgout/RS3/A1/A2/...)
+CHARACTER(40) :: SCARC_MULTIGRID_COARSENING = 'GMG'         ! Coarsening strategy  (GMG/SAMG)
 CHARACTER(3)  :: SCARC_MULTIGRID_CYCLE      = 'V'           ! Cycling type  (F/V/W)
 CHARACTER(40) :: SCARC_MULTIGRID_INTERPOL   = 'CONSTANT'    ! Interpolation strategy (CONSTANT/BILINEAR)
 INTEGER       :: SCARC_MULTIGRID_ITERATIONS = 100           ! Max number of iterations
@@ -663,7 +667,7 @@ TYPE SCARC_MATRIX_COMPACT_TYPE
    INTEGER :: N_VAL = 0                                       ! number of matrix values
    INTEGER :: N_ROW = 0                                       ! number of matrix rows
    INTEGER :: N_STENCIL = 0                                   ! number of points in matrix stencil
-   INTEGER :: N_STENCIL_MAX = 0                               ! max stencil size (SAMG only)
+   INTEGER :: N_STENCIL_MAX = 0                               ! max stencil size (AMG only)
    INTEGER :: NTYPE = 0                                       ! matrix type
 
    CHARACTER(40) :: CNAME                                     ! Name of matrix
@@ -786,7 +790,7 @@ END TYPE SCARC_STAGE_TYPE
 ! 
 TYPE SCARC_MULTIGRID_TYPE
 
-   REAL(EB) :: APPROX_SPECTRAL_RADIUS = 2.0_EB             ! Relaxation parameter (SAMG only)
+   REAL(EB) :: APPROX_SPECTRAL_RADIUS = 2.0_EB             ! Relaxation parameter (AMG only)
    REAL(EB) :: AMG_TOL = 0.25_EB                           ! Tolerance for coarsening
    REAL(EB) :: OMEGA = 1.0_EB                              ! Relaxation parameter
 
@@ -806,28 +810,28 @@ TYPE SCARC_GRID_TYPE
    ! Matrices in different storage types
    TYPE (SCARC_MATRIX_BANDWISE_TYPE):: POISSONB                ! Poisson matrix in bandwise storage technique
    TYPE (SCARC_MATRIX_COMPACT_TYPE) :: POISSONC                ! Poisson matrix in compact storage technique (default)
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: GALERKIN                ! Galerkin matrix (SAMG only)
+   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: GALERKIN                ! Galerkin matrix (AMG only)
 #ifdef WITH_MKL
    TYPE (SCARC_MATRIX_COMPACT_TYPE) :: POISSONC_SYM            ! symmetric part of compact Poisson matrix (only for MKL)
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: GALERKIN_SYM            ! Galerkin matrix symmetric version (SAMG only)
+   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: GALERKIN_SYM            ! Galerkin matrix symmetric version (AMG only)
 #endif
 
    TYPE (SCARC_MATRIX_COMPACT_TYPE) :: PROLONGATION            ! prolongation matrix
    TYPE (SCARC_MATRIX_COMPACT_TYPE) :: RESTRICTION             ! restriction matrix
    TYPE (SCARC_MATRIX_COMPACT_TYPE) :: CONNECTION              ! strength of connection matrix
    TYPE (SCARC_MATRIX_COMPACT_TYPE) :: ZONES                   ! aggregation zones matrix
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: AP                      ! A*P matrix - only temporarily (SAMG only)
+   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: AP                      ! A*P matrix - only temporarily (AMG only)
 
-   REAL(EB), ALLOCATABLE, DIMENSION (:) :: MEASURES            ! measure for grid coarsening (SAMG only)
+   REAL(EB), ALLOCATABLE, DIMENSION (:) :: MEASURES            ! measure for grid coarsening (AMG only)
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: NULLSPACE           ! nullspace vector
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: AUX1, AUX2          ! auxiliary vectors
-   REAL(EB), ALLOCATABLE, DIMENSION (:) :: DIAG                ! matrix diagonal, possible inverted (SAMG only)
-   REAL(EB), ALLOCATABLE, DIMENSION (:) :: QQ, RR              ! workspace for QR-decompostion (SAMG only)
+   REAL(EB), ALLOCATABLE, DIMENSION (:) :: DIAG                ! matrix diagonal, possible inverted (AMG only)
+   REAL(EB), ALLOCATABLE, DIMENSION (:) :: QQ, RR              ! workspace for QR-decompostion (AMG only)
 
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: ZONES_GLOBAL        ! global zone numbers (grid coarsening of SAMG only)
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: ZONES_LOCAL         ! local  zone numbers (grid coarsening of SAMG only)
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: CELLTYPES           ! celltype for grid coarsening (SAMG only)
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: CPOINTS             ! ZONES for grid coarsening (SAMG only)
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: ZONES_GLOBAL        ! global zone numbers (grid coarsening of AMG only)
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: ZONES_LOCAL         ! local  zone numbers (grid coarsening of AMG only)
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: CELLTYPES           ! celltype for grid coarsening (AMG only)
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: CPOINTS             ! ZONES for grid coarsening (AMG only)
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: ORDER               ! search order for aggregation
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: LOCAL_TO_GLOBAL     ! mapping from local to global numbering 
 
@@ -883,10 +887,10 @@ TYPE SCARC_GRID_TYPE
    INTEGER :: N_DIRIC   = NSCARC_ZERO_INT                      ! number of Dirichlet BCs
    INTEGER :: N_NEUMANN = NSCARC_ZERO_INT                      ! number of Neumann BCs
 
-   INTEGER :: N_FINE   = NSCARC_ZERO_INT                       ! Number of fine cells (SAMG only)
-   INTEGER :: N_COARSE = NSCARC_ZERO_INT                       ! Number of coarse cells (SAMG only)
-   INTEGER :: N_ZONES  = NSCARC_ZERO_INT                       ! Number of zones (SAMG only)
-   INTEGER :: N_STENCIL_MAX  = 20                              ! Max stencil size (SAMG only)
+   INTEGER :: N_FINE   = NSCARC_ZERO_INT                       ! Number of fine cells (AMG only)
+   INTEGER :: N_COARSE = NSCARC_ZERO_INT                       ! Number of coarse cells (AMG only)
+   INTEGER :: N_ZONES  = NSCARC_ZERO_INT                       ! Number of zones (AMG only)
+   INTEGER :: N_STENCIL_MAX  = 20                              ! Max stencil size (AMG only)
 
    ! Pointer variables and arrays for data exchange with neighbors
    INTEGER :: ICG = 0, ICG2 = 0, ICE = 0                       ! ghost cell and extended cell pointers
@@ -1232,7 +1236,7 @@ PUBLIC :: SCARC_PRECON, SCARC_PRECON_ACCURACY, SCARC_PRECON_ITERATIONS, SCARC_PR
 PUBLIC :: SCARC_SMOOTH, SCARC_SMOOTH_ACCURACY, SCARC_SMOOTH_ITERATIONS, SCARC_SMOOTH_OMEGA, SCARC_SMOOTH_SCOPE 
 
 PUBLIC :: SCARC_MULTIGRID, SCARC_MULTIGRID_ACCURACY, SCARC_MULTIGRID_ITERATIONS, SCARC_MULTIGRID_INTERPOL
-PUBLIC :: SCARC_MULTIGRID_CYCLE, SCARC_MULTIGRID_COARSENING , SCARC_MULTIGRID_LEVEL
+PUBLIC :: SCARC_MULTIGRID_CYCLE, SCARC_MULTIGRID_COARSENING, SCARC_MULTIGRID_LEVEL
 PUBLIC :: SCARC_MULTIGRID_PRESMOOTH, SCARC_MULTIGRID_POSTSMOOTH
 
 
@@ -1859,17 +1863,14 @@ END SELECT
 ! If a multigrid solver is used (either as main solver or as preconditioner)
 ! set types for multigrid, coarse grid solver and cycling pattern
 !
-IF (TYPE_METHOD == NSCARC_METHOD_MULTIGRID .OR. TYPE_PRECON == NSCARC_RELAX_GMG) THEN
+IF (TYPE_METHOD == NSCARC_METHOD_MULTIGRID .OR. TYPE_PRECON == NSCARC_RELAX_GMG .OR. TYPE_PRECON == NSCARC_RELAX_AMG) THEN
 
    ! Set type of multigrid (GEOMETRIC/ALGEBRAIC with corresponding coarsening strategy)
    SELECT CASE (TRIM(SCARC_MULTIGRID))
-
       CASE ('GEOMETRIC')
          TYPE_MULTIGRID = NSCARC_MULTIGRID_GEOMETRIC
-
       CASE ('ALGEBRAIC')
          TYPE_MULTIGRID = NSCARC_MULTIGRID_ALGEBRAIC
-
       CASE DEFAULT
          CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_MULTIGRID, NSCARC_NONE)
    END SELECT
@@ -1886,6 +1887,16 @@ IF (TYPE_METHOD == NSCARC_METHOD_MULTIGRID .OR. TYPE_PRECON == NSCARC_RELAX_GMG)
          TYPE_CYCLING = NSCARC_CYCLING_FMG
       CASE DEFAULT
          CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_MULTIGRID_CYCLE, NSCARC_NONE)
+   END SELECT
+
+   ! Set type of coarsening strategy (AMG only)
+   SELECT CASE (TRIM(SCARC_MULTIGRID_COARSENING))
+      CASE ('GMG')
+         TYPE_COARSENING = NSCARC_COARSENING_GMG
+      CASE ('SAMG')
+         TYPE_COARSENING = NSCARC_COARSENING_SAMG
+      CASE DEFAULT
+         CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_MULTIGRID_COARSENING, NSCARC_NONE)
    END SELECT
 
    ! Set type of interpolation 
@@ -1906,6 +1917,7 @@ IF (TYPE_METHOD == NSCARC_METHOD_MULTIGRID .OR. TYPE_PRECON == NSCARC_RELAX_GMG)
 
 ENDIF
 
+
 ! Set type of coarse grid solver
 SELECT CASE (TRIM(SCARC_COARSE))
    CASE ('ITERATIVE')
@@ -1921,6 +1933,7 @@ SELECT CASE (TRIM(SCARC_COARSE))
    CASE DEFAULT
       CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_COARSE, NSCARC_NONE)
 END SELECT
+
 
 !
 ! Set type of accuracy (ABSOLUTE/RELATIVE)
@@ -7158,6 +7171,9 @@ DO NSTACK = 1, N_STACK_TOTAL
          CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
          ST => SCARC(NM)%LEVEL(NL)%STAGE(SV%TYPE_STAGE)
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'Allocating arrays for NSTACK, NM, NL, G%NCE:', NSTACK, NM, NL, G%NCE
+#endif
          IF (SV%X /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%X, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%X')
          IF (SV%B /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%B, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%B')
          IF (SV%D /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%D, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%D')
@@ -7182,8 +7198,6 @@ DO NSTACK = 1, N_STACK_TOTAL
 ENDDO
 
 END SUBROUTINE SCARC_SETUP_VECTORS
-
-
 
 
 ! ----------------------------------------------------------------------------------------------------
@@ -7478,7 +7492,7 @@ SV%TYPE_MKL_PRECISION = TYPE_MKL_PRECISION
 !
 ! Point to solution vectors (in corresponding scope)
 !
-CALL SCARC_SETUP_REFERENCES(.TRUE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.,.FALSE., NSTACK)
+CALL SCARC_SETUP_REFERENCES(.TRUE.,.TRUE.,.FALSE.,.FALSE.,.FALSE.,.FALSE.,.TRUE., NSTACK)
 
 END SUBROUTINE SCARC_SETUP_MKL
 #endif
@@ -10419,10 +10433,19 @@ SELECT_PRECON_TYPE: SELECT CASE (TYPE_TWOLEVEL)
          CALL SCARC_RESTRICTION (B, B, IL, IL+1)                  !  b^{l+1} := Restriction(r^l)
       ENDDO
       CALL SCARC_METHOD_COARSE(NS+2, NS, NLEVEL_MAX)              !  solve A^L * x^L := b^L on coarsest level
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_LEVEL (X, 'PRECON-TWOLEVEL-SAMG: X AFTER COARSE ', NLEVEL_MAX)
+#endif
       CALL SCARC_VECTOR_COPY (X, Z, 1.0_EB, NLEVEL_MAX)           !  z^L := x^L
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_LEVEL (Z, 'PRECON-TWOLEVEL-SAMG: Z AFTER COARSE ', NLEVEL_MAX)
+#endif
 
       DO IL = NLEVEL_MAX-1, NL, -1                                !  successively interpolate to finer levels up to finest
          CALL SCARC_PROLONGATION(Z, Z, IL+1, IL)                  !  z^l := Prolongation(z^{l+1})
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_LEVEL (Z, 'PRECON-TWOLEVEL-SAMG: Z AFTER PROL ', IL)
+#endif
       ENDDO
       CALL SCARC_VECTOR_COPY (R, V, 1.0_EB, NL)                   !  v^l := r^l
       CALL SCARC_RELAXATION (R, V, NS+1, NP, NL)                  !  v^l := Relax(r^l)
@@ -12058,8 +12081,8 @@ END SUBROUTINE SCARC_UPDATE_GHOSTCELLS
 ! NSCARC_EXCHANGE_PRESSURE        :  exchange vector values along internal boundaries
 ! NSCARC_EXCHANGE_VECTOR_MEAN     :  exchange vector and build mean values with own data
 ! NSCARC_EXCHANGE_VECTOR_PLAIN    :  exchange plain vector (just use data from neighbor)
-! NSCARC_EXCHANGE_ZONE_NEIGHBORS  :  exchange number of aggregation zones (SAMG only)
-! NSCARC_EXCHANGE_ZONE_TYPES      :  exchange aggregation zone types (SAMG only)
+! NSCARC_EXCHANGE_ZONE_NEIGHBORS  :  exchange number of aggregation zones (AMG only)
+! NSCARC_EXCHANGE_ZONE_TYPES      :  exchange aggregation zone types (AMG only)
 ! 
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_EXCHANGE (NTYPE, NPARAM, NL)
@@ -14598,7 +14621,7 @@ END SUBROUTINE SCARC_INVERT_MATRIX_DIAGONAL
 SUBROUTINE SCARC_SETUP_STRENGTH_OF_CONNECTION(NL)
 USE SCARC_POINTERS, ONLY: G, A, S, OG
 INTEGER, INTENT(IN) :: NL
-REAL(EB):: VAL, EPS, THETA = 0.1_EB, SCAL, CVAL_MAX
+REAL(EB):: VAL, EPS, THETA = 0.15_EB, SCAL, CVAL_MAX
 INTEGER :: NM, NOM, IC, JC, ICOL, IZONE, INBR
 
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -14703,14 +14726,17 @@ END SUBROUTINE SCARC_SETUP_STRENGTH_OF_CONNECTION
  
 
 ! ------------------------------------------------------------------------------------------------------
-! Pass 1 of aggregation:  Setup aggregation zones on internal cells of active mesh
+! Typical SAMG aggregation prodecure based on strength of connection matrix
 ! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_AGGREGATION_PASS1(G, C)
+SUBROUTINE SCARC_SETUP_AGGREGATION_SAMG(G, C)
 TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER, INTENT(IN) :: C
 TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
-INTEGER :: IC, ICOL, JC
+INTEGER :: IC, ICOL, JC, IZONE, JZONE
 LOGICAL :: HAS_NEIGHBORS, HAS_AGGREGATED_NEIGHBORS
 
+! 
+! Pass 1 of aggregation:  Setup aggregation zones on internal cells of active mesh
+! 
 PASS1_LOOP: DO IC = 1, G%NC
 
    IF (G%ZONES_LOCAL(IC) /= 0) CYCLE                   ! has cell already been aggregated?
@@ -14747,17 +14773,10 @@ PASS1_LOOP: DO IC = 1, G%NC
 
 ENDDO PASS1_LOOP
 
-END SUBROUTINE SCARC_SETUP_AGGREGATION_PASS1
 
-
-! ------------------------------------------------------------------------------------------------------
+! 
 ! Pass 2 of Aggregation:  Add unaggregated nodes to neighboring aggregate
-! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_AGGREGATION_PASS2(G, C)
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER, INTENT(IN) :: C
-TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
-INTEGER :: IC, ICOL, JC, JZONE
-
+! 
 PASS2_LOOP: DO IC = 1, G%NC
 
    IF (G%ZONES_LOCAL(IC) /= 0) CYCLE            
@@ -14778,17 +14797,10 @@ ENDDO PASS2_LOOP
 CALL SCARC_DEBUG_ZONES(G, -1, 1, 'AFTER ACTIVE PASS2')
 #endif
 
-END SUBROUTINE SCARC_SETUP_AGGREGATION_PASS2
 
-
-! ------------------------------------------------------------------------------------------------------
+! 
 ! Pass 3 of Aggregation:  Process remaining nodes which have not been aggregated yet
-! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_AGGREGATION_PASS3(G, C)
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER, INTENT(IN) :: C
-TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
-INTEGER :: IC, ICOL, JC, IZONE
- 
+! 
 PASS3_LOOP: DO IC = 1, G%NC
 
    IZONE = G%ZONES_LOCAL(IC)
@@ -14826,7 +14838,8 @@ ENDIF
 CALL SCARC_DEBUG_ZONES(G, -1, 1, 'AFTER ACTIVE PASS3')
 #endif
 
-END SUBROUTINE SCARC_SETUP_AGGREGATION_PASS3
+END SUBROUTINE SCARC_SETUP_AGGREGATION_SAMG
+
 
 ! ------------------------------------------------------------------------------------------------------
 ! GMG-like aggregation
@@ -14854,7 +14867,7 @@ NZM = MOD(L%NZ,2)
 NZD = L%NZ/2
 
 ! Temporarily - to prevent failure of following algorithm
-IF ((L%NX < 6) .OR. (.NOT.TWO_D .AND. L%NY < 6) .OR. (L%NZ < 6)) THEN 
+IF ((L%NX < 4) .OR. (.NOT.TWO_D .AND. L%NY < 4) .OR. (L%NZ < 4)) THEN 
    WRITE(*,*) 'Grid dimensions too small für GMG-like aggregation'
    CALL MPI_FINALIZE(IERROR)
    STOP
@@ -14871,6 +14884,8 @@ WRITE(MSG%LU_DEBUG,*) 'NYD, NYM =', NYD, NYM
 WRITE(MSG%LU_DEBUG,*) 'NZD, NZM =', NZD, NZM
 #endif
 
+! if even number of cells in x-direction, use patch length of 2 as in default GMG
+! else insert a patch of 3 after the first quarter of cells in x-direction
 IF (NXM == 0) THEN
    OFFX = 2
 ELSE
@@ -14884,6 +14899,8 @@ ELSE
    ENDDO
 ENDIF
 
+! if even number of cells in y-direction, use patch length of 2 as in default GMG
+! else insert a patch of 3 after the first third of cells in x-direction
 IF (TWO_D) THEN
    OFFY = 0
 ELSE
@@ -14901,6 +14918,9 @@ ELSE
    ENDIF
 ENDIF
 
+! if even number of cells in x-direction, use patch length of 2 as in default GMG
+! else insert a patch of 3 after the first half of cells in x-direction
+! the idea is to use different portions in the different coordinate direction to prevent local concentrations
 IF (NZM == 0) THEN
    OFFZ = 2
 ELSE
@@ -15025,85 +15045,88 @@ END SUBROUTINE SCARC_SETUP_AGGREGATION_GMG
 SUBROUTINE SCARC_SETUP_AGGREGATION_ZONES(NL)
 USE SCARC_POINTERS, ONLY: SUB, C, CF, G, GF, GC
 INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, NM2, ICYCLE, IC, IZL, ITYPE
+INTEGER :: NM, NM2, ICYCLE, IC, IZL
 
 SUB => SUBDIVISION
 MESH_INT = -1
 
-!
-! ---- Default aggregation procedure for SAMG
-!
-ITYPE = 1
-IF (ITYPE == 0) THEN
+COARSENING_TYPE_SELECT: SELECT CASE (TYPE_COARSENING)
 
-   CYCLES_LOOP1: DO ICYCLE = 1, SUB%N_CYCLES
+   !
+   ! ---- Default aggregation procedure for SAMG
+   !
+   CASE (NSCARC_COARSENING_SAMG)
+
+      CYCLES_LOOP1: DO ICYCLE = 1, SUB%N_CYCLES
    
 #ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) '================================= ICYCLE =', ICYCLE, SUB%N_CYCLES
-   WRITE(MSG%LU_DEBUG,*) 'SUB%ORDER(.,ICYCLE):'
-   WRITE(MSG%LU_DEBUG,'(20I6)') SUB%ORDER(1:NMESHES,ICYCLE)
+         WRITE(MSG%LU_DEBUG,*) '================================= ICYCLE =', ICYCLE, SUB%N_CYCLES
+         WRITE(MSG%LU_DEBUG,*) 'SUB%ORDER(.,ICYCLE):'
+         WRITE(MSG%LU_DEBUG,'(20I6)') SUB%ORDER(1:NMESHES,ICYCLE)
 #endif
    
+         ! First aggregate on active meshes
+         DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   
+            IF (SUB%ORDER(NM, ICYCLE) == NSCARC_ORDER_ACTIVE) THEN
+               CALL SCARC_POINT_TO_GRID(NM, NL)
+               C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
+               CALL SCARC_SETUP_AGGREGATION_SAMG(G, C)
+               MESH_INT (NM) = G%N_ZONES
+#ifdef WITH_SCARC_DEBUG
+               WRITE(MSG%LU_DEBUG,*) 'ACTIVE: G%N_ZONES, MESH_INT:', G%N_ZONES, MESH_INT
+#endif
+            ENDIF
+   
+         ENDDO
+      
+         ! Exchange overlapping information of active meshes
+         IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONE_TYPES, NSCARC_ZONES_SEND, NL)
+   
+         ! Then aggregate on passive meshes (taking into account overlapping aggregate information of active meshes)
+         DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+      
+            IF (SUB%ORDER (NM, ICYCLE) /= NSCARC_ORDER_ACTIVE) THEN
+               CALL SCARC_POINT_TO_GRID(NM, NL)
+               C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
+               CALL SCARC_SETUP_AGGREGATION_SAMG(G, C)
+               MESH_INT (NM) = G%N_ZONES
+#ifdef WITH_SCARC_DEBUG
+               WRITE(MSG%LU_DEBUG,*) 'PASSIVE: G%N_ZONES, MESH_INT:', G%N_ZONES, MESH_INT
+#endif
+            ENDIF
+   
+         ENDDO
+   
+         ! Exchange overlapping information of passive meshes
+         IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONE_TYPES, NSCARC_ZONES_SEND, NL)
+   
+      ENDDO CYCLES_LOOP1
+   
+#ifdef WITH_SCARC_DEBUG
+      WRITE(MSG%LU_DEBUG,*) 'MESH_INT=',MESH_INT
+#endif
+   
+   !
+   ! ---- GMG-like aggregation procedure 
+   !      In case of even cell numbers this process corresponds to the usual GMG coarsening
+   !      in case of uneven cell number in a coordinate direction, on patch with 3 cells is used, the rest with patches of 2
+   !
+   CASE (NSCARC_COARSENING_GMG)
+
       DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   
-         IF (SUB%ORDER(NM, ICYCLE) == NSCARC_ORDER_ACTIVE) THEN
-            CALL SCARC_POINT_TO_GRID(NM, NL)
-            C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
-            CALL SCARC_SETUP_AGGREGATION_PASS1(G, C)
-            CALL SCARC_SETUP_AGGREGATION_PASS2(G, C)
-            CALL SCARC_SETUP_AGGREGATION_PASS3(G, C)
-            MESH_INT (NM) = G%N_ZONES
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'ACTIVE: G%N_ZONES, MESH_INT:', G%N_ZONES, MESH_INT
-#endif
-         ENDIF
-   
+         CALL SCARC_POINT_TO_GRID(NM, NL)
+         CALL SCARC_SETUP_AGGREGATION_GMG(L, G)
+         MESH_INT (NM) = G%N_ZONES
       ENDDO
       
+      ! Exchange overlapping information 
       IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONE_TYPES, NSCARC_ZONES_SEND, NL)
    
-      ! ----------------------- Passive meshes
-      DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   
-         IF (SUB%ORDER (NM, ICYCLE) /= NSCARC_ORDER_ACTIVE) THEN
-            CALL SCARC_POINT_TO_GRID(NM, NL)
-            C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
-            CALL SCARC_SETUP_AGGREGATION_PASS1(G, C)
-            CALL SCARC_SETUP_AGGREGATION_PASS2(G, C)
-            CALL SCARC_SETUP_AGGREGATION_PASS3(G, C)
-            MESH_INT (NM) = G%N_ZONES
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'PASSIVE: G%N_ZONES, MESH_INT:', G%N_ZONES, MESH_INT
-#endif
-         ENDIF
-   
-      ENDDO
-   
-      IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONE_TYPES, NSCARC_ZONES_SEND, NL)
-   
-   ENDDO CYCLES_LOOP1
-   
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'MESH_INT=',MESH_INT
-#endif
-   
-!
-! ---- GMG-like aggregation procedure 
-!
-ELSE
-
-   DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-      CALL SCARC_POINT_TO_GRID(NM, NL)
-      CALL SCARC_SETUP_AGGREGATION_GMG(L, G)
-      MESH_INT (NM) = G%N_ZONES
-   ENDDO
-      
-   IF (NMESHES > 1)  CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_ZONE_TYPES, NSCARC_ZONES_SEND, NL)
-   
-ENDIF
+END SELECT COARSENING_TYPE_SELECT
 
 
-! Broadcast states of all meshes
+! Broadcast number of zones of all meshes
 IF (N_MPI_PROCESSES>1) &
    CALL MPI_ALLGATHERV(MPI_IN_PLACE, 1, MPI_INTEGER, MESH_INT, COUNTS, DISPLS, MPI_INTEGER, MPI_COMM_WORLD, IERROR)
       
@@ -15457,7 +15480,7 @@ WRITE(MSG%LU_DEBUG,'(6I6)') GC%LOCAL_TO_GLOBAL(1:GC%NCE2)
    DO ICCL = 1, GC%NCE2
 
       ICCG = GC%LOCAL_TO_GLOBAL(ICCL)
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,'(A,3I4)') '=================>  ICCL, ICCG: ', ICCL, ICCG
 #endif
       IS_INCLUDED = .FALSE.
@@ -15467,7 +15490,7 @@ WRITE(MSG%LU_DEBUG,'(A,3I4)') '=================>  ICCL, ICCG: ', ICCL, ICCG
          ZF%COL(IP)  = IC
          !ZF%COLG(IP) = GF%LOCAL_TO_GLOBAL(IC)
 
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,'(A,4I4)') '     bingo, IC, ICC, ICCL, ICCG:', IC, ICC, ICCL, ICCG
 #endif
          IP = IP + 1
@@ -16535,7 +16558,6 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    AC => SCARC_POINT_TO_CMATRIX (GC, NSCARC_MATRIX_POISSON)         
 
 #ifdef WITH_SCARC_DEBUG
-   CALL SCARC_DEBUG_CMATRIX (AP, 'AP-FINE', 'START OF SETUP_GALERKIN')
    CALL SCARC_DEBUG_CMATRIX (RF, 'RESTRICTION-FINE', 'START OF SETUP_GALERKIN')
 #endif
 
@@ -16641,10 +16663,11 @@ IF (N_MPI_PROCESSES>1) &
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'N_STENCIL_MAX  OVERALL:', RANK_INT
+WRITE(MSG%LU_DEBUG,*) 'TYPE_MKL(0:2):', TYPE_MKL(0:2)
 #endif
 
 #ifdef WITH_MKL
-IF (TYPE_MKL(NL) == NSCARC_MKL_LOCAL .OR. TYPE_MKL(NL) == NSCARC_MKL_GLOBAL) THEN
+IF (TYPE_MKL(NL+1) == NSCARC_MKL_LOCAL .OR. TYPE_MKL(NL+1) == NSCARC_MKL_GLOBAL) THEN
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CALL SCARC_SETUP_POISSON_MKL(NM, NL+1)
    ENDDO
@@ -18693,14 +18716,14 @@ WRITE(MSG%LU_DEBUG,*) '================= DEBUG_ZONES at ', CTEXT
 IF (IC /= -1) WRITE(MSG%LU_DEBUG,*) ' IC = ', IC
 IF (ITYPE == 1) THEN
    WRITE(MSG%LU_DEBUG,*) '-------------- ZONES_LOCAL: internal:'
-   WRITE(MSG%LU_DEBUG,'(16I4)') G%ZONES_LOCAL(1:G%NC)
+   WRITE(MSG%LU_DEBUG,'(16I7)') G%ZONES_LOCAL(1:G%NC)
    WRITE(MSG%LU_DEBUG,*) '-------------- ZONES_LOCAL: overlap:'
-   WRITE(MSG%LU_DEBUG,'(16I4)') G%ZONES_LOCAL(G%NC+1: G%NCE2)
+   WRITE(MSG%LU_DEBUG,'(16I7)') G%ZONES_LOCAL(G%NC+1: G%NCE2)
 ELSE
    WRITE(MSG%LU_DEBUG,*) '-------------- ZONES_GLOBAL: internal:'
-   WRITE(MSG%LU_DEBUG,'(16I4)') G%ZONES_GLOBAL(1:G%NC)
+   WRITE(MSG%LU_DEBUG,'(16I7)') G%ZONES_GLOBAL(1:G%NC)
    WRITE(MSG%LU_DEBUG,*) '-------------- ZONES_GLOBAL: overlap:'
-   WRITE(MSG%LU_DEBUG,'(16I4)') G%ZONES_GLOBAL(G%NC+1: G%NCE2)
+   WRITE(MSG%LU_DEBUG,'(16I7)') G%ZONES_GLOBAL(G%NC+1: G%NCE2)
 ENDIF
 WRITE(MSG%LU_DEBUG,*) '-------------- CPOINTS'
 WRITE(MSG%LU_DEBUG,'(16I4)') G%CPOINTS
@@ -18713,6 +18736,7 @@ SUBROUTINE SCARC_DEBUG_CMATRIX(A, CNAME, CTEXT)
 CHARACTER(*), INTENT(IN) :: CNAME, CTEXT
 TYPE (SCARC_MATRIX_COMPACT_TYPE), INTENT(INOUT) :: A      
 INTEGER :: IC, ICOL
+CHARACTER(40) :: CFORM
 
 WRITE(MSG%LU_DEBUG,*)
 WRITE(MSG%LU_DEBUG,*) '============ START DEBUGGING MATRIX ', CNAME, ' AT ', TRIM(CTEXT)
@@ -18742,21 +18766,48 @@ WRITE(MSG%LU_DEBUG,'(8I6)') (A%ROW(IC), IC=1, A%N_ROW)
 WRITE(MSG%LU_DEBUG,*) "------------->", TRIM(CNAME),'%COL:'
 DO IC = 1, A%N_ROW-1
    IF (A%ROW(IC) == 0) CYCLE
-   WRITE(MSG%LU_DEBUG,'(I4,A,16I6)') IC,':', (A%COL(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
+   IF (A%ROW(IC+1)-A%ROW(IC) < 10) THEN
+      CFORM = "(I4,A,10I6)"
+   ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 20) THEN
+      CFORM = "(I4,A,20I6)"
+   ELSE IF (A%ROW(IC+1)-A%ROW(IC)  < 30) THEN
+      CFORM = "(I4,A,30I6)"
+   ELSE
+      CFORM = "(I4,A,40I6)"
+   ENDIF
+   WRITE(MSG%LU_DEBUG,CFORM) IC,':', (A%COL(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
 ENDDO
 IF (ALLOCATED(A%COLG)) THEN
    WRITE(MSG%LU_DEBUG,*) "------------->", TRIM(CNAME),'%COLG:'
    DO IC = 1, A%N_ROW-1
       IF (A%ROW(IC) == 0) CYCLE
-      WRITE(MSG%LU_DEBUG,'(I4,A,16I6)') IC,':', (A%COLG(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
+      WRITE (CFORM, '(A,I3,A)' ) "(I4,A,", A%ROW(IC+1)-A%ROW(IC),"I5)"
+      IF (A%ROW(IC+1)-A%ROW(IC) < 10) THEN
+         CFORM = "(I4,A,10I6)"
+      ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 20) THEN
+         CFORM = "(I4,A,20I6)"
+      ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 30) THEN
+         CFORM = "(I4,A,30I6)"
+      ELSE
+         CFORM = "(I4,A,40I6)"
+      ENDIF
+      WRITE(MSG%LU_DEBUG,CFORM) IC,':', (A%COLG(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
    ENDDO
 ENDIF
 IF (ALLOCATED(A%VAL)) THEN
 WRITE(MSG%LU_DEBUG,*) "------------->", TRIM(CNAME),'%VAL:'
 DO IC = 1, A%N_ROW-1
    IF (A%ROW(IC) == 0) CYCLE
-   !WRITE(MSG%LU_DEBUG,'(I4,A,40E12.3)') IC,':', (A%VAL(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
-   WRITE(MSG%LU_DEBUG,*) IC,':', (A%VAL(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
+      IF (A%ROW(IC+1)-A%ROW(IC) < 10) THEN
+         CFORM = "(I4,A,10E12.3)"
+      ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 20) THEN
+         CFORM = "(I4,A,20E12.3)"
+      ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 30) THEN
+         CFORM = "(I4,A,30E12.3)"
+      ELSE
+         CFORM = "(I4,A,40E12.3)"
+      ENDIF
+   WRITE(MSG%LU_DEBUG,CFORM) IC,':', (A%VAL(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
 ENDDO
 WRITE(MSG%LU_DEBUG,*) '============ END DEBUGGING MATRIX ', CNAME, ' AT ', TRIM(CTEXT)
 ENDIF
