@@ -1,11 +1,18 @@
-&HEAD CHID='cg1',TITLE='Basic Poisson test of default ScaRC solver on 2D-pipe geometry with 4 meshes' /
+&HEAD CHID='sgmg1',TITLE='Basic Poisson test of default ScaRC solver on 2D-pipe geometry with 4 meshes' /
 
 &MESH IJK=19,1,11  XB=0.0,1.9,-0.01,0.01,0.0,1.1 /
 
 &MISC NOISE = .FALSE. 
       DNS   = .TRUE./
 
-&PRES SOLVER ='SCARC' /
+&PRES SOLVER = 'SCARC'
+      SCARC_MATRIX = 'COMPACT'
+      SCARC_SMOOTH = 'SSOR'
+      SCARC_METHOD = 'MULTIGRID'
+      SCARC_MULTIGRID = 'ALGEBRAIC'
+      SCARC_MULTIGRID_COARSENING = 'SAMG'
+      SCARC_SMOOTH_ITERATIONS = 4
+      SCARC_MULTIGRID_LEVEL = 3 /
 
 &TIME T_END=0.5, DT=0.002 /
 
