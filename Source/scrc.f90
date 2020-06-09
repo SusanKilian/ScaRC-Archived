@@ -21,8 +21,6 @@ MODULE SCARC_GLOBAL_CONSTANTS
 USE PRECISION_PARAMETERS
 IMPLICIT NONE
 
-INTEGER :: ISUSI = 0
-
 INTEGER, PARAMETER :: NSCARC_ACCURACY_ABSOLUTE       =  1, &    ! absolute accuracy must be reached
                       NSCARC_ACCURACY_RELATIVE       =  2       ! relative accuracy must be reached
                    
@@ -63,7 +61,7 @@ INTEGER, PARAMETER :: NSCARC_DEBUG_BDRY              =  1, &    ! show pressure_
                       NSCARC_DEBUG_CELL_TYPE         =  2, &    ! show type of cells 
                       NSCARC_DEBUG_FACE              =  3, &    ! show face information
                       NSCARC_DEBUG_GRID              =  4, &    ! show grid information
-                      NSCARC_DEBUG_CMATRIX            =  5, &    ! show matrix
+                      NSCARC_DEBUG_CMATRIX           =  5, &    ! show matrix
                       NSCARC_DEBUG_MATRIX_SYM        =  6, &    ! show symmetric matrix
                       NSCARC_DEBUG_MEASURE           =  7, &    ! show measure of cells
                       NSCARC_DEBUG_RESTRICTION       =  8, &    ! show pressure quantities
