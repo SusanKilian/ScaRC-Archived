@@ -38,8 +38,9 @@ INTEGER, PARAMETER :: NSCARC_COARSE_ITERATIVE        =  1, &    ! iterative coar
                       NSCARC_COARSE_LEVEL            =  3, &    ! Coarse grid on specified grid level
                       NSCARC_COARSE_MACRO            =  4       ! Coarse grid on macro decomposition
 
-INTEGER, PARAMETER :: NSCARC_COARSENING_GMG          =  1, &    ! GMG coarsening for multigrid method (AMG only)
-                      NSCARC_COARSENING_SAMG         = 2       ! SAMG coarsening for multigrid method (AMG only)
+INTEGER, PARAMETER :: NSCARC_COARSENING_AGGREGATED   =  1, &    ! aggregation-based grid coarsening (AMG only)
+                      NSCARC_COARSENING_DOUBLED      =  2, &    ! default doubling of grid sizes (not AMG)
+                      NSCARC_COARSENING_CUBIC        =  3       ! GMG-like coarsening with cubic zones (AMG only)
 
 INTEGER, PARAMETER :: NSCARC_COUPLING_MAX            = 10       ! maximum of possible couplings in stencil
 
@@ -79,7 +80,7 @@ INTEGER, PARAMETER :: NSCARC_DUMP_A                  =  1, &    ! dump matrix A
                       NSCARC_DUMP_MESH               =  4       ! dump solution mesh information
 #endif
 
-INTEGER, PARAMETER :: NSCARC_ERROR_AGGREGATION       =  1, &    ! SAMG-aggregation failed
+INTEGER, PARAMETER :: NSCARC_ERROR_AGGREGATION       =  1, &    ! aggregation in AMG failed
                       NSCARC_ERROR_BICG_DISABLED     =  2, &    ! BICG temporarily disabled
                       NSCARC_ERROR_BOUNDARY_SUM      =  3, &    ! wrong sum of elements along boundary
                       NSCARC_ERROR_BOUNDARY_TYPE     =  4, &    ! wrong boundary type
@@ -191,7 +192,8 @@ INTEGER, PARAMETER :: NSCARC_METHOD_KRYLOV           =  1, &    ! Krylov   -meth
                       NSCARC_METHOD_FFT              =  4, &    ! FFT method based on CRAYFISHPAK
                       NSCARC_METHOD_MGM              =  5       ! MGM-method based on LU
 
-INTEGER, PARAMETER :: NSCARC_MKL_LOCAL               =  1, &    ! local LU-decompositions (PARDISO)
+INTEGER, PARAMETER :: NSCARC_MKL_NONE                =  0, &    ! no use of MKL routines
+                      NSCARC_MKL_LOCAL               =  1, &    ! local LU-decompositions (PARDISO)
                       NSCARC_MKL_GLOBAL              =  2, &    ! global LU-decomposition(CLUSTER_SPARSE_SOLVER)
                       NSCARC_MKL_COARSE              =  3       ! LU-decomposition on coarse grid level
 
@@ -216,10 +218,9 @@ INTEGER, PARAMETER :: NSCARC_RELAX_JAC               =  1, &    ! preconditionin
                       NSCARC_RELAX_MSSOR             =  7, &    ! preconditioning by local MSSOR-methods (matrix form)
                       NSCARC_RELAX_ILU               =  8, &    ! preconditioning by local ILU-decompositions (own)
                       NSCARC_RELAX_FFT               =  9, &    ! preconditioning by local FFT-methods
-                      NSCARC_RELAX_FFTO              = 10, &    ! preconditioning by local FFT-methods
-                      NSCARC_RELAX_GMG               = 11, &    ! preconditioning by local GMG-methods
-                      NSCARC_RELAX_AMG               = 12, &    ! preconditioning by local AMG-methods
-                      NSCARC_RELAX_MKL               = 13       ! preconditioning by local LU-decompositions (MKL)
+                      NSCARC_RELAX_FFTO              = 10, &    ! preconditioning by local FFTO-methods (including overlap)
+                      NSCARC_RELAX_MULTIGRID         = 11, &    ! preconditioning by local multigrid methods
+                      NSCARC_RELAX_MKL               = 12       ! preconditioning by local LU-decompositions (MKL)
 
 INTEGER, PARAMETER :: NSCARC_RHS_HOMOGENEOUS         =  1, &    ! homogeneous boundary conditions for global problem
                       NSCARC_RHS_INHOMOGENEOUS       =  2, &    ! inhomogeneous boundary conditions for global problem
@@ -250,9 +251,7 @@ INTEGER, PARAMETER :: NSCARC_STATE_PROCEED           =  0, &    ! proceed loop
                       NSCARC_STATE_DIVG              =  3       ! check divergence for residual
 
 INTEGER, PARAMETER :: NSCARC_STENCIL_CONSTANT        =  1, &    ! constant matrix entries
-                      NSCARC_STENCIL_VARIABLE        =  2, &    ! variable matrix entries, own version of scarc_daypyv
-                      NSCARC_STENCIL_CONSTANT_LOCAL  =  3, &    ! constant-matrix entries with local corrections
-                      NSCARC_STENCIL_VARIABLE_LOCAL  =  4       ! variable matrix entries with local matvec
+                      NSCARC_STENCIL_VARIABLE        =  2       ! variable matrix entries, own version of scarc_daypyv
 
 REAL(EB), PARAMETER:: NSCARC_THRESHOLD_CONVERGENCE   = 1.0E-15_EB, & ! threshold for convergence
                       NSCARC_THRESHOLD_DIVGERGENCE   = 1.0E+15_EB    ! threshold for divergence
@@ -262,8 +261,7 @@ INTEGER, PARAMETER :: NSCARC_TWOLEVEL_NONE           =  0, &    ! no two levels,
                       NSCARC_TWOLEVEL_MUL            =  2, &    ! multiplicative 2-level method
                       NSCARC_TWOLEVEL_MUL2           =  3, &    ! multiplicative 2-level method
                       NSCARC_TWOLEVEL_COARSE         =  4, &    ! only coarse grid
-                      NSCARC_TWOLEVEL_MACRO          =  5, &    ! 2. level is macro solver 
-                      NSCARC_TWOLEVEL_SAMG           =  6       ! Coarse level based on SAMG-aggregation
+                      NSCARC_TWOLEVEL_MACRO          =  5       ! use macro solver on second level
 
 INTEGER, PARAMETER :: NSCARC_VECTOR_ONE_X            =  1, &    ! selection parameter for 1-stage vector X
                       NSCARC_VECTOR_ONE_B            =  2, &    !       ...                              F
@@ -343,7 +341,7 @@ INTEGER       :: SCARC_COARSE_ITERATIONS = 100              ! Max number of iter
 INTEGER       :: SCARC_COARSE_LEVEL      =  1               ! Coarse grid level for twolevel-Krylov method (default min level)
 REAL (EB)     :: SCARC_COARSE_OMEGA      = 0.80E+0_EB       ! Relaxation parameter
 
-CHARACTER(40) :: SCARC_COARSENING = 'GMG'                   ! Coarsening strategy for multilevel methods (GMG/SAMG)
+CHARACTER(40) :: SCARC_COARSENING = 'DOUBLED'               ! Coarsening strategy for multilevel methods 
 
 !
 ! ---------- Parameters for Krylov-type methods
@@ -404,30 +402,39 @@ LOGICAL :: SCARC_DUMP = .TRUE.                             ! Dump out several ar
 ! 
 ! ---------- Logical indicators for different methods and mechanisms
 ! 
-LOGICAL :: IS_STRUCTURED      = .FALSE.                     ! is structured discretization?
-LOGICAL :: IS_UNSTRUCTURED    = .FALSE.                     ! is unstructured discretization?
-LOGICAL :: IS_PURE_NEUMANN    = .FALSE.                     ! is pure Neumann system?
-LOGICAL :: IS_CG              = .FALSE.                     ! is Krylov-method?
-LOGICAL :: IS_CG_ADD          = .FALSE.                     ! is additive twolevel-Krylov-method?
-LOGICAL :: IS_CG_AMG          = .FALSE.                     ! is Krylov-method with AMG-preconditioning?
-LOGICAL :: IS_CG_COARSE       = .FALSE.                     ! is only coarse grid preconditiner?
-LOGICAL :: IS_CG_GMG          = .FALSE.                     ! is Krylov-method with GMG-preconditioning?
-LOGICAL :: IS_CG_MUL          = .FALSE.                     ! is multiplicative Twolevel-Krylov-method ?
-LOGICAL :: IS_CG_MACRO        = .FALSE.                     ! is macro coarse grid solver
-LOGICAL :: IS_CG_SAMG         = .FALSE.                     ! is Krylov method with additive SAMG-coarse grid?
-LOGICAL :: IS_MG              = .FALSE.                     ! is Multigrid-method?
-LOGICAL :: IS_GMG             = .FALSE.                     ! is Geometric Multigrid-method?
-LOGICAL :: IS_AMG             = .FALSE.                     ! is Algebraic Multigrid-method?
-LOGICAL :: IS_FFT             = .FALSE.                     ! is FFT-method?
-LOGICAL :: IS_FFTO            = .FALSE.                     ! is FFTO-method?
-LOGICAL :: IS_MGM             = .FALSE.                     ! is McKeeney-Greengard-Mayo method?
-LOGICAL :: IS_MKL             = .FALSE.                     ! is MKL-method?
-LOGICAL :: IS_MKL_LEVEL(10)   = .FALSE.                     ! is level-dependent MKL method?
+LOGICAL :: IS_STRUCTURED        = .FALSE.                     ! is structured discretization?
+LOGICAL :: IS_UNSTRUCTURED      = .FALSE.                     ! is unstructured discretization?
+LOGICAL :: IS_PURE_NEUMANN      = .FALSE.                     ! is pure Neumann system?
+LOGICAL :: IS_MG                = .FALSE.                     ! is Multigrid-method?
+LOGICAL :: IS_AMG               = .FALSE.                     ! is Algebraic Multigrid-method?
+LOGICAL :: IS_GMG               = .FALSE.                     ! is Geometric Multigrid-method?
+LOGICAL :: IS_CG                = .FALSE.                     ! is Krylov-method?
+LOGICAL :: IS_CG_ADD            = .FALSE.                     ! is additive twolevel-Krylov-method?
+LOGICAL :: IS_CG_AMG            = .FALSE.                     ! is Krylov-method with AMG-preconditioning?
+LOGICAL :: IS_CG_GMG            = .FALSE.                     ! is Krylov-method with GMG-preconditioning?
+LOGICAL :: IS_CG_COARSE         = .FALSE.                     ! is only coarse grid solver?
+LOGICAL :: IS_CG_MACRO          = .FALSE.                     ! is macro coarse grid solver?
+LOGICAL :: IS_CG_MG             = .FALSE.                     ! is Krylov-method with MG-preconditioning?
+LOGICAL :: IS_CG_MUL            = .FALSE.                     ! is multiplicative Twolevel-Krylov-method?
+LOGICAL :: IS_CG_MUL2           = .FALSE.                     ! is multiplicative-type2 Twolevel-Krylov-method?
+LOGICAL :: IS_COARSE_AMG        = .FALSE.                     ! has AMG-based coarse grid solver?
+LOGICAL :: IS_COARSE_GMG        = .FALSE.                     ! has AMG-based coarse grid solver?
+LOGICAL :: IS_COARSE_AGGREGATED = .FALSE.                     ! has aggregation-based coarse grid solver?
+LOGICAL :: IS_COARSE_DOUBLED    = .FALSE.                     ! has default coarse grid solver?
+LOGICAL :: IS_COARSE_CUBIC      = .FALSE.                     ! has geometry-based coarse grid solver?
+LOGICAL :: IS_FFT               = .FALSE.                     ! is FFT-method?
+LOGICAL :: IS_FFTO              = .FALSE.                     ! is FFTO-method?
+LOGICAL :: IS_MGM               = .FALSE.                     ! is McKeeney-Greengard-Mayo method?
+LOGICAL :: IS_MKL               = .FALSE.                     ! is MKL-method?
+LOGICAL :: IS_MKL_LEVEL(10)     = .FALSE.                     ! is level-dependent MKL method?
  
-LOGICAL :: HAS_CSV_DUMP       = .FALSE.                     ! has CSV-file to be dumped out
-LOGICAL :: HAS_TWO_LEVELS     = .FALSE.                     ! has two grid levels?
-LOGICAL :: HAS_MULTI_LEVELS   = .FALSE.                     ! has multiple grid levels?
-LOGICAL :: HAS_MULTI_GRIDS    = .FALSE.                     ! has multiple discretization types?
+LOGICAL :: HAS_CSV_DUMP         = .FALSE.                     ! has CSV-file to be dumped out?
+LOGICAL :: HAS_GRIDS_MULTIPLE   = .FALSE.                     ! has multiple discretization types?
+LOGICAL :: HAS_LEVELS_TWO       = .FALSE.                     ! has two grid levels?
+LOGICAL :: HAS_LEVELS_MULTIPLE  = .FALSE.                     ! has multiple grid levels?
+LOGICAL :: HAS_LEVELS_AMG       = .FALSE.                     ! has AMG-based grid levels?
+LOGICAL :: HAS_LEVELS_GMG       = .FALSE.                     ! has GMG-based grid levels?
+
 
 ! 
 ! ---------- Globally used types for description of different solvers
@@ -435,7 +442,7 @@ LOGICAL :: HAS_MULTI_GRIDS    = .FALSE.                     ! has multiple discr
 INTEGER :: TYPE_ACCURACY           = NSCARC_ACCURACY_ABSOLUTE    ! default type of requested accuracy
 INTEGER :: TYPE_AGGREGATE          = NSCARC_ZONES_INITIAL        ! default aggregation type for exchange
 INTEGER :: TYPE_COARSE             = NSCARC_COARSE_DIRECT        ! default type of coarse grid solver for multigrid method
-INTEGER :: TYPE_COARSENING         = NSCARC_COARSENING_GMG       ! default GMG-coarsening in case of twolevel method
+INTEGER :: TYPE_COARSENING         = NSCARC_COARSENING_DOUBLED   ! default coarsening in case of twolevel method
 INTEGER :: TYPE_CYCLING            = NSCARC_CYCLING_V            ! default type of cycling for multigrid method
 INTEGER :: TYPE_GRID               = NSCARC_GRID_STRUCTURED      ! default type of discretization (structured/unstructured)
 INTEGER :: TYPE_EXCHANGE           = NSCARC_UNDEF_INT            ! no default type of data exchange
@@ -446,7 +453,7 @@ INTEGER :: TYPE_LEVEL(0:2)         = NSCARC_UNDEF_INT            ! default type 
 INTEGER :: TYPE_MATRIX             = NSCARC_MATRIX_COMPACT       ! default type of storage for matrix
 INTEGER :: TYPE_MATVEC             = NSCARC_MATVEC_GLOBAL        ! default type of matrix-vector multiplication
 INTEGER :: TYPE_METHOD             = NSCARC_METHOD_KRYLOV        ! default type of ScaRC method
-INTEGER :: TYPE_MKL(0:10)          = NSCARC_UNDEF_INT            ! no default type of MKL for single levels
+INTEGER :: TYPE_MKL(0:10)          = NSCARC_MKL_NONE             ! default type for use of MKL solvers
 INTEGER :: TYPE_MKL_PRECISION      = NSCARC_PRECISION_DOUBLE     ! default double precision MKL solver
 INTEGER :: TYPE_MULTIGRID          = NSCARC_MULTIGRID_GEOMETRIC  ! default type of multigrid method (GMG/AMG)
 INTEGER :: TYPE_PARENT             = NSCARC_UNDEF_INT            ! no default type of parent (calling) solver
@@ -794,6 +801,7 @@ TYPE SCARC_MULTIGRID_TYPE
    REAL(EB) :: APPROX_SPECTRAL_RADIUS = 2.0_EB             ! Relaxation parameter (AMG only)
    REAL(EB) :: AMG_TOL = 0.25_EB                           ! Tolerance for coarsening
    REAL(EB) :: OMEGA = 1.0_EB                              ! Relaxation parameter
+   REAL(EB) :: THETA = 0.2_EB                              ! Threshold for aggregation process
 
    INTEGER :: CYCLING(2) = 0                               ! Counter for multigrid cycling
    INTEGER :: N_PRESMOOTH, N_POSTSMOOTH                    ! Number of pre- and post-processing steps
@@ -996,7 +1004,7 @@ TYPE SCARC_SOLVER_TYPE
    ! Types of different solver components
    INTEGER :: TYPE_ACCURACY      = NSCARC_ACCURACY_ABSOLUTE    ! Default type of requested accuracy
    INTEGER :: TYPE_COARSE        = NSCARC_COARSE_DIRECT        ! Default type of coarse grid solver for multigrid method
-   INTEGER :: TYPE_COARSENING    = NSCARC_COARSENING_GMG       ! Default GMG-coarsening in case of multilevel methods
+   INTEGER :: TYPE_COARSENING    = NSCARC_COARSENING_DOUBLED   ! Default GMG-coarsening based on doubling of grid sizes
    INTEGER :: TYPE_CYCLING       = NSCARC_CYCLING_V            ! Default type of cycling for multigrid method
    INTEGER :: TYPE_GRID          = NSCARC_GRID_STRUCTURED      ! Default type of discretization (structured/unstructured)
    INTEGER :: TYPE_EXCHANGE      = NSCARC_UNDEF_INT            ! No default type of data exchange
@@ -1255,7 +1263,7 @@ TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: COARSE_KRYLOV
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: MAIN_LU
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: COARSE_CLUSTER, COARSE_PARDISO
 #endif
-TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_JAC, PRECON_SSOR, PRECON_ILU, PRECON_FFT, PRECON_FFTO, PRECON_GMG
+TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_JAC, PRECON_SSOR, PRECON_ILU, PRECON_FFT, PRECON_FFTO, PRECON_MG
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: PRECON_MJAC, PRECON_MGS, PRECON_MSGS, PRECON_MSOR, PRECON_MSSOR
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: SMOOTH_JACOBI, SMOOTH_SSOR, SMOOTH_ILU, SMOOTH_FFT, SMOOTH_FFTO
 TYPE (SCARC_SOLVER_TYPE) , SAVE, TARGET :: SMOOTH_MJAC, SMOOTH_MGS, SMOOTH_MSGS, SMOOTH_MSOR, SMOOTH_MSSOR
@@ -1302,7 +1310,7 @@ CALL SCARC_SETUP_SUBDIVISION                ; IF (STOP_STATUS==SETUP_STOP) RETUR
 !
 ! Setup wall information according to specified discretization type/method
 !
-IF (HAS_MULTI_GRIDS) THEN
+IF (HAS_GRIDS_MULTIPLE) THEN
    CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_STRUCTURED)
    CALL SCARC_SETUP_WALLS                   ; IF (STOP_STATUS==SETUP_STOP) RETURN
    CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)
@@ -1318,12 +1326,8 @@ ENDIF
 CALL SCARC_SETUP_EXCHANGES                  ; IF (STOP_STATUS==SETUP_STOP) RETURN
 CALL SCARC_SETUP_SYSTEMS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
 
-IF (IS_AMG .OR. IS_CG_AMG .OR. IS_CG_SAMG) THEN
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SETUP_SAMG'
-#endif
-   CALL SCARC_SETUP_SAMG                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
-ENDIF
+IF (HAS_LEVELS_AMG) &
+   CALL SCARC_SETUP_ALGEBRAIC_MULTIGRID     ; IF (STOP_STATUS==SETUP_STOP) RETURN
 
 CALL SCARC_SETUP_METHODS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
 CALL SCARC_SETUP_VECTORS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
@@ -1587,24 +1591,8 @@ SELECT CASE (TRIM(SCARC_STENCIL))
       TYPE_STENCIL = NSCARC_STENCIL_CONSTANT
    CASE ('VARIABLE')
       TYPE_STENCIL = NSCARC_STENCIL_VARIABLE
-   CASE ('CONSTANT_LOCAL')
-      TYPE_STENCIL = NSCARC_STENCIL_CONSTANT_LOCAL
-   CASE ('VARIABLE_LOCAL')
-      TYPE_STENCIL = NSCARC_STENCIL_VARIABLE_LOCAL
    CASE DEFAULT
       CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_STENCIL, NSCARC_NONE)
-END SELECT
-
-!
-! ------------ Set type of coarsening strategy in case of multi-level methods
-!
-SELECT CASE (TRIM(SCARC_COARSENING))
-   CASE ('GMG')
-      TYPE_COARSENING = NSCARC_COARSENING_GMG
-   CASE ('SAMG')
-      TYPE_COARSENING = NSCARC_COARSENING_SAMG
-   CASE DEFAULT
-      CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_COARSENING, NSCARC_NONE)
 END SELECT
 
 !
@@ -1640,8 +1628,8 @@ SELECT CASE (TRIM(SCARC_METHOD))
             TYPE_TWOLEVEL = NSCARC_TWOLEVEL_MUL2
          CASE ('COARSE')
             TYPE_TWOLEVEL = NSCARC_TWOLEVEL_COARSE
-         CASE ('SAMG')
-            TYPE_TWOLEVEL = NSCARC_TWOLEVEL_SAMG
+         CASE ('MACRO')
+            TYPE_TWOLEVEL = NSCARC_TWOLEVEL_MACRO
          CASE DEFAULT
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_TWOLEVEL, NSCARC_NONE)
       END SELECT
@@ -1676,8 +1664,8 @@ SELECT CASE (TRIM(SCARC_METHOD))
             TYPE_PRECON = NSCARC_RELAX_MSSOR
          CASE ('ILU')                                       ! ILU preconditioner
             TYPE_PRECON = NSCARC_RELAX_ILU
-         CASE ('GMG')                                       ! Geometric multigrid preconditioner
-            TYPE_PRECON = NSCARC_RELAX_GMG
+         CASE ('MULTIGRID')                                 ! Multigrid preconditioner
+            TYPE_PRECON = NSCARC_RELAX_MULTIGRID
             SELECT CASE (TRIM(SCARC_SMOOTH))
                CASE ('JACOBI')
                   TYPE_SMOOTH = NSCARC_RELAX_JAC
@@ -1768,17 +1756,19 @@ SELECT CASE (TRIM(SCARC_METHOD))
       SELECT CASE (TRIM(SCARC_MULTIGRID))
          CASE ('GEOMETRIC')
             TYPE_MULTIGRID = NSCARC_MULTIGRID_GEOMETRIC
+            TYPE_COARSENING = NSCARC_COARSENING_DOUBLED     ! GMG-default, may be overwritten, if SCARC_COARSENING is set
          CASE ('ALGEBRAIC')
             TYPE_MULTIGRID = NSCARC_MULTIGRID_ALGEBRAIC
+            TYPE_COARSENING = NSCARC_COARSENING_CUBIC       ! AMG-default, may be overwritten, if SCARC_COARSENING is set
          CASE DEFAULT
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_MULTIGRID, NSCARC_NONE)
       END SELECT
 
       ! Set type of smoother (JACOBI/SGS/SSOR/MSSOR/ILU/PARDISO/CLUSTER)
-      SELECT CASE (TRIM(SCARC_SMOOTH))                        ! use same parameters as for preconditioner
-         CASE ('JACOBI')
+      SELECT CASE (TRIM(SCARC_SMOOTH))                      ! use same parameters as for preconditioner
+         CASE ('JACOBI')                                    ! Jacobi preconditioner
             TYPE_SMOOTH = NSCARC_RELAX_JAC
-         CASE ('SSOR')
+         CASE ('SSOR')                                      ! SSOR preconditioner
             TYPE_SMOOTH = NSCARC_RELAX_SSOR
          CASE ('MJAC')                                      ! Jacobi preconditioner in matrix form
             TYPE_SMOOTH = NSCARC_RELAX_MJAC
@@ -1858,7 +1848,7 @@ SELECT CASE (TRIM(SCARC_METHOD))
    CASE ('MGM')
 
       ! Just preset some values for proof of concept
-      HAS_MULTI_GRIDS = .TRUE.
+      HAS_GRIDS_MULTIPLE = .TRUE.
 
       TYPE_METHOD   = NSCARC_METHOD_MGM
       TYPE_KRYLOV   = NSCARC_KRYLOV_CG
@@ -1876,7 +1866,7 @@ END SELECT
 ! If a multigrid solver is used (either as main solver or as preconditioner)
 ! set types for multigrid, coarse grid solver and cycling pattern
 !
-IF (TYPE_METHOD == NSCARC_METHOD_MULTIGRID .OR. TYPE_PRECON == NSCARC_RELAX_GMG .OR. TYPE_PRECON == NSCARC_RELAX_AMG) THEN
+IF (TYPE_METHOD == NSCARC_METHOD_MULTIGRID .OR. TYPE_PRECON == NSCARC_RELAX_MULTIGRID) THEN
 
    ! Set type of multigrid (GEOMETRIC/ALGEBRAIC with corresponding coarsening strategy)
    SELECT CASE (TRIM(SCARC_MULTIGRID))
@@ -1919,6 +1909,20 @@ IF (TYPE_METHOD == NSCARC_METHOD_MULTIGRID .OR. TYPE_PRECON == NSCARC_RELAX_GMG 
    END SELECT
 
 ENDIF
+
+!
+! ------------ Set type of coarsening strategy in case of multi-level methods
+!
+SELECT CASE (TRIM(SCARC_COARSENING))
+   CASE ('AGGREGATED')
+      TYPE_COARSENING = NSCARC_COARSENING_AGGREGATED
+   CASE ('DOUBLED')
+      TYPE_COARSENING = NSCARC_COARSENING_DOUBLED
+   CASE ('CUBIC')
+      TYPE_COARSENING = NSCARC_COARSENING_CUBIC
+   CASE DEFAULT
+      CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_COARSENING, NSCARC_NONE)
+END SELECT
 
 
 ! Set type of coarse grid solver
@@ -1969,31 +1973,39 @@ IS_STRUCTURED   = (TYPE_GRID == NSCARC_GRID_STRUCTURED)
 IS_UNSTRUCTURED = (TYPE_GRID == NSCARC_GRID_UNSTRUCTURED)
 
 IS_CG     = (TYPE_METHOD == NSCARC_METHOD_KRYLOV)
-IS_CG_GMG = (TYPE_PRECON == NSCARC_RELAX_GMG) .AND. (TYPE_MULTIGRID == NSCARC_MULTIGRID_GEOMETRIC) .AND. IS_CG
-IS_CG_AMG = (TYPE_PRECON == NSCARC_RELAX_AMG) .AND. (TYPE_MULTIGRID == NSCARC_MULTIGRID_ALGEBRAIC) .AND. IS_CG
+IS_CG_MG  = IS_CG .AND. (TYPE_PRECON == NSCARC_RELAX_MULTIGRID) 
+IS_CG_GMG = IS_CG .AND. (TYPE_PRECON == NSCARC_RELAX_MULTIGRID) .AND. (TYPE_MULTIGRID == NSCARC_MULTIGRID_GEOMETRIC)
+IS_CG_AMG = IS_CG .AND. (TYPE_PRECON == NSCARC_RELAX_MULTIGRID) .AND. (TYPE_MULTIGRID == NSCARC_MULTIGRID_ALGEBRAIC)
 
 IS_MG  = (TYPE_METHOD == NSCARC_METHOD_MULTIGRID)
-IS_GMG = (TYPE_MULTIGRID == NSCARC_MULTIGRID_GEOMETRIC) .AND. IS_MG
-IS_AMG = (TYPE_MULTIGRID == NSCARC_MULTIGRID_ALGEBRAIC) .AND. IS_MG
-
-HAS_TWO_LEVELS   = IS_CG .AND. (TYPE_PRECON /= NSCARC_RELAX_GMG) .AND. (TYPE_TWOLEVEL > NSCARC_TWOLEVEL_NONE)
-HAS_MULTI_LEVELS = IS_MG .OR. IS_CG_GMG .OR. HAS_TWO_LEVELS 
-
-IS_CG_ADD    = HAS_TWO_LEVELS .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_ADD)
-IS_CG_MUL    = HAS_TWO_LEVELS .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MUL)
-IS_CG_COARSE = HAS_TWO_LEVELS .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_COARSE)
-IS_CG_MACRO  = HAS_TWO_LEVELS .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MACRO)
-IS_CG_SAMG   = HAS_TWO_LEVELS .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_SAMG)
+IS_GMG = IS_MG .AND. (TYPE_MULTIGRID == NSCARC_MULTIGRID_GEOMETRIC)
+IS_AMG = IS_MG .AND. (TYPE_MULTIGRID == NSCARC_MULTIGRID_ALGEBRAIC)
 
 IS_FFT = (TYPE_PRECON == NSCARC_RELAX_FFT)  .OR. (TYPE_SMOOTH == NSCARC_RELAX_FFT)
 IS_FFTO= (TYPE_PRECON == NSCARC_RELAX_FFTO) .OR. (TYPE_SMOOTH == NSCARC_RELAX_FFTO)
-IS_MKL = (TYPE_PRECON >= NSCARC_RELAX_MKL)  .OR. &
-         (TYPE_SMOOTH >= NSCARC_RELAX_MKL)  .OR. &
-         (HAS_MULTI_LEVELS .AND. TYPE_COARSE == NSCARC_COARSE_DIRECT)
+IS_MKL = (TYPE_PRECON >= NSCARC_RELAX_MKL)  .OR. (TYPE_SMOOTH >= NSCARC_RELAX_MKL) 
+
+HAS_LEVELS_TWO      = IS_CG .AND. (TYPE_PRECON /= NSCARC_RELAX_MULTIGRID) .AND. (TYPE_TWOLEVEL > NSCARC_TWOLEVEL_NONE)
+HAS_LEVELS_MULTIPLE = IS_MG .OR. IS_CG_MG .OR. HAS_LEVELS_TWO 
+
+IS_CG_ADD    = HAS_LEVELS_TWO .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_ADD)
+IS_CG_MUL    = HAS_LEVELS_TWO .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MUL)
+IS_CG_MACRO  = HAS_LEVELS_TWO .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_MACRO)
+IS_CG_COARSE = HAS_LEVELS_TWO .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_COARSE)
+
+IS_COARSE_DOUBLED    = HAS_LEVELS_TWO .AND. (TYPE_COARSENING == NSCARC_COARSENING_DOUBLED)
+IS_COARSE_AGGREGATED = HAS_LEVELS_TWO .AND. (TYPE_COARSENING == NSCARC_COARSENING_AGGREGATED)
+IS_COARSE_CUBIC      = HAS_LEVELS_TWO .AND. (TYPE_COARSENING == NSCARC_COARSENING_CUBIC)
+IS_COARSE_AMG        = IS_COARSE_AGGREGATED .OR. IS_COARSE_CUBIC
+IS_COARSE_GMG        = IS_COARSE_DOUBLED 
+
+HAS_LEVELS_GMG  = IS_GMG .OR. IS_CG_GMG .OR. IS_COARSE_GMG
+HAS_LEVELS_AMG  = IS_AMG .OR. IS_CG_AMG .OR. IS_COARSE_AMG
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'TYPE_TWOLEVEL=',TYPE_TWOLEVEL
-WRITE(MSG%LU_DEBUG,*) 'IS_CG_SAMG=',IS_CG_SAMG
+WRITE(MSG%LU_DEBUG,*) 'IS_COARSE_AGGREGATED=',IS_COARSE_AGGREGATED
+WRITE(MSG%LU_DEBUG,*) 'IS_COARSE_CUBIC=',IS_COARSE_CUBIC
 #endif
 
 #ifdef WITH_SCARC_MGM
@@ -2024,24 +2036,23 @@ SELECT_SCARC_METHOD: SELECT CASE (TYPE_METHOD)
 #ifdef WITH_MKL
          !
          ! Preconditioning by defect correction based on LU-decomposition
-         ! if two-level method, also use coarse grid level, otherwise only use single (finest) grid level
+         ! If two-level method, also use coarse grid level, otherwise only use single (finest) grid level
+         ! Either using a global CLUSTER_SPARSE_SOLVER or local PARDISO solvers from MKL
          !
          CASE (NSCARC_RELAX_MKL)
 
-            IF (HAS_TWO_LEVELS) THEN
+            IF (HAS_LEVELS_TWO) THEN
                CALL SCARC_GET_NUMBER_OF_LEVELS(NSCARC_LEVEL_MULTI)
                IF (TYPE_COARSE == NSCARC_COARSE_DIRECT) TYPE_MKL(NLEVEL_MAX) = NSCARC_MKL_GLOBAL
             ELSE
                CALL SCARC_GET_NUMBER_OF_LEVELS(NSCARC_LEVEL_SINGLE)
             ENDIF
 
-            ! Either using a global CLUSTER_SPARSE_SOLVER or local PARDISO solvers from MKL
-            SELECT CASE (TYPE_SCOPE(1))
-               CASE(NSCARC_SCOPE_GLOBAL)
-                  TYPE_MKL(NLEVEL_MIN) = NSCARC_MKL_GLOBAL
-               CASE(NSCARC_SCOPE_LOCAL)
-                  TYPE_MKL(NLEVEL_MIN) = NSCARC_MKL_LOCAL
-            END SELECT
+            IF (TYPE_SCOPE(1) == NSCARC_SCOPE_GLOBAL) THEN
+               TYPE_MKL(NLEVEL_MIN) = NSCARC_MKL_GLOBAL
+            ELSE IF (TYPE_SCOPE(1) == NSCARC_SCOPE_LOCAL) THEN
+               TYPE_MKL(NLEVEL_MIN) = NSCARC_MKL_LOCAL
+            ENDIF
 
 #endif
 
@@ -2049,7 +2060,7 @@ SELECT_SCARC_METHOD: SELECT CASE (TYPE_METHOD)
          ! Preconditioning by defect correction based on geometric multigrid method,
          ! use specified hierarchy of grid levels
          !
-         CASE (NSCARC_RELAX_GMG)
+         CASE (NSCARC_RELAX_MULTIGRID)
             CALL SCARC_GET_NUMBER_OF_LEVELS(NSCARC_LEVEL_MULTI)
 #ifdef WITH_MKL
             IF (TYPE_COARSE == NSCARC_COARSE_DIRECT) TYPE_MKL(NLEVEL_MAX) = NSCARC_MKL_GLOBAL
@@ -2060,7 +2071,7 @@ SELECT_SCARC_METHOD: SELECT CASE (TYPE_METHOD)
          ! if two-level method, also use coarse grid, otherwise only use single (finest) grid level
          !
          CASE DEFAULT
-            IF (HAS_TWO_LEVELS) THEN
+            IF (HAS_LEVELS_TWO) THEN
                CALL SCARC_GET_NUMBER_OF_LEVELS(NSCARC_LEVEL_MULTI)
 #ifdef WITH_MKL
                IF (TYPE_COARSE == NSCARC_COARSE_DIRECT) TYPE_MKL(NLEVEL_MAX) = NSCARC_MKL_GLOBAL
@@ -2076,26 +2087,19 @@ SELECT_SCARC_METHOD: SELECT CASE (TYPE_METHOD)
    !
    CASE (NSCARC_METHOD_MULTIGRID)
 
-         !
          ! If not specified by user, determine number of possible grid levels
-         !
          CALL SCARC_GET_NUMBER_OF_LEVELS(NSCARC_LEVEL_MULTI)
 
 #ifdef WITH_MKL
-         ! in case of smoothing by different MKL solvers, mark levels for the use of MKL,
+         ! In case of smoothing by different MKL solvers, mark levels for the use of MKL,
          ! either by locally acting PARDISO solvers or Globally acting CLUSTER_SPARSE_SOLVER
          IF (TYPE_SMOOTH == NSCARC_RELAX_MKL) THEN
 
-            MKL_SCOPE_SELECT: SELECT CASE (TYPE_SCOPE(2))
-            CASE (NSCARC_SCOPE_LOCAL)
-               DO NL = NLEVEL_MIN, NLEVEL_MAX-1
-                  TYPE_MKL(NL) = NSCARC_MKL_LOCAL
-               ENDDO
-            CASE (NSCARC_SCOPE_GLOBAL)
-               DO NL = NLEVEL_MIN, NLEVEL_MAX-1
-                  TYPE_MKL(NL) = NSCARC_MKL_GLOBAL
-               ENDDO
-            END SELECT MKL_SCOPE_SELECT
+            IF (TYPE_SCOPE(2) == NSCARC_SCOPE_LOCAL) THEN
+               TYPE_MKL(NLEVEL_MIN:NLEVEL_MAX-1) = NSCARC_MKL_LOCAL
+            ELSE IF (TYPE_SCOPE(2) == NSCARC_SCOPE_GLOBAL) THEN
+               TYPE_MKL(NLEVEL_MIN:NLEVEL_MAX-1) = NSCARC_MKL_GLOBAL
+            ENDIF
 
          ENDIF
 
@@ -2108,16 +2112,9 @@ SELECT_SCARC_METHOD: SELECT CASE (TYPE_METHOD)
    !
    CASE (NSCARC_METHOD_LU)
 
-      ! Only use single (finest) grid level
+      ! Only use single (finest) grid level and mark this level for the use of MKL methods
       CALL SCARC_GET_NUMBER_OF_LEVELS(NSCARC_LEVEL_SINGLE)
-
-      ! and mark this level for the use of MKL methods
-      SELECT_MKL_SCOPE: SELECT CASE (TYPE_MKL(0))
-         CASE (NSCARC_MKL_LOCAL)
-            TYPE_MKL(NLEVEL_MIN) = NSCARC_MKL_LOCAL
-         CASE (NSCARC_MKL_GLOBAL)
-            TYPE_MKL(NLEVEL_MIN) = NSCARC_MKL_GLOBAL
-      END SELECT SELECT_MKL_SCOPE
+      TYPE_MKL(NLEVEL_MIN) = TYPE_MKL(0)
 
 #ifdef WITH_SCARC_MGM
    !
@@ -2183,7 +2180,7 @@ SELECT_LEVEL_TYPE: SELECT CASE (NTYPE)
       ENDDO
    
       NLEVEL_MIN  = 1
-      IF (IS_GMG.OR.IS_AMG.OR.IS_CG_GMG.OR.IS_CG_AMG.OR.IS_CG_SAMG) THEN
+      IF (IS_MG .OR. IS_CG_MG) THEN
 
          IF (SCARC_MULTIGRID_LEVEL /= -1) THEN
             NLEVEL_MAX  = NLEVEL_MIN + SCARC_MULTIGRID_LEVEL - 1
@@ -2191,7 +2188,7 @@ SELECT_LEVEL_TYPE: SELECT CASE (NTYPE)
             NLEVEL_MAX  = NLEVEL
          ENDIF
 
-      ELSE IF (HAS_TWO_LEVELS) THEN
+      ELSE IF (HAS_LEVELS_TWO) THEN
 
          IF (SCARC_COARSE_LEVEL /= -1) THEN
             NLEVEL_MAX  = NLEVEL_MIN + SCARC_COARSE_LEVEL - 1
@@ -2480,7 +2477,7 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ! If both discretization types (structured/unstructured) must be administrated (MGM method only):
    ! Allocate all arrays which are related to a specific discretization type
    !
-   IF (HAS_MULTI_GRIDS) THEN
+   IF (HAS_GRIDS_MULTIPLE) THEN
 
       !
       ! ---------------- First process structured discretization
@@ -3169,13 +3166,13 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             ENDDO
          ENDDO
 
-         G%NCE  = G%NCE  + 1                                          ! increase number of extended grid cells
-         IF (IS_AMG .OR. IS_CG_SAMG) G%NCE2 = G%NCE2 + 2              ! increase number of extended grid cells type2
+         G%NCE  = G%NCE  + 1                                                ! increase number of extended grid cells
+         IF (HAS_LEVELS_AMG) G%NCE2 = G%NCE2 + 2                            ! increase number of extended grid cells type2
          CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NLEVEL_MIN)
 
-         IF (ANY(IS_KNOWN)) OG%NCG = OG%NCG + 1                       ! increase counter for local ghost cells
-         IF (OL%GHOST_FIRSTW(IOR0) == 0) OL%GHOST_FIRSTW(IOR0) = OG%NCG               ! save first ghost cell for -IOR0
-         IF (OL%GHOST_FIRSTE(IOR0) == 0) OL%GHOST_FIRSTE(IOR0) = OG%NCG               ! save first ghost cell for -IOR0
+         IF (ANY(IS_KNOWN)) OG%NCG = OG%NCG + 1                             ! increase counter for local ghost cells
+         IF (OL%GHOST_FIRSTW(IOR0) == 0) OL%GHOST_FIRSTW(IOR0) = OG%NCG     ! save first ghost cell for -IOR0
+         IF (OL%GHOST_FIRSTE(IOR0) == 0) OL%GHOST_FIRSTE(IOR0) = OG%NCG     ! save first extended cell for -IOR0
          OL%GHOST_LASTW(IOR0) = OG%NCG                                     
          OL%GHOST_LASTE(IOR0) = OG%NCG                                     
 
@@ -3186,7 +3183,7 @@ WRITE(MSG%LU_DEBUG,*) 'NM, NOM, IWG, IOR0, NCG, NCE2:', NM, NOM, IWG, IOR0, OG%N
       ENDIF
 
    ENDDO EXTERNAL_WALL_CELLS_LOOP1
-   IF (IS_AMG .OR. IS_CG_SAMG) G%ICE2 = G%NCE                           ! initialize counter for second layer ghost cells
+   IF (HAS_LEVELS_AMG) G%ICE2 = G%NCE                                       ! initialize counter for second layer ghost cells
 
    !
    ! Then process internal wall cells
@@ -3230,16 +3227,10 @@ WRITE(MSG%LU_DEBUG,*) 'NM, NOM, IWG, IOR0, NCG, NCE2:', NM, NOM, IWG, IOR0, OG%N
          CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NLEVEL_MIN)
 
          CALL SCARC_ALLOCATE_INT1 (OG%ICG_TO_IWG, 1, OG%NCG, NSCARC_INIT_ZERO, 'OG%ICG_TO_IWG')
-         IF (IS_AMG .OR. IS_CG_SAMG) THEN
-#ifdef WITH_SCARC_DEBU
-WRITE(MSG%LU_DEBUG,*) 'ALLOCATING ICG_TO_ICE FOR A: ', NOM,': in length ', OG%NCG, 2
-#endif
+         IF (HAS_LEVELS_AMG) THEN
             CALL SCARC_ALLOCATE_INT2 (OG%ICG_TO_ICW, 1, OG%NCG, 1, 2, NSCARC_INIT_ZERO, 'OG%ICG_TO_ICW')
             CALL SCARC_ALLOCATE_INT2 (OG%ICG_TO_ICE, 1, OG%NCG, 1, 2, NSCARC_INIT_ZERO, 'OG%ICG_TO_ICE')
          ELSE
-#ifdef WITH_SCARC_DEBU
-WRITE(MSG%LU_DEBUG,*) 'ALLOCATING ICG_TO_ICE FOR B: ', NOM,': in length ', OG%NCG, 1
-#endif
             CALL SCARC_ALLOCATE_INT2 (OG%ICG_TO_ICW, 1, OG%NCG, 1, 1, NSCARC_INIT_ZERO, 'OG%ICG_TO_ICW')
             CALL SCARC_ALLOCATE_INT2 (OG%ICG_TO_ICE, 1, OG%NCG, 1, 1, NSCARC_INIT_ZERO, 'OG%ICG_TO_ICE')
          ENDIF
@@ -3345,7 +3336,7 @@ IS_PURE_NEUMANN = N_DIRIC_GLOBAL(NLEVEL_MIN) == 0 .AND. &
 ! (twolevel-CG or GMG-method as main solver or preconditioner):
 ! Determine WALL, FACE and OSCARC types for coarser levels
 !
-MULTI_LEVEL_IF: IF (HAS_MULTI_LEVELS .AND. .NOT.IS_AMG .AND. .NOT.IS_CG_SAMG) THEN
+MULTI_LEVEL_IF: IF (HAS_LEVELS_GMG) THEN
 
    MESHES_LOOP3: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -3493,7 +3484,7 @@ ENDIF MULTI_LEVEL_IF
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    IF (IS_UNSTRUCTURED) THEN
       CALL SCARC_IDENTIFY_INTERNAL_NEUMANNS(NM, NLEVEL_MIN)
-      IF (.NOT.IS_AMG .AND. .NOT.IS_CG_AMG .AND. .NOT.IS_CG_SAMG) THEN
+      IF (.NOT.HAS_LEVELS_AMG) THEN
          DO NL = NLEVEL_MIN+1, NLEVEL_MAX
             CALL SCARC_IDENTIFY_INTERNAL_NEUMANNS(NM, NL)
          ENDDO
@@ -3591,7 +3582,7 @@ IF (NMESHES > 1) THEN
    CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_NUMBERS, NSCARC_NONE, NLEVEL_MIN)
    CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_SIZES,   NSCARC_NONE, NLEVEL_MIN)
 
-   IF (HAS_MULTI_LEVELS .AND. .NOT.IS_AMG .AND. .NOT.IS_CG_SAMG) THEN
+   IF (HAS_LEVELS_MULTIPLE .AND. .NOT.HAS_LEVELS_AMG) THEN
       DO NL = NLEVEL_MIN+1, NLEVEL_MAX
          CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_NUMBERS, NSCARC_NONE, NL)
          CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_SIZES,   NSCARC_NONE, NL)
@@ -4916,9 +4907,6 @@ INTEGER :: NM, NOM, NL, INBR
 ! 
 ! ------ Setup sizes for system matrices
 ! 
-! Get mapping array from local to global numbering
-CALL SCARC_SETUP_GLOBAL_NUMBERING(NLEVEL_MIN)
-
 SELECT_SCARC_METHOD_SIZES: SELECT CASE (TYPE_METHOD)
 
    ! -------- Global Krylov method
@@ -4927,7 +4915,7 @@ SELECT_SCARC_METHOD_SIZES: SELECT CASE (TYPE_METHOD)
       CALL SCARC_ASSIGN_GRID_TYPE (TYPE_GRID)                      ! process specified discretization type
       CALL SCARC_SETUP_POISSON_SIZES (NLEVEL_MIN)                  ! setup sizes on finest level
    
-      IF (HAS_TWO_LEVELS .AND. .NOT. IS_CG_SAMG) &                                                  
+      IF (HAS_LEVELS_TWO .AND. .NOT.HAS_LEVELS_AMG) &
          CALL SCARC_SETUP_POISSON_SIZES (NLEVEL_MAX)               ! twolevel-precon: also setup size for coarse level
    
       IF (IS_CG_GMG) THEN                                                   
@@ -4967,87 +4955,50 @@ END SELECT SELECT_SCARC_METHOD_SIZES
 ! 
 ! ------ Assemble system matrices on requested grid levels and set boundary conditions
 ! 
-MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+MESHES_POISSON_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    SELECT_SCARC_METHOD: SELECT CASE (TYPE_METHOD)
 
       ! ---------- Krylov method (CG/BICG) as main solver, different preconditioners possible
       CASE (NSCARC_METHOD_KRYLOV)
 
+         ! For all different possible Krylov-variants, first setup Poisson matrix on finest level including BC's 
+         CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
+         CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
+
+         ! Depending on the requested preconditioner, also assemble the Poisson matrix with BC's on specific coarser levels
          SELECT_KRYLOV_PRECON: SELECT CASE (TYPE_PRECON)
 
             ! in case of multigrid as preconditioner:
-            CASE (NSCARC_RELAX_GMG)
+            ! only build higher level structures in case of geometric multigrid (algebraic variant is done elsewhere)
+            CASE (NSCARC_RELAX_MULTIGRID)
 
-               SELECT_KRYLOV_PRECON_MG: SELECT CASE (TYPE_MULTIGRID)
-
-                  ! Geometric multigrid:
-                  !    -  assemble standard n-point-matrix hierarchy on all levels (finest and all coarser)
-                  CASE (NSCARC_MULTIGRID_GEOMETRIC)
-
-                     DO NL = NLEVEL_MIN, NLEVEL_MAX
-                        CALL SCARC_SETUP_POISSON (NM, NL)
-                        CALL SCARC_SETUP_BOUNDARY(NM, NL)
-#ifdef WITH_MKL
-                        IF (TYPE_MKL(NL) == NSCARC_MKL_LOCAL .OR. TYPE_MKL(NL) == NSCARC_MKL_GLOBAL) &
-                           CALL SCARC_SETUP_POISSON_MKL(NM, NL)
-#endif
-
-                     ENDDO
-
-                  ! Algebraic multigrid:
-                  !    -  use compact storage technique on all levels (no other choise possible!)
-                  !    -  assemble standard n-point-matrix only on finest level
-                  !    -  construct all coarser levels by requested coarsening strategy
-                  CASE (NSCARC_MULTIGRID_ALGEBRAIC)
-   
-                     CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
-                     CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
-
-               END SELECT SELECT_KRYLOV_PRECON_MG
+               IF (IS_CG_GMG) THEN
+                  DO NL = NLEVEL_MIN+1, NLEVEL_MAX
+                     CALL SCARC_SETUP_POISSON (NM, NL)
+                     CALL SCARC_SETUP_BOUNDARY(NM, NL)
+                  ENDDO
+               ENDIF
 
 #ifdef WITH_MKL
             ! in case of LU-decomposition as preconditioner
+            ! locally acting: PARDISO from MKL as preconditioners on fine level with possible coarse grid correction
             CASE (NSCARC_RELAX_MKL)
 
-               SELECT_KRYLOV_PRECON_MKL: SELECT CASE(TYPE_SCOPE(1))
-
-                  ! Locally acting: PARDISO from MKL as preconditioners with possible coarse grid correction
-                  CASE (NSCARC_SCOPE_LOCAL)
-   
-                     CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
-                     CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
-                     CALL SCARC_SETUP_POISSON_MKL (NM, NLEVEL_MIN)
-   
-                     IF (HAS_TWO_LEVELS .AND. .NOT.IS_CG_AMG .AND. .NOT.IS_CG_SAMG) THEN
-                        CALL SCARC_SETUP_POISSON (NM, NLEVEL_MAX)
-                        CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MAX)
-                        IF (TYPE_COARSE == NSCARC_COARSE_DIRECT) CALL SCARC_SETUP_POISSON_MKL (NM, NLEVEL_MAX)
-                     ENDIF
-
-                  ! Globally acting: Cluster_Sparse_Solver from MKL as preconditioner
-                  CASE (NSCARC_SCOPE_GLOBAL)
-   
-                     CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
-                     CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
-                     CALL SCARC_SETUP_POISSON_MKL (NM, NLEVEL_MIN)
-   
-               END SELECT SELECT_KRYLOV_PRECON_MKL
-#endif
-
-            ! in case of one-level preconditioners (JACOBI/SSOR/FFT):
-            ! assemble standard n-point-matrix on finest level with possible coarse grid correction
-            CASE DEFAULT
-   
-               CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
-               CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
-
-               IF (HAS_TWO_LEVELS .AND. .NOT.IS_CG_SAMG) THEN
+               IF (TYPE_SCOPE(1) == NSCARC_SCOPE_LOCAL .AND. HAS_LEVELS_TWO .AND. .NOT.HAS_LEVELS_AMG) THEN
                   CALL SCARC_SETUP_POISSON (NM, NLEVEL_MAX)
                   CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MAX)
-#ifdef WITH_MKL
-                  IF (TYPE_COARSE == NSCARC_COARSE_DIRECT) CALL SCARC_SETUP_POISSON_MKL (NM, NL)
+               ENDIF
 #endif
+
+            ! in case of default preconditioners (JACOBI/SSOR/FFT/...):
+            ! if there is an additional coarse grid correction which is NOT AMG-based, 
+            ! then also assemble matrix on coarse grid level
+            CASE DEFAULT
+   
+               IF (HAS_LEVELS_TWO .AND. .NOT.HAS_LEVELS_AMG) THEN
+                  CALL SCARC_SETUP_POISSON (NM, NLEVEL_MAX)
+                  CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MAX)
                ENDIF
 
          END SELECT SELECT_KRYLOV_PRECON
@@ -5055,44 +5006,20 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       ! ---------- Multigrid as main solver
       CASE (NSCARC_METHOD_MULTIGRID)
-   
-         SELECT_MULTIGRID_TYPE: SELECT CASE (TYPE_MULTIGRID)
-   
-            !  Geometric multigrid:
-            !    -  assemble standard n-point-matrix hierarchy on all levels
-            !    -  use MKL coarse grid solver if requested
-            CASE (NSCARC_MULTIGRID_GEOMETRIC)
 
-               DO NL = NLEVEL_MIN, NLEVEL_MAX
-                  CALL SCARC_SETUP_POISSON (NM, NL)
-                  CALL SCARC_SETUP_BOUNDARY(NM, NL)
-               ENDDO
-#ifdef WITH_MKL
-               DO NL = NLEVEL_MIN, NLEVEL_MAX-1
-                  CALL SCARC_SETUP_POISSON_MKL(NM, NL)
-               ENDDO
-               IF (TYPE_COARSE == NSCARC_COARSE_DIRECT) CALL SCARC_SETUP_POISSON_MKL(NM, NLEVEL_MAX)
-#endif
-
-            !  Algebraic multigrid:
-            !    -  use compact storage technique (no other choice possible!)
-            !    -  assemble standard n-point-matrix only on finest level
-            !    -  construct all coarser levels later by requested coarsening strategy
-            CASE (NSCARC_MULTIGRID_ALGEBRAIC)
-
-               CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
-               CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
-
-         END SELECT SELECT_MULTIGRID_TYPE
-
-#ifdef WITH_MKL
-      ! ---------- MKL-LU decomposition as main solver
-      CASE (NSCARC_METHOD_LU)
-  
+         ! For all different possible multigrid-variants, first setup Poisson matrix on finest level including BC's 
          CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
          CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
-         CALL SCARC_SETUP_POISSON_MKL(NM, NL)
-#endif
+
+         ! in case of a  geometric multigrid, assemble standard n-point-matrix hierarchy on all coarser levels, too
+         ! note: in case of an algebraic multigrid, this will be done in a separate routine later
+         IF (TYPE_MULTIGRID == NSCARC_MULTIGRID_GEOMETRIC) THEN
+            DO NL = NLEVEL_MIN + 1, NLEVEL_MAX
+               CALL SCARC_SETUP_POISSON (NM, NL)
+               CALL SCARC_SETUP_BOUNDARY(NM, NL)
+            ENDDO
+         ENDIF
+
 
 #ifdef WITH_SCARC_MGM
       ! ---------- McKenny-Greengard-Mayo method:
@@ -5117,16 +5044,20 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    END SELECT SELECT_SCARC_METHOD
 
-ENDDO MESHES_LOOP
+ENDDO MESHES_POISSON_LOOP
 
-! Setup global numbering of matrix column relationships (Compact storage technique only)
-CALL SCARC_SETUP_GLOBAL_MATRIX_COLUMNS(NSCARC_MATRIX_POISSON, NLEVEL_MIN)
+
+!
+! Setup mappings for the global numbering of vectors and the Poisson matrix (compact storage technique only)
+!
+CALL SCARC_SETUP_GLOBAL_CELL_NUMBERING(NLEVEL_MIN)
+CALL SCARC_SETUP_GLOBAL_MATRIX_NUMBERING(NSCARC_MATRIX_POISSON, NLEVEL_MIN)
  
 
 ! If there is more than one mesh, exchange matrix values in overlapping parts
 ! This must be done for all multilevel methods at least at the finest grid level
 ! Furthermore also at all higher levels except for the AMG method,
-! in this case it will be done later in routine SETUP_SAMG
+! in this case it will be done later in routine SETUP_ALGEBRAIC_MULTIGRID
 NMESHES_IF: IF (NMESHES > 1) THEN
 
    TYPE_MATRIX_IF: IF (TYPE_MATRIX == NSCARC_MATRIX_COMPACT) THEN
@@ -5157,7 +5088,7 @@ NMESHES_IF: IF (NMESHES > 1) THEN
       ENDDO MESHES_FINE_LOOP
     
 
-      MULTI_LEVEL_IF: IF (HAS_MULTI_LEVELS .AND. .NOT.IS_AMG .AND. .NOT.IS_CG_SAMG) THEN
+      MULTI_LEVEL_IF: IF (HAS_LEVELS_MULTIPLE .AND. .NOT.HAS_LEVELS_AMG) THEN
 
          DO NL = NLEVEL_MIN+1, NLEVEL_MAX
 
@@ -5189,6 +5120,17 @@ NMESHES_IF: IF (NMESHES > 1) THEN
    ENDIF TYPE_MATRIX_IF
 ENDIF NMESHES_IF
 
+! 
+! ------ IF MKL-solver is used on specific levels, then setup symmetric Poisson matrix there
+! 
+#ifdef WITH_MKL
+MESHES_MKL_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   DO NL = NLEVEL_MIN, NLEVEL_MAX
+      IF (TYPE_MKL(NL) == NSCARC_MKL_LOCAL .OR. TYPE_MKL(NL) == NSCARC_MKL_GLOBAL) CALL SCARC_SETUP_POISSON_MKL(NM, NL)
+   ENDDO
+ENDDO MESHES_MKL_LOOP
+#endif
+
 
 ! Debug matrix and wall structures - only if directive SCARC_DEBUG is set
 #ifdef WITH_SCARC_DEBUG
@@ -5203,7 +5145,7 @@ END SUBROUTINE SCARC_SETUP_SYSTEMS
 ! -------------------------------------------------------------------------------------------
 ! Setup mapping vector from local to global numbering
 ! -------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_GLOBAL_NUMBERING(NL)
+SUBROUTINE SCARC_SETUP_GLOBAL_CELL_NUMBERING(NL)
 USE SCARC_POINTERS, ONLY : G
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, NOM, IC, IW, ICE, ICN
@@ -5212,7 +5154,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_GRID (NM, NL)             ! set grid pointer G
 
-   IF (IS_AMG .OR. IS_CG_SAMG) THEN              ! AMG: consider two overlapping layers
+   IF (HAS_LEVELS_AMG) THEN
       CALL SCARC_ALLOCATE_INT1 (G%LOCAL_TO_GLOBAL, 1, G%NCE2, NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL')
    ELSE                                          ! else: only consider one overlapping layer
       CALL SCARC_ALLOCATE_INT1 (G%LOCAL_TO_GLOBAL, 1, G%NCE , NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL')
@@ -5231,19 +5173,19 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ENDDO
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SETUP_GLOBAL_NUMBERING: LOCAL_TO_GLOBAL'
+WRITE(MSG%LU_DEBUG,*) 'SETUP_GLOBAL_CELL_NUMBERING: LOCAL_TO_GLOBAL'
 WRITE(MSG%LU_DEBUG,'(8I6)') G%LOCAL_TO_GLOBAL
 #endif
 
 ENDDO
 
-END SUBROUTINE SCARC_SETUP_GLOBAL_NUMBERING
+END SUBROUTINE SCARC_SETUP_GLOBAL_CELL_NUMBERING
 
 
 ! -------------------------------------------------------------------------------------------
 ! Extract overlapping matrix part and add to main matrix
 ! -------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_GLOBAL_MATRIX_COLUMNS(NMATRIX, NL)
+SUBROUTINE SCARC_SETUP_GLOBAL_MATRIX_NUMBERING(NMATRIX, NL)
 USE SCARC_POINTERS, ONLY : G
 INTEGER, INTENT(IN) :: NMATRIX, NL
 INTEGER :: NM, IC, ICOL, JC
@@ -5268,7 +5210,7 @@ ELSE
    ENDDO
 ENDIF
 
-END SUBROUTINE SCARC_SETUP_GLOBAL_MATRIX_COLUMNS
+END SUBROUTINE SCARC_SETUP_GLOBAL_MATRIX_NUMBERING
 
 
 ! -------------------------------------------------------------------------------------------
@@ -5298,7 +5240,7 @@ WRITE(MSG%LU_DEBUG,*) 'EXTRACT_MATRIX_OVERLAPS: NM=', NM,': IP=',IP, G%POISSONC%
          !==============================
          !==============================
          IF ( (NMATRIX /= NSCARC_MATRIX_POISSON) .OR. &
-              (NMATRIX == NSCARC_MATRIX_POISSON .AND. .NOT.((IS_AMG.OR.IS_CG_SAMG) .AND. NL>NLEVEL_MIN))) THEN
+              (NMATRIX == NSCARC_MATRIX_POISSON .AND. .NOT.(HAS_LEVELS_AMG .AND. NL>NLEVEL_MIN))) THEN
 
          FACE_LOOP: DO IFACE = 1, 6                          ! check if this face has connection to last cell
 
@@ -5332,7 +5274,7 @@ WRITE(MSG%LU_DEBUG,'(8E12.4)') OA%VAL
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '====================== ICG, ICE, IP =', ICG, ICE, IP
 #endif
-                  IF (NMATRIX == NSCARC_MATRIX_POISSON .AND. .NOT.((IS_AMG.OR.IS_CG_SAMG) .AND. NL>NLEVEL_MIN)) THEN
+                  IF (NMATRIX == NSCARC_MATRIX_POISSON .AND. .NOT.(HAS_LEVELS_AMG .AND. NL>NLEVEL_MIN)) THEN
 
                      ICOL = OA%ROW(ICG)
                      ICN = ABS(OA%COLG(ICOL))
@@ -5409,7 +5351,7 @@ WRITE(MSG%LU_DEBUG,'(6E12.4)') A%VAL
          !=============================
          !=============================
          !=============================
-         ELSE IF (NMATRIX == NSCARC_MATRIX_POISSON .AND. (IS_AMG.OR.IS_CG_SAMG) .AND. NL > NLEVEL_MIN) THEN
+         ELSE IF (NMATRIX == NSCARC_MATRIX_POISSON .AND. (HAS_LEVELS_AMG .AND. NL > NLEVEL_MIN)) THEN
 
 
          FACE_LOOP2: DO IFACE = 1, 6                          ! check if this face has connection to last cell
@@ -5998,7 +5940,7 @@ END SUBROUTINE SCARC_SETUP_POISSONB_SUBDIAG
 
 ! ------------------------------------------------------------------------------------------------
 ! Get maximum stencil size in matrix NMATRIX (this is known to be 7 on finest level),
-! but in SAMG-method this size results only in the course and can be much larger
+! but in algebraic multigrid-method this size results only in the course and can be much larger
 ! (required for dimensioning the coarse-level matrices)
 ! If NTYPE == 0, only internal matrix part is considered, if NTYPE == 1, also the overlap
 ! ------------------------------------------------------------------------------------------------
@@ -6851,9 +6793,9 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
          ! Preconditioning by Geometric multigrid,
          ! either locally or Globally acting, depending on user specification stored in TYPE_SCOPE(1)
          !
-         CASE (NSCARC_RELAX_GMG)
+         CASE (NSCARC_RELAX_MULTIGRID)
 
-            STACK(NSTACK)%SOLVER => PRECON_GMG
+            STACK(NSTACK)%SOLVER => PRECON_MG
             CALL SCARC_SETUP_PRECON(NSTACK, TYPE_SCOPE(1))
             CALL SCARC_SETUP_MULTIGRID(NSCARC_SOLVER_PRECON, TYPE_SCOPE(1), NSCARC_STAGE_TWO, NSTACK, &
                                        NLEVEL_MIN, NLEVEL_MAX)
@@ -6930,9 +6872,9 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
       !
       ! If two-level Krylov, allocate intermediate structures for interpolation and workspace for global coarse solver
       !
-      IF (HAS_TWO_LEVELS) THEN
+      IF (HAS_LEVELS_TWO) THEN
 
-         IF (.NOT.IS_CG_SAMG) CALL SCARC_SETUP_INTERPOLATION(NSCARC_STAGE_ONE, NLEVEL_MIN+1, NLEVEL_MAX)
+         IF (.NOT.IS_CG_AMG) CALL SCARC_SETUP_INTERPOLATION(NSCARC_STAGE_ONE, NLEVEL_MIN+1, NLEVEL_MAX)
 
          NSTACK = NSTACK + 1
          CALL SCARC_SETUP_COARSE_SOLVER(NSCARC_STAGE_ONE, NSCARC_SCOPE_GLOBAL, NSTACK, NLEVEL_MAX, NLEVEL_MAX)
@@ -7325,7 +7267,7 @@ SELECT CASE(NSOLVER)
       SV%EPS = SCARC_COARSE_ACCURACY
       SV%NIT = SCARC_COARSE_ITERATIONS
    
-      SV%TYPE_RELAX  = NSCARC_RELAX_SSOR               ! only use SSOR-preconditioning for coarse solver
+      SV%TYPE_RELAX    = NSCARC_RELAX_SSOR             ! only use SSOR-preconditioning for coarse solver
       SV%TYPE_TWOLEVEL = NSCARC_TWOLEVEL_NONE          ! only use one level for coarse solver
    
    ! -------------- Otherwise: print error message
@@ -7375,11 +7317,11 @@ SELECT CASE(NSOLVER)
 
    ! -------------- Multigrid method is used as main solver
    CASE (NSCARC_SOLVER_MAIN)
-      SV%CNAME = 'SCARC_MAIN_GMG'
+      SV%CNAME = 'SCARC_MAIN_MG'
 
    ! -------------- Multigrid method is only used as preconditioner for global Krylov-method
    CASE (NSCARC_SOLVER_PRECON)
-      SV%CNAME = 'SCARC_PRECON_GMG'
+      SV%CNAME = 'SCARC_PRECON_MG'
 
    ! -------------- Otherwise: print error message
    CASE DEFAULT
@@ -7549,8 +7491,8 @@ SELECT CASE(TYPE_PRECON)
    CASE (NSCARC_RELAX_FFTO)
       SV%CNAME = 'SCARC_PRECON_FFTO'
       SV%OMEGA = 1.0_EB
-   CASE (NSCARC_RELAX_GMG)
-      SV%CNAME = 'SCARC_PRECON_GMG'
+   CASE (NSCARC_RELAX_MULTIGRID)
+      SV%CNAME = 'SCARC_PRECON_MG'
 #ifdef WITH_MKL
    CASE (NSCARC_RELAX_MKL)
       SV%OMEGA = 1.0_EB
@@ -9080,36 +9022,6 @@ SELECT_MATRIX_TYPE: SELECT CASE (SCARC_MATRIX_LEVEL(NL))
             ENDDO MESHES_BANDWISE_VARIABLE_LOOP
 
          !
-         ! ------------- Storage of variable matrix entries with local multiplications
-         ! matrix-vector-multiplication according to compact storage technique
-         !
-         CASE (NSCARC_STENCIL_VARIABLE_LOCAL)
-         
-            MESHES_BANDWISE_VARIABLE_LOCAL_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-         
-               CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-               AB => G%POISSONB
-         
-               V1 => SCARC_POINT_TO_VECTOR (NM, NL, NV1)               ! point to X-vector
-               V2 => SCARC_POINT_TO_VECTOR (NM, NL, NV2)               ! point to Y-vector
-         
-               DO IC = 1, G%NC
-                  V2(IC) = V1(IC)*AB%VAL(IC, AB%POS(0))                      ! main-diagonal contribution
-                  DO IOR0 = 3, 1, -1                                         ! lower sub-diagonal contributions
-                     IF (AB%POS(IOR0) == 0) CYCLE                            ! no contribution for y-direction in 2D
-                     JC = IC + AB%OFFSET(IOR0)
-                     IF (JC >= 1) V2(IC) = V2(IC) + V1(JC)*AB%VAL(IC, AB%POS(IOR0))
-                  ENDDO
-                  DO IOR0 = -1, -3, -1                                       ! upper sub-diagonal contributions
-                     IF (AB%POS(IOR0) == 0) CYCLE                            ! no contribution for y-direction in 2D
-                     JC = IC + AB%OFFSET(IOR0)
-                     IF (JC <= G%NC) V2(IC) = V2(IC) + V1(JC)*AB%VAL(IC, AB%POS(IOR0))
-                  ENDDO
-               ENDDO
-         
-            ENDDO MESHES_BANDWISE_VARIABLE_LOCAL_LOOP
-      
-         !
          ! ------------- Storage of constant matrix entries - with corrections at subdiagonals and diagonal (BC's)
          !
          CASE (NSCARC_STENCIL_CONSTANT)
@@ -9183,77 +9095,6 @@ SELECT_MATRIX_TYPE: SELECT CASE (SCARC_MATRIX_LEVEL(NL))
                ENDDO WALL_CELLS_BANDWISE_LOOP
          
             ENDDO MESHES_BANDWISE_CONSTANT_LOOP
-         !
-         ! ------------- Constant entries with own implementation of daxpy
-         ! 'Wrong' entries due to boundary conditions and zero entries in subdiagonals are locally corrected 
-         !
-         CASE (NSCARC_STENCIL_CONSTANT_LOCAL)
-         
-            MESHES_BANDWISE_CONSTANT_LOCAL_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-         
-               CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-               AB => G%POISSONB
-         
-               V1 => SCARC_POINT_TO_VECTOR (NM, NL, NV1)               ! point to X-vector
-               V2 => SCARC_POINT_TO_VECTOR (NM, NL, NV2)               ! point to Y-vector
-               V2 = 0.0_EB
-         
-               DO IOR0 = 3, -3, -1
-
-                  IF (AB%POS(IOR0) == 0) CYCLE
-
-                  IS = AB%SOURCE(IOR0)
-                  IT = AB%TARGET(IOR0)
-                  IL = AB%LENGTH(IOR0)
-
-                  AB%AUX(1:G%NC)=0.0_EB
-                  AB%AUX(1:IL) = V1(IS:IS+IL-1)
-
-                  IF (ABS(IOR0) == 1) THEN
-                     DO IC = 1, G%NC
-                        IF (MOD(IC,L%NX)==0) AB%AUX(IC)=0.0_EB
-                     ENDDO
-                  ELSE IF (ABS(IOR0) == 2) THEN
-                     INUM1 = L%NX*L%NY
-                     INUM2 = L%NX*L%NY - L%NX
-                     DO IC = 1, G%NC
-                        IF (MOD(IC,INUM1) > INUM2) AB%AUX(IC)=0.0_EB
-                     ENDDO
-                  ENDIF
-
-                  CALL SCARC_DAXPY_CONSTANT(IL, AB%STENCIL(IOR0), AB%AUX(1:IL), V2(IT:IT+IL-1))
-
-               ENDDO
-               WALL_CELLS_BANDWISE_OWN_LOOP: DO IW = 1, G%NW 
-
-                  IOR0 = G%WALL(IW)%IOR
-                  IF (TWO_D .AND. ABS(IOR0) == 2) CYCLE              ! cycle boundaries in y-direction for 2D-cases
-
-                  GWC => G%WALL(IW)
-                  F  => L%FACE(IOR0)
-            
-                  I = GWC%IXW
-                  J = GWC%IYW
-                  K = GWC%IZW
-            
-                  IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I, J, K)) CYCLE 
-            
-                  IC  = G%CELL_NUMBER(I, J, K) 
-            
-                  ! SPD-matrix with mixture of Dirichlet and Neumann BC's according to the SETTING of BTYPE
-                  IF (N_DIRIC_GLOBAL(NLEVEL_MIN) > 0) THEN
-                  TMP = V2(IC)
-                     SELECT CASE (GWC%BTYPE)
-                        CASE (DIRICHLET)
-                           V2(IC) = V2(IC) - F%SCAL_BOUNDARY * V1(IC)
-                        CASE (NEUMANN)
-                           V2(IC) = V2(IC) + F%SCAL_BOUNDARY * V1(IC)
-                     END SELECT
-                  ENDIF 
-            
-               ENDDO WALL_CELLS_BANDWISE_OWN_LOOP
-         
-            ENDDO MESHES_BANDWISE_CONSTANT_LOCAL_LOOP
 
       END SELECT SELECT_STENCIL_TYPE
 END SELECT SELECT_MATRIX_TYPE
@@ -9515,12 +9356,8 @@ SELECT CASE (ITYPE)
             CASE (NSCARC_MATRIX_COMPACT)
 
                A => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_POISSON)
-#ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_CMATRIX (A, 'A','JACOBI')
-#endif
                !$OMP PARALLEL DO PRIVATE(IC) SCHEDULE(STATIC)
                DO IC = 1, G%NC
-WRITE(MSG%LU_DEBUG,'(A,2I6, 2E12.4)') 'IC, V2, ROW, VAL:', IC, A%ROW(IC), V2(IC), A%VAL(A%ROW(IC))
                   V2(IC) = V2(IC) / A%VAL(A%ROW(IC))
                ENDDO
                !$OMP END PARALLEL DO
@@ -9781,7 +9618,7 @@ WRITE(MSG%LU_DEBUG,'(A,2I6, 2E12.4)') 'IC, V2, ROW, VAL:', IC, A%ROW(IC), V2(IC)
    ! 
    ! --------- Preconditioning by blockwise Geometric Multigrid
    ! 
-   CASE (NSCARC_RELAX_GMG)
+   CASE (NSCARC_RELAX_MULTIGRID)
 
       CALL SCARC_METHOD_MULTIGRID (NS, NP, NSCARC_RHS_DEFECT, NLEVEL_MIN)
 
@@ -10432,7 +10269,7 @@ SELECT_PRECON_TYPE: SELECT CASE (TYPE_TWOLEVEL)
    ! 
    ! ---------- Additive two-level preconditioning
    ! 
-   CASE (NSCARC_TWOLEVEL_ADD, NSCARC_TWOLEVEL_SAMG)
+   CASE (NSCARC_TWOLEVEL_ADD)
 
       CALL SCARC_VECTOR_COPY (R, B, 1.0_EB, NL)                   !  Use r^l as right hand side for preconditioner
       DO IL = NL, NLEVEL_MAX-1                                    !  successively restrict to coarser levels up to coarsest
@@ -10440,17 +10277,17 @@ SELECT_PRECON_TYPE: SELECT CASE (TYPE_TWOLEVEL)
       ENDDO
       CALL SCARC_METHOD_COARSE(NS+2, NS, NLEVEL_MAX)              !  solve A^L * x^L := b^L on coarsest level
 #ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_LEVEL (X, 'PRECON-TWOLEVEL-SAMG: X AFTER COARSE ', NLEVEL_MAX)
+CALL SCARC_DEBUG_LEVEL (X, 'PRECON-TWOLEVEL: X AFTER COARSE ', NLEVEL_MAX)
 #endif
       CALL SCARC_VECTOR_COPY (X, Z, 1.0_EB, NLEVEL_MAX)           !  z^L := x^L
 #ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_LEVEL (Z, 'PRECON-TWOLEVEL-SAMG: Z AFTER COARSE ', NLEVEL_MAX)
+CALL SCARC_DEBUG_LEVEL (Z, 'PRECON-TWOLEVEL: Z AFTER COARSE ', NLEVEL_MAX)
 #endif
 
       DO IL = NLEVEL_MAX-1, NL, -1                                !  successively interpolate to finer levels up to finest
          CALL SCARC_PROLONGATION(Z, Z, IL+1, IL)                  !  z^l := Prolongation(z^{l+1})
 #ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_LEVEL (Z, 'PRECON-TWOLEVEL-SAMG: Z AFTER PROL ', IL)
+CALL SCARC_DEBUG_LEVEL (Z, 'PRECON-TWOLEVEL: Z AFTER PROL ', IL)
 #endif
       ENDDO
       CALL SCARC_VECTOR_COPY (R, V, 1.0_EB, NL)                   !  v^l := r^l
@@ -11275,7 +11112,7 @@ SELECT_SOLVER_TYPE: SELECT CASE (SV%TYPE_SOLVER)
       ENDDO MAIN_MESHES_LOOP
       
       ! In case of a Krylov method clear overlapping parts of auxiliary vectors
-      IF (IS_CG.OR.HAS_TWO_LEVELS) THEN
+      IF (IS_CG.OR.HAS_LEVELS_TWO) THEN
          DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             L  => SCARC(NM)%LEVEL(NL)
             ST => SCARC(NM)%LEVEL(NL)%STAGE(SV%TYPE_STAGE)
@@ -11321,7 +11158,7 @@ SELECT_SOLVER_TYPE: SELECT CASE (SV%TYPE_SOLVER)
    !
    CASE (NSCARC_SOLVER_PRECON)
    
-      IF (IS_CG_GMG) THEN
+      IF (IS_CG_MG) THEN
          DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             L   => SCARC(NM)%LEVEL(NL)
             ST  => SCARC(NM)%LEVEL(NL)%STAGE(SV%TYPE_STAGE)
@@ -11464,7 +11301,7 @@ IF (IS_GMG) THEN
 !
 ! ------------------ Twolevel-CG or Geometric multigrid (as main solver or preconditioner) --------------
 !
-IF (HAS_MULTI_LEVELS) THEN
+IF (HAS_LEVELS_MULTIPLE) THEN
 
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -11713,7 +11550,7 @@ IF (IS_GMG) THEN
 !
 ! ------------------ Twolevel CG or Geometric Multigrid 
 !
-IF (HAS_MULTI_LEVELS) THEN
+IF (HAS_LEVELS_MULTIPLE) THEN
 
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -14470,11 +14307,11 @@ END SUBROUTINE SCARC_SCALING_VARIABLE
 ! define its nullspace and perform relaxation to define the respective prolongation matrix
 ! Define Poisson matrix on coarser level by Galerkin approach: A_coarse = R * A_fine * P
 ! ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_SAMG
+SUBROUTINE SCARC_SETUP_ALGEBRAIC_MULTIGRID
 INTEGER :: NL
 LOGICAL :: FURTHER_COARSENING_REQUIRED
 
-IF (.NOT.IS_CG_SAMG .AND. .NOT.IS_AMG) RETURN
+IF (.NOT.HAS_LEVELS_AMG) RETURN
 FURTHER_COARSENING_REQUIRED = .TRUE.
 
 NL = NLEVEL_MIN
@@ -14484,7 +14321,7 @@ COARSENING_LOOP: DO WHILE (FURTHER_COARSENING_REQUIRED)
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '========================================================'
-WRITE(MSG%LU_DEBUG,*) ' SAMG : LEVEL ', NL
+WRITE(MSG%LU_DEBUG,*) ' ALGEBRAIC MULTIGRID : LEVEL ', NL
 WRITE(MSG%LU_DEBUG,*) '========================================================'
 #endif
 
@@ -14500,14 +14337,14 @@ WRITE(MSG%LU_DEBUG,*) '========================================================'
    CALL SCARC_SETUP_RESTRICTION(NL)                 ! Setup corresponding restriction matrix 
    CALL SCARC_SETUP_AP(NL)             
    CALL SCARC_SETUP_GALERKIN(NL)             
-   CALL SCARC_CLEAN_WORKSPACE_SAMG(NL)
+   CALL SCARC_CLEAN_WORKSPACE_AMG(NL)
       
    NL = NL + 1
    IF (NL == NLEVEL_MAX) FURTHER_COARSENING_REQUIRED = .FALSE.
 
 ENDDO COARSENING_LOOP
 
-END SUBROUTINE SCARC_SETUP_SAMG
+END SUBROUTINE SCARC_SETUP_ALGEBRAIC_MULTIGRID
 
 
 ! ------------------------------------------------------------------------------------------------------
@@ -14732,16 +14569,16 @@ END SUBROUTINE SCARC_SETUP_STRENGTH_OF_CONNECTION
  
 
 ! ------------------------------------------------------------------------------------------------------
-! Typical SAMG aggregation prodecure based on strength of connection matrix
+! Typical aggregation prodecure based on strength of connection matrix
 ! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_AGGREGATION_SAMG(G, C)
+SUBROUTINE SCARC_SETUP_AGGREGATED_ZONES(G, C)
 TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER, INTENT(IN) :: C
 TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
 INTEGER :: IC, ICOL, JC, IZONE, JZONE
 LOGICAL :: HAS_NEIGHBORS, HAS_AGGREGATED_NEIGHBORS
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*)  'STARTING SETUP_AGGREGATION_SAMG'
+WRITE(MSG%LU_DEBUG,*)  'STARTING SETUP_AGGREGATED_ZONES'
 #endif
 ! 
 ! Pass 1 of aggregation:  Setup aggregation zones on internal cells of active mesh
@@ -14847,13 +14684,13 @@ ENDIF
 CALL SCARC_DEBUG_ZONES(G, -1, 1, 'AFTER ACTIVE PASS3')
 #endif
 
-END SUBROUTINE SCARC_SETUP_AGGREGATION_SAMG
+END SUBROUTINE SCARC_SETUP_AGGREGATED_ZONES
 
 
 ! ------------------------------------------------------------------------------------------------------
 ! GMG-like aggregation
 ! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_AGGREGATION_GMG(L, G)
+SUBROUTINE SCARC_SETUP_GEOMETRIC_ZONES(L, G)
 TYPE (SCARC_LEVEL_TYPE), POINTER, INTENT(IN) :: L
 TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
 INTEGER :: NXM, NYM, NZM, NXD, NYD, NZD, NXI, NYI, NZI
@@ -14862,7 +14699,7 @@ INTEGER, DIMENSION(:), ALLOCATABLE :: OFFX, OFFY, OFFZ
 LOGICAL :: BFIRST
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*)  'STARTING SETUP_AGGREGATION_GMG'
+WRITE(MSG%LU_DEBUG,*)  'STARTING SETUP_GEOMETRIC_ZONES'
 #endif
 
 NXM = MOD(L%NX,2)
@@ -14891,7 +14728,7 @@ CALL SCARC_ALLOCATE_INT1 (OFFY, 1, NXD, NSCARC_INIT_ZERO, 'OFFY')
 CALL SCARC_ALLOCATE_INT1 (OFFZ, 1, NZD, NSCARC_INIT_ZERO, 'OFFZ')
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SETUP_AGGREGATION_GMG:'
+WRITE(MSG%LU_DEBUG,*) 'SETUP_GEOMETRIC_ZONES:'
 WRITE(MSG%LU_DEBUG,*) 'NXD, NXM =', NXD, NXM
 WRITE(MSG%LU_DEBUG,*) 'NYD, NYM =', NYD, NYM
 WRITE(MSG%LU_DEBUG,*) 'NZD, NZM =', NZD, NZM
@@ -15048,7 +14885,7 @@ DEALLOCATE(OFFZ)
 #ifdef WITH_SCARC_DEBUG
    CALL SCARC_DEBUG_ZONES(G, IC, 1, 'AFTER GMG-AGG ')
 #endif
-END SUBROUTINE SCARC_SETUP_AGGREGATION_GMG
+END SUBROUTINE SCARC_SETUP_GEOMETRIC_ZONES
 
 
 
@@ -15072,7 +14909,7 @@ COARSENING_TYPE_SELECT: SELECT CASE (TYPE_COARSENING)
    !
    ! ---- Default aggregation procedure for SAMG
    !
-   CASE (NSCARC_COARSENING_SAMG)
+   CASE (NSCARC_COARSENING_AGGREGATED)
 
       CYCLES_LOOP1: DO ICYCLE = 1, SUB%N_CYCLES
    
@@ -15088,7 +14925,7 @@ COARSENING_TYPE_SELECT: SELECT CASE (TYPE_COARSENING)
             IF (SUB%ORDER(NM, ICYCLE) == NSCARC_ORDER_ACTIVE) THEN
                CALL SCARC_POINT_TO_GRID(NM, NL)
                C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
-               CALL SCARC_SETUP_AGGREGATION_SAMG(G, C)
+               CALL SCARC_SETUP_AGGREGATED_ZONES(G, C)
                MESH_INT (NM) = G%N_ZONES
 #ifdef WITH_SCARC_DEBUG
                WRITE(MSG%LU_DEBUG,*) 'ACTIVE: G%N_ZONES, MESH_INT:', G%N_ZONES, MESH_INT
@@ -15106,7 +14943,7 @@ COARSENING_TYPE_SELECT: SELECT CASE (TYPE_COARSENING)
             IF (SUB%ORDER (NM, ICYCLE) /= NSCARC_ORDER_ACTIVE) THEN
                CALL SCARC_POINT_TO_GRID(NM, NL)
                C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
-               CALL SCARC_SETUP_AGGREGATION_SAMG(G, C)
+               CALL SCARC_SETUP_AGGREGATED_ZONES(G, C)
                MESH_INT (NM) = G%N_ZONES
 #ifdef WITH_SCARC_DEBUG
                WRITE(MSG%LU_DEBUG,*) 'PASSIVE: G%N_ZONES, MESH_INT:', G%N_ZONES, MESH_INT
@@ -15129,11 +14966,11 @@ COARSENING_TYPE_SELECT: SELECT CASE (TYPE_COARSENING)
    !      In case of even cell numbers this process corresponds to the usual GMG coarsening
    !      in case of uneven cell number in a coordinate direction, on patch with 3 cells is used, the rest with patches of 2
    !
-   CASE (NSCARC_COARSENING_GMG)
+   CASE (NSCARC_COARSENING_CUBIC)
 
       DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CALL SCARC_POINT_TO_GRID(NM, NL)
-         CALL SCARC_SETUP_AGGREGATION_GMG(L, G)
+         CALL SCARC_SETUP_GEOMETRIC_ZONES(L, G)
          MESH_INT (NM) = G%N_ZONES
       ENDDO
       
@@ -15148,24 +14985,6 @@ IF (N_MPI_PROCESSES>1) &
    CALL MPI_ALLGATHERV(MPI_IN_PLACE, 1, MPI_INTEGER, MESH_INT, COUNTS, DISPLS, MPI_INTEGER, MPI_COMM_WORLD, IERROR)
       
 
-! Only for debugging - Preset single-mesh case corresponding to some multi-mesh test cases
-! such that the same aggregation takes place
-#ifdef WITH_SCARC_DEBUG
-IF (TRIM(CHID) == 'b11111111') THEN
-   CALL SCARC_PRESET_B1_CASE
-   MESH_INT(1) = 6
-ENDIF
-IF (TRIM(CHID) == 'b1411111111') THEN
-   CALL SCARC_PRESET_B14_CASE
-   MESH_INT(1) = 8
-ENDIF
-IF (TRIM(CHID) == 'b14big') THEN
-   CALL SCARC_PRESET_b14big_CASE
-   MESH_INT(1) = 24
-ENDIF
-#endif
-
-!
 ! Prepare grid dimensions of coarse grid level
 !
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -15190,44 +15009,7 @@ WRITE(MSG%LU_DEBUG,*) 'GC%NC_OFFSET(1:NMESHES) ', GC%NC_OFFSET(1:NMESHES)
 #endif
    ENDIF                   
 
-! Again only for debugging - Preset single-mesh case corresponding to some multi-mesh test cases
-! such that the same aggregation takes place
-#ifdef WITH_SCARC_DEBUG
-   IF (TRIM(CHID) == 'b11111111') THEN
-      GF%NC = 24
-      GF%NCE = 24
-      GC%NC_LOCAL  = 6
-      GC%NC_GLOBAL = 6
-      GC%NC_OFFSET = 0
-      GC%NC = 6
-      GC%NCE = 6
-   ENDIF
-   IF (TRIM(CHID) == 'b1411111111') THEN
-      GF%NC = 36
-      GF%NCE = 36
-      GC%NC_LOCAL  = 8
-      GC%NC_GLOBAL = 8
-      GC%NC_OFFSET = 0
-      GC%NC = 8
-      GC%NCE = 8
-   ENDIF
-   IF (TRIM(CHID) == 'b14big') THEN
-      GF%NC = 108
-      GF%NCE = 108
-      GF%N_FINE = 108
-      GF%N_COARSE = 24
-      GC%NC_LOCAL  = 108
-      GC%NC_GLOBAL = 108
-      GC%NC_OFFSET = 0
-      GC%N_FINE = 24
-      GC%NC = 24
-      GC%NCE = 24
-   ENDIF
-#endif
-
-
    ! Setup mapping from local zones to global zones
-   ! TODO Reduce GC%LOCAL_TO_GLOBAL in length 
    CALL SCARC_ALLOCATE_INT1(GC%LOCAL_TO_GLOBAL, 1, GF%NCE, NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL')
    DO IZL = 1, GC%NC
       GC%LOCAL_TO_GLOBAL(IZL) = IZL + GC%NC_OFFSET(NM)
@@ -15315,11 +15097,10 @@ ENDDO
 END SUBROUTINE SCARC_CLEAN_WORKSPACE_SYSTEM
 
 
-
 ! ------------------------------------------------------------------------------------------------------
 ! Remove workspace on level 'NL' which will no longer be needed in SAMG method
 ! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_CLEAN_WORKSPACE_SAMG(NL)
+SUBROUTINE SCARC_CLEAN_WORKSPACE_AMG(NL)
 INTEGER, INTENT(IN) :: NL
 INTEGER:: NM
 
@@ -15332,8 +15113,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    DEALLOCATE (G%QQ, STAT = IERROR)
 ENDDO
 
-END SUBROUTINE SCARC_CLEAN_WORKSPACE_SAMG
-
+END SUBROUTINE SCARC_CLEAN_WORKSPACE_AMG
 
 
 ! ------------------------------------------------------------------------------------------------------
@@ -18855,7 +18635,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    WRITE(MSG%LU_DEBUG,2001) CVEC, NM, NL
    WRITE(MSG%LU_DEBUG,2002) G%NC, NNX, NNY, NNZ, NV, SIZE(VC)
    WRITE(MSG%LU_DEBUG,*) '=========================================================='
-   IF ((IS_AMG.OR.IS_CG_SAMG) .AND. NL > NLEVEL_MIN) THEN
+   IF ((IS_AMG.OR.IS_CG_AMG) .AND. NL > NLEVEL_MIN) THEN
 
       WRITE(MSG%LU_DEBUG, '(6E14.6)') VC
 
