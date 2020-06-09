@@ -343,6 +343,7 @@ INTEGER       :: SCARC_COARSE_ITERATIONS = 100              ! Max number of iter
 INTEGER       :: SCARC_COARSE_LEVEL      =  1               ! Coarse grid level for twolevel-Krylov method (default min level)
 REAL (EB)     :: SCARC_COARSE_OMEGA      = 0.80E+0_EB       ! Relaxation parameter
 
+CHARACTER(40) :: SCARC_COARSENING = 'GMG'                   ! Coarsening strategy for multilevel methods (GMG/SAMG)
 
 !
 ! ---------- Parameters for Krylov-type methods
@@ -357,13 +358,13 @@ INTEGER       :: SCARC_KRYLOV_ITERATIONS = 1000             ! Max number of iter
 !
 CHARACTER(40) :: SCARC_MULTIGRID            = 'GEOMETRIC'   ! Type of MG-method (GEOMETRIC/ALGEBRAIC)
 REAL (EB)     :: SCARC_MULTIGRID_ACCURACY   = 1.E-8_EB      ! Requested accuracy for convergence
-CHARACTER(40) :: SCARC_MULTIGRID_COARSENING = 'GMG'         ! Coarsening strategy  (GMG/SAMG)
 CHARACTER(3)  :: SCARC_MULTIGRID_CYCLE      = 'V'           ! Cycling type  (F/V/W)
 CHARACTER(40) :: SCARC_MULTIGRID_INTERPOL   = 'CONSTANT'    ! Interpolation strategy (CONSTANT/BILINEAR)
 INTEGER       :: SCARC_MULTIGRID_ITERATIONS = 100           ! Max number of iterations
+INTEGER       :: SCARC_MULTIGRID_LEVEL      = -1            ! User defined number of MG-levels (optionally, otherwise maximum)
 INTEGER       :: SCARC_MULTIGRID_PRESMOOTH  = 4             ! Number of presmoothing iterations
 INTEGER       :: SCARC_MULTIGRID_POSTSMOOTH = 4             ! Number of postsmoothing iterations
-INTEGER       :: SCARC_MULTIGRID_LEVEL      = -1            ! User defined number of MG-levels (optionally, otherwise maximum)
+REAL (EB)     :: SCARC_MULTIGRID_THETA      = 0.1E+0_EB     ! threshold for strength of connection matrix (AMG only)
 
 !
 ! ---------- Parameters for smoothing method (used in multigrids-methods)
@@ -995,7 +996,7 @@ TYPE SCARC_SOLVER_TYPE
    ! Types of different solver components
    INTEGER :: TYPE_ACCURACY      = NSCARC_ACCURACY_ABSOLUTE    ! Default type of requested accuracy
    INTEGER :: TYPE_COARSE        = NSCARC_COARSE_DIRECT        ! Default type of coarse grid solver for multigrid method
-   INTEGER :: TYPE_COARSENING    = NSCARC_UNDEF_INT            ! No default type of coarsening algorithm for AMG
+   INTEGER :: TYPE_COARSENING    = NSCARC_COARSENING_GMG       ! Default GMG-coarsening in case of multilevel methods
    INTEGER :: TYPE_CYCLING       = NSCARC_CYCLING_V            ! Default type of cycling for multigrid method
    INTEGER :: TYPE_GRID          = NSCARC_GRID_STRUCTURED      ! Default type of discretization (structured/unstructured)
    INTEGER :: TYPE_EXCHANGE      = NSCARC_UNDEF_INT            ! No default type of data exchange
@@ -1228,7 +1229,7 @@ IMPLICIT NONE
 ! 
 PUBLIC :: SCARC_SETUP, SCARC_METHOD, SCARC_SOLVER, SCARC_GRID, SCARC_TWOLEVEL      
 PUBLIC :: SCARC_ACCURACY, SCARC_CAPPA, SCARC_ITERATIONS, SCARC_RESIDUAL, SCARC_MATRIX
-PUBLIC :: SCARC_DUMP_TIMERS, SCARC_ERROR_FILE, SCARC_MKL_PRECISION
+PUBLIC :: SCARC_DUMP_TIMERS, SCARC_ERROR_FILE, SCARC_MKL_PRECISION, SCARC_COARSENING
 
 PUBLIC :: SCARC_KRYLOV, SCARC_KRYLOV_ACCURACY, SCARC_KRYLOV_ITERATIONS, SCARC_KRYLOV_INTERPOL
 PUBLIC :: SCARC_COARSE, SCARC_COARSE_ACCURACY, SCARC_COARSE_ITERATIONS, SCARC_COARSE_OMEGA, SCARC_COARSE_LEVEL     
@@ -1236,8 +1237,8 @@ PUBLIC :: SCARC_PRECON, SCARC_PRECON_ACCURACY, SCARC_PRECON_ITERATIONS, SCARC_PR
 PUBLIC :: SCARC_SMOOTH, SCARC_SMOOTH_ACCURACY, SCARC_SMOOTH_ITERATIONS, SCARC_SMOOTH_OMEGA, SCARC_SMOOTH_SCOPE 
 
 PUBLIC :: SCARC_MULTIGRID, SCARC_MULTIGRID_ACCURACY, SCARC_MULTIGRID_ITERATIONS, SCARC_MULTIGRID_INTERPOL
-PUBLIC :: SCARC_MULTIGRID_CYCLE, SCARC_MULTIGRID_COARSENING, SCARC_MULTIGRID_LEVEL
-PUBLIC :: SCARC_MULTIGRID_PRESMOOTH, SCARC_MULTIGRID_POSTSMOOTH
+PUBLIC :: SCARC_MULTIGRID_CYCLE, SCARC_MULTIGRID_LEVEL
+PUBLIC :: SCARC_MULTIGRID_PRESMOOTH, SCARC_MULTIGRID_POSTSMOOTH, SCARC_MULTIGRID_THETA
 
 
 ! 
@@ -1595,6 +1596,18 @@ SELECT CASE (TRIM(SCARC_STENCIL))
 END SELECT
 
 !
+! ------------ Set type of coarsening strategy in case of multi-level methods
+!
+SELECT CASE (TRIM(SCARC_COARSENING))
+   CASE ('GMG')
+      TYPE_COARSENING = NSCARC_COARSENING_GMG
+   CASE ('SAMG')
+      TYPE_COARSENING = NSCARC_COARSENING_SAMG
+   CASE DEFAULT
+      CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_COARSENING, NSCARC_NONE)
+END SELECT
+
+!
 ! ------------ Set type of global solver
 !
 SELECT CASE (TRIM(SCARC_METHOD))
@@ -1887,16 +1900,6 @@ IF (TYPE_METHOD == NSCARC_METHOD_MULTIGRID .OR. TYPE_PRECON == NSCARC_RELAX_GMG 
          TYPE_CYCLING = NSCARC_CYCLING_FMG
       CASE DEFAULT
          CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_MULTIGRID_CYCLE, NSCARC_NONE)
-   END SELECT
-
-   ! Set type of coarsening strategy (AMG only)
-   SELECT CASE (TRIM(SCARC_MULTIGRID_COARSENING))
-      CASE ('GMG')
-         TYPE_COARSENING = NSCARC_COARSENING_GMG
-      CASE ('SAMG')
-         TYPE_COARSENING = NSCARC_COARSENING_SAMG
-      CASE DEFAULT
-         CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_MULTIGRID_COARSENING, NSCARC_NONE)
    END SELECT
 
    ! Set type of interpolation 
@@ -14624,7 +14627,7 @@ END SUBROUTINE SCARC_INVERT_MATRIX_DIAGONAL
 SUBROUTINE SCARC_SETUP_STRENGTH_OF_CONNECTION(NL)
 USE SCARC_POINTERS, ONLY: G, A, S, OG
 INTEGER, INTENT(IN) :: NL
-REAL(EB):: VAL, EPS, THETA = 0.05_EB, SCAL, CVAL_MAX
+REAL(EB):: VAL, EPS, SCAL, CVAL_MAX
 INTEGER :: NM, NOM, IC, JC, ICOL, IZONE, INBR
 
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -14672,7 +14675,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    C%ROW(1) = 1
    DO IC = 1, G%NC
    
-      EPS = THETA**2 * ABS(G%DIAG(IC))                  ! EPS = theta**2 * A_ii
+      EPS = SCARC_MULTIGRID_THETA**2 * ABS(G%DIAG(IC))                  ! EPS = theta**2 * A_ii
       DO ICOL = A%ROW(IC), A%ROW(IC+1) - 1
          JC  = A%COL(ICOL)
          VAL = A%VAL(ICOL)                              ! VAL = A_ij
@@ -14737,6 +14740,9 @@ TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
 INTEGER :: IC, ICOL, JC, IZONE, JZONE
 LOGICAL :: HAS_NEIGHBORS, HAS_AGGREGATED_NEIGHBORS
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*)  'STARTING SETUP_AGGREGATION_SAMG'
+#endif
 ! 
 ! Pass 1 of aggregation:  Setup aggregation zones on internal cells of active mesh
 ! 
@@ -14854,6 +14860,10 @@ INTEGER :: NXM, NYM, NZM, NXD, NYD, NZD, NXI, NYI, NZI
 INTEGER :: IX, IY, IZ, IXZ, IYZ, IZZ, IXP, IYP, IZP, IX0, IY0, IZ0, IC
 INTEGER, DIMENSION(:), ALLOCATABLE :: OFFX, OFFY, OFFZ
 LOGICAL :: BFIRST
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*)  'STARTING SETUP_AGGREGATION_GMG'
+#endif
 
 NXM = MOD(L%NX,2)
 NXD = L%NX/2
@@ -18788,7 +18798,6 @@ IF (ALLOCATED(A%COLG)) THEN
    WRITE(MSG%LU_DEBUG,*) "------------->", TRIM(CNAME),'%COLG:'
    DO IC = 1, A%N_ROW-1
       IF (A%ROW(IC) == 0) CYCLE
-      WRITE (CFORM, '(A,I3,A)' ) "(I4,A,", A%ROW(IC+1)-A%ROW(IC),"I5)"
       IF (A%ROW(IC+1)-A%ROW(IC) < 10) THEN
          CFORM = "(I4,A,10I6)"
       ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 20) THEN
@@ -18806,13 +18815,13 @@ WRITE(MSG%LU_DEBUG,*) "------------->", TRIM(CNAME),'%VAL:'
 DO IC = 1, A%N_ROW-1
    IF (A%ROW(IC) == 0) CYCLE
       IF (A%ROW(IC+1)-A%ROW(IC) < 10) THEN
-         CFORM = "(I4,A,10E12.3)"
+         CFORM = "(I4,A,10E10.2)"
       ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 20) THEN
-         CFORM = "(I4,A,20E12.3)"
+         CFORM = "(I4,A,20E10.2)"
       ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 30) THEN
-         CFORM = "(I4,A,30E12.3)"
+         CFORM = "(I4,A,30E10.2)"
       ELSE
-         CFORM = "(I4,A,40E12.3)"
+         CFORM = "(I4,A,40E10.2)"
       ENDIF
    WRITE(MSG%LU_DEBUG,CFORM) IC,':', (A%VAL(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
 ENDDO
