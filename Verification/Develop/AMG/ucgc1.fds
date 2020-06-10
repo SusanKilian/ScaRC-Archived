@@ -1,18 +1,16 @@
-&HEAD CHID='ucgsamg2',TITLE='Basic Poisson test of default ScaRC solver on 2D-pipe geometry with 4 meshes' /
+&HEAD CHID='ucgc1',TITLE='Basic Poisson test of default ScaRC solver on 2D-pipe geometry with 4 meshes' /
 
-&MESH IJK=10,1,11  XB=0.0,1.0,-0.01,0.01,0.0,1.1 /
-&MESH IJK= 9,1,11  XB=1.0,1.9,-0.01,0.01,0.0,1.1 /
+&MESH IJK=19,1,11  XB=0.0,1.9,-0.01,0.01,0.0,1.1 /
 
 &MISC NOISE = .FALSE. 
       DNS   = .TRUE./
 
 &PRES SOLVER = 'USCARC'
       SCARC_MATRIX = 'COMPACT'
-      SCARC_TWOLEVEL = 'SAMG' 
+      SCARC_COARSE_LEVEL = 2 
       SCARC_COARSE = 'DIRECT' 
-      SCARC_COARSENING = 'SAMG' 
-      SCARC_MULTIGRID = 'ALGEBRAIC'
-      SCARC_MULTIGRID_LEVEL = 2 /
+      SCARC_TWOLEVEL = 'ADDITIVE' 
+      SCARC_COARSENING = 'CUBIC'  /
 
 &TIME T_END=0.5, DT=0.002 /
 
