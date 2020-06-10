@@ -1,4 +1,4 @@
-&HEAD CHID='scga2',TITLE='Basic Poisson test of default ScaRC solver on 2D-pipe geometry with 4 meshes' /
+&HEAD CHID='scg2',TITLE='Basic Poisson test of default ScaRC solver on 2D-pipe geometry with 4 meshes' /
 
 &MESH IJK=10,1,11  XB=0.0,1.0,-0.01,0.01,0.0,1.1 /
 &MESH IJK= 9,1,11  XB=1.0,1.9,-0.01,0.01,0.0,1.1 /
