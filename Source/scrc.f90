@@ -1108,55 +1108,91 @@ USE MESH_VARIABLES
 USE SCARC_TYPES
 IMPLICIT NONE
 
-TYPE (MESH_TYPE),  POINTER :: M=>NULL()                  !< Pointer to specified mesh (based on MESHES from surrounding FDS code)
-TYPE (OMESH_TYPE), POINTER :: OM=>NULL()                 !< Pointer to specified neighboring mesh
-TYPE (WALL_TYPE),  POINTER :: MWC=>NULL()                !< Pointer to specified wall cell
+TYPE (MESH_TYPE), POINTER :: M=>NULL()                  !< Pointer to specified mesh (based on MESHES from base code)
+TYPE (OMESH_TYPE), POINTER :: OM=>NULL()                !< Pointer to specified neighboring mesh (based on OMESH from base code)
+TYPE (WALL_TYPE), POINTER :: MWC=>NULL()                !< Pointer to specified wall cell (based on WALL from base code)
 
-TYPE (EXTERNAL_WALL_TYPE), POINTER :: EWC=>NULL()        !< Pointer to specified external wall cell
+TYPE (EXTERNAL_WALL_TYPE), POINTER :: EWC=>NULL()       !< Pointer to specified external wall cell
 
-TYPE (SCARC_TYPE),          POINTER :: S=>NULL()         !< Pointer to ScaRC-structure on a specified mesh
-TYPE (SCARC_OSCARC_TYPE),   POINTER :: OS=>NULL()        !< Pointer to ScaRC-structure on a specified neighboring
+TYPE (SCARC_TYPE), POINTER :: S=>NULL()                 !< Pointer to ScaRC-structure on a specified mesh
+TYPE (SCARC_OSCARC_TYPE), POINTER :: OS=>NULL()         !< Pointer to ScaRC-structure on a specified neighboring
 
-TYPE (SCARC_LEVEL_TYPE),    POINTER :: L=>NULL()         !< Pointer to specified level
-TYPE (SCARC_LEVEL_TYPE),    POINTER :: LF=>NULL()        !< Pointer to specified fine level
-TYPE (SCARC_LEVEL_TYPE),    POINTER :: LC=>NULL()        !< Pointer to specified coarse level
-TYPE (SCARC_LEVEL_TYPE),    POINTER :: OL=>NULL()        !< Pointer to specified level on neighboring mesh
-TYPE (SCARC_LEVEL_TYPE),    POINTER :: OLF=>NULL()       !< Pointer to specified fine level on neighboring mesh
-TYPE (SCARC_LEVEL_TYPE),    POINTER :: OLC=>NULL()       !< Pointer to specified coarse level on neighboring mesh
+TYPE (SCARC_LEVEL_TYPE), POINTER :: L=>NULL()           !< Pointer to specified level
+TYPE (SCARC_LEVEL_TYPE), POINTER :: LF=>NULL()          !< Pointer to specified fine level
+TYPE (SCARC_LEVEL_TYPE), POINTER :: LC=>NULL()          !< Pointer to specified coarse level
+TYPE (SCARC_LEVEL_TYPE), POINTER :: OL=>NULL()          !< Pointer to specified level on neighboring mesh
+TYPE (SCARC_LEVEL_TYPE), POINTER :: OLF=>NULL()         !< Pointer to specified fine level on neighboring mesh
+TYPE (SCARC_LEVEL_TYPE), POINTER :: OLC=>NULL()         !< Pointer to specified coarse level on neighboring mesh
 
-TYPE (SCARC_GRID_TYPE),     POINTER :: G=>NULL()         !< Pointer to specified grid discretization 
-TYPE (SCARC_GRID_TYPE),     POINTER :: GF=>NULL()        !< Pointer to specified fine grid discretization 
-TYPE (SCARC_GRID_TYPE),     POINTER :: GC=>NULL()        !< Pointer to specified coarse grid discretization 
-TYPE (SCARC_GRID_TYPE),     POINTER :: OG=>NULL()        !< Pointer to specified grid discretization 
-TYPE (SCARC_GRID_TYPE),     POINTER :: OGF=>NULL()       !< Pointer to specified fine grid discretization on neighboring mesh
-TYPE (SCARC_GRID_TYPE),     POINTER :: OGC=>NULL()       !< Pointer to specified coarse grid discretization on neighboring mesh
+TYPE (SCARC_GRID_TYPE), POINTER :: G=>NULL()            !< Pointer to specified grid discretization 
+TYPE (SCARC_GRID_TYPE), POINTER :: GF=>NULL()           !< Pointer to specified fine grid discretization 
+TYPE (SCARC_GRID_TYPE), POINTER :: GC=>NULL()           !< Pointer to specified coarse grid discretization 
+TYPE (SCARC_GRID_TYPE), POINTER :: OG=>NULL()           !< Pointer to specified grid discretization 
+TYPE (SCARC_GRID_TYPE), POINTER :: OGF=>NULL()          !< Pointer to specified fine grid discretization on neighboring mesh
+TYPE (SCARC_GRID_TYPE), POINTER :: OGC=>NULL()          !< Pointer to specified coarse grid discretization on neighboring mesh
 
-TYPE (SCARC_FACE_TYPE),     POINTER :: F=>NULL()         !< Pointer to specified face of grid
-TYPE (SCARC_FACE_TYPE),     POINTER :: FF=>NULL()        !< Pointer to specified face of fine grid
-TYPE (SCARC_FACE_TYPE),     POINTER :: FC=>NULL()        !< Pointer to specified face of coarse grid
+TYPE (SCARC_FACE_TYPE), POINTER :: F=>NULL()            !< Pointer to specified face of grid
+TYPE (SCARC_FACE_TYPE), POINTER :: FF=>NULL()           !< Pointer to specified face of fine grid level
+TYPE (SCARC_FACE_TYPE), POINTER :: FC=>NULL()           !< Pointer to specified face of coarse grid level
 
-TYPE (SCARC_OBST_TYPE),     POINTER :: OB=>NULL()        !< Pointer to specified obstruction
+TYPE (SCARC_OBST_TYPE), POINTER :: OB=>NULL()           !< Pointer to specified obstruction
+TYPE (SCARC_WALL_TYPE), POINTER :: GWC=>NULL()          !< Pointer to specified wall cell
 
-TYPE (SCARC_SUBDIVISION_TYPE), POINTER :: SUB=>NULL()    !< Pointer to subdivision structure (only shortcut)
+TYPE (SCARC_WALL_TYPE), DIMENSION(:), POINTER :: W=>NULL()    !< Pointer to complete wall structure
+TYPE (SCARC_WALL_TYPE), DIMENSION(:), POINTER :: WF=>NULL()   !< Pointer to wall structure on fine grid level
+TYPE (SCARC_WALL_TYPE), DIMENSION(:), POINTER :: WC=>NULL()   !< Pointer to wall structure on coarse grid level
 
-TYPE (SCARC_WALL_TYPE), POINTER :: GWC=>NULL()
-TYPE (SCARC_WALL_TYPE), DIMENSION(:), POINTER :: W=>NULL(), WF=>NULL(), WC=>NULL()
+TYPE (SCARC_SUBDIVISION_TYPE), POINTER :: SUB=>NULL()         !< Pointer to subdivision structure (only shortcut)
 
-TYPE (SCARC_SOLVER_TYPE), POINTER :: SV=>NULL(), SVP=>NULL()
-TYPE (SCARC_STAGE_TYPE),  POINTER :: ST=>NULL(), STP=>NULL()
+TYPE (SCARC_SOLVER_TYPE), POINTER :: SV=>NULL()               !< Pointer to ScaRC solver structure
+TYPE (SCARC_SOLVER_TYPE), POINTER :: SVP=>NULL()              !< Pointer to parent ScaRC solver structure
 
-TYPE (SCARC_FFT_TYPE), POINTER :: FFT=>NULL()
+TYPE (SCARC_STAGE_TYPE),  POINTER :: ST=>NULL()               !< Pointer to solver stage structure
+TYPE (SCARC_STAGE_TYPE),  POINTER :: STP=>NULL()              !< Pointer to parent solver stage structure
+
+TYPE (SCARC_FFT_TYPE), POINTER :: FFT=>NULL()                 !< Pointer to FFT structure
 #ifdef WITH_SCARC_MGM
-TYPE (SCARC_MGM_TYPE), POINTER :: MGM=>NULL()
+TYPE (SCARC_MGM_TYPE), POINTER :: MGM=>NULL()                 !< Pointer to McKeeney-Greengard-Mayo structure
 #endif
 
-TYPE (SCARC_MATRIX_BANDWISE_TYPE), POINTER :: AB=>NULL(), OAB=>NULL()
+TYPE (SCARC_MATRIX_BANDWISE_TYPE), POINTER :: AB=>NULL()      !< Pointer to bandwise matrix structure
+TYPE (SCARC_MATRIX_BANDWISE_TYPE), POINTER :: OAB=>NULL()     !< Pointer to neighboring bandwise matrix structure
 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: A=>NULL(), OA=>NULL(), AF=>NULL(), AC=>NULL(), OAF=>NULL(), OAC=>NULL()
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: P=>NULL(), OP=>NULL(), PF=>NULL(), PC=>NULL(), OPF=>NULL(), OPC=>NULL()
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: R=>NULL(), OR=>NULL(), RF=>NULL(), RC=>NULL(), ORF=>NULL(), ORC=>NULL()
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: C=>NULL(), OC=>NULL(), CF=>NULL(), CC=>NULL(), OCF=>NULL(), OCC=>NULL()
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: Z=>NULL(), OZ=>NULL(), ZF=>NULL(), ZC=>NULL(), OZF=>NULL(), OZC=>NULL()
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: A=>NULL()        !< Pointer to compactly stored matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()       !< Pointer to compactly stored coarse matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AF=>NULL()       !< Pointer to compactly stored fine matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OA=>NULL()       !< Pointer to compactly stored neighboring matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OAC=>NULL()      !< Pointer to compactly stored coarse neighboring matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OAF=>NULL()      !< Pointer to compactly stored fine neighboring matrix 
+
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: P=>NULL()        !< Pointer to compactly stored prolongation matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: PC=>NULL()       !< Pointer to compactly stored coarse prolongation matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: PF=>NULL()       !< Pointer to compactly stored fine matrix on coarse grid
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OP=>NULL()       !< Pointer to compactly stored neighboring prolongation matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OPC=>NULL()      !< Pointer to compactly stored coarse neighboring prolongation matrix
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OPF=>NULL()      !< Pointer to compactly stored fine neighboring prolongation matrix 
+
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: R=>NULL()        !< Pointer to compactly stored restriction matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: RC=>NULL()       !< Pointer to compactly stored fine restriction matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: RF=>NULL()       !< Pointer to compactly stored coarse restriction matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OR=>NULL()       !< Pointer to compactly stored neighboring restriction matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: ORC=>NULL()      !< Pointer to compactly stored coarse neighboring restriction matrix
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: ORF=>NULL()      !< Pointer to compactly stored fine neighboring restriction matrix
+
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: C=>NULL()        !< Pointer to compactly stored connection matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: CC=>NULL()       !< Pointer to compactly stored coarse connection matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: CF=>NULL()       !< Pointer to compactly stored fine connection matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OC=>NULL()       !< Pointer to compactly stored neighboring connection matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OCC=>NULL()      !< Pointer to compactly stored coarse neighboring connection matrix
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OCF=>NULL()      !< Pointer to compactly stored fine neighboring connection matrix
+
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: Z=>NULL()        !< Pointer to compactly stored zones matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: ZC=>NULL()       !< Pointer to compactly stored coarse zones matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: ZF=>NULL()       !< Pointer to compactly stored fine zones matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OZ=>NULL()       !< Pointer to compactly stored neighboring zones matrix 
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OZC=>NULL()      !< Pointer to compactly stored neighboring coarse zones matrix
+TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OZF=>NULL()      !< Pointer to compactly stored neighboring fine zones matrix 
+
 TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AP=>NULL(), APF=>NULL(), APC=>NULL(), OAP=>NULL()
 
 TYPE (SCARC_MATRIX_COMPACT_CONDENSED_TYPE),  POINTER :: ACO =>NULL()
@@ -2634,8 +2670,7 @@ INTEGER :: NM, NC, IXF, IYF, IZF, IX, IY, IZ, NSTEP
 
 MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   LF => SCARC(NM)%LEVEL(NLEVEL_MIN)
-   LC => SCARC(NM)%LEVEL(NL)
+   CALL SCARC_POINT_TO_MULTIGRID (NM, NLEVEL_MIN, NL)
 
    CALL SCARC_ALLOCATE_LOG3(LC%IS_SOLID, 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, NSCARC_INIT_FALSE, 'LC%IS_SOLID')
    LC%IS_SOLID (1:LC%NX, 1:LC%NY, 1:LC%NZ)  = .FALSE.
@@ -2649,8 +2684,6 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
  
       CASE (NSCARC_GRID_STRUCTURED)
 
-         GC => LC%STRUCTURED
-
          CALL SCARC_ALLOCATE_INT1(GC%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'GC%NC_LOCAL')
          CALL SCARC_ALLOCATE_INT1(GC%NC_OFFSET, 1, NMESHES, NSCARC_INIT_ZERO, 'GC%NC_OFFSET')
 
@@ -2658,7 +2691,6 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                                   NSCARC_INIT_UNDEF, 'GC%CELL_NUMBER')
 
          NC = LC%NX * LC%NY * LC%NZ
-
          CALL SCARC_ALLOCATE_INT1(GC%ICX , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICX')
          CALL SCARC_ALLOCATE_INT1(GC%ICY , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICY')
          CALL SCARC_ALLOCATE_INT1(GC%ICZ , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICZ')
@@ -2692,8 +2724,6 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
  
       CASE (NSCARC_GRID_UNSTRUCTURED)
 
-         GC => LC%UNSTRUCTURED
-
          CALL SCARC_ALLOCATE_INT1(GC%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'GC%NC_LOCAL')
          CALL SCARC_ALLOCATE_INT1(GC%NC_OFFSET, 1, NMESHES, NSCARC_INIT_ZERO, 'GC%NC_OFFSET')
 
@@ -2701,7 +2731,6 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                                   NSCARC_INIT_UNDEF, 'GC%CELL_NUMBER')
 
          NC = LC%NX * LC%NY * LC%NZ
-
          CALL SCARC_ALLOCATE_INT1(GC%ICX , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICX')
          CALL SCARC_ALLOCATE_INT1(GC%ICY , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICY')
          CALL SCARC_ALLOCATE_INT1(GC%ICZ , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICZ')
@@ -3150,8 +3179,7 @@ END SUBROUTINE SCARC_SETUP_FACE_BASICS
 !> \brief Setup wall related structures and boundary conditions
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_WALLS
-USE SCARC_POINTERS, ONLY: M, L, LF, LC, FF, FC, OL, OLF, OLC, G, GC, GF, WC, WF, &
-                          OGC, OGF, GWC, MWC, EWC
+USE SCARC_POINTERS, ONLY: M, L, LF, LC, FF, FC, WF, WC, OL, OLF, OLC, G, GC, GF, OGC, OGF, GWC, MWC, EWC
 INTEGER :: NL, NM, NOM
 INTEGER :: IREFINE, IFACE, IOR0, JOR0, INBR, IWG, IWC, ICW
 LOGICAL :: IS_KNOWN(-3:3), IS_DIRIC, IS_OPEN
@@ -4402,7 +4430,7 @@ END SUBROUTINE SCARC_CHECK_DIVISIBILITY
 !> \brief Set wall cell information on coarse level
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_WALL_LEVEL(IOR0, IWC, IREFINE, NM, NL)
-USE SCARC_POINTERS, ONLY: LF, LC, FF, WF, WC, OLC, OGC
+USE SCARC_POINTERS, ONLY: LF, LC, FF, FC, WF, WC, OLC, OGC 
 INTEGER, INTENT(INOUT) :: IWC
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER, INTENT(IN) :: IOR0, IREFINE
@@ -4414,6 +4442,8 @@ INTEGER :: IX1, IY1, IZ1
 INTEGER :: IX2, IY2, IZ2
 INTEGER :: IDIFF, JDIFF, KDIFF
 
+WC => GC%WALL
+WF => GF%WALL
 
 ! set coordinate dimensions for correspoding face
 SELECT CASE (ABS(IOR0))
@@ -4453,6 +4483,9 @@ DO IZ = NZ1, NZ2
          ! Set orientation of neiboring face, indices of ghost and adjacent cell for coarse IW
 
          WC(IWC)%IOR = IOR0
+
+         FF => LF%FACE(IOR0)
+         FC => LC%FACE(IOR0)
 
          SELECT CASE (IOR0)
             CASE (1)
@@ -10563,6 +10596,7 @@ CALL SCARC_DUMP_SYSTEM(NS, NSCARC_DUMP_B)
 #endif
 
 #ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_QUANTITY (NSCARC_DEBUG_FACE , NLEVEL_MIN, 'FACE - BEGINNING OF CG')
 CALL SCARC_DEBUG_LEVEL (X, 'CG-METHOD: X INIT0 ', NL)
 CALL SCARC_DEBUG_LEVEL (B, 'CG-METHOD: B INIT0 ', NL)
 #endif
@@ -11668,12 +11702,12 @@ IF (HAS_CSV_DUMP) CALL SCARC_DUMP_CSV(ISM, NS, NL)
 #ifdef WITH_SCARC_VERBOSE
 IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) &
    WRITE(MSG%LU_VERBOSE,1100) STACK(NS)%SOLVER%CNAME, NL, ITE, RES
-1100 FORMAT (A30,': Level=',I4,': Iteration = ',I4,': Residual =',e12.4)
+1100 FORMAT (A30,': Level=',I4,': Iteration = ',I8,': Residual =',e12.4)
 #endif
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG, 1000) STACK(NS)%SOLVER%CNAME, NL, ITE, RES
-1000 FORMAT (A30,': Level=',I4,': Iteration = ',I4,': Residual =',e25.16)
+1000 FORMAT (A30,': Level=',I4,': Iteration = ',I8,': Residual =',e25.16)
 #endif
 
 END FUNCTION SCARC_CONVERGENCE_STATE
@@ -12680,7 +12714,7 @@ CALL MPI_IRECV(RECV_BUFFER_INT, NLEN, MPI_INTEGER, SNODE, TAG, MPI_COMM_WORLD, R
 
 #ifdef WITH_SCARC_VERBOSE2
 WRITE(MSG%LU_VERBOSE,*) ' ...  done'
-1000 FORMAT('SCARC_RECV_MESSAGE_INT  : Receiving ',A20, ' in length =', I8,' from ',I4, ' to ', I4, ' on level ', I4)
+1000 FORMAT('SCARC_RECV_MESSAGE_INT  : Receiving ',A20, ' in length =', I8,' from ',I8, ' to ', I8, ' on level ', I4)
 #endif
 END SUBROUTINE SCARC_RECV_MESSAGE_INT
 
@@ -12729,7 +12763,7 @@ CALL MPI_IRECV(RECV_BUFFER_REAL, NLEN, MPI_DOUBLE_PRECISION, SNODE, TAG, MPI_COM
 
 #ifdef WITH_SCARC_VERBOSE2
 WRITE(MSG%LU_VERBOSE,*) ' ...  done'
-1000 FORMAT('SCARC_RECV_MESSAGE_REAL : Receiving ',A20, ' in length =', I8,' from ',I4, ' to ', I4, ' on level ', I4)
+1000 FORMAT('SCARC_RECV_MESSAGE_REAL : Receiving ',A20, ' in length =', I8,' from ',I8, ' to ', I8, ' on level ', I4)
 #endif
 END SUBROUTINE SCARC_RECV_MESSAGE_REAL
 
@@ -12778,7 +12812,7 @@ CALL MPI_ISEND(SEND_BUFFER_INT, NLEN, MPI_INTEGER, SNODE, TAG, MPI_COMM_WORLD, R
       
 #ifdef WITH_SCARC_VERBOSE2
 WRITE(MSG%LU_VERBOSE,*) ' ...  done'
-1000 FORMAT('SCARC_SEND_MESSAGE_INT  : Sending   ',A20, ' in length =', I8,' from ',I4, ' to ', I4, ' on level ', I4)
+1000 FORMAT('SCARC_SEND_MESSAGE_INT  : Sending   ',A20, ' in length =', I8,' from ',I8, ' to ', I8, ' on level ', I4)
 #endif
 END SUBROUTINE SCARC_SEND_MESSAGE_INT
 
@@ -12827,7 +12861,7 @@ CALL MPI_ISEND(SEND_BUFFER_REAL, NLEN, MPI_DOUBLE_PRECISION, SNODE, TAG, MPI_COM
 
 #ifdef WITH_SCARC_VERBOSE2
 WRITE(MSG%LU_VERBOSE,*) ' ...  done'
-1000 FORMAT('SCARC_SEND_MESSAGE_REAL : Sending   ',A20, ' in length =', I8,' from ',I4, ' to ', I4, ' on level ', I4)
+1000 FORMAT('SCARC_SEND_MESSAGE_REAL : Sending   ',A20, ' in length =', I8,' from ',I8, ' to ', I8, ' on level ', I4)
 #endif
 END SUBROUTINE SCARC_SEND_MESSAGE_REAL
 
@@ -13016,67 +13050,32 @@ INTEGER :: IOR0, ICG, ICW1, ICW2, IWG, IXW, IYW, IZW, LL
 
 LL = 1
 OS%SEND_BUFFER_REAL = 0.0_EB
-IF (IS_STRUCTURED) THEN
+DO IOR0 = -3, 3
 
-   DO IOR0 = -3, 3
-      IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-      F => L%FACE(IOR0)
-      DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
+   IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
+   F => L%FACE(IOR0)
+   DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
 
-         IWG  = OG%ICG_TO_IWG(ICG)
-         IXW  = G%WALL(IWG)%IXW + F%NOFFX
-         IYW  = G%WALL(IWG)%IYW + F%NOFFY
-         IZW  = G%WALL(IWG)%IZW + F%NOFFZ
+      IWG  = OG%ICG_TO_IWG(ICG)
+      IXW  = G%WALL(IWG)%IXW + F%NOFFX
+      IYW  = G%WALL(IWG)%IYW + F%NOFFY
+      IZW  = G%WALL(IWG)%IZW + F%NOFFZ
 
-         ICW1 = OG%ICG_TO_ICW(ICG, 1)
-         ICW2 = G%CELL_NUMBER(IXW, IYW, IZW)
+      ICW1 = OG%ICG_TO_ICW(ICG, 1)
+      ICW2 = G%CELL_NUMBER(IXW, IYW, IZW)
 
-         OS%SEND_BUFFER_REAL(LL)   = G%AUX1(ICW1)
-         OS%SEND_BUFFER_REAL(LL+1) = G%AUX1(ICW2)
+      IF (ICW1 > 0) OS%SEND_BUFFER_REAL(LL)   = G%AUX1(ICW1)
+      IF (ICW2 > 0) OS%SEND_BUFFER_REAL(LL+1) = G%AUX1(ICW2)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,7I6, 2E12.4)') 'PACK_AUX: IOR0, IWG, IXW, IYW, IZW, ICW1, ICW2: ', &
-                                       IOR0, IWG, IXW, IYW, IZW, ICW1, ICW2, G%AUX1(ICW1), G%AUX1(ICW2)
+IF (ICW1 > 0) WRITE(MSG%LU_DEBUG,'(A,6I6, E12.4)') 'PACK_AUX: IOR0, IWG, IXW, IYW, IZW, ICW1: ', &
+                                                    IOR0, IWG, IXW, IYW, IZW, ICW1, G%AUX1(ICW1)
+IF (ICW2 > 0) WRITE(MSG%LU_DEBUG,'(A,6I6, E12.4)') 'PACK_AUX: IOR0, IWG, IXW, IYW, IZW, ICW2: ', &
+                                                    IOR0, IWG, IXW, IYW, IZW, ICW2, G%AUX1(ICW2)
 #endif
-         LL = LL + 2
-      ENDDO
+      LL = LL + 2
    ENDDO
+ENDDO
 
-ELSE
-
-   DO IOR0 = -3, 3
-
-      WRITE(*,*) 'TODO: CHECK!'
-      IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-      F => L%FACE(IOR0)
-      DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-
-         IWG  = OG%ICG_TO_IWG(ICG)
-         IXW  = G%WALL(IWG)%IXW + F%NOFFX
-         IYW  = G%WALL(IWG)%IYW + F%NOFFY
-         IZW  = G%WALL(IWG)%IZW + F%NOFFZ
-
-         ICW1 = OG%ICG_TO_ICW(ICG, 1)
-         ICW2 = G%CELL_NUMBER(IXW, IYW, IZW)
-
-         IF (ICW1 > 0) THEN
-            OS%SEND_BUFFER_REAL(LL)   = G%AUX1(ICW1)
-         ELSE
-            OS%SEND_BUFFER_REAL(LL)   = NSCARC_HUGE_REAL
-         ENDIF
-         IF (ICW2 > 0) THEN
-            OS%SEND_BUFFER_REAL(LL+1) = G%AUX1(ICW2)
-         ELSE
-            OS%SEND_BUFFER_REAL(LL+1) = NSCARC_HUGE_REAL
-         ENDIF
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,7I6, 2E12.4)') 'PACK_AUX: IOR0, IWG, IXW, IYW, IZW, ICW1, ICW2: ', &
-                                       IOR0, IWG, IXW, IYW, IZW, ICW1, ICW2, G%AUX1(ICW1), G%AUX1(ICW2)
-#endif
-         LL = LL + 2
-      ENDDO
-   ENDDO
-
-ENDIF
 
 END SUBROUTINE SCARC_PACK_AUX
 
@@ -13095,11 +13094,11 @@ DO IOR0 = -3, 3
    DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
       ICE1 = OG%ICG_TO_ICE(ICG,1)
       ICE2 = OG%ICG_TO_ICE(ICG,2)
-      G%AUX1(ICE1) = RECV_BUFFER_REAL(LL)
-      G%AUX1(ICE2) = RECV_BUFFER_REAL(LL+1)
+      IF (ICE1 > 0) G%AUX1(ICE1) = RECV_BUFFER_REAL(LL)
+      IF (ICE2 > 0) G%AUX1(ICE2) = RECV_BUFFER_REAL(LL+1)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,3I6, 2E12.4)') 'UNPACK_AUX: IOR0, ICE1, ICE2, AUX1-1, AUX2-2:', &
-                                       IOR0, ICE1, ICE2, G%AUX1(ICE1), G%AUX1(ICE2)
+IF (ICE1 > 0) WRITE(MSG%LU_DEBUG,'(A,2I6, E12.4)') 'UNPACK_AUX: IOR0, ICE1, AUX1-1:', IOR0, ICE1, G%AUX1(ICE1)
+IF (ICE1 > 0) WRITE(MSG%LU_DEBUG,'(A,2I6, E12.4)') 'UNPACK_AUX: IOR0, ICE1, AUX1-1:', IOR0, ICE2, G%AUX1(ICE2)
 #endif
       LL = LL + 2
    ENDDO
@@ -13117,67 +13116,35 @@ INTEGER :: IOR0, ICG, ICW1, ICW2, IWG, IXW, IYW, IZW, LL
 
 LL = 1
 OS%SEND_BUFFER_REAL = 0.0_EB
-IF (IS_STRUCTURED) THEN
 
-   DO IOR0 = -3, 3
-      IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-      F => L%FACE(IOR0)
-      DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
+DO IOR0 = -3, 3
 
-         IWG  = OG%ICG_TO_IWG(ICG)
-         IXW  = G%WALL(IWG)%IXW + F%NOFFX
-         IYW  = G%WALL(IWG)%IYW + F%NOFFY
-         IZW  = G%WALL(IWG)%IZW + F%NOFFZ
+   WRITE(*,*) 'TODO: CHECK!'
+   IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
+   F => L%FACE(IOR0)
+   DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
 
-         ICW1 = OG%ICG_TO_ICW(ICG, 1)
-         ICW2 = G%CELL_NUMBER(IXW, IYW, IZW)
+      IWG  = OG%ICG_TO_IWG(ICG)
+      IXW  = G%WALL(IWG)%IXW + F%NOFFX
+      IYW  = G%WALL(IWG)%IYW + F%NOFFY
+      IZW  = G%WALL(IWG)%IZW + F%NOFFZ
 
-         OS%SEND_BUFFER_REAL(LL)   = G%NULLSPACE(ICW1)
-         OS%SEND_BUFFER_REAL(LL+1) = G%NULLSPACE(ICW2)
+      ICW1 = OG%ICG_TO_ICW(ICG, 1)
+      ICW2 = G%CELL_NUMBER(IXW, IYW, IZW)
+
+      IF (ICW1 > 0) OS%SEND_BUFFER_REAL(LL)   = G%NULLSPACE(ICW1)
+      IF (ICW2 > 0) OS%SEND_BUFFER_REAL(LL+1) = G%NULLSPACE(ICW2)
+
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,7I6, 2E12.4)') 'PACK_NULLSPACE: IOR0, IWG, IXW, IYW, IZW, ICW1, ICW2: ', &
-                                       IOR0, IWG, IXW, IYW, IZW, ICW1, ICW2, G%NULLSPACE(ICW1), G%NULLSPACE(ICW2)
+IF (ICW1 > 0) WRITE(MSG%LU_DEBUG,'(A,6I6, E12.4)') 'PACK_NULLSPACE: IOR0, IWG, IXW, IYW, IZW, ICW1: ', &
+                                                    IOR0, IWG, IXW, IYW, IZW, ICW1, G%NULLSPACE(ICW1)
+IF (ICW1 > 0) WRITE(MSG%LU_DEBUG,'(A,6I6, E12.4)') 'PACK_NULLSPACE: IOR0, IWG, IXW, IYW, IZW, ICW2: ', &
+                                                    IOR0, IWG, IXW, IYW, IZW, ICW2, G%NULLSPACE(ICW2)
 #endif
-         LL = LL + 2
-      ENDDO
+      LL = LL + 2
    ENDDO
+ENDDO
 
-ELSE
-
-   DO IOR0 = -3, 3
-
-      WRITE(*,*) 'TODO: CHECK!'
-      IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-      F => L%FACE(IOR0)
-      DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-
-         IWG  = OG%ICG_TO_IWG(ICG)
-         IXW  = G%WALL(IWG)%IXW + F%NOFFX
-         IYW  = G%WALL(IWG)%IYW + F%NOFFY
-         IZW  = G%WALL(IWG)%IZW + F%NOFFZ
-
-         ICW1 = OG%ICG_TO_ICW(ICG, 1)
-         ICW2 = G%CELL_NUMBER(IXW, IYW, IZW)
-
-         IF (ICW1 > 0) THEN
-            OS%SEND_BUFFER_REAL(LL)   = G%NULLSPACE(ICW1)
-         ELSE
-            OS%SEND_BUFFER_REAL(LL)   = NSCARC_HUGE_REAL
-         ENDIF
-         IF (ICW2 > 0) THEN
-            OS%SEND_BUFFER_REAL(LL+1) = G%NULLSPACE(ICW2)
-         ELSE
-            OS%SEND_BUFFER_REAL(LL+1) = NSCARC_HUGE_REAL
-         ENDIF
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,7I6, 2E12.4)') 'PACK_NULLSPACE: IOR0, IWG, IXW, IYW, IZW, ICW1, ICW2: ', &
-                                       IOR0, IWG, IXW, IYW, IZW, ICW1, ICW2, G%NULLSPACE(ICW1), G%NULLSPACE(ICW2)
-#endif
-         LL = LL + 2
-      ENDDO
-   ENDDO
-
-ENDIF
 
 END SUBROUTINE SCARC_PACK_NULLSPACE
 
@@ -13197,11 +13164,13 @@ DO IOR0 = -3, 3
    DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
       ICE1 = OG%ICG_TO_ICE(ICG,1)
       ICE2 = OG%ICG_TO_ICE(ICG,2)
-      G%NULLSPACE(ICE1) = RECV_BUFFER_REAL(LL)
-      G%NULLSPACE(ICE2) = RECV_BUFFER_REAL(LL+1)
+      IF (ICE1 > 0) G%NULLSPACE(ICE1) = RECV_BUFFER_REAL(LL)
+      IF (ICE2 > 0) G%NULLSPACE(ICE2) = RECV_BUFFER_REAL(LL+1)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,3I6, 2E12.4)') 'UNPACK_NULLSPACE: IOR0, ICE1, ICE2, NULLSPACE-1, AUX2-2:', &
-                                       IOR0, ICE1, ICE2, G%NULLSPACE(ICE1), G%NULLSPACE(ICE2)
+IF (ICE1 > 0) WRITE(MSG%LU_DEBUG,'(A,2I6, E12.4)') 'UNPACK_NULLSPACE: IOR0, ICE1, NULLSPACE-1:', &
+                                                   IOR0, ICE1, G%NULLSPACE(ICE1)
+IF (ICE2 > 0) WRITE(MSG%LU_DEBUG,'(A,2I6, E12.4)') 'UNPACK_NULLSPACE: IOR0, ICE2, NULLSPACE-1:', &
+                                                   IOR0, ICE2, G%NULLSPACE(ICE2)
 #endif
       LL = LL + 2
    ENDDO
@@ -13266,7 +13235,7 @@ LL = 1
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
    DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
-      ICE = G%ICG_TO_ICE(ICG,1)
+      ICE = OG%ICG_TO_ICE(ICG,1)
       IF (ICE < 0) CYCLE                            ! skip solid cells
       VC(ICE) = RECV_BUFFER_REAL(LL)
 #ifdef WITH_SCARC_DEBUG
@@ -13336,7 +13305,7 @@ DO IOR0 = -3, 3
       LL = LL + 1
    ENDDO
    DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
-      ICE = G%ICG_TO_ICE(ICG,1)
+      ICE = OG%ICG_TO_ICE(ICG,1)
       IF (ICE < 0) CYCLE                                                       ! skip external solid cells
       VC(ICE) = 1.0_EB/3.0_EB * VC(ICE) + 2.0_EB/3.0_EB * RECV_BUFFER_REAL(LL)
       !VC(ICE) = 0.5_EB * VC(ICE) + 0.5_EB * RECV_BUFFER_REAL(LL)
@@ -13665,7 +13634,7 @@ WRITE(MSG%LU_DEBUG,*) '---------- UNPACK_POISSON_VALS: ICG, OAC%ROW(ICG)', ICG, 
             DO ICOL = OAC%ROW(ICG), OAC%ROW(ICG+1)-1
                OAC%VAL(ICOL) = RECV_BUFFER_REAL(LL)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,4I4,E12.4)') 'UNPACK_POISSON_VALS, RECV: IOR0, ICG, ICOL, LL, OAC%VAL', &
+WRITE(MSG%LU_DEBUG,'(A,4I8,E12.4)') 'UNPACK_POISSON_VALS, RECV: IOR0, ICG, ICOL, LL, OAC%VAL', &
                                      IOR0, ICG, ICOL, LL, OAC%VAL(ICOL)
 #endif
                LL = LL + 1
@@ -13732,7 +13701,7 @@ END SUBROUTINE SCARC_UNPACK_POISSON_SIZES
 SUBROUTINE SCARC_PACK_POISSON_DIAGS(NTYPE)
 USE SCARC_POINTERS, ONLY:  AC, OS, OL, OG
 INTEGER, INTENT(IN) :: NTYPE
-INTEGER :: IOR0, ICG, ICW, ICE, ICOL
+INTEGER :: IOR0, ICG, ICW, ICOL
 
 AC => SCARC_POINT_TO_CMATRIX(G, NTYPE)
 
@@ -13744,8 +13713,8 @@ DO IOR0 = -3, 3
       ICOL = AC%ROW(ICW)
       OS%SEND_BUFFER_REAL(ICG) = AC%VAL(ICOL)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 5I4,E12.4)') 'PACK_POISSON_DIAGS: IOR0, ICG, ICW, ICE, ICOL, VAL:', &
-                                      IOR0, ICG, ICW, ICE, ICOL, AC%VAL(ICOL)
+WRITE(MSG%LU_DEBUG,'(A,4I8,E12.4)') 'PACK_POISSON_DIAGS: IOR0, ICG, ICW, ICOL, VAL:', &
+                                     IOR0, ICG, ICW, ICOL, AC%VAL(ICOL)
 #endif
    ENDDO
 ENDDO
@@ -13770,7 +13739,7 @@ DO IOR0 = -3, 3
       IF (ICE < 0) CYCLE                                   ! skip solid cells
       G%DIAG(ICE) = RECV_BUFFER_REAL(LL)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 3I4,E12.4)') 'UNPACK_POISSON_DIAGS: NOM, IOR0, ICG, ICE, DIAG:', &
+WRITE(MSG%LU_DEBUG,'(A, 3I8,E12.4)') 'UNPACK_POISSON_DIAGS: NOM, IOR0, ICG, ICE, DIAG:', &
                                       IOR0, ICG, ICE, G%DIAG(ICE)
 #endif
       LL = LL + 1
@@ -15497,7 +15466,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       JC = A%COL(IDIAG)
       G%AUX2(IC) = A%VAL(IDIAG)* G%AUX1(JC)
 #ifdef WITH_SCARC_DEBUG2
-   WRITE(MSG%LU_DEBUG,'(A, 3I4,3E12.4)') 'NULLSPACE: IC; IDIAG, JC, AUX1=', &
+   WRITE(MSG%LU_DEBUG,'(A, 3I8,3E12.4)') 'NULLSPACE: IC; IDIAG, JC, AUX1=', &
                                           IC, IDIAG, JC, A%VAL(IDIAG), G%AUX1(JC), G%AUX2(IC)
 #endif
    
@@ -15505,7 +15474,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          JC = A%COL(ICOL)
          G%AUX2(IC) =  G%AUX2(IC) + A%VAL(ICOL) * G%AUX1(JC)
 #ifdef WITH_SCARC_DEBUG2
-   WRITE(MSG%LU_DEBUG,'(A, 3I4,3E12.4)') 'NULLSPACE: IC; IDIAG, JC, AUX1=', &
+   WRITE(MSG%LU_DEBUG,'(A, 3I8,3E12.4)') 'NULLSPACE: IC; IDIAG, JC, AUX1=', &
                                           IC, IDIAG, JC, A%VAL(IDIAG), G%AUX1(JC), G%AUX2(IC)
 #endif
       ENDDO
@@ -15522,7 +15491,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    DO IC = 1, G%NC
       G%AUX2(IC) = MG%OMEGA * G%DIAG(IC) * G%AUX2(IC) 
 #ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,'(A, I4,3E12.4)') 'DIAG: IC =', IC, MG%OMEGA, G%DIAG(IC), G%AUX2(IC)
+   WRITE(MSG%LU_DEBUG,'(A, I8,3E12.4)') 'DIAG: IC =', IC, MG%OMEGA, G%DIAG(IC), G%AUX2(IC)
 #endif
    ENDDO
    
@@ -16453,7 +16422,7 @@ DO IA = AF%ROW(IC), AF%ROW(IC+1) - 1
       IF (JCC == GC%LOCAL_TO_GLOBAL(ICC)) THEN
          DSUM = DSUM + AF%VAL(IA)*PF%VAL(IP)
 #ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,'(A,5I4,3E12.4)') 'VALUE_AP: IC, JC, ICC, GLOB(ICC), JCC, AF%VAL(IA), PF%VAL(IP), DSUM:',&
+WRITE(MSG%LU_DEBUG,'(A,5I8,3E12.4)') 'VALUE_AP: IC, JC, ICC, GLOB(ICC), JCC, AF%VAL(IA), PF%VAL(IP), DSUM:',&
                                   IC, JC, ICC, GC%LOCAL_TO_GLOBAL(ICC), JCC, AF%VAL(IA), PF%VAL(IP), DSUM
 #endif
          CYCLE
@@ -16523,7 +16492,7 @@ WRITE(MSG%LU_DEBUG,*) '---------------------------------------------------------
          DAP = SCARC_VALUE_RAP(IC, IPC)
          DRSUM = DRSUM + DAP*RF%VAL(IR)
 #ifdef WITH_SCARC_DEBUG2
-         WRITE(MSG%LU_DEBUG,'(A,3I4,E12.4)') 'GAL: IRC, IC, IPC, DRSUM:', IRC, IC, IPC, DRSUM
+         WRITE(MSG%LU_DEBUG,'(A,3I8,E12.4)') 'GAL: IRC, IC, IPC, DRSUM:', IRC, IC, IPC, DRSUM
 #endif
       ENDDO
       IF (ABS(DRSUM) > TOL) THEN
@@ -16553,7 +16522,7 @@ WRITE(MSG%LU_DEBUG,*) '------------------------ IPC:B: = ', IPC,' --------------
             DAP = SCARC_VALUE_RAP(IC, IPC)
             DRSUM = DRSUM + DAP*RF%VAL(IR)
 #ifdef WITH_SCARC_DEBUG2
-         WRITE(MSG%LU_DEBUG,'(A,3I4,E12.4)') 'GAL: IRC, IC, IPC, DRSUM:', IRC, IC, IPC, DRSUM
+         WRITE(MSG%LU_DEBUG,'(A,3I8,E12.4)') 'GAL: IRC, IC, IPC, DRSUM:', IRC, IC, IPC, DRSUM
 #endif
          ENDDO
          IF (ABS(DRSUM) > TOL) THEN
@@ -16695,6 +16664,133 @@ ENDDO
 
 END SUBROUTINE SCARC_RESORT_MATRIX_ROWS
 
+! ------------------------------------------------------------------------------------------------
+!> \brief Set exact solution according to specified function
+! ------------------------------------------------------------------------------------------------
+DOUBLE PRECISION FUNCTION EXACT(X,Z)
+REAL (EB), INTENT(IN) :: X, Z
+!EXACT = (X**2 - X**4) * (Z**4 - Z**2)                                    ! FUNCTION 1
+!EXACT = (X**2 - 1) * (Z**2 - 1)                                         ! FUNCTION 2
+!EXACT =  625.0_EB/16.0_EB * X * (0.8_EB - X) * Z * (0.8_EB - Z)        ! FUNCTION 3
+EXACT = - X * (0.8_EB - X) * Z * (0.8_EB - Z)        ! FUNCTION 3
+END FUNCTION EXACT
+
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Set right hand side according to specified function
+! ------------------------------------------------------------------------------------------------
+DOUBLE PRECISION FUNCTION RHS(X,Z)
+REAL (EB), INTENT(IN) :: X, Z
+!RHS = 2.0_EB*((1.0_EB - 6.0_EB*X**2)*Z**2*(1.0_EB-Z**2)+(1.0_EB-6.0_EB*Z**2)*X**2*(1.0_EB-X**2))
+!RHS = -X**2 - Z**2 +2
+!RHS = 625.0_EB/8.0_EB * (X * (0.8_EB - X) + Z * (0.8_EB - Z))
+RHS = 2.0_EB * (X * (0.8_EB - X) + Z * (0.8_EB - Z))
+END FUNCTION RHS
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Preset right hand side in such a way that exact solution is known
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PRESET_EXACT (NE, NL)
+USE SCARC_POINTERS, ONLY: M, L, G, VC, XMID, ZMID
+USE SCARC_ITERATION_ENVIRONMENT
+INTEGER, INTENT(IN) :: NE, NL
+INTEGER :: IC, NM, I, K
+
+IF (ITE_TOTAL == 0) WRITE(*,*) 'TODO: PRESET_EXACT is active !!!'
+
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+   VC => SCARC_POINT_TO_VECTOR (NM, NL, NE)
+
+   DO K = 1, L%NZ
+      DO I = 1, L%NX
+         IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I,1,K)) CYCLE
+         IC = G%CELL_NUMBER(I,1,K)
+         IF (NL == NLEVEL_MIN) THEN
+            XMID => M%XC
+            ZMID => M%ZC
+         ELSE
+            XMID => L%XMID
+            ZMID => L%ZMID
+         ENDIF
+         VC(IC) = EXACT(XMID(I),ZMID(K))
+         !WRITE(MSG%LU_DEBUG,'(A,i3,a,e10.2,a,e10.2,a,e12.4)') 'IC=',IC,':X=',XMID(i),':Z=',ZMID(k),': RHS=',VC(IC)
+      ENDDO
+   ENDDO
+ENDDO
+
+END SUBROUTINE SCARC_PRESET_EXACT
+
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Preset vector with specific values
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PRESET_VECTOR (NV, NL)
+USE SCARC_POINTERS, ONLY: M, G, VC, XMID, ZMID
+INTEGER, INTENT(IN) :: NV, NL
+INTEGER :: IC, NM, I, K
+
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+   VC => SCARC_POINT_TO_VECTOR (NM, NL, NV)
+
+   DO K = 1, L%NZ
+      DO I = 1, L%NX
+         IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I,1,K)) CYCLE
+         IC = G%CELL_NUMBER(I,1,K)
+         IF (NL == NLEVEL_MIN) THEN
+            XMID => M%XC
+            ZMID => M%ZC
+         ELSE
+            XMID => L%XMID
+            ZMID => L%ZMID
+         ENDIF
+         VC(IC) = XMID(I)
+         !WRITE(MSG%LU_DEBUG,*) 'IC=',IC,':X=',XMID,':Z=',ZMID,': RHS=',VC(IC)
+      ENDDO
+   ENDDO
+ENDDO
+
+END SUBROUTINE SCARC_PRESET_VECTOR
+
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Preset right hand side in such a way that exact solution is known
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PRESET_RHS (NV, NL)
+USE SCARC_POINTERS, ONLY: M, L, G, VC
+INTEGER, INTENT(IN) :: NV, NL
+INTEGER :: IC, NM, I, K
+REAL (EB) :: X, Z
+
+IF (NL > NLEVEL_MIN) WRITE(*,*) 'Wrong level for presetting RHS '
+
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+   M => MESHES(NM)
+   M%BXS = 0.0_EB
+   M%BXF = 0.0_EB
+   M%BZS = 0.0_EB
+   M%BZF = 0.0_EB
+
+   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+   VC => SCARC_POINT_TO_VECTOR (NM, NL, NV)
+
+   DO K = 1, L%NZ
+      DO I = 1, L%NX
+         IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I,1,K)) CYCLE
+         IC = G%CELL_NUMBER(I,1,K)
+         X  = M%XC(I)
+         Z  = M%ZC(K)
+         !WRITE(MSG%LU_DEBUG,'(A,i3,a,e10.2,a,e10.2,a,e12.4)') 'IC=',IC,':X=',X,':Z=',Z,': RHS=',VC(IC)
+         VC(IC) = RHS(X,Z)
+      ENDDO
+   ENDDO
+ENDDO
+
+END SUBROUTINE SCARC_PRESET_RHS
 ! ================================================================================================
 ! ================================================================================================
 ! Bundle of routines for the administration of different working spaces
@@ -17175,12 +17271,14 @@ SUBROUTINE SCARC_ALLOCATE_CMATRIX(A, NL, NPREC, NTYPE, CNAME)
 TYPE (SCARC_MATRIX_COMPACT_TYPE), INTENT(INOUT) :: A
 INTEGER, INTENT(IN) :: NPREC, NTYPE, NL
 CHARACTER(*), INTENT(IN) :: CNAME
+INTEGER :: NDUMMY
 
 A%CNAME = TRIM(CNAME)
 A%NTYPE = NTYPE
 #ifdef WITH_SCARC_VERBOSE
 WRITE(MSG%LU_VERBOSE,1000) CNAME, NL
 #endif
+NDUMMY = NL
 
 CALL SCARC_ALLOCATE_INT1(A%ROW, 1, A%N_ROW, NSCARC_INIT_ZERO, 'A%ROW')
 CALL SCARC_ALLOCATE_INT1(A%COL, 1, A%N_VAL, NSCARC_INIT_ZERO, 'A%COL')
@@ -17207,7 +17305,10 @@ END SUBROUTINE SCARC_ALLOCATE_CMATRIX
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEALLOCATE_CMATRIX(A, CNAME)
 TYPE (SCARC_MATRIX_COMPACT_TYPE), INTENT(INOUT) :: A
-CHARACTER(*) :: CNAME
+CHARACTER(*), INTENT(IN) :: CNAME
+#ifndef WITH_SCARC_VERBOSE
+CHARACTER(60) :: CDUMMY
+#endif
 
 A%N_STENCIL   = 0
 A%N_CONDENSED = 0
@@ -17226,7 +17327,7 @@ IF (ALLOCATED(A%RELAX)) DEALLOCATE(A%RELAX)
 WRITE(MSG%LU_VERBOSE,1000) CNAME
 1000 FORMAT('Removing   COMPACT matrix ', A20)
 #else
-CNAME = ''
+CDUMMY = CNAME 
 #endif
 END SUBROUTINE SCARC_DEALLOCATE_CMATRIX
 
@@ -17918,468 +18019,15 @@ END SUBROUTINE SCARC_METHOD_MGM_ILU
 
 
 
-#ifdef WITH_SCARC_DEBUG
-! ------------------------------------------------------------------------------------------------------
-! Temporarily preset B1 case with specified aggregation pattern
-! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_PRESET_B1_CASE
-USE SCARC_POINTERS, ONLY: GF, GC
-
-CALL SCARC_POINT_TO_MULTIGRID(1, 1, 2)
-
-GF%N_COARSE = 6
-GF%N_FINE = 24
-
-GF%ZONES_LOCAL = 0
-GF%ZONES_LOCAL(1)  = 1
-GF%ZONES_LOCAL(2)  = 1
-GF%ZONES_LOCAL(3)  = 2
-GF%ZONES_LOCAL(4)  = 4
-GF%ZONES_LOCAL(5)  = 4
-GF%ZONES_LOCAL(6)  = 5
-GF%ZONES_LOCAL(7)  = 1
-GF%ZONES_LOCAL(8)  = 2
-GF%ZONES_LOCAL(9)  = 2
-GF%ZONES_LOCAL(10) = 4
-GF%ZONES_LOCAL(11) = 5
-GF%ZONES_LOCAL(12) = 5
-GF%ZONES_LOCAL(13) = 3
-GF%ZONES_LOCAL(14) = 2
-GF%ZONES_LOCAL(15) = 2
-GF%ZONES_LOCAL(16) = 6
-GF%ZONES_LOCAL(17) = 5
-GF%ZONES_LOCAL(18) = 5
-GF%ZONES_LOCAL(19) = 3
-GF%ZONES_LOCAL(20) = 3
-GF%ZONES_LOCAL(21) = 2
-GF%ZONES_LOCAL(22) = 6
-GF%ZONES_LOCAL(23) = 6
-GF%ZONES_LOCAL(24) = 5
-GF%ZONES_GLOBAL = GF%ZONES_LOCAL
-
-GF%CPOINTS(1) =  1
-GF%CPOINTS(2) =  9
-GF%CPOINTS(3) = 19
-GF%CPOINTS(4) =  4
-GF%CPOINTS(5) = 12
-GF%CPOINTS(6) = 22
-
-GF%N_COARSE = 6
-GF%N_ZONES = 6
-
-GC%N_FINE = 6
-GC%NC_LOCAL(1) = 6
-GC%NC_GLOBAL = 6
-
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: ZONES_GLOBAL:'
-WRITE(MSG%LU_DEBUG,CFORM_INT) GF%ZONES_GLOBAL(1:GF%NC)
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: CPOINTS:'
-WRITE(MSG%LU_DEBUG,CFORM_INT) GF%CPOINTS
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: GF%N_ZONES  =',GF%N_ZONES
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: GF%N_FINE  =',GF%N_FINE
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: GF%N_COARSE=',GF%N_COARSE
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: GC%N_FINE=',GC%N_FINE
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: GC%NC_LOCAL(1)=',GC%NC_LOCAL(1)
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: GC%NC_GLOBAL=',GC%NC_GLOBAL
-
-END SUBROUTINE SCARC_PRESET_B1_CASE
- 
-
-! ------------------------------------------------------------------------------------------------------
-! Temporarily preset B1 case with specified aggregation pattern
-! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_PRESET_B14_CASE
-USE SCARC_POINTERS, ONLY: GF, GC
-
-CALL SCARC_POINT_TO_MULTIGRID(1, 1, 2)
-
-GF%N_COARSE = 8
-GF%N_FINE = 36
-
-GF%ZONES_LOCAL = 0
-GF%ZONES_LOCAL(1)  = 1
-GF%ZONES_LOCAL(2)  = 1
-GF%ZONES_LOCAL(3)  = 2
-GF%ZONES_LOCAL(4)  = 3
-GF%ZONES_LOCAL(5)  = 3
-GF%ZONES_LOCAL(6)  = 4
-GF%ZONES_LOCAL(7)  = 1
-GF%ZONES_LOCAL(8)  = 2
-GF%ZONES_LOCAL(9)  = 2
-GF%ZONES_LOCAL(10) = 3
-GF%ZONES_LOCAL(11) = 4
-GF%ZONES_LOCAL(12) = 4
-GF%ZONES_LOCAL(13) = 1
-GF%ZONES_LOCAL(14) = 2
-GF%ZONES_LOCAL(15) = 2
-GF%ZONES_LOCAL(16) = 3
-GF%ZONES_LOCAL(17) = 4
-GF%ZONES_LOCAL(18) = 4
-GF%ZONES_LOCAL(19) = 5
-GF%ZONES_LOCAL(20) = 5
-GF%ZONES_LOCAL(21) = 6
-GF%ZONES_LOCAL(22) = 7
-GF%ZONES_LOCAL(23) = 7
-GF%ZONES_LOCAL(24) = 8
-GF%ZONES_LOCAL(25) = 5
-GF%ZONES_LOCAL(26) = 6
-GF%ZONES_LOCAL(27) = 6
-GF%ZONES_LOCAL(28) = 7
-GF%ZONES_LOCAL(29) = 8
-GF%ZONES_LOCAL(30) = 8
-GF%ZONES_LOCAL(31) = 5
-GF%ZONES_LOCAL(32) = 6
-GF%ZONES_LOCAL(33) = 6
-GF%ZONES_LOCAL(34) = 7
-GF%ZONES_LOCAL(35) = 8
-GF%ZONES_LOCAL(36) = 8
-GF%ZONES_GLOBAL = GF%ZONES_LOCAL
-
-GF%CPOINTS(1) =  1
-GF%CPOINTS(2) =  9
-GF%CPOINTS(3) =  4
-GF%CPOINTS(4) = 12
-GF%CPOINTS(5) = 19
-GF%CPOINTS(6) = 27
-GF%CPOINTS(7) = 22
-GF%CPOINTS(8) = 30
-
-GF%N_COARSE = 8
-GF%N_ZONES = 8
-
-GC%N_FINE = 8
-GC%NC_LOCAL(1) = 8
-GC%NC_GLOBAL = 8
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: ZONES_GLOBAL:'
-WRITE(MSG%LU_DEBUG,CFORM_INT) GF%ZONES_GLOBAL(1:GF%NC)
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: CPOINTS:'
-WRITE(MSG%LU_DEBUG,CFORM_INT) GF%CPOINTS
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GF%N_ZONES  =',GF%N_ZONES
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GF%N_FINE  =',GF%N_FINE
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GF%N_COARSE=',GF%N_COARSE
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%N_FINE=',GC%N_FINE
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%NC_LOCAL(1)=',GC%NC_LOCAL(1)
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%NC_GLOBAL=',GC%NC_GLOBAL
-#endif
-
-END SUBROUTINE SCARC_PRESET_B14_CASE
- 
-! ------------------------------------------------------------------------------------------------------
-! Temporarily preset B1 case with specified aggregation pattern
-! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_PRESET_b14big_CASE
-USE SCARC_POINTERS, ONLY: GF, GC
-
-CALL SCARC_POINT_TO_MULTIGRID(1, 1, 2)
-
-GF%N_COARSE = 24
-GF%N_FINE = 108
-
-GF%ZONES_LOCAL = 0
-GF%ZONES_LOCAL(1)  = 1
-GF%ZONES_LOCAL(2)  = 1
-GF%ZONES_LOCAL(3)  = 2
-GF%ZONES_LOCAL(4)  = 2
-GF%ZONES_LOCAL(5)  = 2
-GF%ZONES_LOCAL(6)  = 3
-GF%ZONES_LOCAL(7)  = 3
-GF%ZONES_LOCAL(8)  = 9
-GF%ZONES_LOCAL(9)  = 9
-GF%ZONES_LOCAL(10) = 10
-GF%ZONES_LOCAL(11) = 10
-GF%ZONES_LOCAL(12) = 10
-
-GF%ZONES_LOCAL(13) = 1
-GF%ZONES_LOCAL(14) = 4
-GF%ZONES_LOCAL(15) = 2
-GF%ZONES_LOCAL(16) = 2
-GF%ZONES_LOCAL(17) = 5
-GF%ZONES_LOCAL(18) = 3
-GF%ZONES_LOCAL(19) = 3
-GF%ZONES_LOCAL(20) = 9
-GF%ZONES_LOCAL(21) = 11
-GF%ZONES_LOCAL(22) = 10
-GF%ZONES_LOCAL(23) = 10
-GF%ZONES_LOCAL(24) = 12
-
-GF%ZONES_LOCAL(25) = 4
-GF%ZONES_LOCAL(26) = 4
-GF%ZONES_LOCAL(27) = 4
-GF%ZONES_LOCAL(28) = 5
-GF%ZONES_LOCAL(29) = 5
-GF%ZONES_LOCAL(30) = 5
-GF%ZONES_LOCAL(31) = 6
-GF%ZONES_LOCAL(32) = 11
-GF%ZONES_LOCAL(33) = 11
-GF%ZONES_LOCAL(34) = 11
-GF%ZONES_LOCAL(35) = 12
-GF%ZONES_LOCAL(36) = 12
-
-GF%ZONES_LOCAL(37) = 7
-GF%ZONES_LOCAL(38) = 4
-GF%ZONES_LOCAL(39) = 4
-GF%ZONES_LOCAL(40) = 8
-GF%ZONES_LOCAL(41) = 5
-GF%ZONES_LOCAL(42) = 6
-GF%ZONES_LOCAL(43) = 6
-GF%ZONES_LOCAL(44) = 13
-GF%ZONES_LOCAL(45) = 11
-GF%ZONES_LOCAL(46) = 11
-GF%ZONES_LOCAL(47) = 14
-GF%ZONES_LOCAL(48) = 12
-
-GF%ZONES_LOCAL(49) = 7
-GF%ZONES_LOCAL(50) = 7
-GF%ZONES_LOCAL(51) = 8
-GF%ZONES_LOCAL(52) = 8
-GF%ZONES_LOCAL(53) = 8
-GF%ZONES_LOCAL(54) = 6
-GF%ZONES_LOCAL(55) = 6
-GF%ZONES_LOCAL(56) = 13
-GF%ZONES_LOCAL(57) = 13
-GF%ZONES_LOCAL(58) = 14
-GF%ZONES_LOCAL(59) = 14
-GF%ZONES_LOCAL(60) = 14
-
-GF%ZONES_LOCAL(61) = 15
-GF%ZONES_LOCAL(62) = 15
-GF%ZONES_LOCAL(63) = 16
-GF%ZONES_LOCAL(64) = 16
-GF%ZONES_LOCAL(65) = 16
-GF%ZONES_LOCAL(66) = 17
-GF%ZONES_LOCAL(67) = 17
-GF%ZONES_LOCAL(68) = 21
-GF%ZONES_LOCAL(69) = 21
-GF%ZONES_LOCAL(70) = 22
-GF%ZONES_LOCAL(71) = 22
-GF%ZONES_LOCAL(72) = 22
-
-GF%ZONES_LOCAL(73) = 15
-GF%ZONES_LOCAL(74) = 18
-GF%ZONES_LOCAL(75) = 16
-GF%ZONES_LOCAL(76) = 16
-GF%ZONES_LOCAL(77) = 19
-GF%ZONES_LOCAL(78) = 17
-GF%ZONES_LOCAL(79) = 17
-GF%ZONES_LOCAL(80) = 21
-GF%ZONES_LOCAL(81) = 23
-GF%ZONES_LOCAL(82) = 22
-GF%ZONES_LOCAL(83) = 22
-GF%ZONES_LOCAL(84) = 24
-
-GF%ZONES_LOCAL(85) = 18
-GF%ZONES_LOCAL(86) = 18
-GF%ZONES_LOCAL(87) = 18
-GF%ZONES_LOCAL(88) = 19
-GF%ZONES_LOCAL(89) = 19
-GF%ZONES_LOCAL(90) = 19
-GF%ZONES_LOCAL(91) = 20
-GF%ZONES_LOCAL(92) = 23
-GF%ZONES_LOCAL(93) = 23
-GF%ZONES_LOCAL(94) = 23
-GF%ZONES_LOCAL(95) = 24
-GF%ZONES_LOCAL(96) = 24
-
-GF%ZONES_LOCAL(97) = 18
-GF%ZONES_LOCAL(98) = 18
-GF%ZONES_LOCAL(99) = 18
-GF%ZONES_LOCAL(100) = 19
-GF%ZONES_LOCAL(101) = 19
-GF%ZONES_LOCAL(102) = 20
-GF%ZONES_LOCAL(103) = 20
-GF%ZONES_LOCAL(104) = 23
-GF%ZONES_LOCAL(105) = 23
-GF%ZONES_LOCAL(106) = 23
-GF%ZONES_LOCAL(107) = 24
-GF%ZONES_LOCAL(108) = 24
-
-GF%ZONES_GLOBAL = GF%ZONES_LOCAL
-
-GF%CPOINTS(1) =  1
-GF%CPOINTS(2) =  4
-GF%CPOINTS(3) =  7
-GF%CPOINTS(4) = 26
-GF%CPOINTS(5) = 29
-GF%CPOINTS(6) = 43
-GF%CPOINTS(7) = 49
-GF%CPOINTS(8) = 52
-GF%CPOINTS(9) = 8
-GF%CPOINTS(10) = 11
-GF%CPOINTS(11) = 33
-GF%CPOINTS(12) = 36
-GF%CPOINTS(13) = 56
-GF%CPOINTS(14) = 59
-GF%CPOINTS(15) = 61
-GF%CPOINTS(16) = 64
-GF%CPOINTS(17) = 67
-GF%CPOINTS(18) = 86
-GF%CPOINTS(19) = 89
-GF%CPOINTS(20) = 103
-GF%CPOINTS(21) = 68
-GF%CPOINTS(22) = 71
-GF%CPOINTS(23) = 93
-GF%CPOINTS(24) = 96
-
-GF%N_COARSE = 24
-GF%N_ZONES = 24
-
-GC%N_FINE = 24
-GC%NC_LOCAL(1) = 24
-GC%NC_GLOBAL = 24
-
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: ZONES_GLOBAL:'
-WRITE(MSG%LU_DEBUG,CFORM_INT) GF%ZONES_GLOBAL(1:GF%NC)
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: CPOINTS:'
-WRITE(MSG%LU_DEBUG,CFORM_INT) GF%CPOINTS
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GF%N_ZONES  =',GF%N_ZONES
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GF%N_FINE  =',GF%N_FINE
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GF%N_COARSE=',GF%N_COARSE
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%N_FINE=',GC%N_FINE
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%NC_LOCAL(1)=',GC%NC_LOCAL(1)
-WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%NC_GLOBAL=',GC%NC_GLOBAL
-#endif
-
-END SUBROUTINE SCARC_PRESET_b14big_CASE
- 
 ! ================================================================================================
 ! Start  WITH_SCARC_DEBUG  - Part
 ! Collection of routines which print out different quantities or allow to preset them
 ! ================================================================================================
-! ------------------------------------------------------------------------------------------------
-! Preset right hand side in such a way that exact solution is known
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_PRESET_EXACT (NE, NL)
-USE SCARC_POINTERS, ONLY: M, L, G, VC, XMID, ZMID
-USE SCARC_ITERATION_ENVIRONMENT
-INTEGER, INTENT(IN) :: NE, NL
-INTEGER :: IC, NM, I, K
-
-IF (ITE_TOTAL == 0) WRITE(*,*) 'TODO: PRESET_EXACT is active !!!'
-
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-   VC => SCARC_POINT_TO_VECTOR (NM, NL, NE)
-
-   DO K = 1, L%NZ
-      DO I = 1, L%NX
-         IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I,1,K)) CYCLE
-         IC = G%CELL_NUMBER(I,1,K)
-         IF (NL == NLEVEL_MIN) THEN
-            XMID => M%XC
-            ZMID => M%ZC
-         ELSE
-            XMID => L%XMID
-            ZMID => L%ZMID
-         ENDIF
-         VC(IC) = EXACT(XMID(I),ZMID(K))
-         !WRITE(MSG%LU_DEBUG,'(A,i3,a,e10.2,a,e10.2,a,e12.4)') 'IC=',IC,':X=',XMID(i),':Z=',ZMID(k),': RHS=',VC(IC)
-      ENDDO
-   ENDDO
-ENDDO
-
-END SUBROUTINE SCARC_PRESET_EXACT
-
 
 ! ------------------------------------------------------------------------------------------------
-! Preset vector
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_PRESET_VECTOR (NV, NL)
-USE SCARC_POINTERS, ONLY: M, G, VC, XMID, ZMID
-INTEGER, INTENT(IN) :: NV, NL
-INTEGER :: IC, NM, I, K
-
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-   VC => SCARC_POINT_TO_VECTOR (NM, NL, NV)
-
-   DO K = 1, L%NZ
-      DO I = 1, L%NX
-         IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I,1,K)) CYCLE
-         IC = G%CELL_NUMBER(I,1,K)
-         IF (NL == NLEVEL_MIN) THEN
-            XMID => M%XC
-            ZMID => M%ZC
-         ELSE
-            XMID => L%XMID
-            ZMID => L%ZMID
-         ENDIF
-         VC(IC) = XMID(I)
-         !WRITE(MSG%LU_DEBUG,*) 'IC=',IC,':X=',XMID,':Z=',ZMID,': RHS=',VC(IC)
-      ENDDO
-   ENDDO
-ENDDO
-
-END SUBROUTINE SCARC_PRESET_VECTOR
-
-
-! ------------------------------------------------------------------------------------------------
-! Preset right hand side in such a way that exact solution is known
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_PRESET_RHS (NV, NL)
-USE SCARC_POINTERS, ONLY: M, L, G, VC
-INTEGER, INTENT(IN) :: NV, NL
-INTEGER :: IC, NM, I, K
-REAL (EB) :: X, Z
-
-IF (NL > NLEVEL_MIN) WRITE(*,*) 'Wrong level for presetting RHS '
-
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-   M => MESHES(NM)
-   M%BXS = 0.0_EB
-   M%BXF = 0.0_EB
-   M%BZS = 0.0_EB
-   M%BZF = 0.0_EB
-
-   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-   VC => SCARC_POINT_TO_VECTOR (NM, NL, NV)
-
-   DO K = 1, L%NZ
-      DO I = 1, L%NX
-         IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I,1,K)) CYCLE
-         IC = G%CELL_NUMBER(I,1,K)
-         X  = M%XC(I)
-         Z  = M%ZC(K)
-         !WRITE(MSG%LU_DEBUG,'(A,i3,a,e10.2,a,e10.2,a,e12.4)') 'IC=',IC,':X=',X,':Z=',Z,': RHS=',VC(IC)
-         VC(IC) = RHS(X,Z)
-      ENDDO
-   ENDDO
-ENDDO
-
-END SUBROUTINE SCARC_PRESET_RHS
-
-
-! ------------------------------------------------------------------------------------------------
-! Set exact solution
-! ------------------------------------------------------------------------------------------------
-DOUBLE PRECISION FUNCTION EXACT(X,Z)
-REAL (EB), INTENT(IN) :: X, Z
-!EXACT = (X**2 - X**4) * (Z**4 - Z**2)                                    ! FUNCTION 1
-!EXACT = (X**2 - 1) * (Z**2 - 1)                                         ! FUNCTION 2
-!EXACT =  625.0_EB/16.0_EB * X * (0.8_EB - X) * Z * (0.8_EB - Z)        ! FUNCTION 3
-EXACT = - X * (0.8_EB - X) * Z * (0.8_EB - Z)        ! FUNCTION 3
-END FUNCTION EXACT
-
-
-! ------------------------------------------------------------------------------------------------
-! Set right hand side
-! ------------------------------------------------------------------------------------------------
-DOUBLE PRECISION FUNCTION RHS(X,Z)
-REAL (EB), INTENT(IN) :: X, Z
-!RHS = 2.0_EB*((1.0_EB - 6.0_EB*X**2)*Z**2*(1.0_EB-Z**2)+(1.0_EB-6.0_EB*Z**2)*X**2*(1.0_EB-X**2))
-!RHS = -X**2 - Z**2 +2
-!RHS = 625.0_EB/8.0_EB * (X * (0.8_EB - X) + Z * (0.8_EB - Z))
-RHS = 2.0_EB * (X * (0.8_EB - X) + Z * (0.8_EB - Z))
-END FUNCTION RHS
-
-
-! ------------------------------------------------------------------------------------------------
-! Save dump of vector in dump-directory
+!> \brief Debugging version only: Dump out information for specified quantity
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DUMP_QUANTITY (NV, CNAME, ISM, NS, NL)
 USE SCARC_POINTERS, ONLY: G, VC
@@ -18430,7 +18078,7 @@ FN_DUMP = CNAME
 END SUBROUTINE SCARC_DUMP_QUANTITY
 
 ! ------------------------------------------------------------------------------------------------------
-! Debug INT1 array
+!> \brief Debugging version only: Print out debug information for integer vector
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_INT1(ARR, I1, I2, CNAME, CTEXT)
 INTEGER, DIMENSION(:), INTENT(IN) :: ARR
@@ -18445,7 +18093,7 @@ END SUBROUTINE SCARC_DEBUG_INT1
 
 
 ! ------------------------------------------------------------------------------------------------------
-! Debug REAL1 array
+!> \brief Debugging version only: Print out debug information for double precision vector
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_REAL1(ARR, I1, I2, CNAME, CTEXT)
 REAL(EB), DIMENSION(:), INTENT(IN) :: ARR
@@ -18459,7 +18107,7 @@ WRITE(MSG%LU_DEBUG,'(8E12.4)') (ARR(IC), IC=I1, I2)
 END SUBROUTINE SCARC_DEBUG_REAL1
 
 ! ------------------------------------------------------------------------------------------------------
-! Debug zones information
+!> \brief Debugging version only: Print out debug information for aggregation zones
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_ZONES(G, IC, ITYPE, CTEXT)
 TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
@@ -18479,11 +18127,11 @@ ELSE
    WRITE(MSG%LU_DEBUG,'(16I7)') G%ZONES_GLOBAL(G%NC+1: G%NCE2)
 ENDIF
 WRITE(MSG%LU_DEBUG,*) '-------------- CPOINTS'
-WRITE(MSG%LU_DEBUG,'(16I4)') G%CPOINTS
+WRITE(MSG%LU_DEBUG,'(16I8)') G%CPOINTS
 END SUBROUTINE SCARC_DEBUG_ZONES
 
 ! ------------------------------------------------------------------------------------------------------
-! Debug compact matrix
+!> \brief Debugging version only: Print out debug information for compactly stored matrix
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_CMATRIX(A, CNAME, CTEXT)
 CHARACTER(*), INTENT(IN) :: CNAME, CTEXT
@@ -18497,22 +18145,6 @@ WRITE(MSG%LU_DEBUG,*) 'INTERNAL NAME OF MATRIX :', A%CNAME
 WRITE(MSG%LU_DEBUG,*) 'REQUESTED SIZES N_ROW, N_VAL:', A%N_ROW, A%N_VAL
 WRITE(MSG%LU_DEBUG,*) 'ALLOCATED SIZES N_ROW, N_VAL:', SIZE(A%ROW), SIZE(A%VAL)
 
-#ifdef WITH_SCARC_VERBOSE
-IF (A%NTYPE /= NSCARC_MATRIX_MINIMAL) THEN
-   IF (A%N_ROW /= SIZE(A%ROW)) WRITE(MSG%LU_VERBOSE,*) &
-         '!!! CAUTION : different sizes for ',TRIM(CNAME),' N_ROW=',A%N_ROW,' SIZE(A%ROW)=',SIZE(A%ROW), ' AT', CTEXT
-   IF (A%N_VAL /= SIZE(A%VAL)) WRITE(MSG%LU_VERBOSE,*) &
-         '!!! CAUTION : different sizes for ',TRIM(CNAME),' N_VAL=',A%N_VAL,' SIZE(A%VAL)=',SIZE(A%VAL), ' AT', CTEXT
-ENDIF
-#endif
-
-IF (A%NTYPE /= NSCARC_MATRIX_MINIMAL) THEN
-   IF (A%N_ROW /= SIZE(A%ROW)) WRITE(MSG%LU_DEBUG,*) &
-         '!!! CAUTION : different sizes for ',TRIM(CNAME),' N_ROW=',A%N_ROW,' SIZE(A%ROW)=',SIZE(A%ROW), ' AT', CTEXT
-   IF (A%N_VAL /= SIZE(A%VAL)) WRITE(MSG%LU_DEBUG,*) &
-         '!!! CAUTION : different sizes for ',TRIM(CNAME),' N_VAL=',A%N_VAL,' SIZE(A%VAL)=',SIZE(A%VAL), ' AT', CTEXT
-ENDIF
-
 WRITE(MSG%LU_DEBUG,*)
 WRITE(MSG%LU_DEBUG,*) "------------->", TRIM(CNAME),'%ROW:'
 WRITE(MSG%LU_DEBUG,'(8I6)') (A%ROW(IC), IC=1, A%N_ROW)
@@ -18520,13 +18152,13 @@ WRITE(MSG%LU_DEBUG,*) "------------->", TRIM(CNAME),'%COL:'
 DO IC = 1, A%N_ROW-1
    IF (A%ROW(IC) == 0) CYCLE
    IF (A%ROW(IC+1)-A%ROW(IC) < 10) THEN
-      CFORM = "(I4,A,10I6)"
+      CFORM = "(I8,A,10I6)"
    ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 20) THEN
-      CFORM = "(I4,A,20I6)"
+      CFORM = "(I8,A,20I6)"
    ELSE IF (A%ROW(IC+1)-A%ROW(IC)  < 30) THEN
-      CFORM = "(I4,A,30I6)"
+      CFORM = "(I8,A,30I6)"
    ELSE
-      CFORM = "(I4,A,40I6)"
+      CFORM = "(I8,A,40I6)"
    ENDIF
    WRITE(MSG%LU_DEBUG,CFORM) IC,':', (A%COL(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
 ENDDO
@@ -18535,13 +18167,13 @@ IF (ALLOCATED(A%COLG)) THEN
    DO IC = 1, A%N_ROW-1
       IF (A%ROW(IC) == 0) CYCLE
       IF (A%ROW(IC+1)-A%ROW(IC) < 10) THEN
-         CFORM = "(I4,A,10I6)"
+         CFORM = "(I8,A,10I6)"
       ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 20) THEN
-         CFORM = "(I4,A,20I6)"
+         CFORM = "(I8,A,20I6)"
       ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 30) THEN
-         CFORM = "(I4,A,30I6)"
+         CFORM = "(I8,A,30I6)"
       ELSE
-         CFORM = "(I4,A,40I6)"
+         CFORM = "(I8,A,40I6)"
       ENDIF
       WRITE(MSG%LU_DEBUG,CFORM) IC,':', (A%COLG(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
    ENDDO
@@ -18551,13 +18183,13 @@ WRITE(MSG%LU_DEBUG,*) "------------->", TRIM(CNAME),'%VAL:'
 DO IC = 1, A%N_ROW-1
    IF (A%ROW(IC) == 0) CYCLE
       IF (A%ROW(IC+1)-A%ROW(IC) < 10) THEN
-         CFORM = "(I4,A,10E10.2)"
+         CFORM = "(I8,A,10E10.2)"
       ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 20) THEN
-         CFORM = "(I4,A,20E10.2)"
+         CFORM = "(I8,A,20E10.2)"
       ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 30) THEN
-         CFORM = "(I4,A,30E10.2)"
+         CFORM = "(I8,A,30E10.2)"
       ELSE
-         CFORM = "(I4,A,40E10.2)"
+         CFORM = "(I8,A,40E10.2)"
       ENDIF
    WRITE(MSG%LU_DEBUG,CFORM) IC,':', (A%VAL(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
 ENDDO
@@ -18568,7 +18200,7 @@ END SUBROUTINE SCARC_DEBUG_CMATRIX
 
 
 ! ------------------------------------------------------------------------------------------------
-! Print out vector information on level NL
+!> \brief Debugging version only: Print out debug information for specified vector
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_LEVEL (NV, CVEC, NL)
 USE SCARC_POINTERS, ONLY: L, G, VC
@@ -18632,33 +18264,7 @@ END SUBROUTINE SCARC_DEBUG_LEVEL
 
 
 ! ------------------------------------------------------------------------------------------------
-! Print out vector information on level NL
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DEBUG_LEVEL2 (NV, CVEC, NL)
-USE SCARC_POINTERS, ONLY:  G, VC
-INTEGER, INTENT(IN) :: NV, NL
-INTEGER :: NM, IC
-CHARACTER (*), INTENT(IN) :: CVEC
-
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-   VC => SCARC_POINT_TO_VECTOR (NM, NL, NV)
-
-   WRITE(MSG%LU_DEBUG,*) '=========================================================='
-   WRITE(MSG%LU_DEBUG,*) CVEC, NM, NL
-   WRITE(MSG%LU_DEBUG,*) G%NC, NV, SIZE(VC)
-   WRITE(MSG%LU_DEBUG,*) '=========================================================='
-   DO IC=1, G%NC
-      WRITE(MSG%LU_DEBUG, '(I4,E25.16)') IC, VC(IC)
-   ENDDO
-ENDDO
-
-END SUBROUTINE SCARC_DEBUG_LEVEL2
-
-
-! ------------------------------------------------------------------------------------------------
-! Debug specified quantity
+!> \brief Debugging version only: Print out debug information for specified quantity
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_QUANTITY(NTYPE, NL, CQUANTITY)
 USE SCARC_POINTERS, ONLY: M, L, OL, G, OG, SV
@@ -18748,45 +18354,45 @@ SELECT CASE (NTYPE)
          IF (PREDICTOR) THEN
             WRITE(MSG%LU_DEBUG,*) 'RHO'
             DO KKK = NNZ+1, 0, -1
-               WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%RHO(III, 1, KKK), III=0,NNX+1)
+               WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%RHO(III, 1, KKK), III=0,NNX+1)
             ENDDO
             WRITE(MSG%LU_DEBUG,*) 'H'
             DO KKK = NNZ+1, 0, -1
-               WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%H(III, 1, KKK), III=0,NNX+1)
+               WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%H(III, 1, KKK), III=0,NNX+1)
             ENDDO
          ELSE
             WRITE(MSG%LU_DEBUG,*) 'RHOS'
             DO KKK = NNZ+1, 0, -1
-               WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%RHOS(III, 1, KKK), III=0,NNX+1)
+               WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%RHOS(III, 1, KKK), III=0,NNX+1)
             ENDDO
             WRITE(MSG%LU_DEBUG,*) 'HS'
             DO KKK = NNZ+1, 0, -1
-               WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%HS(III, 1, KKK), III=0,NNX+1)
+               WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%HS(III, 1, KKK), III=0,NNX+1)
             ENDDO
          ENDIF
          WRITE(MSG%LU_DEBUG,*) 'FVX'
          DO KKK = NNZ+1, 0, -1
-            WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%FVX(III, 1, KKK), III=0,NNX+1)
+            WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%FVX(III, 1, KKK), III=0,NNX+1)
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'FVY'
          DO KKK = NNZ+1, 0, -1
-            WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%FVY(III, 1, KKK), III=0,NNX+1)
+            WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%FVY(III, 1, KKK), III=0,NNX+1)
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'FVZ'
          DO KKK = NNZ+1, 0, -1
-            WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%FVZ(III, 1, KKK), III=0,NNX+1)
+            WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%FVZ(III, 1, KKK), III=0,NNX+1)
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'KRES'
          DO KKK = NNZ+1, 0, -1
-            WRITE(MSG%LU_DEBUG,'(I4,10E14.6)') KKK, (M%KRES(III, 1, KKK), III=0,NNX+1)
+            WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%KRES(III, 1, KKK), III=0,NNX+1)
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'M%PRHS'
          DO KKK = NNZ+1, 1, -1
-            WRITE(MSG%LU_DEBUG,'(I4,9E14.6)') KKK, (M%PRHS(III, 1, KKK), III=1,NNX+1)
+            WRITE(MSG%LU_DEBUG,'(I8,9E14.6)') KKK, (M%PRHS(III, 1, KKK), III=1,NNX+1)
          ENDDO
          !WRITE(MSG%LU_DEBUG,*) 'P%PRHS'
          !DO KKK = NNZ+1, 1, -1
-         !WRITE(MSG%LU_DEBUG,'(I4,9E14.6)') KKK, (P%PRHS(III, 1, KKK), III=1,NNX+1)
+         !WRITE(MSG%LU_DEBUG,'(I8,9E14.6)') KKK, (P%PRHS(III, 1, KKK), III=1,NNX+1)
          !ENDDO
 
       ENDDO
@@ -19028,7 +18634,7 @@ END SUBROUTINE SCARC_DEBUG_QUANTITY
 
 
 ! ------------------------------------------------------------------------------------------------
-! Print out vector information on level NL for matlab
+!> \brief Debugging version only: Print out vector information on specified level for MATLAB
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_MATLAB_VECTOR (NV, CVEC, NL)
 USE SCARC_POINTERS, ONLY: G, VC
@@ -19059,7 +18665,7 @@ END SUBROUTINE SCARC_MATLAB_VECTOR
 
 
 ! ------------------------------------------------------------------------------------------------
-! Print out matrix information on level NL for matlab
+!> \brief Debugging version only: Print out matrix information on specified level for MATLAB
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_MATLAB_MATRIX(VAL, ROW, COL, NC1, NC2, NM, NL, CNAME)
 REAL(EB), DIMENSION(:), INTENT(IN) :: VAL
@@ -19095,7 +18701,7 @@ CLOSE(MMATRIX)
 END SUBROUTINE SCARC_MATLAB_MATRIX
 
 ! ------------------------------------------------------------------------------------------------
-! Print out matrix information on level NL for matlab
+!> \brief Debugging version only: Print out matrix information on specified level for PYTHON
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PYTHON_MATRIX(NL, CNAME)
 USE SCARC_POINTERS, ONLY : G
@@ -19182,13 +18788,13 @@ WRITE(MSG%LU_DEBUG,*) '          COLUMNS2, STENCIL2:', IC, NLEN, COLUMNS(1:NLEN)
 ENDDO MESHES_LOOP
 #endif
 
-1001 FORMAT(I4,',')
+1001 FORMAT(I8,',')
 1002 FORMAT(E10.2,',')
 END SUBROUTINE SCARC_PYTHON_MATRIX
 
 
 ! ------------------------------------------------------------------------------------------------
-! Print out matrix information on level NL for matlab
+!> \brief Debugging version only: Print out aggregation zones information on specified level for PYTHON
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PYTHON_ZONES(NM, NL, CNAME)
 USE SCARC_POINTERS, ONLY: G
@@ -19210,15 +18816,15 @@ WRITE(MAGG,1002, ADVANCE="NO") G%ZONES_GLOBAL(G%N_FINE)
 !WRITE(MAGG, *) ' ]'
 CLOSE(MAGG)
 
-1001 FORMAT(I4,',')
-1002 FORMAT(I4)
+1001 FORMAT(I8,',')
+1002 FORMAT(I8)
 END SUBROUTINE SCARC_PYTHON_ZONES
 
 #endif
 
 
 ! ------------------------------------------------------------------------------------------------
-! Print out matrix information on level NL for matlab
+!> \brief Debugging version only: Print out matrix information on specified level for BLENDER
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_BLENDER_ZONES(NM, NL)
 USE SCARC_POINTERS, ONLY: M, L, OL, G, OG, F, XCOR, YCOR, ZCOR
@@ -19344,6 +18950,332 @@ CLOSE(MAGG)
 1000 FORMAT(I8,',', I8,',', E12.4,',',  E12.4,',', E12.4)
 END SUBROUTINE SCARC_BLENDER_ZONES
 
+! ------------------------------------------------------------------------------------------------------
+!> Temporarily preset B1 case with specified aggregation pattern
+! ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PRESET_B1_CASE
+USE SCARC_POINTERS, ONLY: GF, GC
+
+CALL SCARC_POINT_TO_MULTIGRID(1, 1, 2)
+
+GF%N_COARSE = 6
+GF%N_FINE = 24
+
+GF%ZONES_LOCAL = 0
+GF%ZONES_LOCAL(1)  = 1
+GF%ZONES_LOCAL(2)  = 1
+GF%ZONES_LOCAL(3)  = 2
+GF%ZONES_LOCAL(4)  = 4
+GF%ZONES_LOCAL(5)  = 4
+GF%ZONES_LOCAL(6)  = 5
+GF%ZONES_LOCAL(7)  = 1
+GF%ZONES_LOCAL(8)  = 2
+GF%ZONES_LOCAL(9)  = 2
+GF%ZONES_LOCAL(10) = 4
+GF%ZONES_LOCAL(11) = 5
+GF%ZONES_LOCAL(12) = 5
+GF%ZONES_LOCAL(13) = 3
+GF%ZONES_LOCAL(14) = 2
+GF%ZONES_LOCAL(15) = 2
+GF%ZONES_LOCAL(16) = 6
+GF%ZONES_LOCAL(17) = 5
+GF%ZONES_LOCAL(18) = 5
+GF%ZONES_LOCAL(19) = 3
+GF%ZONES_LOCAL(20) = 3
+GF%ZONES_LOCAL(21) = 2
+GF%ZONES_LOCAL(22) = 6
+GF%ZONES_LOCAL(23) = 6
+GF%ZONES_LOCAL(24) = 5
+GF%ZONES_GLOBAL = GF%ZONES_LOCAL
+
+GF%CPOINTS(1) =  1
+GF%CPOINTS(2) =  9
+GF%CPOINTS(3) = 19
+GF%CPOINTS(4) =  4
+GF%CPOINTS(5) = 12
+GF%CPOINTS(6) = 22
+
+GF%N_COARSE = 6
+GF%N_ZONES = 6
+
+GC%N_FINE = 6
+GC%NC_LOCAL(1) = 6
+GC%NC_GLOBAL = 6
+
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: ZONES_GLOBAL:'
+WRITE(MSG%LU_DEBUG,CFORM_INT) GF%ZONES_GLOBAL(1:GF%NC)
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: CPOINTS:'
+WRITE(MSG%LU_DEBUG,CFORM_INT) GF%CPOINTS
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: GF%N_ZONES  =',GF%N_ZONES
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: GF%N_FINE  =',GF%N_FINE
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: GF%N_COARSE=',GF%N_COARSE
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: GC%N_FINE=',GC%N_FINE
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: GC%NC_LOCAL(1)=',GC%NC_LOCAL(1)
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B1: GC%NC_GLOBAL=',GC%NC_GLOBAL
+
+END SUBROUTINE SCARC_PRESET_B1_CASE
+ 
+
+! ------------------------------------------------------------------------------------------------------
+!> Temporarily preset B14 case with specified aggregation pattern
+! ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PRESET_B14_CASE
+USE SCARC_POINTERS, ONLY: GF, GC
+
+CALL SCARC_POINT_TO_MULTIGRID(1, 1, 2)
+
+GF%N_COARSE = 8
+GF%N_FINE = 36
+
+GF%ZONES_LOCAL = 0
+GF%ZONES_LOCAL(1)  = 1
+GF%ZONES_LOCAL(2)  = 1
+GF%ZONES_LOCAL(3)  = 2
+GF%ZONES_LOCAL(4)  = 3
+GF%ZONES_LOCAL(5)  = 3
+GF%ZONES_LOCAL(6)  = 4
+GF%ZONES_LOCAL(7)  = 1
+GF%ZONES_LOCAL(8)  = 2
+GF%ZONES_LOCAL(9)  = 2
+GF%ZONES_LOCAL(10) = 3
+GF%ZONES_LOCAL(11) = 4
+GF%ZONES_LOCAL(12) = 4
+GF%ZONES_LOCAL(13) = 1
+GF%ZONES_LOCAL(14) = 2
+GF%ZONES_LOCAL(15) = 2
+GF%ZONES_LOCAL(16) = 3
+GF%ZONES_LOCAL(17) = 4
+GF%ZONES_LOCAL(18) = 4
+GF%ZONES_LOCAL(19) = 5
+GF%ZONES_LOCAL(20) = 5
+GF%ZONES_LOCAL(21) = 6
+GF%ZONES_LOCAL(22) = 7
+GF%ZONES_LOCAL(23) = 7
+GF%ZONES_LOCAL(24) = 8
+GF%ZONES_LOCAL(25) = 5
+GF%ZONES_LOCAL(26) = 6
+GF%ZONES_LOCAL(27) = 6
+GF%ZONES_LOCAL(28) = 7
+GF%ZONES_LOCAL(29) = 8
+GF%ZONES_LOCAL(30) = 8
+GF%ZONES_LOCAL(31) = 5
+GF%ZONES_LOCAL(32) = 6
+GF%ZONES_LOCAL(33) = 6
+GF%ZONES_LOCAL(34) = 7
+GF%ZONES_LOCAL(35) = 8
+GF%ZONES_LOCAL(36) = 8
+GF%ZONES_GLOBAL = GF%ZONES_LOCAL
+
+GF%CPOINTS(1) =  1
+GF%CPOINTS(2) =  9
+GF%CPOINTS(3) =  4
+GF%CPOINTS(4) = 12
+GF%CPOINTS(5) = 19
+GF%CPOINTS(6) = 27
+GF%CPOINTS(7) = 22
+GF%CPOINTS(8) = 30
+
+GF%N_COARSE = 8
+GF%N_ZONES = 8
+
+GC%N_FINE = 8
+GC%NC_LOCAL(1) = 8
+GC%NC_GLOBAL = 8
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: ZONES_GLOBAL:'
+WRITE(MSG%LU_DEBUG,CFORM_INT) GF%ZONES_GLOBAL(1:GF%NC)
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: CPOINTS:'
+WRITE(MSG%LU_DEBUG,CFORM_INT) GF%CPOINTS
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GF%N_ZONES  =',GF%N_ZONES
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GF%N_FINE  =',GF%N_FINE
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GF%N_COARSE=',GF%N_COARSE
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%N_FINE=',GC%N_FINE
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%NC_LOCAL(1)=',GC%NC_LOCAL(1)
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%NC_GLOBAL=',GC%NC_GLOBAL
+#endif
+
+END SUBROUTINE SCARC_PRESET_B14_CASE
+ 
+! ------------------------------------------------------------------------------------------------------
+!> Temporarily preset B14_BIG case with specified aggregation pattern
+! ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PRESET_B14BIG_CASE
+USE SCARC_POINTERS, ONLY: GF, GC
+
+CALL SCARC_POINT_TO_MULTIGRID(1, 1, 2)
+
+GF%N_COARSE = 24
+GF%N_FINE = 108
+
+GF%ZONES_LOCAL = 0
+GF%ZONES_LOCAL(1)  = 1
+GF%ZONES_LOCAL(2)  = 1
+GF%ZONES_LOCAL(3)  = 2
+GF%ZONES_LOCAL(4)  = 2
+GF%ZONES_LOCAL(5)  = 2
+GF%ZONES_LOCAL(6)  = 3
+GF%ZONES_LOCAL(7)  = 3
+GF%ZONES_LOCAL(8)  = 9
+GF%ZONES_LOCAL(9)  = 9
+GF%ZONES_LOCAL(10) = 10
+GF%ZONES_LOCAL(11) = 10
+GF%ZONES_LOCAL(12) = 10
+
+GF%ZONES_LOCAL(13) = 1
+GF%ZONES_LOCAL(14) = 4
+GF%ZONES_LOCAL(15) = 2
+GF%ZONES_LOCAL(16) = 2
+GF%ZONES_LOCAL(17) = 5
+GF%ZONES_LOCAL(18) = 3
+GF%ZONES_LOCAL(19) = 3
+GF%ZONES_LOCAL(20) = 9
+GF%ZONES_LOCAL(21) = 11
+GF%ZONES_LOCAL(22) = 10
+GF%ZONES_LOCAL(23) = 10
+GF%ZONES_LOCAL(24) = 12
+
+GF%ZONES_LOCAL(25) = 4
+GF%ZONES_LOCAL(26) = 4
+GF%ZONES_LOCAL(27) = 4
+GF%ZONES_LOCAL(28) = 5
+GF%ZONES_LOCAL(29) = 5
+GF%ZONES_LOCAL(30) = 5
+GF%ZONES_LOCAL(31) = 6
+GF%ZONES_LOCAL(32) = 11
+GF%ZONES_LOCAL(33) = 11
+GF%ZONES_LOCAL(34) = 11
+GF%ZONES_LOCAL(35) = 12
+GF%ZONES_LOCAL(36) = 12
+
+GF%ZONES_LOCAL(37) = 7
+GF%ZONES_LOCAL(38) = 4
+GF%ZONES_LOCAL(39) = 4
+GF%ZONES_LOCAL(40) = 8
+GF%ZONES_LOCAL(41) = 5
+GF%ZONES_LOCAL(42) = 6
+GF%ZONES_LOCAL(43) = 6
+GF%ZONES_LOCAL(44) = 13
+GF%ZONES_LOCAL(45) = 11
+GF%ZONES_LOCAL(46) = 11
+GF%ZONES_LOCAL(47) = 14
+GF%ZONES_LOCAL(48) = 12
+
+GF%ZONES_LOCAL(49) = 7
+GF%ZONES_LOCAL(50) = 7
+GF%ZONES_LOCAL(51) = 8
+GF%ZONES_LOCAL(52) = 8
+GF%ZONES_LOCAL(53) = 8
+GF%ZONES_LOCAL(54) = 6
+GF%ZONES_LOCAL(55) = 6
+GF%ZONES_LOCAL(56) = 13
+GF%ZONES_LOCAL(57) = 13
+GF%ZONES_LOCAL(58) = 14
+GF%ZONES_LOCAL(59) = 14
+GF%ZONES_LOCAL(60) = 14
+
+GF%ZONES_LOCAL(61) = 15
+GF%ZONES_LOCAL(62) = 15
+GF%ZONES_LOCAL(63) = 16
+GF%ZONES_LOCAL(64) = 16
+GF%ZONES_LOCAL(65) = 16
+GF%ZONES_LOCAL(66) = 17
+GF%ZONES_LOCAL(67) = 17
+GF%ZONES_LOCAL(68) = 21
+GF%ZONES_LOCAL(69) = 21
+GF%ZONES_LOCAL(70) = 22
+GF%ZONES_LOCAL(71) = 22
+GF%ZONES_LOCAL(72) = 22
+
+GF%ZONES_LOCAL(73) = 15
+GF%ZONES_LOCAL(74) = 18
+GF%ZONES_LOCAL(75) = 16
+GF%ZONES_LOCAL(76) = 16
+GF%ZONES_LOCAL(77) = 19
+GF%ZONES_LOCAL(78) = 17
+GF%ZONES_LOCAL(79) = 17
+GF%ZONES_LOCAL(80) = 21
+GF%ZONES_LOCAL(81) = 23
+GF%ZONES_LOCAL(82) = 22
+GF%ZONES_LOCAL(83) = 22
+GF%ZONES_LOCAL(84) = 24
+
+GF%ZONES_LOCAL(85) = 18
+GF%ZONES_LOCAL(86) = 18
+GF%ZONES_LOCAL(87) = 18
+GF%ZONES_LOCAL(88) = 19
+GF%ZONES_LOCAL(89) = 19
+GF%ZONES_LOCAL(90) = 19
+GF%ZONES_LOCAL(91) = 20
+GF%ZONES_LOCAL(92) = 23
+GF%ZONES_LOCAL(93) = 23
+GF%ZONES_LOCAL(94) = 23
+GF%ZONES_LOCAL(95) = 24
+GF%ZONES_LOCAL(96) = 24
+
+GF%ZONES_LOCAL(97) = 18
+GF%ZONES_LOCAL(98) = 18
+GF%ZONES_LOCAL(99) = 18
+GF%ZONES_LOCAL(100) = 19
+GF%ZONES_LOCAL(101) = 19
+GF%ZONES_LOCAL(102) = 20
+GF%ZONES_LOCAL(103) = 20
+GF%ZONES_LOCAL(104) = 23
+GF%ZONES_LOCAL(105) = 23
+GF%ZONES_LOCAL(106) = 23
+GF%ZONES_LOCAL(107) = 24
+GF%ZONES_LOCAL(108) = 24
+
+GF%ZONES_GLOBAL = GF%ZONES_LOCAL
+
+GF%CPOINTS(1) =  1
+GF%CPOINTS(2) =  4
+GF%CPOINTS(3) =  7
+GF%CPOINTS(4) = 26
+GF%CPOINTS(5) = 29
+GF%CPOINTS(6) = 43
+GF%CPOINTS(7) = 49
+GF%CPOINTS(8) = 52
+GF%CPOINTS(9) = 8
+GF%CPOINTS(10) = 11
+GF%CPOINTS(11) = 33
+GF%CPOINTS(12) = 36
+GF%CPOINTS(13) = 56
+GF%CPOINTS(14) = 59
+GF%CPOINTS(15) = 61
+GF%CPOINTS(16) = 64
+GF%CPOINTS(17) = 67
+GF%CPOINTS(18) = 86
+GF%CPOINTS(19) = 89
+GF%CPOINTS(20) = 103
+GF%CPOINTS(21) = 68
+GF%CPOINTS(22) = 71
+GF%CPOINTS(23) = 93
+GF%CPOINTS(24) = 96
+
+GF%N_COARSE = 24
+GF%N_ZONES = 24
+
+GC%N_FINE = 24
+GC%NC_LOCAL(1) = 24
+GC%NC_GLOBAL = 24
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: ZONES_GLOBAL:'
+WRITE(MSG%LU_DEBUG,CFORM_INT) GF%ZONES_GLOBAL(1:GF%NC)
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: CPOINTS:'
+WRITE(MSG%LU_DEBUG,CFORM_INT) GF%CPOINTS
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GF%N_ZONES  =',GF%N_ZONES
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GF%N_FINE  =',GF%N_FINE
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GF%N_COARSE=',GF%N_COARSE
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%N_FINE=',GC%N_FINE
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%NC_LOCAL(1)=',GC%NC_LOCAL(1)
+WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%NC_GLOBAL=',GC%NC_GLOBAL
+#endif
+
+END SUBROUTINE SCARC_PRESET_b14big_CASE
+ 
+
 ! ================================================================================================
 ! End  WITH_SCARC_DEBUG  - Part
 ! ================================================================================================
@@ -19353,7 +19285,7 @@ END SUBROUTINE SCARC_BLENDER_ZONES
 ! Begin  WITH_SCARC_STANDALONE  - PART
 ! ================================================================================================
 ! ------------------------------------------------------------------------------------------------
-! Dump matrix and vectors belonging to pressure system 
+!> \brief Standalone version only: Dump matrix and vectors belonging to pressure system 
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DUMP_SYSTEM (NSTACK, ITYPE)
 USE SCARC_POINTERS, ONLY: SV, ST, G
@@ -19525,7 +19457,7 @@ ENDDO
 END SUBROUTINE SCARC_DUMP_SYSTEM
 
 ! ------------------------------------------------------------------------------------------------
-! Dump several arrays and structures needed for the standalone version of ScaRC 
+!> \brief Standalone version only: Dump several arrays and structures needed for the standalone version of ScaRC 
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DUMP_ENVIRONMENT
 USE SCARC_POINTERS, ONLY: M
@@ -19740,7 +19672,7 @@ END SUBROUTINE SCARC_DUMP_ENVIRONMENT
 
 
 ! ------------------------------------------------------------------------------------------------
-! Dump several arrays and structures needed for ScaRC - standalone version
+!> \brief Standalone version only: Dump several arrays and structures needed for ScaRC - standalone version
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_RESTORE_ENVIRONMENT
 USE SCARC_POINTERS, ONLY: M
@@ -20081,7 +20013,7 @@ END SUBROUTINE SCARC_RESTORE_ENVIRONMENT
 
 
 ! ----------------------------------------------------------------------------------------------------
-! Allocate and initialize vectors pressure diagnostics - only for developping purposes
+!> \brief Standalone version only: Allocate and initialize vectors pressure diagnostics - only for developping purposes
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_PRESSURE()
 USE SCARC_POINTERS, ONLY: L, G, PRES
@@ -20108,7 +20040,7 @@ END SUBROUTINE SCARC_SETUP_PRESSURE
 
 
 ! ------------------------------------------------------------------------------------------------
-! Compute Differences between old and new pressure solutions - only for developping purposes
+!> \brief Standalone version only: Compute Differences between old and new pressure solutions - only for developping purposes
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PRESSURE_DIFFERENCE(NL)
 USE SCARC_POINTERS, ONLY: L, G, PRES
@@ -20116,7 +20048,7 @@ INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, IX, IY, IZ
 
 ! -----------------------------------------------------------------------------------------------
-! Store new pressure vector for comparison in next time step
+!> \brief Standalone version only: Store new pressure vector for comparison in next time step
 ! -----------------------------------------------------------------------------------------------
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
