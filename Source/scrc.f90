@@ -5890,7 +5890,7 @@ WRITE(MSG%LU_DEBUG,*) '---------------- ICOL, JC =',ICOL, JC
                AS%COL(IAS) = A%COL(ICOL)
                AS%COLG(IAS) = A%COLG(ICOL)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'AS%COLG(',IAS,')=',AS%COLG(IAS)
+WRITE(MSG%LU_DEBUG,*) 'AS%COL(',IAS,')=',AS%COL(IAS)
 #endif
                SELECT CASE (TYPE_MKL_PRECISION)
                   CASE (NSCARC_PRECISION_DOUBLE)
@@ -5921,7 +5921,7 @@ WRITE(MSG%LU_DEBUG,'(A,I6,A,I9)') '--------- AS%ROW(',IC+1,')=', IAS
          JC0 = A%COLG(A%ROW(IC))
          DO ICOL = A%ROW(IC), A%ROW(IC+1)-1
              JC = A%COLG(ICOL)
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'IC, ICOL, JC, JC0: ', IC, ICOL, JC, JC0
 #endif
             IF (SCARC_MKL_MTYPE == 'SYMMETRIC') THEN
@@ -5962,10 +5962,10 @@ WRITE(MSG%LU_DEBUG,*) 'AUX_IC  :', AUX_IC(1:NSYM)
                      CASE (NSCARC_PRECISION_SINGLE)
                         AS%VAL_FB(IAS) = REAL(A%VAL(ICOL), FB)
                   END SELECT
-                  AS%COLG(IAS) = A%COLG(ICOL)
-#ifdef WITH_SCARC_DEBUG2
+                  AS%COL(IAS) = A%COLG(ICOL)
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,7I6, E12.4)') '  IC, JSYM, ISYM, JC, ICOL, IAS, VAL, COLG: ', &
-                                        IC, JSYM, ISYM, JC, ICOL, IAS, AS%COLG(IAS), AS%VAL(IAS)
+                                        IC, JSYM, ISYM, JC, ICOL, IAS, AS%COL(IAS), AS%VAL(IAS)
 #endif
                   AUX_IC(ISYM) = NSCARC_HUGE_INT            ! mark entry as already used
                   IAS  = IAS  + 1
@@ -8775,7 +8775,6 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       MKL => L%MKL
       AS  => G%POISSONC_SYM
 
- 
       ! Allocate workspace for parameters and pointers needed in MKL-routine
  
       CALL SCARC_ALLOCATE_INT1(MKL%IPARM, 1, 64, NSCARC_INIT_ZERO, 'MKL%IPARM')
@@ -8841,11 +8840,11 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          MKL%IPARM(28) = 1         ! single precision
          MKL%PHASE = 11
          CALL CLUSTER_SPARSE_SOLVER_S(MKL%CT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC_GLOBAL, &
-                                      AS%VAL_FB, AS%ROW, AS%COLG, MKL%PERM, MKL%NRHS, MKL%IPARM, &
+                                      AS%VAL_FB, AS%ROW, AS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                                       MKL%MSGLVL, DUMMY_FB, DUMMY_FB, MPI_COMM_WORLD, MKL%ERROR)
          MKL%PHASE = 22
          CALL CLUSTER_SPARSE_SOLVER_S(MKL%CT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC_GLOBAL, &
-                                      AS%VAL_FB, AS%ROW, AS%COLG, MKL%PERM, MKL%NRHS, MKL%IPARM, &
+                                      AS%VAL_FB, AS%ROW, AS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                                       MKL%MSGLVL, DUMMY_FB, DUMMY_FB, MPI_COMM_WORLD, MKL%ERROR)
 
          IF (MKL%ERROR /= 0) THEN
@@ -8859,11 +8858,11 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          MKL%IPARM(28) = 0         ! double precision
          MKL%PHASE = 11
          CALL CLUSTER_SPARSE_SOLVER_D(MKL%CT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC_GLOBAL, &
-                                      AS%VAL, AS%ROW, AS%COLG, MKL%PERM, MKL%NRHS, MKL%IPARM, &
+                                      AS%VAL, AS%ROW, AS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                                       MKL%MSGLVL, DUMMY, DUMMY, MPI_COMM_WORLD, MKL%ERROR)
          MKL%PHASE = 22
          CALL CLUSTER_SPARSE_SOLVER_D(MKL%CT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC_GLOBAL, &
-                                      AS%VAL, AS%ROW, AS%COLG, MKL%PERM, MKL%NRHS, MKL%IPARM, &
+                                      AS%VAL, AS%ROW, AS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                                       MKL%MSGLVL, DUMMY, DUMMY, MPI_COMM_WORLD, MKL%ERROR)
          IF (MKL%ERROR /= 0) THEN
             WRITE(*,*) 'ERROR in MKL SETUP, MKL%ERROR=', MKL%ERROR
@@ -10406,14 +10405,14 @@ CALL SCARC_DEBUG_CMATRIX(AS, 'AS','CLUSTER')
       V1_FB = REAL(V1, FB)
       V2_FB = 0.0_FB
       CALL CLUSTER_SPARSE_SOLVER_S(MKL%CT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC_GLOBAL, &
-                                   AS%VAL_FB, AS%ROW, AS%COLG, MKL%PERM, MKL%NRHS, MKL%IPARM, &
+                                   AS%VAL_FB, AS%ROW, AS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                                    MKL%MSGLVL, V1_FB, V2_FB, MPI_COMM_WORLD, MKL%ERROR)
       V2 = REAL(V2_FB, EB)
 
    ELSE
 
       CALL CLUSTER_SPARSE_SOLVER_D(MKL%CT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC_GLOBAL, &
-                                   AS%VAL, AS%ROW, AS%COLG, MKL%PERM, MKL%NRHS, MKL%IPARM, &
+                                   AS%VAL, AS%ROW, AS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                                    MKL%MSGLVL, V1, V2, MPI_COMM_WORLD, MKL%ERROR)
    ENDIF
 
@@ -10487,7 +10486,7 @@ CALL SCARC_DEBUG_CMATRIX(AS, 'AS','CLUSTER')
       V1_FB = REAL(V1, FB)
       V2_FB = 0.0_FB
       CALL PARDISO_S(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC, &
-                     AS%VAL_FB, AS%ROW, AS%COLG, MKL%PERM, MKL%NRHS, MKL%IPARM, &
+                     AS%VAL_FB, AS%ROW, AS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                      MKL%MSGLVL, V1_FB, V2_FB, MKL%ERROR)
 
       V2 = REAL(V2_FB, EB)
@@ -10496,7 +10495,7 @@ CALL SCARC_DEBUG_CMATRIX(AS, 'AS','CLUSTER')
 
       V2 = 0.0_EB
       CALL PARDISO_D(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC, &
-                     AS%VAL, AS%ROW, AS%COLG, MKL%PERM, MKL%NRHS, MKL%IPARM, &
+                     AS%VAL, AS%ROW, AS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                      MKL%MSGLVL, V1, V2, MKL%ERROR)
    ENDIF
 
@@ -13119,7 +13118,6 @@ OS%SEND_BUFFER_REAL = 0.0_EB
 
 DO IOR0 = -3, 3
 
-   WRITE(*,*) 'TODO: CHECK!'
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
    F => L%FACE(IOR0)
    DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
@@ -16354,9 +16352,10 @@ WRITE(MSG%LU_DEBUG,'(A,3I6,E12.4)') ' -------- bingo: IP, COL, VAL :', IP, JCCL,
          ENDIF
       ENDDO GLOBAL_COARSE_CELLS_LOOP
 
-      AC%ROW(ICCL+1) = IP
+      AC%ROW(ICCL + 1) = IP
 
    ENDDO LOCAL_COARSE_CELLS_LOOP
+   AC%N_ROW = ICCL 
 
 #ifdef WITH_SCARC_DEBUG
    CALL SCARC_DEBUG_CMATRIX (AC, 'POISSON-COARSE','END OF RAP')
@@ -17350,12 +17349,12 @@ WRITE(MSG%LU_VERBOSE, 1000, ADVANCE='NO') CNAME, NVAL_ALLOCATED, NVAL_CURRENT, A
 #endif
 
 ! If the matrix already has the desired size or specified values are to small, return or shutdown
-IF (SIZE(A%COL) == NVAL_CURRENT) THEN
+IF (NVAL_ALLOCATED == NVAL_CURRENT) THEN
 #ifdef WITH_SCARC_VERBOSE
    WRITE(MSG%LU_VERBOSE,*) ' ...  nothing to do '
 #endif
    RETURN
-ELSE IF (SIZE(A%COL) < NVAL_CURRENT) THEN
+ELSE IF (NVAL_ALLOCATED < NVAL_CURRENT) THEN
 #ifdef WITH_SCARC_VERBOSE
    WRITE(MSG%LU_VERBOSE,*) ' ...  failed '
 #endif
@@ -17393,6 +17392,7 @@ IF (NVAL_CURRENT < SIZE(A%COL)) THEN
       A%VAL(1:NVAL_CURRENT) = VAL(1:NVAL_CURRENT)
       DEALLOCATE(VAL)
    ENDIF
+   A%N_VAL = NVAL_CURRENT
 
 ENDIF
 
