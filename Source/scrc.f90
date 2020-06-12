@@ -1108,19 +1108,36 @@ USE MESH_VARIABLES
 USE SCARC_TYPES
 IMPLICIT NONE
 
-TYPE (MESH_TYPE),  POINTER :: M=>NULL()
-TYPE (OMESH_TYPE), POINTER :: OM=>NULL()
-TYPE (WALL_TYPE),  POINTER :: MWC=>NULL()
-TYPE (EXTERNAL_WALL_TYPE), POINTER :: EWC=>NULL()
+TYPE (MESH_TYPE),  POINTER :: M=>NULL()                  !< Pointer to specified mesh (based on MESHES from surrounding FDS code)
+TYPE (OMESH_TYPE), POINTER :: OM=>NULL()                 !< Pointer to specified neighboring mesh
+TYPE (WALL_TYPE),  POINTER :: MWC=>NULL()                !< Pointer to specified wall cell
 
-TYPE (SCARC_TYPE),          POINTER :: S=>NULL()
-TYPE (SCARC_OSCARC_TYPE),   POINTER :: OS=>NULL()
-TYPE (SCARC_LEVEL_TYPE),    POINTER :: L=>NULL(), LF=>NULL(), LC=>NULL(), OL=>NULL(), OLF=>NULL(), OLC=>NULL()
-TYPE (SCARC_GRID_TYPE),     POINTER :: G=>NULL(), GF=>NULL(), GC=>NULL(), OG=>NULL(), OGF=>NULL(), OGC=>NULL()
-TYPE (SCARC_FACE_TYPE),     POINTER :: F=>NULL(), FF=>NULL(), FC=>NULL()
-TYPE (SCARC_OBST_TYPE),     POINTER :: OB=>NULL()
+TYPE (EXTERNAL_WALL_TYPE), POINTER :: EWC=>NULL()        !< Pointer to specified external wall cell
 
-TYPE (SCARC_SUBDIVISION_TYPE), POINTER :: SUB=>NULL()
+TYPE (SCARC_TYPE),          POINTER :: S=>NULL()         !< Pointer to ScaRC-structure on a specified mesh
+TYPE (SCARC_OSCARC_TYPE),   POINTER :: OS=>NULL()        !< Pointer to ScaRC-structure on a specified neighboring
+
+TYPE (SCARC_LEVEL_TYPE),    POINTER :: L=>NULL()         !< Pointer to specified level
+TYPE (SCARC_LEVEL_TYPE),    POINTER :: LF=>NULL()        !< Pointer to specified fine level
+TYPE (SCARC_LEVEL_TYPE),    POINTER :: LC=>NULL()        !< Pointer to specified coarse level
+TYPE (SCARC_LEVEL_TYPE),    POINTER :: OL=>NULL()        !< Pointer to specified level on neighboring mesh
+TYPE (SCARC_LEVEL_TYPE),    POINTER :: OLF=>NULL()       !< Pointer to specified fine level on neighboring mesh
+TYPE (SCARC_LEVEL_TYPE),    POINTER :: OLC=>NULL()       !< Pointer to specified coarse level on neighboring mesh
+
+TYPE (SCARC_GRID_TYPE),     POINTER :: G=>NULL()         !< Pointer to specified grid discretization 
+TYPE (SCARC_GRID_TYPE),     POINTER :: GF=>NULL()        !< Pointer to specified fine grid discretization 
+TYPE (SCARC_GRID_TYPE),     POINTER :: GC=>NULL()        !< Pointer to specified coarse grid discretization 
+TYPE (SCARC_GRID_TYPE),     POINTER :: OG=>NULL()        !< Pointer to specified grid discretization 
+TYPE (SCARC_GRID_TYPE),     POINTER :: OGF=>NULL()       !< Pointer to specified fine grid discretization on neighboring mesh
+TYPE (SCARC_GRID_TYPE),     POINTER :: OGC=>NULL()       !< Pointer to specified coarse grid discretization on neighboring mesh
+
+TYPE (SCARC_FACE_TYPE),     POINTER :: F=>NULL()         !< Pointer to specified face of grid
+TYPE (SCARC_FACE_TYPE),     POINTER :: FF=>NULL()        !< Pointer to specified face of fine grid
+TYPE (SCARC_FACE_TYPE),     POINTER :: FC=>NULL()        !< Pointer to specified face of coarse grid
+
+TYPE (SCARC_OBST_TYPE),     POINTER :: OB=>NULL()        !< Pointer to specified obstruction
+
+TYPE (SCARC_SUBDIVISION_TYPE), POINTER :: SUB=>NULL()    !< Pointer to subdivision structure (only shortcut)
 
 TYPE (SCARC_WALL_TYPE), POINTER :: GWC=>NULL()
 TYPE (SCARC_WALL_TYPE), DIMENSION(:), POINTER :: W=>NULL(), WF=>NULL(), WC=>NULL()
@@ -1247,7 +1264,7 @@ TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_FFTO         !< Solver structur
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MG           !< Solver structure for Multigrid preconditioner 
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MJAC         !< Solver structure for Jacobi preconditioner (matrix version)
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MGS          !< Solver structure for Gauss-Seidel preconditioner (matrix version)
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MSGS         !< Solver structure for Symmetric Gauss-Seidel preconditioner (matrix version)
+TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MSGS         !< Solver structure for Sym. Gauss-Seidel preconditioner (matrix vs.)
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MSOR         !< Solver structure for SOR preconditioner (matrix version)
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MSSOR        !< Solver structure for SSOR preconditioner (matrix version)
 
@@ -1258,15 +1275,16 @@ TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_FFT          !< Solver structur
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_FFTO         !< Solver structure for FFTO smoother (including overlap)
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_MJAC         !< Solver structure for Jacobi smoother (matrix version)
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_MGS          !< Solver structure for Gauss-Seidel smoother (matrix version)
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_MSGS         !< Solver structure for Symmetric Gauss-Seidel smoother (matrix version)
+TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_MSGS         !< Solver structure for Sym. Gauss-Seidel smoother (matrix vs.)
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_MSOR         !< Solver structure for SOR smoother (matrix version)
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_MSSOR        !< Solver structure for SSOR smoother (matrix version)
+
 #ifdef WITH_MKL
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MKL          !< Solver structure for MKL preconditioner 
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_MKL          !< Solver structure for MKL smoother 
 #endif
-TYPE (SCARC_MESSAGE_TYPE), SAVE :: MSG                        !< Structure to print out various messages
 
+TYPE (SCARC_MESSAGE_TYPE), SAVE :: MSG                        !< Structure to print out various messages
 TYPE (SCARC_SUBDIVISION_TYPE), SAVE, TARGET :: SUBDIVISION    !< Structure to keep information about subdivision
 
 CONTAINS
@@ -8901,11 +8919,11 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          MKL%IPARM(28) = 1         ! single precision
          MKL%PHASE = 11
          CALL PARDISO_S(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC, &
-                        AS%VAL_FB, AS%ROW, AS%COLG, IDUMMY, &
+                        AS%VAL_FB, AS%ROW, AS%COL, IDUMMY, &
                         MKL%NRHS, MKL%IPARM, MKL%MSGLVL, DUMMY_FB, DUMMY_FB, MKL%ERROR)
          MKL%PHASE = 22
          CALL PARDISO_S(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC, &
-                        AS%VAL_FB, AS%ROW, AS%COLG, IDUMMY, &
+                        AS%VAL_FB, AS%ROW, AS%COL, IDUMMY, &
                         MKL%NRHS, MKL%IPARM, MKL%MSGLVL, DUMMY_FB, DUMMY_FB, MKL%ERROR)
 
       ELSE
@@ -8913,11 +8931,11 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          MKL%IPARM(28) = 0         ! double precision
          MKL%PHASE = 11
          CALL PARDISO_D(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC, &
-                        AS%VAL, AS%ROW, AS%COLG, IDUMMY, &
+                        AS%VAL, AS%ROW, AS%COL, IDUMMY, &
                         MKL%NRHS, MKL%IPARM, MKL%MSGLVL, DUMMY, DUMMY, MKL%ERROR)
          MKL%PHASE = 22
          CALL PARDISO_D(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC, &
-                        AS%VAL, AS%ROW, AS%COLG, IDUMMY, &
+                        AS%VAL, AS%ROW, AS%COL, IDUMMY, &
                         MKL%NRHS, MKL%IPARM, MKL%MSGLVL, DUMMY, DUMMY, MKL%ERROR)
       ENDIF
 
@@ -10202,6 +10220,8 @@ WRITE(MSG%LU_DEBUG,*) 'GLOBAL'
             V2 => SCARC_POINT_TO_VECTOR (NM, NL, NV2)
 
 #ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'G%NC:', G%NC
+WRITE(MSG%LU_DEBUG,*) 'G%NC_GLOBAL:', G%NC_GLOBAL
 WRITE(MSG%LU_DEBUG,*) 'CLUSTER, PRE, V1:'
 WRITE(MSG%LU_DEBUG,'(6E12.4)') V1
 WRITE(MSG%LU_DEBUG,*) 'CLUSTER, PRE, V2:'
@@ -10218,14 +10238,14 @@ CALL SCARC_DEBUG_CMATRIX(AS, 'AS','CLUSTER')
                V2_FB(1:G%NC) = 0.0_FB
 
                CALL CLUSTER_SPARSE_SOLVER_S(MKL%CT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC_GLOBAL, &
-                                            AS%VAL_FB, AS%ROW, AS%COLG, MKL%PERM, MKL%NRHS, MKL%IPARM, &
+                                            AS%VAL_FB, AS%ROW, AS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                                             MKL%MSGLVL, V1_FB, V2_FB, MPI_COMM_WORLD, MKL%ERROR)
 
                V2(1:G%NC) = REAL(V2_FB(1:G%NC), EB)
 
             ELSE
                CALL CLUSTER_SPARSE_SOLVER_D(MKL%CT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC_GLOBAL, &
-                                            AS%VAL, AS%ROW, AS%COLG, MKL%PERM, MKL%NRHS, MKL%IPARM, &
+                                            AS%VAL, AS%ROW, AS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                                             MKL%MSGLVL, V1, V2, MPI_COMM_WORLD, MKL%ERROR)
             ENDIF
             IF (MKL%ERROR /= 0) CALL SCARC_SHUTDOWN(NSCARC_ERROR_MKL_INTERNAL, SCARC_NONE, MKL%ERROR)
@@ -10252,6 +10272,8 @@ WRITE(MSG%LU_DEBUG,*) 'LOCAL'
             V2 => SCARC_POINT_TO_VECTOR (NM, NL, NV2)
 
 #ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'PARDISO, G%NC=',G%NC
+WRITE(MSG%LU_DEBUG,*) 'PARDISO, G%NC=',G%NC
 WRITE(MSG%LU_DEBUG,*) 'PARDISO, PRE, V1:'
 WRITE(MSG%LU_DEBUG,'(6E12.4)') V1
 WRITE(MSG%LU_DEBUG,*) 'PARDISO, PRE, V2:'
@@ -10267,7 +10289,7 @@ CALL SCARC_DEBUG_CMATRIX(AS, 'AS','CLUSTER')
                V2_FB(1:G%NC) = 0.0_FB
    
                CALL PARDISO_S(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC, &
-                              AS%VAL_FB, AS%ROW, AS%COLG, &
+                              AS%VAL_FB, AS%ROW, AS%COL, &
                               MKL%PERM, MKL%NRHS, MKL%IPARM, MKL%MSGLVL, V1_FB, V2_FB, MKL%ERROR)
 
                V2(1:G%NC) = REAL(V2_FB(1:G%NC), EB)
@@ -10277,10 +10299,13 @@ CALL SCARC_DEBUG_CMATRIX(AS, 'AS','CLUSTER')
                V2 => SCARC_POINT_TO_VECTOR (NM, NL, NV2)
 
                CALL PARDISO_D(MKL%PT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC, &
-                              AS%VAL, AS%ROW, AS%COLG, &
+                              AS%VAL, AS%ROW, AS%COL, &
                               MKL%PERM, MKL%NRHS, MKL%IPARM, MKL%MSGLVL, V1, V2, MKL%ERROR)
 
             ENDIF
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'MKL%ERROR:', MKL%ERROR
+#endif
             IF (MKL%ERROR /= 0) CALL SCARC_SHUTDOWN(NSCARC_ERROR_MKL_INTERNAL, SCARC_NONE, MKL%ERROR)
 
          ENDDO MKL_SCOPE_LOCAL_LOOP
@@ -12808,10 +12833,10 @@ END SUBROUTINE SCARC_SEND_MESSAGE_REAL
 
 
 ! ------------------------------------------------------------------------------------------------
-!> \brief Pack overlapping parts of cell numbers
+!> \brief Pack numbers of cells which are overlapped by neighbor
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PACK_CELL_NUMBERS
-USE SCARC_POINTERS, ONLY: L, G, OL, OG
+USE SCARC_POINTERS, ONLY: G, OL, OG
 INTEGER :: IOR0, ICG, IWG, IXW, IYW, IZW
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
@@ -12820,11 +12845,7 @@ DO IOR0 = -3, 3
       IXW = G%WALL(IWG)%IXW
       IYW = G%WALL(IWG)%IYW
       IZW = G%WALL(IWG)%IZW
-      IF (L%IS_SOLID(IXW, IYW, IZW)) THEN
-         OS%SEND_BUFFER_INT(ICG) = -G%CELL_NUMBER(IXW, IYW, IZW)
-      ELSE
-         OS%SEND_BUFFER_INT(ICG) =  G%CELL_NUMBER(IXW, IYW, IZW)
-      ENDIF
+      OS%SEND_BUFFER_INT(ICG) = G%CELL_NUMBER(IXW, IYW, IZW)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,7I6)') 'PACK_CELL_NUMBERS: IOR0, ICG, IWG, IXW, IYW, IZW, SEND_BUFFER_INT', &
                                IOR0, ICG, IWG, IXW, IYW, IZW, OS%SEND_BUFFER_INT(ICG)
@@ -12834,7 +12855,7 @@ ENDDO
 END SUBROUTINE SCARC_PACK_CELL_NUMBERS
 
 ! ------------------------------------------------------------------------------------------------
-!> \brief Unpack overlapping parts of cell numbers
+!> \brief Unpack numbers of cells which are overlapped by neighbor
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_CELL_NUMBERS (NM, NOM)
 USE SCARC_POINTERS, ONLY: L, G, OL, OG, RECV_BUFFER_INT
@@ -12852,15 +12873,16 @@ DO IOR0 = -3, 3
       IXG = G%WALL(IWG)%IXG
       IYG = G%WALL(IWG)%IYG
       IZG = G%WALL(IWG)%IZG
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,8I6)') 'UNPACK_CELL_NUMBERS: IOR0, ICG, ICE, IWG, IXG, IYG, IZG, RECV_BUFFER_INT', &
-                               IOR0, ICG, ICE, IWG, IXG, IYG, IZG, RECV_BUFFER_INT(LL)
-#endif
       IF (RECV_BUFFER_INT(ICG) < 0) THEN
          L%IS_SOLID(IXG, IYG, IZG) = .TRUE.
+         G%CELL_NUMBER(IXG, IYG, IZG) = -G%CELL_NUMBER(IXG, IYG, IZG)     ! mark solid cell with negative sign
       ELSE
          L%IS_SOLID(IXG, IYG, IZG) = .FALSE.
       ENDIF
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,8I6, L8)') 'UNPACK_CELL_NUMBERS: IOR0, ICG, ICE, IWG, IXG, IYG, IZG, RECV_BUFFER_INT', &
+                               IOR0, ICG, ICE, IWG, IXG, IYG, IZG, RECV_BUFFER_INT(LL), L%IS_SOLID(IXG, IYG, IZG)
+#endif
       LL = LL + 1
    ENDDO
 ENDDO
@@ -13203,30 +13225,17 @@ WRITE(MSG%LU_DEBUG,*) '====================================================='
 WRITE(MSG%LU_DEBUG,*) ' PACK_VECTOR_PLAIN : MESH ', NM, ' LEVEL ', NL, ' LENGTH ', OG%NCG
 WRITE(MSG%LU_DEBUG,'(6E14.6)') VC
 #endif
-IF (IS_STRUCTURED) THEN
-   DO IOR0 = -3, 3
-      IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-      DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-         ICW = OG%ICG_TO_ICW(ICG, 1)
-         OS%SEND_BUFFER_REAL(ICG) = VC(ICW)
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
+   DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
+      ICW = OG%ICG_TO_ICW(ICG, 1)
+      IF (ICW < 0) CYCLE                                  ! skip solid cells
+      OS%SEND_BUFFER_REAL(ICG) = VC(ICW)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,3I6,E14.6)') 'PACK_VECTOR_PLAIN: IOR0, ICG, ICW, VC:', IOR0, ICG, ICW, VC(ICW)
 #endif
-      ENDDO
    ENDDO
-ELSE
-   DO IOR0 = -3, 3
-      IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-      DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
-         ICW = OG%ICG_TO_ICW(ICG, 1)
-         IF (ICW > 0) THEN
-            OS%SEND_BUFFER_REAL(ICG) = VC(ICW)
-         ELSE
-            OS%SEND_BUFFER_REAL(ICG) = NSCARC_HUGE_REAL
-         ENDIF
-      ENDDO
-   ENDDO
-ENDIF
+ENDDO
 
 END SUBROUTINE SCARC_PACK_VECTOR_PLAIN
 
@@ -13238,8 +13247,7 @@ SUBROUTINE SCARC_UNPACK_VECTOR_PLAIN(NM, NOM, NL, NVECTOR)
 USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_REAL
 INTEGER, INTENT(IN) :: NM, NOM, NL, NVECTOR
 REAL(EB), DIMENSION(:), POINTER :: VC
-INTEGER :: IOR0, ICG, LL
-
+INTEGER :: IOR0, LL, ICG, ICE
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '====================================================='
@@ -13258,10 +13266,11 @@ LL = 1
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
    DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
-      VC(OG%ICG_TO_ICE(ICG, 1)) = RECV_BUFFER_REAL(LL)
+      ICE = G%ICG_TO_ICE(ICG,1)
+      IF (ICE < 0) CYCLE                            ! skip solid cells
+      VC(ICE) = RECV_BUFFER_REAL(LL)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,3I6,E14.6)') 'UNPACK_VECTOR_PLAIN: IOR0, ICG, VC:', &
-                                     IOR0, ICG, OG%ICG_TO_ICE(ICG,1), RECV_BUFFER_REAL(LL)
+WRITE(MSG%LU_DEBUG,'(A,3I6,E14.6)') 'UNPACK_VECTOR_PLAIN: IOR0, ICG, VC:', IOR0, ICG, ICE, RECV_BUFFER_REAL(LL)
 #endif
       LL = LL + 1
    ENDDO
@@ -13285,35 +13294,22 @@ REAL(EB), DIMENSION(:), POINTER :: VC
 INTEGER :: IOR0, ICG, ICW, ICE, LL
 
 VC => SCARC_POINT_TO_VECTOR(NM, NL, NVECTOR)
-SELECT CASE (TYPE_GRID)
-   CASE (NSCARC_GRID_STRUCTURED)
-      LL = 1
-      DO IOR0 = -3, 3
-         IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-         DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-            ICW = OG%ICG_TO_ICW(ICG, 1)
-            OS%SEND_BUFFER_REAL(LL) = VC(ICW)
-            LL = LL + 1
-         ENDDO
-         DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-            ICE = OG%ICG_TO_ICE(ICG, 1)
-            OS%SEND_BUFFER_REAL(LL) = VC(ICE)
-            LL = LL + 1
-         ENDDO
-      ENDDO
-   CASE (NSCARC_GRID_UNSTRUCTURED)
-      DO IOR0 = -3, 3
-         IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-         DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-            ICE = OG%ICG_TO_ICE(ICG, 1)
-            IF (ICW > 0) THEN
-               OS%SEND_BUFFER_REAL(ICG) = VC(ICE)
-            ELSE
-               OS%SEND_BUFFER_REAL(ICG) = NSCARC_HUGE_REAL
-            ENDIF
-         ENDDO
-      ENDDO
-END SELECT
+LL = 1
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
+   DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
+      ICW = OG%ICG_TO_ICW(ICG, 1)
+      IF (ICW < 0) CYCLE                                          ! skip solid internal cells
+      OS%SEND_BUFFER_REAL(LL) = VC(ICW)
+      LL = LL + 1
+   ENDDO
+   DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
+      ICE = OG%ICG_TO_ICE(ICG, 1)
+      IF (ICE < 0) CYCLE                                          ! skip solid external cells
+      OS%SEND_BUFFER_REAL(LL) = VC(ICE)
+      LL = LL + 1
+   ENDDO
+ENDDO
 
 END SUBROUTINE SCARC_PACK_VECTOR_MEAN
 
@@ -13322,10 +13318,10 @@ END SUBROUTINE SCARC_PACK_VECTOR_MEAN
 !> \brief Unpack overlapping and internal parts of specified vector
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_VECTOR_MEAN(NM, NOM, NL, NVECTOR)
-USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_REAL
+USE SCARC_POINTERS, ONLY: OL, RECV_BUFFER_REAL
 INTEGER, INTENT(IN) :: NM, NOM, NL, NVECTOR
 REAL(EB), DIMENSION(:), POINTER :: VC
-INTEGER :: IOR0, ICG, LL
+INTEGER :: IOR0, LL, ICG, ICW, ICE
 
 RECV_BUFFER_REAL => SCARC_POINT_TO_BUFFER_REAL (NM, NOM, 1)
 VC => SCARC_POINT_TO_VECTOR(NM, NL, NVECTOR)
@@ -13333,13 +13329,17 @@ LL = 1
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
    DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
-      !VC(OG%ICG_TO_ICE(ICG, 1)) = 0.5_EB * (VC(OG%ICG_TO_ICE(ICG, 1)) + RECV_BUFFER_REAL(LL))
-      VC(OG%ICG_TO_ICE(ICG, 1)) = 1.0_EB/3.0_EB * VC(OG%ICG_TO_ICE(ICG, 1)) + 2.0_EB/3.0_EB * RECV_BUFFER_REAL(LL)
+      ICW = G%ICG_TO_ICW(ICG,1)
+      IF (ICW < 0) CYCLE                                                       ! skip internal solid cells
+      VC(ICW) = 2.0_EB/3.0_EB * VC(ICW) + 1.0_EB/3.0_EB * RECV_BUFFER_REAL(LL)
+      !VC(ICW) = 0.5_EB * VC(ICW) + 0.5_EB * RECV_BUFFER_REAL(LL)
       LL = LL + 1
    ENDDO
    DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
-      !VC(OG%ICG_TO_ICW(ICG, 1)) = 0.5_EB * (VC(OG%ICG_TO_ICW(ICG, 1)) + RECV_BUFFER_REAL(LL))
-      VC(OG%ICG_TO_ICW(ICG, 1)) = 2.0_EB/3.0_EB * VC(OG%ICG_TO_ICW(ICG, 1)) + 1.0_EB/3.0_EB * RECV_BUFFER_REAL(LL)
+      ICE = G%ICG_TO_ICE(ICG,1)
+      IF (ICE < 0) CYCLE                                                       ! skip external solid cells
+      VC(ICE) = 1.0_EB/3.0_EB * VC(ICE) + 2.0_EB/3.0_EB * RECV_BUFFER_REAL(LL)
+      !VC(ICE) = 0.5_EB * VC(ICE) + 0.5_EB * RECV_BUFFER_REAL(LL)
       LL = LL + 1
    ENDDO
 ENDDO
@@ -13353,7 +13353,7 @@ END SUBROUTINE SCARC_UNPACK_VECTOR_MEAN
 SUBROUTINE SCARC_PACK_POISSON_COLS(NMATRIX)                
 USE SCARC_POINTERS, ONLY: OS, OL, OG, AC
 INTEGER, INTENT(IN) :: NMATRIX
-INTEGER :: IOR0, ICG, ICW, LL, ICOL
+INTEGER :: IOR0, LL, ICOL, ICG, ICW
 
 AC => SCARC_POINT_TO_CMATRIX(G, NMATRIX)
 
@@ -13367,65 +13367,30 @@ WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%VAL)', SIZE(AC%VAL)
 LL = 1
 OS%SEND_BUFFER_INT = NSCARC_INIT_UNDEF 
 
-SELECT CASE (TYPE_GRID) 
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
 
-   CASE (NSCARC_GRID_STRUCTURED)
-
-      DO IOR0 = -3, 3
-         IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-         DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-            ICW = OG%ICG_TO_ICW(ICG, 1)
-            
-            ICOL = AC%ROW(ICW)
-            OS%SEND_BUFFER_INT(LL) = -AC%COL(ICOL)
-
+   DO ICG= OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
+      ICW = OG%ICG_TO_ICW(ICG, 1)
+      IF (ICW < 0) CYCLE                               ! skip solid cells
+      ICOL = AC%ROW(ICW)
+      OS%SEND_BUFFER_INT(LL) = -AC%COL(ICOL)           ! send first element with negative sign (thus, mark beginning)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I8)') 'PACK_POISSON_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
                                IOR0, ICG, ICW, AC%ROW(ICW), OS%SEND_BUFFER_INT(LL)
 #endif
-            LL = LL + 1                                ! such that receiver can identify start of column
-            DO ICOL = AC%ROW(ICW)+1, AC%ROW(ICW+1)-1
-               OS%SEND_BUFFER_INT(LL) = AC%COL(ICOL)
+      LL = LL + 1                            
+      DO ICOL = AC%ROW(ICW)+1, AC%ROW(ICW+1)-1
+         OS%SEND_BUFFER_INT(LL) = AC%COL(ICOL)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I8)') 'PACK_POISSON_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
-                               IOR0, ICG, ICW, ICOL, OS%SEND_BUFFER_INT(LL)
+                            IOR0, ICG, ICW, ICOL, OS%SEND_BUFFER_INT(LL)
 #endif
-               LL = LL + 1
-            ENDDO
-         ENDDO
+         LL = LL + 1
       ENDDO
+   ENDDO
+ENDDO
 
-   CASE (NSCARC_GRID_UNSTRUCTURED)
-
-      DO IOR0 = -3, 3
-         IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-
-         DO ICG= OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-            ICW = OG%ICG_TO_ICW(ICG, 1)
-            IF (ICW > 0) THEN
-               ICOL = AC%ROW(ICW)
-               OS%SEND_BUFFER_INT(LL) = -AC%COL(ICOL)           ! send first element with negative sign
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,5I8)') 'PACK_POISSON_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
-                                  IOR0, ICG, ICW, AC%ROW(ICW), OS%SEND_BUFFER_INT(LL)
-#endif
-               LL = LL + 1                                ! such that receiver can identify start of column
-               DO ICOL = AC%ROW(ICW)+1, AC%ROW(ICW+1)-1
-                  OS%SEND_BUFFER_INT(LL) = AC%COL(ICOL)
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,5I8)') 'PACK_POISSON_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
-                               IOR0, ICG, ICW, ICOL, OS%SEND_BUFFER_INT(LL)
-#endif
-                  LL = LL + 1
-               ENDDO
-            ELSE
-               OS%SEND_BUFFER_INT(LL) = NSCARC_HUGE_INT
-               LL = LL + 1
-            ENDIF
-         ENDDO
-      ENDDO
-
-END SELECT
 #ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'SEND_BUFFER:'
 WRITE(MSG%LU_DEBUG,'(10I6)') OS%SEND_BUFFER_INT
@@ -13439,7 +13404,7 @@ END SUBROUTINE SCARC_PACK_POISSON_COLS
 SUBROUTINE SCARC_UNPACK_POISSON_COLS(NM, NOM, NMATRIX)
 USE SCARC_POINTERS, ONLY: OL, OG, OAC, RECV_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM, NMATRIX
-INTEGER :: IOR0, ICG, LL, ICE, ICP
+INTEGER :: IOR0, ICG, LL, ICP
 
 #ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'UNPACK_POISSON_COLS: OAC%N_ROW, OAC%N_VAL=',OAC%N_ROW, OAC%N_VAL, NM, NOM, NMATRIX
@@ -13461,7 +13426,7 @@ DO IOR0 = -3, 3
 WRITE(MSG%LU_DEBUG,*) '----------> UNPACK_POISSON_COLS: OAC%ROW(',ICP,')=',OAC%ROW(ICP)
 #endif
    DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
-      ICE = OG%ICG_TO_ICE(ICG, 1)
+      IF (OG%ICG_TO_ICE(ICG,1) < 0) CYCLE                          ! skip solid cells
       OAC%COL(LL) = ABS(RECV_BUFFER_INT(LL))
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A, 4I8)') 'UNPACK_POISSON_COLS: A: RECV: ICG, LL, RECV_BUFFER_INT, OAC%ROW(ICG), OAC%COL(LL):', &
@@ -13513,68 +13478,30 @@ WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%VAL)', SIZE(AC%VAL)
 LL = 1
 OS%SEND_BUFFER_INT = NSCARC_INIT_UNDEF
 
-SELECT CASE (TYPE_GRID) 
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
 
-   CASE (NSCARC_GRID_STRUCTURED)
-
-      DO IOR0 = -3, 3
-         IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '======= PACK_POISSON_COLSG: SEND: GHOST_FIRSTW, NCG:', OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-#endif
-         DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-            ICW = OG%ICG_TO_ICW(ICG, 1)
-            
-            ICOL = AC%ROW(ICW)
-            OS%SEND_BUFFER_INT(LL) = -AC%COLG(ICOL)          ! send first element with negative sign (thus, mark beginning)
-
+   DO ICG= OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
+      ICW = OG%ICG_TO_ICW(ICG, 1)
+      IF (ICW < 0) CYCLE                               ! skip solid cells
+      ICOL = AC%ROW(ICW)
+      OS%SEND_BUFFER_INT(LL) = -AC%COLG(ICOL)          ! send first element with negative sign (thus, mark beginning)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I8)') 'PACK_POISSON_COLSG: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
                                IOR0, ICG, ICW, AC%ROW(ICW), OS%SEND_BUFFER_INT(LL)
 #endif
-            LL = LL + 1                               
-            DO ICOL = AC%ROW(ICW)+1, AC%ROW(ICW+1)-1
-               OS%SEND_BUFFER_INT(LL) = AC%COLG(ICOL)        
+      LL = LL + 1                              
+      DO ICOL = AC%ROW(ICW)+1, AC%ROW(ICW+1)-1
+         OS%SEND_BUFFER_INT(LL) = AC%COLG(ICOL)   
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I8)') 'PACK_POISSON_COLSG: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
-                               IOR0, ICG, ICW, ICOL, OS%SEND_BUFFER_INT(LL)
+                      IOR0, ICG, ICW, ICOL, OS%SEND_BUFFER_INT(LL)
 #endif
-               LL = LL + 1
-            ENDDO
-         ENDDO
+         LL = LL + 1
       ENDDO
+   ENDDO
+ENDDO
 
-   CASE (NSCARC_GRID_UNSTRUCTURED)
-
-      DO IOR0 = -3, 3
-         IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-
-         DO ICG= OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-            ICW = OG%ICG_TO_ICW(ICG, 1)
-            IF (ICW > 0) THEN
-               ICOL = AC%ROW(ICW)
-               OS%SEND_BUFFER_INT(LL) = -AC%COLG(ICOL)       ! send first element with negative sign (thus, mark beginning)
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,5I8)') 'PACK_POISSON_COLSG: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
-                                  IOR0, ICG, ICW, AC%ROW(ICW), OS%SEND_BUFFER_INT(LL)
-#endif
-               LL = LL + 1                              
-               DO ICOL = AC%ROW(ICW)+1, AC%ROW(ICW+1)-1
-                  OS%SEND_BUFFER_INT(LL) = AC%COLG(ICOL)   
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,5I8)') 'PACK_POISSON_COLSG: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
-                               IOR0, ICG, ICW, ICOL, OS%SEND_BUFFER_INT(LL)
-#endif
-                  LL = LL + 1
-               ENDDO
-            ELSE
-               OS%SEND_BUFFER_INT(LL) = NSCARC_HUGE_INT
-               LL = LL + 1
-            ENDIF
-         ENDDO
-      ENDDO
-
-END SELECT
 END SUBROUTINE SCARC_PACK_POISSON_COLSG
 
 
@@ -13584,7 +13511,7 @@ END SUBROUTINE SCARC_PACK_POISSON_COLSG
 SUBROUTINE SCARC_UNPACK_POISSON_COLSG(NM, NOM, NMATRIX)
 USE SCARC_POINTERS, ONLY: OL, OG, OAC, RECV_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM, NMATRIX
-INTEGER :: IOR0, ICG, LL, ICE, ICP
+INTEGER :: IOR0, ICG, LL, ICP
 
 RECV_BUFFER_INT => SCARC_POINT_TO_BUFFER_INT (NM, NOM, 1)
 OAC => SCARC_POINT_TO_OTHER_CMATRIX(OG, NMATRIX)
@@ -13598,7 +13525,7 @@ DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
    OAC%ROW(ICP) = 1
    DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
-      ICE = OG%ICG_TO_ICE(ICG, 1)
+      IF (OG%ICG_TO_ICE(ICG,1) < 0) CYCLE                     ! skip solid cells
       OAC%COLG(LL) = ABS(RECV_BUFFER_INT(LL))
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A, 4I10)') 'UNPACK_POISSON_COLSG: A: RECV: ICG, LL, RECV_BUFFER_INT, OAC%ROW(ICG), OAC%COLG(LL):', &
@@ -13663,56 +13590,26 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'PACK_POISSON_VALS: AC%N_ROW, AC%N_VAL=',AC%N_ROW, AC%N_VAL
 #endif
-      SELECT CASE (TYPE_GRID)
 
-         CASE (NSCARC_GRID_STRUCTURED)
-
-            DO IOR0 = -3, 3
-               IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '============= PACK_POISSON_VALS:SG: GHOST_FIRSTW, NCG:', OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-#endif
-               DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-                  ICW = OG%ICG_TO_ICW(ICG, 1)
-                  DO ICOL = AC%ROW(ICW), AC%ROW(ICW+1)-1
-                     OS%SEND_BUFFER_REAL(LL) = AC%VAL(ICOL)
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 5I8,E12.4)') 'PACK_POISSON_VALS:SG: SEND: IOR0, ICG, ICW, LL, ICOL, VAL:', &
-                                                                  IOR0, ICG, ICW, LL, ICOL, AC%VAL(ICOL)
-#endif
-                     LL = LL + 1
-                  ENDDO
-               ENDDO
-            ENDDO
-
-         CASE (NSCARC_GRID_UNSTRUCTURED)
-
-            DO IOR0 = -3, 3
-               IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
+      DO IOR0 = -3, 3
+         IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '============= PACK_POISSON_VALS:UG: GHOST_FIRSTW, NCG:', OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
 #endif
-               DO ICG= OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-                  ICW = OG%ICG_TO_ICW(ICG, 1)
-                  DO ICOL = AC%ROW(ICW), AC%ROW(ICW+1)-1
-                     OS%SEND_BUFFER_REAL(LL) = AC%VAL(ICOL)
+         DO ICG= OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
+            ICW = OG%ICG_TO_ICW(ICG, 1)
+            IF (ICW < 0) CYCLE                                ! skip solid cells
+            DO ICOL = AC%ROW(ICW), AC%ROW(ICW+1)-1
+               OS%SEND_BUFFER_REAL(LL) = AC%VAL(ICOL)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A, 5I8,E12.4)') 'PACK_POISSON_VALS:SG: SEND: IOR0, ICG, ICW, LL, ICOL, VAL:', &
                                                                   IOR0, ICG, ICW, LL, ICOL, AC%VAL(ICOL)
 #endif
-                     LL = LL + 1
-                  ENDDO
-!                  ELSE
-!                     OS%SEND_BUFFER_REAL(LL) = NSCARC_HUGE_REAL
-!#ifdef WITH_SCARC_DEBUG
-!WRITE(MSG%LU_DEBUG,'(A, 4I8,E12.4)') 'PACK_POISSON_VALS:SG: SEND: IOR0, ICG, ICW, ICOL, VAL:', IOR0, ICG, ICW, ICOL, AC%VAL(ICOL)
-!#endif
-!                     LL = LL + 1
-!                 ENDIF
-               ENDDO
+               LL = LL + 1
             ENDDO
+         ENDDO
+      ENDDO
 
-         END SELECT
 END SELECT
 
 #ifdef WITH_SCARC_DEBUG
@@ -13761,6 +13658,7 @@ WRITE(MSG%LU_DEBUG,'(8E12.4)') RECV_BUFFER_REAL
       DO IOR0 = -3, 3
          IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
          DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
+            IF (OG%ICG_TO_ICE(ICG,1) < 0) CYCLE                     ! skip solid cells
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '---------- UNPACK_POISSON_VALS: ICG, OAC%ROW(ICG)', ICG, OAC%ROW(ICG), OAC%ROW(ICG+1)-1
 #endif
@@ -13838,35 +13736,20 @@ INTEGER :: IOR0, ICG, ICW, ICE, ICOL
 
 AC => SCARC_POINT_TO_CMATRIX(G, NTYPE)
 
-IF (IS_STRUCTURED) THEN
-   DO IOR0 = -3, 3
-      IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-      DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-         ICW = OG%ICG_TO_ICW(ICG, 1)
-         ICE = OG%ICG_TO_ICE(ICG, 1)
-         ICOL = AC%ROW(ICW)
-         OS%SEND_BUFFER_REAL(ICG) = AC%VAL(ICOL)
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
+   DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
+      ICW = OG%ICG_TO_ICW(ICG, 1)
+      IF (ICW < 0) CYCLE                                   ! skip solid cells
+      ICOL = AC%ROW(ICW)
+      OS%SEND_BUFFER_REAL(ICG) = AC%VAL(ICOL)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A, 5I4,E12.4)') 'PACK_POISSON_DIAGS: IOR0, ICG, ICW, ICE, ICOL, VAL:', &
                                       IOR0, ICG, ICW, ICE, ICOL, AC%VAL(ICOL)
 #endif
-      ENDDO
    ENDDO
-ELSE
-   DO IOR0 = -3, 3
-      IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
-      DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-         ICW = OG%ICG_TO_ICW(ICG, 1)
-         IF (ICW > 0) THEN
-            ICE = OG%ICG_TO_ICE(ICG, 1)
-            ICOL = AC%ROW(ICW)
-            OS%SEND_BUFFER_REAL(ICG) = AC%VAL(ICOL)
-         ELSE
-            OS%SEND_BUFFER_REAL(ICG) = NSCARC_HUGE_REAL
-         ENDIF
-      ENDDO
-   ENDDO
-ENDIF
+ENDDO
+
 END SUBROUTINE SCARC_PACK_POISSON_DIAGS
       
 
@@ -13884,6 +13767,7 @@ DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
    DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
       ICE = OG%ICG_TO_ICE(ICG, 1)
+      IF (ICE < 0) CYCLE                                   ! skip solid cells
       G%DIAG(ICE) = RECV_BUFFER_REAL(LL)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A, 3I4,E12.4)') 'UNPACK_POISSON_DIAGS: NOM, IOR0, ICG, ICE, DIAG:', &
@@ -13910,7 +13794,7 @@ DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
    DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
       ICW  = OG%ICG_TO_ICW(ICG, 1)                                 ! local cell number adjacent to interface
-      ICWG = G%LOCAL_TO_GLOBAL(ICW)                            ! global cell number adjacent to interface
+      ICWG = G%LOCAL_TO_GLOBAL(ICW)                                ! global cell number adjacent to interface
       OS%SEND_BUFFER_INT(LL)   = ICW
       OS%SEND_BUFFER_INT(LL+1) = ICWG
 #ifdef WITH_SCARC_DEBUG
@@ -13925,7 +13809,7 @@ WRITE(MSG%LU_DEBUG,'(A,4I6)') 'PACK_CELL_NEIGHBORS:A: IOR0, ICG, ICW, ICWG:', IO
       IYW  = G%WALL(IWG)%IYW + F%NOFFY
       IZW  = G%WALL(IWG)%IZW + F%NOFFZ
       ICW  = G%CELL_NUMBER(IXW, IYW, IZW)
-      OG%ICG_TO_ICW(ICG, 2) = ICW                                 ! TODO: do it in separate routine?
+      OG%ICG_TO_ICW(ICG, 2) = ICW                              
       ICWG = G%LOCAL_TO_GLOBAL(ICW)
       OS%SEND_BUFFER_INT(LL)   = ICW
       OS%SEND_BUFFER_INT(LL+1) = ICWG
@@ -14320,7 +14204,7 @@ L => S%LEVEL(NL)
 SELECT CASE(TYPE_GRID)
    CASE (NSCARC_GRID_STRUCTURED)
       G => L%STRUCTURED
-      G%NW = L%N_WALL_CELLS_EXT 
+      G%NW = L%N_WALL_CELLS_EXT                     ! TODO: set it elsewhere
    CASE (NSCARC_GRID_UNSTRUCTURED)
       G => L%UNSTRUCTURED
       G%NW = L%N_WALL_CELLS_EXT + L%N_WALL_CELLS_INT
@@ -14569,54 +14453,52 @@ END FUNCTION ARE_NEIGHBORS
 !> \brief Point to specified vector on a given grid level
 ! ------------------------------------------------------------------------------------------------
 FUNCTION SCARC_POINT_TO_VECTOR (NM, NL, NV)
-USE SCARC_POINTERS, ONLY: L
 REAL(EB), POINTER, DIMENSION(:) :: SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NM, NL, NV
 
-L => SCARC(NM)%LEVEL(NL)
 SELECT CASE (NV)
 
    ! Stage one vectors (for methods on first hierarchical level)
  
    CASE (NSCARC_VECTOR_ONE_X)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%X
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)%X
    CASE (NSCARC_VECTOR_ONE_B)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%B
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)%B
    CASE (NSCARC_VECTOR_ONE_D)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%D
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)%D
    CASE (NSCARC_VECTOR_ONE_R)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%R
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)%R
    CASE (NSCARC_VECTOR_ONE_V)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%V
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)%V
    CASE (NSCARC_VECTOR_ONE_Y)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%Y
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)%Y
    CASE (NSCARC_VECTOR_ONE_Z)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%Z
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)%Z
 #ifdef WITH_SCARC_DEBUG
    CASE (NSCARC_VECTOR_ONE_E)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_ONE)%E
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)%E
 #endif
 
  
    ! Stage two vectors (for methods on second hierarchical level)
  
    CASE (NSCARC_VECTOR_TWO_X)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_TWO)%X
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_TWO)%X
    CASE (NSCARC_VECTOR_TWO_B)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_TWO)%B
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_TWO)%B
    CASE (NSCARC_VECTOR_TWO_D)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_TWO)%D
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_TWO)%D
    CASE (NSCARC_VECTOR_TWO_R)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_TWO)%R
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_TWO)%R
    CASE (NSCARC_VECTOR_TWO_V)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_TWO)%V
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_TWO)%V
    CASE (NSCARC_VECTOR_TWO_Y)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_TWO)%Y
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_TWO)%Y
    CASE (NSCARC_VECTOR_TWO_Z)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_TWO)%Z
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_TWO)%Z
 #ifdef WITH_SCARC_DEBUG
    CASE (NSCARC_VECTOR_TWO_E)
-      SCARC_POINT_TO_VECTOR => L%STAGE(NSCARC_STAGE_TWO)%E
+      SCARC_POINT_TO_VECTOR => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_TWO)%E
 #endif
 END SELECT
 
@@ -14627,20 +14509,18 @@ END FUNCTION SCARC_POINT_TO_VECTOR
 !> \brief Point to specified vector on a given grid level (single precision version)
 ! ------------------------------------------------------------------------------------------------
 FUNCTION SCARC_POINT_TO_VECTOR_FB(NM, NL, NV)
-USE SCARC_POINTERS, ONLY: L
 REAL(FB), POINTER, DIMENSION(:) :: SCARC_POINT_TO_VECTOR_FB
 INTEGER, INTENT(IN) :: NM, NL, NV
 
-L => SCARC(NM)%LEVEL(NL)
 SELECT CASE (NV)
    CASE (NSCARC_VECTOR_ONE_X)
-      SCARC_POINT_TO_VECTOR_FB => L%STAGE(NSCARC_STAGE_ONE)%X_FB
+      SCARC_POINT_TO_VECTOR_FB => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)%X_FB
    CASE (NSCARC_VECTOR_ONE_B)
-      SCARC_POINT_TO_VECTOR_FB => L%STAGE(NSCARC_STAGE_ONE)%B_FB
+      SCARC_POINT_TO_VECTOR_FB => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)%B_FB
    CASE (NSCARC_VECTOR_ONE_R)
-      SCARC_POINT_TO_VECTOR_FB => L%STAGE(NSCARC_STAGE_ONE)%R_FB
+      SCARC_POINT_TO_VECTOR_FB => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)%R_FB
    CASE (NSCARC_VECTOR_ONE_V)
-      SCARC_POINT_TO_VECTOR_FB => L%STAGE(NSCARC_STAGE_ONE)%V_FB
+      SCARC_POINT_TO_VECTOR_FB => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)%V_FB
 END SELECT
 
 END FUNCTION SCARC_POINT_TO_VECTOR_FB
@@ -16102,7 +15982,7 @@ END SUBROUTINE SCARC_SETUP_PROLONGATION
 
 
 ! ------------------------------------------------------------------------------------------------------
-! If coarsest level isn't reached yet, define nullspace for next coarser level
+!> \brief Define nullspace for next coarser level, if coarsest level isn't reached yet
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_NULLSPACE_COARSE(NL)
 USE SCARC_POINTERS, ONLY:  GC, GF, ZF
@@ -16115,10 +15995,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ZF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_ZONES)
 
    IF (NL < NLEVEL_MAX) THEN
-      !GC%N_FINE = GF%N_COARSE
       GC%N_FINE = GC%NC_LOCAL(NM)
-      !GC%NC = GC%N_FINE
-      !GC%NCE = ZF%N_ROW-1
       CALL SCARC_ALLOCATE_REAL1(GC%NULLSPACE, 1, GC%NCE, NSCARC_INIT_ZERO, 'GC%NULLSPACE')
       GC%NULLSPACE(1:GC%NCE) = GF%RR(1:GC%NCE)
       CALL SCARC_REDUCE_INT1(GC%LOCAL_TO_GLOBAL, GC%NCE, 'GC%LOCAL_TO_GLOBAL')
@@ -16180,7 +16057,6 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    PF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_PROLONGATION)
    RF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_RESTRICTION)
 
-   ! TODO: Resize R
    RF%N_VAL = PF%N_VAL + 100
    RF%N_ROW = PF%N_ROW + 100
 
@@ -16257,9 +16133,6 @@ TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: A
 INTEGER, INTENT(IN) :: JC, ICCG
 INTEGER :: IPCOL
 
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) 'FIND_MATCHING_COLUMN: ICCG, JC:', ICCG, JC
-#endif
 SCARC_FIND_MATCHING_COLUMN = -1
 DO IPCOL = A%ROW(JC), A%ROW(JC+1)-1
    IF (A%COLG(IPCOL) == ICCG) THEN
