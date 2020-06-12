@@ -15772,7 +15772,9 @@ WRITE(MSG%LU_DEBUG,*) 'G%RR(',ICC,')=', G%RR(ICC)
    DO ICC = 1, Z%N_ROW-1
       DO ICOL = Z%ROW(ICC), Z%ROW(ICC+1)-1
          IC = Z%COL(ICOL)
-IF (G%RR(ICC) == 0) WRITE(*,*) 'NM=', NM,': ICC=', ICC, ': ICOL =', ICOL, ': IC=',IC
+IF (G%RR(ICC) == 0) THEN
+WRITE(*,*) 'NM=', NM,': ICC=', ICC, ': ICOL =', ICOL, ': IC=',IC
+ENDIF
          G%QQ(IQ) = G%QQ(IQ)/G%RR(ICC)
 #ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'G%QQ(',IQ,')=', G%QQ(IQ)
