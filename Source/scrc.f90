@@ -8,8 +8,8 @@
 !  - WITH_SCARC_STANDALONE   : dump environment for ScaRC standalone version
 ! ================================================================================================================
 !#undef WITH_MKL
-#define WITH_SCARC_VERBOSE
-#define WITH_SCARC_DEBUG
+#undef WITH_SCARC_VERBOSE
+#undef WITH_SCARC_DEBUG
 #undef WITH_SCARC_STANDALONE
 #undef WITH_SCARC_MGM
 
@@ -18085,10 +18085,8 @@ INTEGER, DIMENSION(:), INTENT(IN) :: ARR
 INTEGER, INTENT(IN) :: I1, I2
 CHARACTER(*), INTENT(IN) :: CNAME, CTEXT
 INTEGER :: IC
-#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '============ DEBUGGING INT1 ARRAY ', CNAME, ' AT ', TRIM(CTEXT)
 WRITE(MSG%LU_DEBUG,'(8I6)') (ARR(IC), IC=I1, I2)
-#endif
 END SUBROUTINE SCARC_DEBUG_INT1
 
 
@@ -18100,10 +18098,8 @@ REAL(EB), DIMENSION(:), INTENT(IN) :: ARR
 CHARACTER(*), INTENT(IN) :: CNAME, CTEXT
 INTEGER, INTENT(IN) :: I1, I2
 INTEGER :: IC
-#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '============ DEBUGGING REAL1 ARRAY ', CNAME, ' AT ', TRIM(CTEXT)
 WRITE(MSG%LU_DEBUG,'(8E12.4)') (ARR(IC), IC=I1, I2)
-#endif
 END SUBROUTINE SCARC_DEBUG_REAL1
 
 ! ------------------------------------------------------------------------------------------------------
@@ -18713,7 +18709,6 @@ INTEGER :: STENCIL(7) = 99999999, COLUMNS(7) = 99999999
 
 if (NL /= NLEVEL_MIN) RETURN
 
-#ifdef WITH_SCARC_DEBUG
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
@@ -18786,7 +18781,6 @@ WRITE(MSG%LU_DEBUG,*) '          COLUMNS2, STENCIL2:', IC, NLEN, COLUMNS(1:NLEN)
    CLOSE(MROW)
 
 ENDDO MESHES_LOOP
-#endif
 
 1001 FORMAT(I8,',')
 1002 FORMAT(E10.2,',')
@@ -18819,8 +18813,6 @@ CLOSE(MAGG)
 1001 FORMAT(I8,',')
 1002 FORMAT(I8)
 END SUBROUTINE SCARC_PYTHON_ZONES
-
-#endif
 
 
 ! ------------------------------------------------------------------------------------------------
@@ -19082,7 +19074,6 @@ GC%N_FINE = 8
 GC%NC_LOCAL(1) = 8
 GC%NC_GLOBAL = 8
 
-#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: ZONES_GLOBAL:'
 WRITE(MSG%LU_DEBUG,CFORM_INT) GF%ZONES_GLOBAL(1:GF%NC)
 WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: CPOINTS:'
@@ -19093,7 +19084,6 @@ WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GF%N_COARSE=',GF%N_COARSE
 WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%N_FINE=',GC%N_FINE
 WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%NC_LOCAL(1)=',GC%NC_LOCAL(1)
 WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%NC_GLOBAL=',GC%NC_GLOBAL
-#endif
 
 END SUBROUTINE SCARC_PRESET_B14_CASE
  
@@ -19260,7 +19250,6 @@ GC%N_FINE = 24
 GC%NC_LOCAL(1) = 24
 GC%NC_GLOBAL = 24
 
-#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: ZONES_GLOBAL:'
 WRITE(MSG%LU_DEBUG,CFORM_INT) GF%ZONES_GLOBAL(1:GF%NC)
 WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: CPOINTS:'
@@ -19271,14 +19260,15 @@ WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GF%N_COARSE=',GF%N_COARSE
 WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%N_FINE=',GC%N_FINE
 WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%NC_LOCAL(1)=',GC%NC_LOCAL(1)
 WRITE(MSG%LU_DEBUG,*) 'PRESETTING B14_CASE: GC%NC_GLOBAL=',GC%NC_GLOBAL
-#endif
 
 END SUBROUTINE SCARC_PRESET_b14big_CASE
- 
 
 ! ================================================================================================
 ! End  WITH_SCARC_DEBUG  - Part
 ! ================================================================================================
+#endif
+
+
 
 #ifdef WITH_SCARC_STANDALONE
 ! ================================================================================================
