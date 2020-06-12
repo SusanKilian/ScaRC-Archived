@@ -15718,6 +15718,10 @@ WRITE(MSG%LU_DEBUG,'(A,3I6,2E12.4)') 'QQ: ICC, IC, IQ, QQ(IQ), DSUM:', ICC, IC, 
       G%RR(ICC) = DSUM
    ENDDO
 
+   CALL SCARC_REDUCE_REAL1(G%QQ, IQ, 'G%QQ')
+   CALL SCARC_REDUCE_REAL1(G%RR, Z%N_ROW, 'G%RR')
+
+   WRITE(*,*) MYID+1, ':Z%N_ROW:', Z%N_ROW
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) '================================ PART 0 :'
    WRITE(MSG%LU_DEBUG,*) 'Z%N_ROW:', Z%N_ROW
@@ -15768,6 +15772,7 @@ WRITE(MSG%LU_DEBUG,*) 'G%RR(',ICC,')=', G%RR(ICC)
    DO ICC = 1, Z%N_ROW-1
       DO ICOL = Z%ROW(ICC), Z%ROW(ICC+1)-1
          IC = Z%COL(ICOL)
+IF (G%RR(ICC) == 0) WRITE(*,*) 'NM=', NM,': ICC=', ICC, ': ICOL =', ICOL, ': IC=',IC
          G%QQ(IQ) = G%QQ(IQ)/G%RR(ICC)
 #ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'G%QQ(',IQ,')=', G%QQ(IQ)
