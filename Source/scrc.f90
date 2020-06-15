@@ -459,6 +459,22 @@ INTEGER :: FACE_ORIENTATION(6) = (/1,-1,2,-2,3,-3/)         !< Coordinate direct
 CHARACTER(10) :: CFORM_INT, CFORM_REAL
 CHARACTER(60) :: CNAME
 
+! ---------- Structures to which is currently pointed
+
+INTEGER :: CURRENT_BMATRIX                                  !< Bandwise matrix to which is currently pointed
+INTEGER :: CURRENT_BUFFER_INT                               !< Integer buffer to which is currently pointed
+INTEGER :: CURRENT_BUFFER_REAL                              !< Real buffer to which is currently pointed
+INTEGER :: CURRENT_HVECTOR                                  !< Pressure vector to which is currently pointed
+INTEGER :: CURRENT_CMATRIX                                  !< Compact matrix to which is currently pointed
+INTEGER :: CURRENT_LEVEL                                    !< Level to which is currently pointed
+INTEGER :: CURRENT_LEVELP                                   !< Second level to which is currently pointed
+INTEGER :: CURRENT_MESH                                     !< Mesh to which is currently pointed
+INTEGER :: CURRENT_NEIGHBOR                                 !< Neighbor to which is currently pointed
+INTEGER :: CURRENT_OTHER_CMATRIX                            !< Neighboring compact matrix to which is currently pointed
+INTEGER :: CURRENT_OTHER_BMATRIX                            !< Neighboring bandwise matrix to which is currently pointed
+INTEGER :: CURRENT_VECTOR                                   !< Vector to which is currently pointed
+INTEGER :: CURRENT_VECTOR_FB                                !< Vector to which is currently pointed - single precision
+
 END MODULE SCARC_VARIABLES
 
 
@@ -14183,6 +14199,7 @@ USE SCARC_POINTERS, ONLY: M, S
 INTEGER, INTENT(IN) :: NM
 M => MESHES(NM)
 S => SCARC(NM)
+CURRENT_MESH = NM
 END SUBROUTINE SCARC_POINT_TO_MESH
 
 ! -----------------------------------------------------------------------------
@@ -14194,6 +14211,8 @@ INTEGER, INTENT(IN) :: NM, NL
 M => MESHES(NM)
 S => SCARC(NM)
 L => S%LEVEL(NL)
+CURRENT_MESH = NM
+CURRENT_LEVEL = NL
 END SUBROUTINE SCARC_POINT_TO_LEVEL
 
 
@@ -14216,6 +14235,20 @@ P => NULL();  PF => NULL();  PC => NULL()
 R => NULL();  RF => NULL();  RC => NULL()                 
 C => NULL();  CF => NULL();  CC => NULL()                 
 Z => NULL();  ZF => NULL();  ZC => NULL()                 
+
+CURRENT_MESH          = NSCARC_INIT_UNDEF
+CURRENT_LEVEL         = NSCARC_INIT_UNDEF
+CURRENT_LEVELP        = NSCARC_INIT_UNDEF
+CURRENT_NEIGHBOR      = NSCARC_INIT_UNDEF
+CURRENT_CMATRIX       = NSCARC_INIT_UNDEF
+CURRENT_BMATRIX       = NSCARC_INIT_UNDEF
+CURRENT_OTHER_CMATRIX = NSCARC_INIT_UNDEF
+CURRENT_OTHER_BMATRIX = NSCARC_INIT_UNDEF
+CURRENT_VECTOR        = NSCARC_INIT_UNDEF
+CURRENT_VECTOR_FB     = NSCARC_INIT_UNDEF
+CURRENT_HVECTOR       = NSCARC_INIT_UNDEF
+CURRENT_BUFFER_INT    = NSCARC_INIT_UNDEF
+CURRENT_BUFFER_REAL   = NSCARC_INIT_UNDEF
 
 END SUBROUTINE SCARC_POINT_TO_NONE
 
@@ -14241,6 +14274,8 @@ SELECT CASE(TYPE_GRID)
 END SELECT
 W => G%WALL
 
+CURRENT_MESH = NM
+CURRENT_LEVEL = NL
 END SUBROUTINE SCARC_POINT_TO_GRID
 
 ! ----------------------------------------------------------------------------------------------------
@@ -14269,6 +14304,9 @@ SELECT CASE(TYPE_GRID)
       GC%NW = LC%N_WALL_CELLS_EXT + LC%N_WALL_CELLS_INT
 END SELECT
 
+CURRENT_MESH = NM
+CURRENT_LEVEL = NL1
+CURRENT_LEVELP = NL2
 END SUBROUTINE SCARC_POINT_TO_MULTIGRID
 
 ! ---------------------------------------------------------------------------------------------------
@@ -14291,6 +14329,9 @@ SELECT CASE(TYPE_GRID)
       OGF => OLF%UNSTRUCTURED
 END SELECT
 
+CURRENT_MESH = NM
+CURRENT_LEVEL = NL
+CURRENT_NEIGHBOR = NOM
 END SUBROUTINE SCARC_POINT_TO_OTHER_GRID
 
 
@@ -14313,6 +14354,11 @@ SELECT CASE(TYPE_GRID)
       OGF => OLF%UNSTRUCTURED
       OGC => OLC%UNSTRUCTURED
 END SELECT
+
+CURRENT_MESH = NM
+CURRENT_LEVEL = NL1
+CURRENT_LEVELP= NL2
+CURRENT_NEIGHBOR = NOM
 
 END SUBROUTINE SCARC_POINT_TO_OTHER_MULTIGRID
 
@@ -14344,6 +14390,7 @@ SELECT CASE(NTYPE)
       SCARC_POINT_TO_CMATRIX => G%ZONES
 END SELECT
 
+CURRENT_CMATRIX = NTYPE
 END FUNCTION SCARC_POINT_TO_CMATRIX
 
 
@@ -14362,6 +14409,7 @@ SELECT CASE(NTYPE)
       WRITE(*,*) 'No other bandwise matrix available yet except of POISSONB'
 END SELECT
 
+CURRENT_BMATRIX = NTYPE
 END FUNCTION SCARC_POINT_TO_BMATRIX
 
 
@@ -14392,6 +14440,7 @@ SELECT CASE(NTYPE)
       SCARC_POINT_TO_OTHER_CMATRIX => OG%ZONES
 END SELECT
 
+CURRENT_OTHER_CMATRIX = NTYPE
 END FUNCTION SCARC_POINT_TO_OTHER_CMATRIX
 
 
@@ -14410,6 +14459,7 @@ SELECT CASE(NTYPE)
       WRITE(*,*) 'No other bandwise matrix available yet except of POISSONB'
 END SELECT
 
+CURRENT_OTHER_BMATRIX = NTYPE
 END FUNCTION SCARC_POINT_TO_OTHER_BMATRIX
 
 
@@ -14442,6 +14492,7 @@ WRITE(MSG%LU_DEBUG,*) 'POINT_TO_BUFFER_INT : NM, NOM, NTYPE:B', NM, NOM, NTYPE
       ENDIF
 END SELECT
 
+CURRENT_BUFFER_INT = NTYPE
 END FUNCTION SCARC_POINT_TO_BUFFER_INT
 
 
@@ -14468,6 +14519,7 @@ SELECT CASE (NTYPE)
       ENDIF
 END SELECT
 
+CURRENT_BUFFER_REAL = NTYPE
 END FUNCTION SCARC_POINT_TO_BUFFER_REAL
 
 
@@ -14538,6 +14590,7 @@ SELECT CASE (NV)
 #endif
 END SELECT
 
+CURRENT_VECTOR = NV
 END FUNCTION SCARC_POINT_TO_VECTOR
 
 
@@ -14559,6 +14612,7 @@ SELECT CASE (NV)
       SCARC_POINT_TO_VECTOR_FB => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)%V_FB
 END SELECT
 
+CURRENT_VECTOR_FB = NV
 END FUNCTION SCARC_POINT_TO_VECTOR_FB
 
 
@@ -14574,6 +14628,7 @@ SELECT CASE (NV)
    CASE (NSCARC_VECTOR_HS)
       POINT_TO_HVECTOR => MESHES(NM)%HS
 END SELECT
+CURRENT_HVECTOR = NV
 END FUNCTION POINT_TO_HVECTOR
 
 
