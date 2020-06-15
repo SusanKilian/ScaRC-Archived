@@ -1,14 +1,14 @@
 Test multiple mesh and parallel processing features.
 
-&HEAD CHID='hallways_scarc_amg', TITLE='Silly Multi-Mesh Test with structured ScaRC solver' /
+&HEAD CHID='hsacs', TITLE='Silly Multi-Mesh Test with structured ScaRC solver' /
 
-&MESH IJK=48,16,16, XB=0.0,3.0,0.0,1.0,0.0,1.0, COLOR='RED' /
-&MESH IJK=16,64,16, XB=3.0,4.0,0.0,4.0,0.0,1.0, COLOR='GREEN' /
-&MESH IJK=64,16,16, XB=4.0,8.0,3.0,4.0,0.0,1.0, COLOR='BLUE' /
-&MESH IJK=16,16,48, XB=7.0,8.0,3.0,4.0,1.0,4.0 /
-&MESH IJK=64,16,16, XB=3.0,7.0,3.0,4.0,3.0,4.0, RGB=230,50,43 /
+&MESH IJK=12,4,4, XB=0.0,3.0,0.0,1.0,0.0,1.0, COLOR='RED' /
+&MESH IJK=4,16,4, XB=3.0,4.0,0.0,4.0,0.0,1.0, COLOR='GREEN' /
+&MESH IJK=12,4,4, XB=4.0,7.0,3.0,4.0,0.0,1.0, COLOR='BLUE' /
+&MESH IJK=4,4,12, XB=6.0,7.0,3.0,4.0,1.0,4.0 /
+&MESH IJK=12,4,4, XB=3.0,6.0,3.0,4.0,3.0,4.0, RGB=230,50,43 /
 
-&TIME T_END=0.01 /
+&TIME T_END=60.0 /
 
 &PRES SOLVER = 'SCARC'
       SCARC_MATRIX = 'COMPACT'
