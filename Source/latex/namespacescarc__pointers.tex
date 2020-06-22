@@ -1,0 +1,374 @@
+\hypertarget{namespacescarc__pointers}{}\doxysection{scarc\+\_\+pointers Module Reference}
+\label{namespacescarc__pointers}\index{scarc\_pointers@{scarc\_pointers}}
+
+
+Collection of different pointers to specify the different meshes, grid levels, discretizations and matrices.  
+
+
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aec022b5b38b3e960ccff0285979e9900}\label{namespacescarc__pointers_aec022b5b38b3e960ccff0285979e9900}} 
+type(mesh\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_aec022b5b38b3e960ccff0285979e9900}{m}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified mesh (based on M\+E\+S\+H\+ES from base code) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ad60f716d90a1efe9640f58939a6ad82d}\label{namespacescarc__pointers_ad60f716d90a1efe9640f58939a6ad82d}} 
+type(omesh\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_ad60f716d90a1efe9640f58939a6ad82d}{om}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified neighboring mesh (based on O\+M\+E\+SH from base code) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a311911b495a5575157d111a5384fdc95}\label{namespacescarc__pointers_a311911b495a5575157d111a5384fdc95}} 
+type(wall\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a311911b495a5575157d111a5384fdc95}{mwc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified wall cell (based on W\+A\+LL from base code) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a103d68f21e47fc596569fde8261dff55}\label{namespacescarc__pointers_a103d68f21e47fc596569fde8261dff55}} 
+type(external\+\_\+wall\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a103d68f21e47fc596569fde8261dff55}{ewc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified external wall cell. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ae35aa56d746e69c61ac29feb7028b428}\label{namespacescarc__pointers_ae35aa56d746e69c61ac29feb7028b428}} 
+type(scarc\+\_\+allocation\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_ae35aa56d746e69c61ac29feb7028b428}{al}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to allocated structure within Sca\+RC memory management. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ae47bef27a82a4602b7b7617f206e80c9}\label{namespacescarc__pointers_ae47bef27a82a4602b7b7617f206e80c9}} 
+type(scarc\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_ae47bef27a82a4602b7b7617f206e80c9}{s}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to Sca\+R\+C-\/structure on a specified mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a9015be88b61c188c609355b86cc8b1bd}\label{namespacescarc__pointers_a9015be88b61c188c609355b86cc8b1bd}} 
+type(scarc\+\_\+oscarc\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a9015be88b61c188c609355b86cc8b1bd}{os}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to Sca\+R\+C-\/structure on a specified neighboring. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a87bb315a84e0da284f43c541709c28cd}\label{namespacescarc__pointers_a87bb315a84e0da284f43c541709c28cd}} 
+type(scarc\+\_\+level\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a87bb315a84e0da284f43c541709c28cd}{l}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a15a10823caaeca28460000c60dd41915}\label{namespacescarc__pointers_a15a10823caaeca28460000c60dd41915}} 
+type(scarc\+\_\+level\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a15a10823caaeca28460000c60dd41915}{lf}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified fine level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a4d48b887c34b3e1348d146d8bc30b8b5}\label{namespacescarc__pointers_a4d48b887c34b3e1348d146d8bc30b8b5}} 
+type(scarc\+\_\+level\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a4d48b887c34b3e1348d146d8bc30b8b5}{lc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified coarse level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a7be4cc3490b6bc84aea08781f27c7152}\label{namespacescarc__pointers_a7be4cc3490b6bc84aea08781f27c7152}} 
+type(scarc\+\_\+level\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a7be4cc3490b6bc84aea08781f27c7152}{ol}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified level on neighboring mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_acb0bfefcfcc6d91504c3f8e1008a3943}\label{namespacescarc__pointers_acb0bfefcfcc6d91504c3f8e1008a3943}} 
+type(scarc\+\_\+level\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_acb0bfefcfcc6d91504c3f8e1008a3943}{olf}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified fine level on neighboring mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_af99faf0c2721eb0bd0843b14877ea057}\label{namespacescarc__pointers_af99faf0c2721eb0bd0843b14877ea057}} 
+type(scarc\+\_\+level\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_af99faf0c2721eb0bd0843b14877ea057}{olc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified coarse level on neighboring mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ae915a44d5622b791b51acc6c2a323b78}\label{namespacescarc__pointers_ae915a44d5622b791b51acc6c2a323b78}} 
+type(scarc\+\_\+grid\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_ae915a44d5622b791b51acc6c2a323b78}{g}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified grid discretization. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a7cc6f49e57d2f4916ff1fb3f3f06aca9}\label{namespacescarc__pointers_a7cc6f49e57d2f4916ff1fb3f3f06aca9}} 
+type(scarc\+\_\+grid\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a7cc6f49e57d2f4916ff1fb3f3f06aca9}{gf}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified fine grid discretization. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a8ab185992e9485254b00507bd6bb713a}\label{namespacescarc__pointers_a8ab185992e9485254b00507bd6bb713a}} 
+type(scarc\+\_\+grid\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a8ab185992e9485254b00507bd6bb713a}{gc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified coarse grid discretization. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a61adc9db0883b06f6566c6d3d77d08f0}\label{namespacescarc__pointers_a61adc9db0883b06f6566c6d3d77d08f0}} 
+type(scarc\+\_\+grid\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a61adc9db0883b06f6566c6d3d77d08f0}{og}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified grid discretization. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a3b79feec789777530835e7ac891193aa}\label{namespacescarc__pointers_a3b79feec789777530835e7ac891193aa}} 
+type(scarc\+\_\+grid\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a3b79feec789777530835e7ac891193aa}{ogf}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified fine grid discretization on neighboring mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a64f09c403b07681a3f4717598db93550}\label{namespacescarc__pointers_a64f09c403b07681a3f4717598db93550}} 
+type(scarc\+\_\+grid\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a64f09c403b07681a3f4717598db93550}{ogc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified coarse grid discretization on neighboring mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a4e5aa0cb9bb70d755698c3215734d736}\label{namespacescarc__pointers_a4e5aa0cb9bb70d755698c3215734d736}} 
+type(scarc\+\_\+face\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a4e5aa0cb9bb70d755698c3215734d736}{f}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified face of grid. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ab118804ac74115bb7e328f6014d8116a}\label{namespacescarc__pointers_ab118804ac74115bb7e328f6014d8116a}} 
+type(scarc\+\_\+face\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_ab118804ac74115bb7e328f6014d8116a}{ff}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified face of fine grid level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ae8efadaa923867d1a615c52d5da18433}\label{namespacescarc__pointers_ae8efadaa923867d1a615c52d5da18433}} 
+type(scarc\+\_\+face\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_ae8efadaa923867d1a615c52d5da18433}{fc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified face of coarse grid level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a88072a34f7a91d45367454a1d94b9840}\label{namespacescarc__pointers_a88072a34f7a91d45367454a1d94b9840}} 
+type(scarc\+\_\+obst\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a88072a34f7a91d45367454a1d94b9840}{ob}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified obstruction. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a4142682a9f4848181afd017029fd17a7}\label{namespacescarc__pointers_a4142682a9f4848181afd017029fd17a7}} 
+type(scarc\+\_\+wall\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a4142682a9f4848181afd017029fd17a7}{gwc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to specified wall cell. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a5d4faee21a1c064a26e1eced9d490a3f}\label{namespacescarc__pointers_a5d4faee21a1c064a26e1eced9d490a3f}} 
+type(scarc\+\_\+wall\+\_\+type), dimension(\+:), pointer \mbox{\hyperlink{namespacescarc__pointers_a5d4faee21a1c064a26e1eced9d490a3f}{w}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to complete wall structure. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ab3840a2231dc246b4a1c39dfa109a056}\label{namespacescarc__pointers_ab3840a2231dc246b4a1c39dfa109a056}} 
+type(scarc\+\_\+wall\+\_\+type), dimension(\+:), pointer \mbox{\hyperlink{namespacescarc__pointers_ab3840a2231dc246b4a1c39dfa109a056}{wf}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to wall structure on fine grid level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aeddf1b830e05920db3af2d34490d2622}\label{namespacescarc__pointers_aeddf1b830e05920db3af2d34490d2622}} 
+type(scarc\+\_\+wall\+\_\+type), dimension(\+:), pointer \mbox{\hyperlink{namespacescarc__pointers_aeddf1b830e05920db3af2d34490d2622}{wc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to wall structure on coarse grid level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a823ec7100e597d80ad1a674c24637c43}\label{namespacescarc__pointers_a823ec7100e597d80ad1a674c24637c43}} 
+type(scarc\+\_\+subdivision\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a823ec7100e597d80ad1a674c24637c43}{sub}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to subdivision structure (only shortcut) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a0b753470832822b5feac47ff42151552}\label{namespacescarc__pointers_a0b753470832822b5feac47ff42151552}} 
+type(scarc\+\_\+solver\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a0b753470832822b5feac47ff42151552}{sv}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to Sca\+RC solver structure. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a94c7e100bcd2a9c8ea8877f44ff00398}\label{namespacescarc__pointers_a94c7e100bcd2a9c8ea8877f44ff00398}} 
+type(scarc\+\_\+solver\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a94c7e100bcd2a9c8ea8877f44ff00398}{svp}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to parent Sca\+RC solver structure. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a903f2b04b8f6bbca5192d457b854973d}\label{namespacescarc__pointers_a903f2b04b8f6bbca5192d457b854973d}} 
+type(scarc\+\_\+stage\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a903f2b04b8f6bbca5192d457b854973d}{st}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to solver stage structure. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a4a0f0605c9e00a633c1e0b56f318ca11}\label{namespacescarc__pointers_a4a0f0605c9e00a633c1e0b56f318ca11}} 
+type(scarc\+\_\+stage\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a4a0f0605c9e00a633c1e0b56f318ca11}{stp}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to parent solver stage structure. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ae3b9093cf9041564773430073a82e6a3}\label{namespacescarc__pointers_ae3b9093cf9041564773430073a82e6a3}} 
+type(scarc\+\_\+fft\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_ae3b9093cf9041564773430073a82e6a3}{fft}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to F\+FT structure. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a9cae6091bef9339dcb47cb66310737a4}\label{namespacescarc__pointers_a9cae6091bef9339dcb47cb66310737a4}} 
+type(scarc\+\_\+mgm\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a9cae6091bef9339dcb47cb66310737a4}{mgm}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to Mc\+Keeney-\/\+Greengard-\/\+Mayo structure. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a6d936e08788621fa8e25478e5dfae4b6}\label{namespacescarc__pointers_a6d936e08788621fa8e25478e5dfae4b6}} 
+type(scarc\+\_\+matrix\+\_\+bandwise\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a6d936e08788621fa8e25478e5dfae4b6}{ab}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to bandwise matrix structure. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ac4cd503905a0a0692f81e9e64ea35377}\label{namespacescarc__pointers_ac4cd503905a0a0692f81e9e64ea35377}} 
+type(scarc\+\_\+matrix\+\_\+bandwise\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_ac4cd503905a0a0692f81e9e64ea35377}{oab}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to neighboring bandwise matrix structure. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ad3dce30318bae0777cb02be303a2d2e4}\label{namespacescarc__pointers_ad3dce30318bae0777cb02be303a2d2e4}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_ad3dce30318bae0777cb02be303a2d2e4}{a}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a42cd91046aeed749e01d317e3ef78b60}\label{namespacescarc__pointers_a42cd91046aeed749e01d317e3ef78b60}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a42cd91046aeed749e01d317e3ef78b60}{ac}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored coarse matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a6339b4143844794087b55d4bf18302f2}\label{namespacescarc__pointers_a6339b4143844794087b55d4bf18302f2}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a6339b4143844794087b55d4bf18302f2}{af}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored fine matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a96628cbe21bbfbf99951dcc5cdb59076}\label{namespacescarc__pointers_a96628cbe21bbfbf99951dcc5cdb59076}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a96628cbe21bbfbf99951dcc5cdb59076}{oa}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored neighboring matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a444c336b858c0dfaa7639ff3b23d79f6}\label{namespacescarc__pointers_a444c336b858c0dfaa7639ff3b23d79f6}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a444c336b858c0dfaa7639ff3b23d79f6}{oac}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored coarse neighboring matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aa1928738277a0e6f04adc3f9da4dd8fe}\label{namespacescarc__pointers_aa1928738277a0e6f04adc3f9da4dd8fe}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_aa1928738277a0e6f04adc3f9da4dd8fe}{oaf}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored fine neighboring matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_acee7fa2eec3821d80e26ab493d29b534}\label{namespacescarc__pointers_acee7fa2eec3821d80e26ab493d29b534}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_acee7fa2eec3821d80e26ab493d29b534}{p}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored prolongation matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a3f40fd567d2a679f4b4695db1ad55e91}\label{namespacescarc__pointers_a3f40fd567d2a679f4b4695db1ad55e91}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a3f40fd567d2a679f4b4695db1ad55e91}{pc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored coarse prolongation matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aa1619a3dbf2da5b431e155171ab7f407}\label{namespacescarc__pointers_aa1619a3dbf2da5b431e155171ab7f407}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_aa1619a3dbf2da5b431e155171ab7f407}{pf}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored fine matrix on coarse grid. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a69a0d583ef73760720c502afaae8e305}\label{namespacescarc__pointers_a69a0d583ef73760720c502afaae8e305}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a69a0d583ef73760720c502afaae8e305}{op}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored neighboring prolongation matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aa5ff79f945df83e727cf43e8366760bd}\label{namespacescarc__pointers_aa5ff79f945df83e727cf43e8366760bd}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_aa5ff79f945df83e727cf43e8366760bd}{opc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored coarse neighboring prolongation matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a38074a6f90d8b359e982c1cf24579bff}\label{namespacescarc__pointers_a38074a6f90d8b359e982c1cf24579bff}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a38074a6f90d8b359e982c1cf24579bff}{opf}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored fine neighboring prolongation matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a3471471ef18e3d0345a1b5451892da24}\label{namespacescarc__pointers_a3471471ef18e3d0345a1b5451892da24}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a3471471ef18e3d0345a1b5451892da24}{r}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored restriction matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aee7aa182fe5a8eb78116979fda9d50cf}\label{namespacescarc__pointers_aee7aa182fe5a8eb78116979fda9d50cf}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_aee7aa182fe5a8eb78116979fda9d50cf}{rc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored fine restriction matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ad091208b09e3f0268f481549d6e1ef1c}\label{namespacescarc__pointers_ad091208b09e3f0268f481549d6e1ef1c}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_ad091208b09e3f0268f481549d6e1ef1c}{rf}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored coarse restriction matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aebc63b2a8bb41f7c49821e5440af74be}\label{namespacescarc__pointers_aebc63b2a8bb41f7c49821e5440af74be}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_aebc63b2a8bb41f7c49821e5440af74be}{or}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored neighboring restriction matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a9401eaf49a0dc014c5ead4d4ae9166d4}\label{namespacescarc__pointers_a9401eaf49a0dc014c5ead4d4ae9166d4}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a9401eaf49a0dc014c5ead4d4ae9166d4}{orc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored coarse neighboring restriction matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a67f5e9ad2eec3fcbe7c6013f3fa88c0d}\label{namespacescarc__pointers_a67f5e9ad2eec3fcbe7c6013f3fa88c0d}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a67f5e9ad2eec3fcbe7c6013f3fa88c0d}{orf}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored fine neighboring restriction matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ab2cd7ee09d30cf6d204d630019816c17}\label{namespacescarc__pointers_ab2cd7ee09d30cf6d204d630019816c17}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_ab2cd7ee09d30cf6d204d630019816c17}{c}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored connection matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a68b32a8e01d23c47f5ce9debb796c8e4}\label{namespacescarc__pointers_a68b32a8e01d23c47f5ce9debb796c8e4}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a68b32a8e01d23c47f5ce9debb796c8e4}{cc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored coarse connection matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a0150efcf4625becbcc807556423cafd3}\label{namespacescarc__pointers_a0150efcf4625becbcc807556423cafd3}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a0150efcf4625becbcc807556423cafd3}{cf}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored fine connection matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a614bb4a98869e43b19bc86c3f107a453}\label{namespacescarc__pointers_a614bb4a98869e43b19bc86c3f107a453}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a614bb4a98869e43b19bc86c3f107a453}{oc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored neighboring connection matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a3ef6d366cbfdf91c51c267149f56d6ce}\label{namespacescarc__pointers_a3ef6d366cbfdf91c51c267149f56d6ce}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a3ef6d366cbfdf91c51c267149f56d6ce}{occ}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored coarse neighboring connection matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_abde3d243edeb4cc2d1f08fef47348a83}\label{namespacescarc__pointers_abde3d243edeb4cc2d1f08fef47348a83}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_abde3d243edeb4cc2d1f08fef47348a83}{ocf}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored fine neighboring connection matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_adb28ba811cdc800cb9b588aa4c1357a7}\label{namespacescarc__pointers_adb28ba811cdc800cb9b588aa4c1357a7}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_adb28ba811cdc800cb9b588aa4c1357a7}{z}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored zones matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a572c9b7040c7f50cd2191dca92262d3f}\label{namespacescarc__pointers_a572c9b7040c7f50cd2191dca92262d3f}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a572c9b7040c7f50cd2191dca92262d3f}{zc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored coarse zones matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a2b7bafb6808db032f8aa701b8c29a79d}\label{namespacescarc__pointers_a2b7bafb6808db032f8aa701b8c29a79d}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a2b7bafb6808db032f8aa701b8c29a79d}{zf}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored fine zones matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aa29fa0055a542cee6c263eae2b76d3b0}\label{namespacescarc__pointers_aa29fa0055a542cee6c263eae2b76d3b0}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_aa29fa0055a542cee6c263eae2b76d3b0}{oz}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored neighboring zones matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ae4eccf21e3d3c90ae3ca18d58b8d0e82}\label{namespacescarc__pointers_ae4eccf21e3d3c90ae3ca18d58b8d0e82}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_ae4eccf21e3d3c90ae3ca18d58b8d0e82}{ozc}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored neighboring coarse zones matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a891287bbe15259273625c2c1f127dbe1}\label{namespacescarc__pointers_a891287bbe15259273625c2c1f127dbe1}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer \mbox{\hyperlink{namespacescarc__pointers_a891287bbe15259273625c2c1f127dbe1}{ozf}} =$>$N\+U\+LL()
+\begin{DoxyCompactList}\small\item\em Pointer to compactly stored neighboring fine zones matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a18868fd7861aef10a03a3b0fc8f5d382}\label{namespacescarc__pointers_a18868fd7861aef10a03a3b0fc8f5d382}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer {\bfseries ap} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_afccade46a4c44d0956072838672c4fe2}\label{namespacescarc__pointers_afccade46a4c44d0956072838672c4fe2}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer {\bfseries apf} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a9852ee9e000fbc443a022da461dc7d97}\label{namespacescarc__pointers_a9852ee9e000fbc443a022da461dc7d97}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer {\bfseries apc} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aa6d95a9abb2c214e0975c8ec91d72876}\label{namespacescarc__pointers_aa6d95a9abb2c214e0975c8ec91d72876}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer {\bfseries oap} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ac779d58a63b8b046b623e0781f7cc4f4}\label{namespacescarc__pointers_ac779d58a63b8b046b623e0781f7cc4f4}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+condensed\+\_\+type), pointer {\bfseries aco} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a4d14daaf543a5b00375d5e64056d5e28}\label{namespacescarc__pointers_a4d14daaf543a5b00375d5e64056d5e28}} 
+type(scarc\+\_\+matrix\+\_\+bandwise\+\_\+condensed\+\_\+type), pointer {\bfseries abco} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a61056b796edef1a817910de0c61fb756}\label{namespacescarc__pointers_a61056b796edef1a817910de0c61fb756}} 
+type(scarc\+\_\+multigrid\+\_\+type), pointer {\bfseries mg} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aa43b9a26a80b562722047fb1a76a6621}\label{namespacescarc__pointers_aa43b9a26a80b562722047fb1a76a6621}} 
+real(eb), dimension(\+:), pointer {\bfseries xcor} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a03e4e172d2fcaf475bb7df83fc41a3bd}\label{namespacescarc__pointers_a03e4e172d2fcaf475bb7df83fc41a3bd}} 
+real(eb), dimension(\+:), pointer {\bfseries ycor} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aad08c4f028094abad7d6bead2d5e698d}\label{namespacescarc__pointers_aad08c4f028094abad7d6bead2d5e698d}} 
+real(eb), dimension(\+:), pointer {\bfseries zcor} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a7baa5cccc69ab2d9a3b876db4c73432e}\label{namespacescarc__pointers_a7baa5cccc69ab2d9a3b876db4c73432e}} 
+real(eb), dimension(\+:), pointer {\bfseries xmid} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aeea32c60b15a7dcbbec134e8bd76a5d8}\label{namespacescarc__pointers_aeea32c60b15a7dcbbec134e8bd76a5d8}} 
+real(eb), dimension(\+:), pointer {\bfseries ymid} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a6ba2ea1ff9b3bc38ae5711d382b0a5f2}\label{namespacescarc__pointers_a6ba2ea1ff9b3bc38ae5711d382b0a5f2}} 
+real(eb), dimension(\+:), pointer {\bfseries zmid} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a94af2cb4177ee6f5504ca02a401b7bf6}\label{namespacescarc__pointers_a94af2cb4177ee6f5504ca02a401b7bf6}} 
+real(eb), dimension(\+:), pointer {\bfseries vc} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a38976f7628ca2e9e2a64e3f49b6da879}\label{namespacescarc__pointers_a38976f7628ca2e9e2a64e3f49b6da879}} 
+real(eb), dimension(\+:), pointer {\bfseries vf} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a3f7aa94e4076d0774162a25b999bea99}\label{namespacescarc__pointers_a3f7aa94e4076d0774162a25b999bea99}} 
+real(eb), dimension(\+:), pointer {\bfseries v1} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a66649922e9ce0b84540a4b87bc8c0c46}\label{namespacescarc__pointers_a66649922e9ce0b84540a4b87bc8c0c46}} 
+real(eb), dimension(\+:), pointer {\bfseries v2} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ab81408b4d23c98e47b13fbd9f68b99c9}\label{namespacescarc__pointers_ab81408b4d23c98e47b13fbd9f68b99c9}} 
+real(eb), dimension(\+:,\+:,\+:), pointer {\bfseries hp} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a4b983a8589f3aaa25769407eb41024ee}\label{namespacescarc__pointers_a4b983a8589f3aaa25769407eb41024ee}} 
+real(eb), dimension(\+:,\+:,\+:), pointer {\bfseries hvc} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ad6e77401bc6c8f6bcd77c6ce5fa33457}\label{namespacescarc__pointers_ad6e77401bc6c8f6bcd77c6ce5fa33457}} 
+real(eb), dimension(\+:,\+:,\+:), pointer {\bfseries prhs} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a7caf5970ec4738fa4da2f0c556c998f1}\label{namespacescarc__pointers_a7caf5970ec4738fa4da2f0c556c998f1}} 
+real(eb), dimension(\+:,\+:,\+:), pointer {\bfseries uu} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aeb53ab1a99c8858f02572cfd983e560b}\label{namespacescarc__pointers_aeb53ab1a99c8858f02572cfd983e560b}} 
+real(eb), dimension(\+:,\+:,\+:), pointer {\bfseries vv} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ab90c556768f91ec10902b63e6e772e81}\label{namespacescarc__pointers_ab90c556768f91ec10902b63e6e772e81}} 
+real(eb), dimension(\+:,\+:,\+:), pointer {\bfseries ww} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a27e148597a00f937a3cdcf8480972f24}\label{namespacescarc__pointers_a27e148597a00f937a3cdcf8480972f24}} 
+real(eb), dimension(\+:), pointer {\bfseries recv\+\_\+buffer\+\_\+real}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a8dc5594dba03aa4c47037c1d06127ae4}\label{namespacescarc__pointers_a8dc5594dba03aa4c47037c1d06127ae4}} 
+integer, dimension(\+:), pointer {\bfseries recv\+\_\+buffer\+\_\+int}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a272d3c6feb0770d025a82f4d713a3a86}\label{namespacescarc__pointers_a272d3c6feb0770d025a82f4d713a3a86}} 
+integer, pointer {\bfseries i\+\_\+min\+\_\+r}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a8210bd9b1e218b61fa354958b689f1ff}\label{namespacescarc__pointers_a8210bd9b1e218b61fa354958b689f1ff}} 
+integer, pointer {\bfseries i\+\_\+max\+\_\+r}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_af9a14b8ad68d9df0dfb1926adb1afff3}\label{namespacescarc__pointers_af9a14b8ad68d9df0dfb1926adb1afff3}} 
+integer, pointer {\bfseries i\+\_\+min\+\_\+s}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a7faef781c9adda00eb21cd40aae2a3ef}\label{namespacescarc__pointers_a7faef781c9adda00eb21cd40aae2a3ef}} 
+integer, pointer {\bfseries i\+\_\+max\+\_\+s}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a711a09d59c265d5f3d0b738073cbae69}\label{namespacescarc__pointers_a711a09d59c265d5f3d0b738073cbae69}} 
+integer, pointer {\bfseries j\+\_\+min\+\_\+r}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a9d34a51e72610b6ee535a2aa0dd9b0f5}\label{namespacescarc__pointers_a9d34a51e72610b6ee535a2aa0dd9b0f5}} 
+integer, pointer {\bfseries j\+\_\+max\+\_\+r}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ab31815773d70994495ab649212826b40}\label{namespacescarc__pointers_ab31815773d70994495ab649212826b40}} 
+integer, pointer {\bfseries j\+\_\+min\+\_\+s}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ae358e751803c2bcb11bfce92e6f7986e}\label{namespacescarc__pointers_ae358e751803c2bcb11bfce92e6f7986e}} 
+integer, pointer {\bfseries j\+\_\+max\+\_\+s}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ac775184a700fd9d21a2e588a4549adf0}\label{namespacescarc__pointers_ac775184a700fd9d21a2e588a4549adf0}} 
+integer, pointer {\bfseries k\+\_\+min\+\_\+r}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_af3fb7be54a4f014d9f4d0be3f882a52d}\label{namespacescarc__pointers_af3fb7be54a4f014d9f4d0be3f882a52d}} 
+integer, pointer {\bfseries k\+\_\+max\+\_\+r}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ac0ba3929527f119b9a4eb1b2aa513d1e}\label{namespacescarc__pointers_ac0ba3929527f119b9a4eb1b2aa513d1e}} 
+integer, pointer {\bfseries k\+\_\+min\+\_\+s}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a2b7e366103f148643b8eac6084b35c1a}\label{namespacescarc__pointers_a2b7e366103f148643b8eac6084b35c1a}} 
+integer, pointer {\bfseries k\+\_\+max\+\_\+s}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a52f5199116b27dcba6e9b35e735b3baa}\label{namespacescarc__pointers_a52f5199116b27dcba6e9b35e735b3baa}} 
+integer, dimension(\+:), pointer {\bfseries ior\+\_\+r}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a85e72baedacab805a687928215613844}\label{namespacescarc__pointers_a85e72baedacab805a687928215613844}} 
+integer, dimension(\+:), pointer {\bfseries ior\+\_\+s}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a69c144e06328e12fbd11e6c0fc15cd6c}\label{namespacescarc__pointers_a69c144e06328e12fbd11e6c0fc15cd6c}} 
+integer, dimension(\+:), pointer {\bfseries iio\+\_\+r}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aeb7fd1a34f03391434a2122eaaf9af80}\label{namespacescarc__pointers_aeb7fd1a34f03391434a2122eaaf9af80}} 
+integer, dimension(\+:), pointer {\bfseries iio\+\_\+s}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_aeb4fbe8b668de695c4c34ad05dedebf6}\label{namespacescarc__pointers_aeb4fbe8b668de695c4c34ad05dedebf6}} 
+integer, dimension(\+:), pointer {\bfseries jjo\+\_\+r}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a6af5ceea260e6dffbd3c16046194c2a2}\label{namespacescarc__pointers_a6af5ceea260e6dffbd3c16046194c2a2}} 
+integer, dimension(\+:), pointer {\bfseries jjo\+\_\+s}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a765ab09d48839b9a2251914c6120c757}\label{namespacescarc__pointers_a765ab09d48839b9a2251914c6120c757}} 
+integer, dimension(\+:), pointer {\bfseries kko\+\_\+r}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a64e0a19e85926700e29b352e160a8333}\label{namespacescarc__pointers_a64e0a19e85926700e29b352e160a8333}} 
+integer, dimension(\+:), pointer {\bfseries kko\+\_\+s}
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a4b0e18e73836c1bb684859cc51c4413e}\label{namespacescarc__pointers_a4b0e18e73836c1bb684859cc51c4413e}} 
+type(scarc\+\_\+mkl\+\_\+type), pointer {\bfseries mkl} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a710baafdb3fc9d6bfbd1db00b3d14a4e}\label{namespacescarc__pointers_a710baafdb3fc9d6bfbd1db00b3d14a4e}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer {\bfseries as} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a14aa5c4e4cc58346628bd21c33591023}\label{namespacescarc__pointers_a14aa5c4e4cc58346628bd21c33591023}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer {\bfseries acs} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a570bfd6dccfbf33fbcfeff7be62befee}\label{namespacescarc__pointers_a570bfd6dccfbf33fbcfeff7be62befee}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer {\bfseries afs} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a77df5b5b8dbacd98f5ff3ddc66398675}\label{namespacescarc__pointers_a77df5b5b8dbacd98f5ff3ddc66398675}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer {\bfseries oas} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a22c755728df7ab4fc5c547577fac38df}\label{namespacescarc__pointers_a22c755728df7ab4fc5c547577fac38df}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer {\bfseries oacs} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_ab195a9f951c53f8a2fb2683b9d953192}\label{namespacescarc__pointers_ab195a9f951c53f8a2fb2683b9d953192}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type), pointer {\bfseries oafs} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_acac7369b8a1733be1aae150f6d4bf654}\label{namespacescarc__pointers_acac7369b8a1733be1aae150f6d4bf654}} 
+real(fb), dimension(\+:), pointer {\bfseries v1\+\_\+fb} =$>$N\+U\+LL()
+\item 
+\mbox{\Hypertarget{namespacescarc__pointers_a1dd6d9d9e6fe5e9917dc2b7680d70648}\label{namespacescarc__pointers_a1dd6d9d9e6fe5e9917dc2b7680d70648}} 
+real(fb), dimension(\+:), pointer {\bfseries v2\+\_\+fb} =$>$N\+U\+LL()
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Collection of different pointers to specify the different meshes, grid levels, discretizations and matrices. 

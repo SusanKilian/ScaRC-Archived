@@ -1,0 +1,953 @@
+\hypertarget{namespacescrc}{}\doxysection{scrc Module Reference}
+\label{namespacescrc}\index{scrc@{scrc}}
+
+
+Alternative solution of the F\+DS pressure equation by Scalable Recursive Clustering (Sca\+RC)  
+
+
+\doxysubsection*{Functions/\+Subroutines}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{namespacescrc_ad085f21394faa1b5931ccef7c02b5a2f}\label{namespacescrc_ad085f21394faa1b5931ccef7c02b5a2f}} 
+subroutine, public \mbox{\hyperlink{namespacescrc_ad085f21394faa1b5931ccef7c02b5a2f}{scarc\+\_\+setup}}
+\begin{DoxyCompactList}\small\item\em Initialize Sca\+RC structures based on S\+C\+A\+R\+C-\/input parameters from \&P\+R\+ES namelist. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a7ac07c2c880ca15c9f8370c042177005}\label{namespacescrc_a7ac07c2c880ca15c9f8370c042177005}} 
+subroutine \mbox{\hyperlink{namespacescrc_a7ac07c2c880ca15c9f8370c042177005}{scarc\+\_\+setup\+\_\+memory\+\_\+management}}
+\begin{DoxyCompactList}\small\item\em Setup memory management. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a576fc7b368bc3214ab9b87677bc62dce}\label{namespacescrc_a576fc7b368bc3214ab9b87677bc62dce}} 
+subroutine \mbox{\hyperlink{namespacescrc_a576fc7b368bc3214ab9b87677bc62dce}{scarc\+\_\+setup\+\_\+time\+\_\+measurements}}
+\begin{DoxyCompactList}\small\item\em Setup time measurements. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac4ee5f60ba0aaacb709cd3b054c4e534}\label{namespacescrc_ac4ee5f60ba0aaacb709cd3b054c4e534}} 
+subroutine \mbox{\hyperlink{namespacescrc_ac4ee5f60ba0aaacb709cd3b054c4e534}{scarc\+\_\+setup\+\_\+message\+\_\+services}}
+\begin{DoxyCompactList}\small\item\em Setup debug file if requested. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae32f6f801d3b5c998cfa3c89c5669fdd}\label{namespacescrc_ae32f6f801d3b5c998cfa3c89c5669fdd}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae32f6f801d3b5c998cfa3c89c5669fdd}{scarc\+\_\+shutdown}} (N\+E\+R\+R\+OR, C\+P\+A\+R\+AM, N\+P\+A\+R\+AM)
+\begin{DoxyCompactList}\small\item\em Shutdown Sca\+RC with error message. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a0faf83cd3f4d5766d3a5075266a0ec40}\label{namespacescrc_a0faf83cd3f4d5766d3a5075266a0ec40}} 
+subroutine \mbox{\hyperlink{namespacescrc_a0faf83cd3f4d5766d3a5075266a0ec40}{scarc\+\_\+parse\+\_\+input}}
+\begin{DoxyCompactList}\small\item\em Determine types of input parameters. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a1d0c0da2441fa9ea4e48788b697f4e14}\label{namespacescrc_a1d0c0da2441fa9ea4e48788b697f4e14}} 
+subroutine \mbox{\hyperlink{namespacescrc_a1d0c0da2441fa9ea4e48788b697f4e14}{scarc\+\_\+setup\+\_\+levels}}
+\begin{DoxyCompactList}\small\item\em Determine number of grid levels. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a22ef5ff1c47624fd8b989ae918ca0093}\label{namespacescrc_a22ef5ff1c47624fd8b989ae918ca0093}} 
+subroutine \mbox{\hyperlink{namespacescrc_a22ef5ff1c47624fd8b989ae918ca0093}{scarc\+\_\+get\+\_\+number\+\_\+of\+\_\+levels}} (N\+T\+Y\+PE)
+\begin{DoxyCompactList}\small\item\em Setup single level in case of default Krylov method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a2188806799b94039c7b2b9c907db1c97}\label{namespacescrc_a2188806799b94039c7b2b9c907db1c97}} 
+integer function \mbox{\hyperlink{namespacescrc_a2188806799b94039c7b2b9c907db1c97}{scarc\+\_\+get\+\_\+max\+\_\+level}} (NC, I\+O\+R0)
+\begin{DoxyCompactList}\small\item\em Determine maximum number of possible levels. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a06795bb01666c2cc16defcea18527df8}\label{namespacescrc_a06795bb01666c2cc16defcea18527df8}} 
+subroutine \mbox{\hyperlink{namespacescrc_a06795bb01666c2cc16defcea18527df8}{scarc\+\_\+setup\+\_\+types}}
+\begin{DoxyCompactList}\small\item\em Allocate basic Sca\+R\+C-\/structures for all needed levels. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a74d18df0fa476b6051248a898df6f646}\label{namespacescrc_a74d18df0fa476b6051248a898df6f646}} 
+subroutine \mbox{\hyperlink{namespacescrc_a74d18df0fa476b6051248a898df6f646}{scarc\+\_\+assign\+\_\+grid\+\_\+type}} (N\+T\+Y\+PE)
+\begin{DoxyCompactList}\small\item\em Assign handles to currently used grid type. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a106d5a0046bf6e200f1c60c158969c2f}\label{namespacescrc_a106d5a0046bf6e200f1c60c158969c2f}} 
+subroutine \mbox{\hyperlink{namespacescrc_a106d5a0046bf6e200f1c60c158969c2f}{scarc\+\_\+setup\+\_\+grids}}
+\begin{DoxyCompactList}\small\item\em Setup discretization information. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae81448915811a0df3ab730971485961e}\label{namespacescrc_ae81448915811a0df3ab730971485961e}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae81448915811a0df3ab730971485961e}{scarc\+\_\+setup\+\_\+grid\+\_\+level}} (NL)
+\begin{DoxyCompactList}\small\item\em Setup discretization information on coarser levels. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a66501abca64164ca73f1c5f23d731ce3}\label{namespacescrc_a66501abca64164ca73f1c5f23d731ce3}} 
+subroutine \mbox{\hyperlink{namespacescrc_a66501abca64164ca73f1c5f23d731ce3}{scarc\+\_\+setup\+\_\+neighbors}}
+\begin{DoxyCompactList}\small\item\em Setup neighborship structure for data exchanges along mesh interfaces. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac0da6d8c6bd76b3dc67b2a81ffced394}\label{namespacescrc_ac0da6d8c6bd76b3dc67b2a81ffced394}} 
+subroutine \mbox{\hyperlink{namespacescrc_ac0da6d8c6bd76b3dc67b2a81ffced394}{scarc\+\_\+setup\+\_\+faces}}
+\begin{DoxyCompactList}\small\item\em Setup structures related to mesh faces on finest grid level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a823ac1b1ea0e3d082378c7e2e75fcb52}\label{namespacescrc_a823ac1b1ea0e3d082378c7e2e75fcb52}} 
+subroutine \mbox{\hyperlink{namespacescrc_a823ac1b1ea0e3d082378c7e2e75fcb52}{scarc\+\_\+setup\+\_\+subdivision}}
+\begin{DoxyCompactList}\small\item\em Setup subdivision information. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aebd663790be6311dd395780f9f1385e9}\label{namespacescrc_aebd663790be6311dd395780f9f1385e9}} 
+subroutine \mbox{\hyperlink{namespacescrc_aebd663790be6311dd395780f9f1385e9}{scarc\+\_\+setup\+\_\+face\+\_\+basics}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Determine basic data for single faces (orientation, dimensions, numbers) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aa38edaa44f9218d266f4d644d153f892}\label{namespacescrc_aa38edaa44f9218d266f4d644d153f892}} 
+subroutine \mbox{\hyperlink{namespacescrc_aa38edaa44f9218d266f4d644d153f892}{scarc\+\_\+setup\+\_\+walls}}
+\begin{DoxyCompactList}\small\item\em Setup wall related structures and boundary conditions. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a5c41faee472ea46c49a311d34795d77d}\label{namespacescrc_a5c41faee472ea46c49a311d34795d77d}} 
+subroutine \mbox{\hyperlink{namespacescrc_a5c41faee472ea46c49a311d34795d77d}{scarc\+\_\+setup\+\_\+exchanges}}
+\begin{DoxyCompactList}\small\item\em Allocate workspace for data exchanges of different data types and sizes and perform basic exchanges. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a3177ea7f48f22cc0b8bf16aa33f4c62f}\label{namespacescrc_a3177ea7f48f22cc0b8bf16aa33f4c62f}} 
+subroutine \mbox{\hyperlink{namespacescrc_a3177ea7f48f22cc0b8bf16aa33f4c62f}{scarc\+\_\+store\+\_\+neighbor}} (NM, N\+OM)
+\begin{DoxyCompactList}\small\item\em Store all neighbors of a mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a5f1534f65ba4642a233efa20c862417e}\label{namespacescrc_a5f1534f65ba4642a233efa20c862417e}} 
+subroutine \mbox{\hyperlink{namespacescrc_a5f1534f65ba4642a233efa20c862417e}{scarc\+\_\+setup\+\_\+cell\+\_\+index}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Setup cells indexing array on coarser grid levels in case of M\+G-\/method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ace1041b6a2e72ee0a3754993d77d8dcc}\label{namespacescrc_ace1041b6a2e72ee0a3754993d77d8dcc}} 
+subroutine \mbox{\hyperlink{namespacescrc_ace1041b6a2e72ee0a3754993d77d8dcc}{scarc\+\_\+setup\+\_\+wall\+\_\+index}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Setup wall cells indexing array on coarser grid levels. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab0edf450fa9efc079890b23771a9d705}\label{namespacescrc_ab0edf450fa9efc079890b23771a9d705}} 
+subroutine \mbox{\hyperlink{namespacescrc_ab0edf450fa9efc079890b23771a9d705}{scarc\+\_\+setup\+\_\+wall\+\_\+ghosts}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Setup order in which ghost cells are processed during data exchanges. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a7c0601aa581d8cfa14517f9f83021757}\label{namespacescrc_a7c0601aa581d8cfa14517f9f83021757}} 
+subroutine \mbox{\hyperlink{namespacescrc_a7c0601aa581d8cfa14517f9f83021757}{scarc\+\_\+setup\+\_\+wall\+\_\+coords}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Setup all necessary information for a wall cell with neighbor in case of M\+G-\/method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a6dfed0cd663e05d394a47f9950ff7a14}\label{namespacescrc_a6dfed0cd663e05d394a47f9950ff7a14}} 
+subroutine \mbox{\hyperlink{namespacescrc_a6dfed0cd663e05d394a47f9950ff7a14}{scarc\+\_\+identify\+\_\+internal\+\_\+neumanns}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Correct boundary type array related to internal obstructions on ghost cells. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac45521ea4c41925b55a31a3ba3e69c9e}\label{namespacescrc_ac45521ea4c41925b55a31a3ba3e69c9e}} 
+integer function \mbox{\hyperlink{namespacescrc_ac45521ea4c41925b55a31a3ba3e69c9e}{scarc\+\_\+count\+\_\+external\+\_\+wall\+\_\+cells}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Setup all necessary information for a wall cell with neighbor. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a243619b6213c93e425b56911f9b3bc44}\label{namespacescrc_a243619b6213c93e425b56911f9b3bc44}} 
+integer function \mbox{\hyperlink{namespacescrc_a243619b6213c93e425b56911f9b3bc44}{scarc\+\_\+count\+\_\+internal\+\_\+wall\+\_\+cells}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Setup all necessary information for a wall cell with neighbor. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_afecddf03b23ece5d70a082ee9b00232a}\label{namespacescrc_afecddf03b23ece5d70a082ee9b00232a}} 
+logical function \mbox{\hyperlink{namespacescrc_afecddf03b23ece5d70a082ee9b00232a}{is\+\_\+external\+\_\+wallcell}} (I\+O\+R0, I\+CF, N\+C\+NT, NM, NL)
+\begin{DoxyCompactList}\small\item\em Count external wall cells on specified face if mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a86d13f584b7afccc293a949a9f2d14e2}\label{namespacescrc_a86d13f584b7afccc293a949a9f2d14e2}} 
+subroutine \mbox{\hyperlink{namespacescrc_a86d13f584b7afccc293a949a9f2d14e2}{scarc\+\_\+setup\+\_\+wall\+\_\+neighbor}} (N\+X1, N\+X2, N\+Y1, N\+Y2, N\+Z1, N\+Z2, I\+WG, NM, N\+OM, NL)
+\begin{DoxyCompactList}\small\item\em Setup all necessary information for a wall cell with neighbor. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_afd255e7b26fa7c8e1339b198a82ee86c}\label{namespacescrc_afd255e7b26fa7c8e1339b198a82ee86c}} 
+subroutine \mbox{\hyperlink{namespacescrc_afd255e7b26fa7c8e1339b198a82ee86c}{scarc\+\_\+check\+\_\+divisibility}} (NN, C\+D\+IR)
+\begin{DoxyCompactList}\small\item\em Check divisibility by 2 of a given number of elements (in one grid direction) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae243e00872dfd923c4b5e18da2f1bb67}\label{namespacescrc_ae243e00872dfd923c4b5e18da2f1bb67}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae243e00872dfd923c4b5e18da2f1bb67}{scarc\+\_\+setup\+\_\+wall\+\_\+level}} (I\+O\+R0, I\+WC, I\+R\+E\+F\+I\+NE, NM, NL)
+\begin{DoxyCompactList}\small\item\em Set wall cell information on coarse level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aab3f79fca28037ff44d45d2ca9a90eec}\label{namespacescrc_aab3f79fca28037ff44d45d2ca9a90eec}} 
+subroutine \mbox{\hyperlink{namespacescrc_aab3f79fca28037ff44d45d2ca9a90eec}{scarc\+\_\+setup\+\_\+exchange\+\_\+dimensions}} (I\+R\+E\+F\+I\+NE, NM, N\+OM, NL)
+\begin{DoxyCompactList}\small\item\em Setup dimensions for data exchanges. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a918c071a0578fc0f3f35ea3935f9ce67}\label{namespacescrc_a918c071a0578fc0f3f35ea3935f9ce67}} 
+subroutine \mbox{\hyperlink{namespacescrc_a918c071a0578fc0f3f35ea3935f9ce67}{scarc\+\_\+setup\+\_\+globals}}
+\begin{DoxyCompactList}\small\item\em Allocate several global structures for data exchange. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a4d7d508f2a5fc27ef2b15853cb3b1afd}\label{namespacescrc_a4d7d508f2a5fc27ef2b15853cb3b1afd}} 
+subroutine \mbox{\hyperlink{namespacescrc_a4d7d508f2a5fc27ef2b15853cb3b1afd}{scarc\+\_\+setup\+\_\+dimensions}} (NL)
+\begin{DoxyCompactList}\small\item\em Get information about global numbers of unknowns for unstructured discretization. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae3785bd6f33497a75694b5c1efc94b09}\label{namespacescrc_ae3785bd6f33497a75694b5c1efc94b09}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae3785bd6f33497a75694b5c1efc94b09}{scarc\+\_\+setup\+\_\+systems}}
+\begin{DoxyCompactList}\small\item\em Setup system of equations (Poisson matrix + BC\textquotesingle{}s) for different variants of Sca\+RC. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a2caae41662e629365cecccbd245c94ce}\label{namespacescrc_a2caae41662e629365cecccbd245c94ce}} 
+subroutine \mbox{\hyperlink{namespacescrc_a2caae41662e629365cecccbd245c94ce}{scarc\+\_\+setup\+\_\+global\+\_\+cell\+\_\+numbering}} (NL)
+\begin{DoxyCompactList}\small\item\em Setup mapping vector from local to global numbering. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a5020358919e9eaf272d3e93fefa18baa}\label{namespacescrc_a5020358919e9eaf272d3e93fefa18baa}} 
+subroutine \mbox{\hyperlink{namespacescrc_a5020358919e9eaf272d3e93fefa18baa}{scarc\+\_\+setup\+\_\+global\+\_\+matrix\+\_\+numbering}} (N\+M\+A\+T\+R\+IX, NL)
+\begin{DoxyCompactList}\small\item\em Extract overlapping matrix part and add to main matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a0c6fcd74f0cdb9bf645d5614f72ca6d3}\label{namespacescrc_a0c6fcd74f0cdb9bf645d5614f72ca6d3}} 
+logical function \mbox{\hyperlink{namespacescrc_a0c6fcd74f0cdb9bf645d5614f72ca6d3}{scarc\+\_\+cell\+\_\+within\+\_\+mesh}} (G, NM, IC)
+\begin{DoxyCompactList}\small\item\em Check if specified cell is within a given mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae188b03fa40f278e7c83a6e1e2febbce}\label{namespacescrc_ae188b03fa40f278e7c83a6e1e2febbce}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae188b03fa40f278e7c83a6e1e2febbce}{scarc\+\_\+setup\+\_\+poisson}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Allocate Poisson matrix for the usual 5-\/point-\/stencil (2D) or 7-\/point-\/stencil (3D) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ababe6effa7cd0e8f0bb7704ad0706aad}\label{namespacescrc_ababe6effa7cd0e8f0bb7704ad0706aad}} 
+logical function \mbox{\hyperlink{namespacescrc_ababe6effa7cd0e8f0bb7704ad0706aad}{valid\+\_\+subdiag}} (IX, IY, IZ, I\+O\+R0)
+\begin{DoxyCompactList}\small\item\em Check if a subdiagonal entry must be computed in a specified coordinate direction. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a57bdc3364edc79f59b56949f2d37a8b4}\label{namespacescrc_a57bdc3364edc79f59b56949f2d37a8b4}} 
+subroutine \mbox{\hyperlink{namespacescrc_a57bdc3364edc79f59b56949f2d37a8b4}{scarc\+\_\+setup\+\_\+poissonc\+\_\+maindiag}} (IC, IX, IY, IZ, IP)
+\begin{DoxyCompactList}\small\item\em Set main diagonal entry for Poisson matrix in compact storage technique. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aebc92614fa3f96d474a9a1a8bb05960d}\label{namespacescrc_aebc92614fa3f96d474a9a1a8bb05960d}} 
+subroutine \mbox{\hyperlink{namespacescrc_aebc92614fa3f96d474a9a1a8bb05960d}{scarc\+\_\+setup\+\_\+poissonc\+\_\+subdiag}} (IC, I\+X1, I\+Y1, I\+Z1, I\+X2, I\+Y2, I\+Z2, IP, I\+O\+R0)
+\begin{DoxyCompactList}\small\item\em Set subdigonal entries for Poisson matrix in compact storage technique on specified face. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a40299dd71945ad4dc092ca9e69e136f1}\label{namespacescrc_a40299dd71945ad4dc092ca9e69e136f1}} 
+integer function \mbox{\hyperlink{namespacescrc_a40299dd71945ad4dc092ca9e69e136f1}{scarc\+\_\+assign\+\_\+subdiag\+\_\+type}} (IC, I\+O\+R0)
+\begin{DoxyCompactList}\small\item\em Determine if cell has a neighbor and, if yes, return corresponding wall cell index. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a55b4c10746de76749191026a2f617176}\label{namespacescrc_a55b4c10746de76749191026a2f617176}} 
+integer function \mbox{\hyperlink{namespacescrc_a55b4c10746de76749191026a2f617176}{scarc\+\_\+matrix\+\_\+level}} (NL)
+\begin{DoxyCompactList}\small\item\em Get type of matrix storage scheme for specified grid level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a4826db5f0559a9d2c7593aa8e9efc2fa}\label{namespacescrc_a4826db5f0559a9d2c7593aa8e9efc2fa}} 
+subroutine \mbox{\hyperlink{namespacescrc_a4826db5f0559a9d2c7593aa8e9efc2fa}{scarc\+\_\+setup\+\_\+poissonb\+\_\+maindiag}} (IC, IX, IY, IZ)
+\begin{DoxyCompactList}\small\item\em Set main diagonal entry for Poisson matrix in bandwise storage technique. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a65adb17de6578e4720facc82fda6a9a7}\label{namespacescrc_a65adb17de6578e4720facc82fda6a9a7}} 
+subroutine \mbox{\hyperlink{namespacescrc_a65adb17de6578e4720facc82fda6a9a7}{scarc\+\_\+setup\+\_\+poissonb\+\_\+subdiag}} (IC, I\+X1, I\+Y1, I\+Z1, I\+X2, I\+Y2, I\+Z2, I\+O\+R0)
+\begin{DoxyCompactList}\small\item\em Set subdigonal entries for Poisson matrix in bandwise storage technique on specified face. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a3c3b26ff7207afe6e716c3b8e91ffd06}\label{namespacescrc_a3c3b26ff7207afe6e716c3b8e91ffd06}} 
+subroutine \mbox{\hyperlink{namespacescrc_a3c3b26ff7207afe6e716c3b8e91ffd06}{scarc\+\_\+get\+\_\+matrix\+\_\+stencil\+\_\+max}} (A, N\+L\+EN)
+\begin{DoxyCompactList}\small\item\em Get maximum stencil size in specified matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a9ffde86c8d5f1bb8af187207d0a5f6c7}\label{namespacescrc_a9ffde86c8d5f1bb8af187207d0a5f6c7}} 
+subroutine \mbox{\hyperlink{namespacescrc_a9ffde86c8d5f1bb8af187207d0a5f6c7}{scarc\+\_\+setup\+\_\+poisson\+\_\+mkl}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Setup symmetric version of Poisson matrix for M\+KL solver in double precision. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac6dc3334b73fd7152b171cef312ceb94}\label{namespacescrc_ac6dc3334b73fd7152b171cef312ceb94}} 
+subroutine \mbox{\hyperlink{namespacescrc_ac6dc3334b73fd7152b171cef312ceb94}{scarc\+\_\+setup\+\_\+boundary}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Insert correct boundary conditions into system matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a8ac06c286713fa5c53490000fa4fbe55}\label{namespacescrc_a8ac06c286713fa5c53490000fa4fbe55}} 
+subroutine \mbox{\hyperlink{namespacescrc_a8ac06c286713fa5c53490000fa4fbe55}{scarc\+\_\+setup\+\_\+cmatrix\+\_\+condensed}} (NM)
+\begin{DoxyCompactList}\small\item\em Setup condensed system for compact matrix storage technique. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a1f818331705900c27abbee2613ba4d25}\label{namespacescrc_a1f818331705900c27abbee2613ba4d25}} 
+subroutine \mbox{\hyperlink{namespacescrc_a1f818331705900c27abbee2613ba4d25}{scarc\+\_\+setup\+\_\+bmatrix\+\_\+condensed}} (NM)
+\begin{DoxyCompactList}\small\item\em Setup condensed system for bandwise matrix storage technique. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a957648f04a57ac876723c14ca5451622}\label{namespacescrc_a957648f04a57ac876723c14ca5451622}} 
+subroutine \mbox{\hyperlink{namespacescrc_a957648f04a57ac876723c14ca5451622}{scarc\+\_\+setup\+\_\+system\+\_\+condensed}} (NV, NL, I\+T\+Y\+PE)
+\begin{DoxyCompactList}\small\item\em Setup condensed system in case of periodic or pure Neumann boundary conditions. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab5ed753fc5b393c716cc08c4c1bb2b67}\label{namespacescrc_ab5ed753fc5b393c716cc08c4c1bb2b67}} 
+subroutine \mbox{\hyperlink{namespacescrc_ab5ed753fc5b393c716cc08c4c1bb2b67}{scarc\+\_\+extract\+\_\+matrix\+\_\+overlaps}} (N\+M\+A\+T\+R\+IX, N\+T\+Y\+PE, NL)
+\begin{DoxyCompactList}\small\item\em Extract overlapping matrix parts after data exchange with neighbors and add them to main matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a825e0e7a73d42f4011e13cba02c72132}\label{namespacescrc_a825e0e7a73d42f4011e13cba02c72132}} 
+subroutine \mbox{\hyperlink{namespacescrc_a825e0e7a73d42f4011e13cba02c72132}{scarc\+\_\+extract\+\_\+matrix\+\_\+diagonal}} (NL)
+\begin{DoxyCompactList}\small\item\em Extract diagonal of Poisson matrix and store it in a separate vector for further use. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a1d1e7f6613f7ca523eb9d050b958b09c}\label{namespacescrc_a1d1e7f6613f7ca523eb9d050b958b09c}} 
+subroutine \mbox{\hyperlink{namespacescrc_a1d1e7f6613f7ca523eb9d050b958b09c}{scarc\+\_\+extract\+\_\+cell\+\_\+overlaps}} (NL)
+\begin{DoxyCompactList}\small\item\em Extract overlapping cell information (including second layers) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a531b58af7fe0605cb1218fca8af41e9e}\label{namespacescrc_a531b58af7fe0605cb1218fca8af41e9e}} 
+subroutine \mbox{\hyperlink{namespacescrc_a531b58af7fe0605cb1218fca8af41e9e}{scarc\+\_\+extract\+\_\+zone\+\_\+overlaps}} (NL)
+\begin{DoxyCompactList}\small\item\em Extract overlapping zone information (including second layers) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_addabebd27801d1eeeb54de796e299f22}\label{namespacescrc_addabebd27801d1eeeb54de796e299f22}} 
+subroutine \mbox{\hyperlink{namespacescrc_addabebd27801d1eeeb54de796e299f22}{scarc\+\_\+extract\+\_\+zone\+\_\+pointers}} (NL)
+\begin{DoxyCompactList}\small\item\em Setup pointers for overlapping zones for a pair of grid levels. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aeb91c8cbca13eedcad076c3c0c2d71b0}\label{namespacescrc_aeb91c8cbca13eedcad076c3c0c2d71b0}} 
+subroutine \mbox{\hyperlink{namespacescrc_aeb91c8cbca13eedcad076c3c0c2d71b0}{scarc\+\_\+setup\+\_\+methods}}
+\begin{DoxyCompactList}\small\item\em Setup all needed structures for a specified global Sca\+RC solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_abca60634665a731c105a2fcdf4eae094}\label{namespacescrc_abca60634665a731c105a2fcdf4eae094}} 
+subroutine \mbox{\hyperlink{namespacescrc_abca60634665a731c105a2fcdf4eae094}{scarc\+\_\+setup\+\_\+references}} (BX, BB, BD, BR, BV, BY, BZ, N\+S\+T\+A\+CK)
+\begin{DoxyCompactList}\small\item\em Setup references to solution vectors related to used scope (main solver or preconditioner) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a31a6e798172fe4ba2a94d44da33e73e1}\label{namespacescrc_a31a6e798172fe4ba2a94d44da33e73e1}} 
+subroutine \mbox{\hyperlink{namespacescrc_a31a6e798172fe4ba2a94d44da33e73e1}{scarc\+\_\+setup\+\_\+vectors}} ()
+\begin{DoxyCompactList}\small\item\em Allocate and initialize vectors for Krylov method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aa2e86ba90af27e62b141f5f8f0389afc}\label{namespacescrc_aa2e86ba90af27e62b141f5f8f0389afc}} 
+subroutine \mbox{\hyperlink{namespacescrc_aa2e86ba90af27e62b141f5f8f0389afc}{scarc\+\_\+setup\+\_\+stack}} (N\+S\+T\+A\+CK)
+\begin{DoxyCompactList}\small\item\em Setup environent on specified stack level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a123d276748e240f68f8cc7187ec72b59}\label{namespacescrc_a123d276748e240f68f8cc7187ec72b59}} 
+subroutine \mbox{\hyperlink{namespacescrc_a123d276748e240f68f8cc7187ec72b59}{scarc\+\_\+restore\+\_\+stack}} (N\+S\+T\+A\+CK)
+\begin{DoxyCompactList}\small\item\em Restore environent on specified stack level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a4cccbdb97372f46203397e26df6e277c}\label{namespacescrc_a4cccbdb97372f46203397e26df6e277c}} 
+subroutine \mbox{\hyperlink{namespacescrc_a4cccbdb97372f46203397e26df6e277c}{scarc\+\_\+setup\+\_\+krylov}} (N\+S\+O\+L\+V\+ER, N\+S\+C\+O\+PE, N\+S\+T\+A\+GE, N\+S\+T\+A\+CK, N\+L\+M\+IN, N\+L\+M\+AX)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize vectors for Krylov method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a9038331ca280471bfb5c48f8eee1dda9}\label{namespacescrc_a9038331ca280471bfb5c48f8eee1dda9}} 
+subroutine \mbox{\hyperlink{namespacescrc_a9038331ca280471bfb5c48f8eee1dda9}{scarc\+\_\+setup\+\_\+multigrid}} (N\+S\+O\+L\+V\+ER, N\+S\+C\+O\+PE, N\+S\+T\+A\+GE, N\+S\+T\+A\+CK, N\+L\+M\+IN, N\+L\+M\+AX)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize vectors for Geometric Multigrid method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a0b9503ed55c31e3c5beccdb169911a48}\label{namespacescrc_a0b9503ed55c31e3c5beccdb169911a48}} 
+subroutine \mbox{\hyperlink{namespacescrc_a0b9503ed55c31e3c5beccdb169911a48}{scarc\+\_\+setup\+\_\+coarse\+\_\+solver}} (N\+S\+T\+A\+GE, N\+S\+C\+O\+PE, N\+S\+T\+A\+CK, N\+L\+M\+IN, N\+L\+M\+AX)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize vectors for M\+K\+L-\/methods. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aa25d83ecc8729a344c0cda32e58bc8b1}\label{namespacescrc_aa25d83ecc8729a344c0cda32e58bc8b1}} 
+subroutine \mbox{\hyperlink{namespacescrc_aa25d83ecc8729a344c0cda32e58bc8b1}{scarc\+\_\+setup\+\_\+mkl}} (N\+S\+O\+L\+V\+ER, N\+S\+C\+O\+PE, N\+S\+T\+A\+GE, N\+S\+T\+A\+CK, N\+L\+M\+IN, N\+L\+M\+AX)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize vectors for L\+U-\/solvers (based on M\+KL) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a2aa59569164c442257010118b742d6b7}\label{namespacescrc_a2aa59569164c442257010118b742d6b7}} 
+subroutine \mbox{\hyperlink{namespacescrc_a2aa59569164c442257010118b742d6b7}{scarc\+\_\+setup\+\_\+precon}} (N\+S\+T\+A\+CK, N\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize vectors for Krylov method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aa325f5803548ab87afcbb5ffa92585f9}\label{namespacescrc_aa325f5803548ab87afcbb5ffa92585f9}} 
+subroutine \mbox{\hyperlink{namespacescrc_aa325f5803548ab87afcbb5ffa92585f9}{scarc\+\_\+setup\+\_\+smooth}} (N\+S\+T\+A\+CK, N\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize vectors for Krylov method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a36234566703473ea567564506dee7681}\label{namespacescrc_a36234566703473ea567564506dee7681}} 
+subroutine \mbox{\hyperlink{namespacescrc_a36234566703473ea567564506dee7681}{scarc\+\_\+setup\+\_\+interpolation}} (N\+S\+T\+A\+GE, N\+L\+M\+IN, N\+L\+M\+AX)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize vectors for additive or multiplicative coarse grid. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aa61d8486e0f6e0f16d4e4662fb460025}\label{namespacescrc_aa61d8486e0f6e0f16d4e4662fb460025}} 
+subroutine \mbox{\hyperlink{namespacescrc_aa61d8486e0f6e0f16d4e4662fb460025}{scarc\+\_\+setup\+\_\+fft}} (N\+L\+M\+IN, N\+L\+M\+AX)
+\begin{DoxyCompactList}\small\item\em Setup data structures for the use of blockwise F\+FT methods as preconditioners. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab0b349503c2cc5a2e86ce2814b98ec7b}\label{namespacescrc_ab0b349503c2cc5a2e86ce2814b98ec7b}} 
+subroutine \mbox{\hyperlink{namespacescrc_ab0b349503c2cc5a2e86ce2814b98ec7b}{scarc\+\_\+setup\+\_\+ffto}} (N\+L\+M\+IN, N\+L\+M\+AX)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize vectors for blockwise F\+FT methods with overlap. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac92b9136501658aebf7fbd6273a14cf2}\label{namespacescrc_ac92b9136501658aebf7fbd6273a14cf2}} 
+subroutine \mbox{\hyperlink{namespacescrc_ac92b9136501658aebf7fbd6273a14cf2}{scarc\+\_\+setup\+\_\+mjac}} (N\+L\+M\+IN, N\+L\+M\+AX)
+\begin{DoxyCompactList}\small\item\em Store Jacobi preconditioner in matrix form. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae401d13a2b43d7826a7c3993b99758fc}\label{namespacescrc_ae401d13a2b43d7826a7c3993b99758fc}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae401d13a2b43d7826a7c3993b99758fc}{scarc\+\_\+setup\+\_\+mgs}} (N\+L\+M\+IN, N\+L\+M\+AX)
+\begin{DoxyCompactList}\small\item\em Store GS preconditioner in matrix form. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab7a50257b4f95b30e8444edc203a630e}\label{namespacescrc_ab7a50257b4f95b30e8444edc203a630e}} 
+subroutine \mbox{\hyperlink{namespacescrc_ab7a50257b4f95b30e8444edc203a630e}{scarc\+\_\+setup\+\_\+msgs}} (N\+L\+M\+IN, N\+L\+M\+AX)
+\begin{DoxyCompactList}\small\item\em Store symmetric Gauss-\/\+Seidel preconditioner in matrix form. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ad3423c2be947e0e7e04bef0556ade0dc}\label{namespacescrc_ad3423c2be947e0e7e04bef0556ade0dc}} 
+subroutine \mbox{\hyperlink{namespacescrc_ad3423c2be947e0e7e04bef0556ade0dc}{scarc\+\_\+setup\+\_\+msor}} (N\+L\+M\+IN, N\+L\+M\+AX, N\+S\+T\+A\+CK)
+\begin{DoxyCompactList}\small\item\em Store S\+OR preconditioner in matrix form. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a89b13e5dbdddb0a5a79c5a2cebc42632}\label{namespacescrc_a89b13e5dbdddb0a5a79c5a2cebc42632}} 
+subroutine \mbox{\hyperlink{namespacescrc_a89b13e5dbdddb0a5a79c5a2cebc42632}{scarc\+\_\+setup\+\_\+mssor}} (N\+L\+M\+IN, N\+L\+M\+AX, N\+S\+T\+A\+CK)
+\begin{DoxyCompactList}\small\item\em Store S\+S\+OR preconditioner in matrix form. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ad4ca389f865022b6f48c79943d4767fe}\label{namespacescrc_ad4ca389f865022b6f48c79943d4767fe}} 
+subroutine \mbox{\hyperlink{namespacescrc_ad4ca389f865022b6f48c79943d4767fe}{scarc\+\_\+setup\+\_\+ilu}} (N\+L\+M\+IN, N\+L\+M\+AX)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize I\+L\+U(0) decomposition of Poisson matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a44dd20ab5ab70f606bb8ac5dfdea01d3}\label{namespacescrc_a44dd20ab5ab70f606bb8ac5dfdea01d3}} 
+subroutine \mbox{\hyperlink{namespacescrc_a44dd20ab5ab70f606bb8ac5dfdea01d3}{scarc\+\_\+setup\+\_\+cluster}} (N\+L\+M\+IN, N\+L\+M\+AX)
+\begin{DoxyCompactList}\small\item\em Initialize C\+L\+U\+S\+T\+E\+R\+\_\+\+S\+P\+A\+R\+S\+E\+\_\+\+S\+O\+L\+V\+ER from M\+K\+L-\/library. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae929d4f46798b0971f7469f17a690859}\label{namespacescrc_ae929d4f46798b0971f7469f17a690859}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae929d4f46798b0971f7469f17a690859}{scarc\+\_\+setup\+\_\+pardiso}} (N\+L\+M\+IN, N\+L\+M\+AX)
+\begin{DoxyCompactList}\small\item\em Initialize P\+A\+R\+D\+I\+SO solver from M\+K\+L-\/library. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a42a21819d5feb02474f29bd12e8a55e9}\label{namespacescrc_a42a21819d5feb02474f29bd12e8a55e9}} 
+subroutine \mbox{\hyperlink{namespacescrc_a42a21819d5feb02474f29bd12e8a55e9}{scarc\+\_\+setup\+\_\+poisson\+\_\+sizes}} (NL)
+\begin{DoxyCompactList}\small\item\em Define sizes for system matrix A (including extended regions related to overlaps) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a6032580720016fe9fa04da3f0df5b3cc}\label{namespacescrc_a6032580720016fe9fa04da3f0df5b3cc}} 
+subroutine, public \mbox{\hyperlink{namespacescrc_a6032580720016fe9fa04da3f0df5b3cc}{scarc\+\_\+solver}} (D\+T\+\_\+\+C\+U\+R\+R\+E\+NT)
+\begin{DoxyCompactList}\small\item\em Basic call of Sca\+RC solver routine. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a95e416171ae0b9cb8b2aad9d481df4ce}\label{namespacescrc_a95e416171ae0b9cb8b2aad9d481df4ce}} 
+subroutine \mbox{\hyperlink{namespacescrc_a95e416171ae0b9cb8b2aad9d481df4ce}{scarc\+\_\+method\+\_\+fft}}
+\begin{DoxyCompactList}\small\item\em Perform preceding F\+FT method to improve start solution for Sca\+RC. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a68f4c94bfaeddd5cdf95bfa67613f5c7}\label{namespacescrc_a68f4c94bfaeddd5cdf95bfa67613f5c7}} 
+subroutine \mbox{\hyperlink{namespacescrc_a68f4c94bfaeddd5cdf95bfa67613f5c7}{scarc\+\_\+matvec\+\_\+product}} (N\+V1, N\+V2, NL)
+\begin{DoxyCompactList}\small\item\em Compute global matrix-\/vector product A$\ast$x = y on grid level NL. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab5c02948ed80418b9e2e21b82ae063a3}\label{namespacescrc_ab5c02948ed80418b9e2e21b82ae063a3}} 
+real(eb) function \mbox{\hyperlink{namespacescrc_ab5c02948ed80418b9e2e21b82ae063a3}{scarc\+\_\+scalar\+\_\+product}} (N\+V1, N\+V2, NL)
+\begin{DoxyCompactList}\small\item\em Compute global scalar-\/product including global data exchange. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae3eab947ac38c379925aae68605ec3e9}\label{namespacescrc_ae3eab947ac38c379925aae68605ec3e9}} 
+real(eb) function \mbox{\hyperlink{namespacescrc_ae3eab947ac38c379925aae68605ec3e9}{scarc\+\_\+l2norm}} (N\+V1, NL)
+\begin{DoxyCompactList}\small\item\em Compute global L2-\/norm including global data exchange. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a5d058b44fafd1bff901dcf10f4edbb79}\label{namespacescrc_a5d058b44fafd1bff901dcf10f4edbb79}} 
+subroutine \mbox{\hyperlink{namespacescrc_a5d058b44fafd1bff901dcf10f4edbb79}{scarc\+\_\+vector\+\_\+sum}} (N\+V1, N\+V2, S\+C\+A\+L1, S\+C\+A\+L2, NL)
+\begin{DoxyCompactList}\small\item\em Compute linear combination of two vectors for bandwise storage technique. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a1ec7733e8344441086f79467cd9f2731}\label{namespacescrc_a1ec7733e8344441086f79467cd9f2731}} 
+subroutine \mbox{\hyperlink{namespacescrc_a1ec7733e8344441086f79467cd9f2731}{scarc\+\_\+vector\+\_\+copy}} (N\+V1, N\+V2, S\+C\+A\+L1, NL)
+\begin{DoxyCompactList}\small\item\em Define vector2 to be a scaled copy of vector 1. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a91b3b973f38d2c883ee582a4658798df}\label{namespacescrc_a91b3b973f38d2c883ee582a4658798df}} 
+subroutine \mbox{\hyperlink{namespacescrc_a91b3b973f38d2c883ee582a4658798df}{scarc\+\_\+vector\+\_\+clear}} (NV, NL)
+\begin{DoxyCompactList}\small\item\em Clear vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac7724638fc0f2350f81c8b79ebab4653}\label{namespacescrc_ac7724638fc0f2350f81c8b79ebab4653}} 
+subroutine \mbox{\hyperlink{namespacescrc_ac7724638fc0f2350f81c8b79ebab4653}{scarc\+\_\+vector\+\_\+random\+\_\+init}} (NV, NL)
+\begin{DoxyCompactList}\small\item\em Preset vector with specified value. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aeaa45afcd4956c08b03406ba95a8099f}\label{namespacescrc_aeaa45afcd4956c08b03406ba95a8099f}} 
+subroutine \mbox{\hyperlink{namespacescrc_aeaa45afcd4956c08b03406ba95a8099f}{scarc\+\_\+vector\+\_\+init}} (NV, V\+AL, NL)
+\begin{DoxyCompactList}\small\item\em Preset vector with specified value. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae705fe5d4fa1b5aa6161c17b9a976d38}\label{namespacescrc_ae705fe5d4fa1b5aa6161c17b9a976d38}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae705fe5d4fa1b5aa6161c17b9a976d38}{scarc\+\_\+relaxation}} (N\+V1, N\+V2, NS, NP, NL)
+\begin{DoxyCompactList}\small\item\em Perform preconditioning based on requested local solvers. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aad21156934419cf0a26e234acbb846a4}\label{namespacescrc_aad21156934419cf0a26e234acbb846a4}} 
+subroutine \mbox{\hyperlink{namespacescrc_aad21156934419cf0a26e234acbb846a4}{scarc\+\_\+method\+\_\+cluster}} (N\+S\+T\+A\+CK, N\+P\+A\+R\+E\+NT, N\+L\+E\+V\+EL)
+\begin{DoxyCompactList}\small\item\em Perform global Pardiso-\/method based on M\+KL. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_adf677eeb9bb6a1bc2b527e9c66f5bc3a}\label{namespacescrc_adf677eeb9bb6a1bc2b527e9c66f5bc3a}} 
+subroutine \mbox{\hyperlink{namespacescrc_adf677eeb9bb6a1bc2b527e9c66f5bc3a}{scarc\+\_\+method\+\_\+pardiso}} (N\+S\+T\+A\+CK, N\+P\+A\+R\+E\+NT, N\+L\+E\+V\+EL)
+\begin{DoxyCompactList}\small\item\em Perform global Pardiso-\/method based on M\+KL. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aaf3bc9fbcad2e96d93bf226dad0beffb}\label{namespacescrc_aaf3bc9fbcad2e96d93bf226dad0beffb}} 
+subroutine \mbox{\hyperlink{namespacescrc_aaf3bc9fbcad2e96d93bf226dad0beffb}{scarc\+\_\+increase\+\_\+iteration\+\_\+counts}} (I\+T\+E0)
+\begin{DoxyCompactList}\small\item\em Increase corresponding iteration count (just for visualization of convergence behavior) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_af442dd90741d10ca34a3896f74a247ae}\label{namespacescrc_af442dd90741d10ca34a3896f74a247ae}} 
+subroutine \mbox{\hyperlink{namespacescrc_af442dd90741d10ca34a3896f74a247ae}{scarc\+\_\+method\+\_\+cg}} (N\+S\+T\+A\+CK, N\+P\+A\+R\+E\+NT, N\+R\+HS, N\+L\+E\+V\+EL)
+\begin{DoxyCompactList}\small\item\em Perform global conjugate gradient method based on global Possion-\/matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a37d7567e863c768491b54bcb55d66e06}\label{namespacescrc_a37d7567e863c768491b54bcb55d66e06}} 
+subroutine \mbox{\hyperlink{namespacescrc_a37d7567e863c768491b54bcb55d66e06}{scarc\+\_\+preconditioner}} (NS, NP, NL)
+\begin{DoxyCompactList}\small\item\em Preconditioning method which is based on the following input and output convention\+: \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a3e8152b0a273de016258c341f2c0c179}\label{namespacescrc_a3e8152b0a273de016258c341f2c0c179}} 
+subroutine \mbox{\hyperlink{namespacescrc_a3e8152b0a273de016258c341f2c0c179}{scarc\+\_\+method\+\_\+coarse}} (N\+S\+T\+A\+CK, N\+P\+A\+R\+E\+NT, N\+L\+E\+V\+EL)
+\begin{DoxyCompactList}\small\item\em Perform requested coarse grid solver (iterative/direct) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ad3712210d92136ae472f564ae6d33ec1}\label{namespacescrc_ad3712210d92136ae472f564ae6d33ec1}} 
+subroutine \mbox{\hyperlink{namespacescrc_ad3712210d92136ae472f564ae6d33ec1}{scarc\+\_\+method\+\_\+multigrid}} (N\+S\+T\+A\+CK, N\+P\+A\+R\+E\+NT, N\+R\+HS, N\+L\+E\+V\+EL)
+\begin{DoxyCompactList}\small\item\em Perform geometric multigrid method based on global possion-\/matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae4d1778e865d320607e450a0078a3859}\label{namespacescrc_ae4d1778e865d320607e450a0078a3859}} 
+integer function \mbox{\hyperlink{namespacescrc_ae4d1778e865d320607e450a0078a3859}{scarc\+\_\+cycling\+\_\+control}} (N\+T\+Y\+PE, NL)
+\begin{DoxyCompactList}\small\item\em Control multigrid cycling (F/\+V/W) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a74e3d43c84d786d9e1b09071ee662f96}\label{namespacescrc_a74e3d43c84d786d9e1b09071ee662f96}} 
+subroutine \mbox{\hyperlink{namespacescrc_a74e3d43c84d786d9e1b09071ee662f96}{scarc\+\_\+smoother}} (N\+T\+Y\+PE, N\+S\+T\+A\+CK, N\+P\+A\+R\+E\+NT, N\+L\+E\+V\+EL)
+\begin{DoxyCompactList}\small\item\em Perform smoothing based on specified relaxation method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a6bacd78bdaf1c5c3226e3963aa89c896}\label{namespacescrc_a6bacd78bdaf1c5c3226e3963aa89c896}} 
+subroutine \mbox{\hyperlink{namespacescrc_a6bacd78bdaf1c5c3226e3963aa89c896}{scarc\+\_\+setup\+\_\+solver}} (NS, NP)
+\begin{DoxyCompactList}\small\item\em Setup environement for current solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ad5c8fb0df88b18c40d1c6055bb7aa9d2}\label{namespacescrc_ad5c8fb0df88b18c40d1c6055bb7aa9d2}} 
+subroutine \mbox{\hyperlink{namespacescrc_ad5c8fb0df88b18c40d1c6055bb7aa9d2}{scarc\+\_\+release\+\_\+solver}} (NS, NP)
+\begin{DoxyCompactList}\small\item\em Reset environment of calling routine when leaving solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a119d30330d1a179932f6dab3eceab010}\label{namespacescrc_a119d30330d1a179932f6dab3eceab010}} 
+subroutine \mbox{\hyperlink{namespacescrc_a119d30330d1a179932f6dab3eceab010}{scarc\+\_\+setup\+\_\+workspace}} (NS, NL, N\+R\+HS)
+\begin{DoxyCompactList}\small\item\em Set initial solution corresponding to boundary data in B\+XS, B\+XF, ... \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aae46b3d2d5b1a0cdd95f0ffd9f7cd48a}\label{namespacescrc_aae46b3d2d5b1a0cdd95f0ffd9f7cd48a}} 
+integer function \mbox{\hyperlink{namespacescrc_aae46b3d2d5b1a0cdd95f0ffd9f7cd48a}{scarc\+\_\+convergence\+\_\+state}} (I\+SM, NS, NL)
+\begin{DoxyCompactList}\small\item\em Check if solver converges or diverges and print out residual information. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a7b350ad437fcdb07052e67f2ec58a3ea}\label{namespacescrc_a7b350ad437fcdb07052e67f2ec58a3ea}} 
+subroutine \mbox{\hyperlink{namespacescrc_a7b350ad437fcdb07052e67f2ec58a3ea}{scarc\+\_\+convergence\+\_\+rate}} (N\+S\+T\+A\+TE, NS, NL)
+\begin{DoxyCompactList}\small\item\em Compute convergence rate and print out residual information for final loop. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a27432ab353a68234bb7a378cc68d734d}\label{namespacescrc_a27432ab353a68234bb7a378cc68d734d}} 
+subroutine \mbox{\hyperlink{namespacescrc_a27432ab353a68234bb7a378cc68d734d}{scarc\+\_\+restriction}} (N\+VB, N\+VC, N\+LF, N\+LC)
+\begin{DoxyCompactList}\small\item\em Perform restriction from finer to coarser grid level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a972ca87dc328530c21bfe0edb3e25f12}\label{namespacescrc_a972ca87dc328530c21bfe0edb3e25f12}} 
+subroutine \mbox{\hyperlink{namespacescrc_a972ca87dc328530c21bfe0edb3e25f12}{scarc\+\_\+prolongation}} (N\+VC, N\+VB, N\+LC, N\+LF)
+\begin{DoxyCompactList}\small\item\em Perform prolongation from coarser to finer grid level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aec56420f03146dbccb343b2c77428ac4}\label{namespacescrc_aec56420f03146dbccb343b2c77428ac4}} 
+subroutine \mbox{\hyperlink{namespacescrc_aec56420f03146dbccb343b2c77428ac4}{scarc\+\_\+update\+\_\+preconditioner}} (NL)
+\begin{DoxyCompactList}\small\item\em Copy final solution from G\+MG (as preconditioner) to corresponding vector of CG (as main solver) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a6e2ecb959e4f298d922c89fa66ab5a35}\label{namespacescrc_a6e2ecb959e4f298d922c89fa66ab5a35}} 
+subroutine \mbox{\hyperlink{namespacescrc_a6e2ecb959e4f298d922c89fa66ab5a35}{scarc\+\_\+update\+\_\+maincells}} (NL)
+\begin{DoxyCompactList}\small\item\em Finalize data for pressure vector (predictor/corrector) when local Sca\+RC solver has finished. \end{DoxyCompactList}\item 
+subroutine \mbox{\hyperlink{namespacescrc_abc29c459979a0688a49272d661cec31a}{scarc\+\_\+update\+\_\+ghostcells}} (NL)
+\begin{DoxyCompactList}\small\item\em Set correct boundary values at external and internal boundaries. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae12bae9631dbd0bdfd66d66515e4525f}\label{namespacescrc_ae12bae9631dbd0bdfd66d66515e4525f}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae12bae9631dbd0bdfd66d66515e4525f}{scarc\+\_\+exchange}} (N\+T\+Y\+PE, N\+P\+A\+R\+AM, NL)
+\begin{DoxyCompactList}\small\item\em Perform data exchange corresponding to requested exchange type. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab6faca9453be185210b0a288a14e8764}\label{namespacescrc_ab6faca9453be185210b0a288a14e8764}} 
+subroutine \mbox{\hyperlink{namespacescrc_ab6faca9453be185210b0a288a14e8764}{scarc\+\_\+recv\+\_\+message\+\_\+int}} (NM, N\+OM, NL, N\+T\+Y\+PE, C\+T\+E\+XT)
+\begin{DoxyCompactList}\small\item\em Receive data of type integer. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a43da1b72820d2a132a08551d53eb5ef3}\label{namespacescrc_a43da1b72820d2a132a08551d53eb5ef3}} 
+subroutine \mbox{\hyperlink{namespacescrc_a43da1b72820d2a132a08551d53eb5ef3}{scarc\+\_\+recv\+\_\+message\+\_\+real}} (NM, N\+OM, NL, N\+T\+Y\+PE, C\+T\+E\+XT)
+\begin{DoxyCompactList}\small\item\em Receive data of type real. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a31cb0df4ea4ca75d1311544f4b69926f}\label{namespacescrc_a31cb0df4ea4ca75d1311544f4b69926f}} 
+subroutine \mbox{\hyperlink{namespacescrc_a31cb0df4ea4ca75d1311544f4b69926f}{scarc\+\_\+send\+\_\+message\+\_\+int}} (NM, N\+OM, NL, N\+T\+Y\+PE, C\+T\+E\+XT)
+\begin{DoxyCompactList}\small\item\em Send data of integer type. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aa6f0c30eaf6c792817f4895e71bdce12}\label{namespacescrc_aa6f0c30eaf6c792817f4895e71bdce12}} 
+subroutine \mbox{\hyperlink{namespacescrc_aa6f0c30eaf6c792817f4895e71bdce12}{scarc\+\_\+send\+\_\+message\+\_\+real}} (NM, N\+OM, NL, N\+T\+Y\+PE, C\+T\+E\+XT)
+\begin{DoxyCompactList}\small\item\em Send data of real type. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_adcc91ce9824b07277f97b572e9aad54c}\label{namespacescrc_adcc91ce9824b07277f97b572e9aad54c}} 
+subroutine \mbox{\hyperlink{namespacescrc_adcc91ce9824b07277f97b572e9aad54c}{scarc\+\_\+pack\+\_\+cell\+\_\+numbers}}
+\begin{DoxyCompactList}\small\item\em Pack numbers of cells which are overlapped by neighbor. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a4f55c01c8ce5b44fa70b22e551a30459}\label{namespacescrc_a4f55c01c8ce5b44fa70b22e551a30459}} 
+subroutine \mbox{\hyperlink{namespacescrc_a4f55c01c8ce5b44fa70b22e551a30459}{scarc\+\_\+unpack\+\_\+cell\+\_\+numbers}} (NM, N\+OM)
+\begin{DoxyCompactList}\small\item\em Unpack numbers of cells which are overlapped by neighbor. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a8d5117362a78cd2218685524f78089f3}\label{namespacescrc_a8d5117362a78cd2218685524f78089f3}} 
+subroutine \mbox{\hyperlink{namespacescrc_a8d5117362a78cd2218685524f78089f3}{scarc\+\_\+pack\+\_\+cell\+\_\+sizes}}
+\begin{DoxyCompactList}\small\item\em Pack cell width information. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a40f8d325f97e247947e8eb7d876eb767}\label{namespacescrc_a40f8d325f97e247947e8eb7d876eb767}} 
+subroutine \mbox{\hyperlink{namespacescrc_a40f8d325f97e247947e8eb7d876eb767}{scarc\+\_\+unpack\+\_\+cell\+\_\+sizes}} (NM, N\+OM)
+\begin{DoxyCompactList}\small\item\em Unpack cell width information. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a7ef70cb19f687ad45724bc922a7147b0}\label{namespacescrc_a7ef70cb19f687ad45724bc922a7147b0}} 
+subroutine \mbox{\hyperlink{namespacescrc_a7ef70cb19f687ad45724bc922a7147b0}{scarc\+\_\+pack\+\_\+basic\+\_\+sizes}}
+\begin{DoxyCompactList}\small\item\em Pack initial exchange sizes along interfaces. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_af2883d92dcb27689af186babc7de58c1}\label{namespacescrc_af2883d92dcb27689af186babc7de58c1}} 
+subroutine \mbox{\hyperlink{namespacescrc_af2883d92dcb27689af186babc7de58c1}{scarc\+\_\+unpack\+\_\+basic\+\_\+sizes}} (NM, N\+OM)
+\begin{DoxyCompactList}\small\item\em Unpack initial exchange sizes along interfaces. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ade6ef4510d7862161207fe18935b55ad}\label{namespacescrc_ade6ef4510d7862161207fe18935b55ad}} 
+subroutine \mbox{\hyperlink{namespacescrc_ade6ef4510d7862161207fe18935b55ad}{scarc\+\_\+pack\+\_\+pressure}} (NM)
+\begin{DoxyCompactList}\small\item\em Pack overlapping parts of specified pressure vector (predictor/corrector) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a6116bc77def2557a830dca6f1ace4ccf}\label{namespacescrc_a6116bc77def2557a830dca6f1ace4ccf}} 
+subroutine \mbox{\hyperlink{namespacescrc_a6116bc77def2557a830dca6f1ace4ccf}{scarc\+\_\+unpack\+\_\+pressure}} (NM, N\+OM)
+\begin{DoxyCompactList}\small\item\em Unpack overlapping parts of specified pressure vector (predictor/corrector) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_acd659a90889497c1241af93b230f6353}\label{namespacescrc_acd659a90889497c1241af93b230f6353}} 
+subroutine \mbox{\hyperlink{namespacescrc_acd659a90889497c1241af93b230f6353}{scarc\+\_\+pack\+\_\+auxiliary}}
+\begin{DoxyCompactList}\small\item\em Pack overlapping auxiliary vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a88c0c484f74bd0162ac51042767a7a3c}\label{namespacescrc_a88c0c484f74bd0162ac51042767a7a3c}} 
+subroutine \mbox{\hyperlink{namespacescrc_a88c0c484f74bd0162ac51042767a7a3c}{scarc\+\_\+unpack\+\_\+auxiliary}} (NM, N\+OM)
+\begin{DoxyCompactList}\small\item\em Unpack overlapping auxiliary vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a6b8213e19e4fc511a7cd32ad1cebdabd}\label{namespacescrc_a6b8213e19e4fc511a7cd32ad1cebdabd}} 
+subroutine \mbox{\hyperlink{namespacescrc_a6b8213e19e4fc511a7cd32ad1cebdabd}{scarc\+\_\+pack\+\_\+nullspace}}
+\begin{DoxyCompactList}\small\item\em Pack and unpack overlapping nullspace vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a299a115aaa5550f9a2e0d67e32c5f99a}\label{namespacescrc_a299a115aaa5550f9a2e0d67e32c5f99a}} 
+subroutine \mbox{\hyperlink{namespacescrc_a299a115aaa5550f9a2e0d67e32c5f99a}{scarc\+\_\+unpack\+\_\+nullspace}} (NM, N\+OM)
+\begin{DoxyCompactList}\small\item\em Unpack overlapping nullspace vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_abc7bba07202c9fde28ac34b4eb7ce934}\label{namespacescrc_abc7bba07202c9fde28ac34b4eb7ce934}} 
+subroutine \mbox{\hyperlink{namespacescrc_abc7bba07202c9fde28ac34b4eb7ce934}{scarc\+\_\+pack\+\_\+vector\+\_\+plain}} (NM, NL, NV)
+\begin{DoxyCompactList}\small\item\em Pack overlapping parts of specified vector VC (numbered via IC values) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aff4a656ef43d8271a4757bb982637e9a}\label{namespacescrc_aff4a656ef43d8271a4757bb982637e9a}} 
+subroutine \mbox{\hyperlink{namespacescrc_aff4a656ef43d8271a4757bb982637e9a}{scarc\+\_\+unpack\+\_\+vector\+\_\+plain}} (NM, N\+OM, NL, N\+V\+E\+C\+T\+OR)
+\begin{DoxyCompactList}\small\item\em Unpack overlapping parts of specified vector VC (numbered via IC values) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aaeac03e2e1cb1844a6eca46b64ca75c4}\label{namespacescrc_aaeac03e2e1cb1844a6eca46b64ca75c4}} 
+subroutine \mbox{\hyperlink{namespacescrc_aaeac03e2e1cb1844a6eca46b64ca75c4}{scarc\+\_\+pack\+\_\+vector\+\_\+mean}} (NM, NL, N\+V\+E\+C\+T\+OR)
+\begin{DoxyCompactList}\small\item\em Pack overlapping and internal parts of specified vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_af16a9e91864bd40f13ac85c611126bf7}\label{namespacescrc_af16a9e91864bd40f13ac85c611126bf7}} 
+subroutine \mbox{\hyperlink{namespacescrc_af16a9e91864bd40f13ac85c611126bf7}{scarc\+\_\+unpack\+\_\+vector\+\_\+mean}} (NM, N\+OM, NL, N\+V\+E\+C\+T\+OR)
+\begin{DoxyCompactList}\small\item\em Unpack overlapping and internal parts of specified vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_afe2514a7abc4a46eac6d7039e6eda935}\label{namespacescrc_afe2514a7abc4a46eac6d7039e6eda935}} 
+subroutine \mbox{\hyperlink{namespacescrc_afe2514a7abc4a46eac6d7039e6eda935}{scarc\+\_\+pack\+\_\+poisson\+\_\+cols}} (NM, N\+M\+A\+T\+R\+IX)
+\begin{DoxyCompactList}\small\item\em Pack overlapping information about matrix columns (compact storage technique only) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a90bee92ca2545ae241246e8634c387c4}\label{namespacescrc_a90bee92ca2545ae241246e8634c387c4}} 
+subroutine \mbox{\hyperlink{namespacescrc_a90bee92ca2545ae241246e8634c387c4}{scarc\+\_\+unpack\+\_\+poisson\+\_\+cols}} (NM, N\+OM, N\+M\+A\+T\+R\+IX)
+\begin{DoxyCompactList}\small\item\em Unpack overlapping information about matrix columns (compact storage technique only) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a6131f271338017ce577f8d5e8ed36181}\label{namespacescrc_a6131f271338017ce577f8d5e8ed36181}} 
+subroutine \mbox{\hyperlink{namespacescrc_a6131f271338017ce577f8d5e8ed36181}{scarc\+\_\+pack\+\_\+poisson\+\_\+colsg}} (NM, N\+M\+A\+T\+R\+IX)
+\begin{DoxyCompactList}\small\item\em Pack overlapping information about matrix columns (compact storage technique only) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a3569a9cdfbeaa77a2f1170bd8e9e0f8b}\label{namespacescrc_a3569a9cdfbeaa77a2f1170bd8e9e0f8b}} 
+subroutine \mbox{\hyperlink{namespacescrc_a3569a9cdfbeaa77a2f1170bd8e9e0f8b}{scarc\+\_\+unpack\+\_\+poisson\+\_\+colsg}} (NM, N\+OM, N\+M\+A\+T\+R\+IX)
+\begin{DoxyCompactList}\small\item\em Unpack overlapping information about matrix columns (compact storage technique only) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a89c389804f18524864d719902b2694ed}\label{namespacescrc_a89c389804f18524864d719902b2694ed}} 
+subroutine \mbox{\hyperlink{namespacescrc_a89c389804f18524864d719902b2694ed}{scarc\+\_\+pack\+\_\+poisson\+\_\+vals}} (N\+M\+A\+T\+R\+IX, NL)
+\begin{DoxyCompactList}\small\item\em Pack overlapping information about matrix values (both storage techniques) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a06dd732f191f5e323d502031473441cf}\label{namespacescrc_a06dd732f191f5e323d502031473441cf}} 
+subroutine \mbox{\hyperlink{namespacescrc_a06dd732f191f5e323d502031473441cf}{scarc\+\_\+unpack\+\_\+poisson\+\_\+vals}} (NM, N\+OM, NL, N\+M\+A\+T\+R\+IX)
+\begin{DoxyCompactList}\small\item\em Unpack overlapping information about matrix values (both storage techniques) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a0c26ecf4474d95408c36e87e98563829}\label{namespacescrc_a0c26ecf4474d95408c36e87e98563829}} 
+subroutine \mbox{\hyperlink{namespacescrc_a0c26ecf4474d95408c36e87e98563829}{scarc\+\_\+pack\+\_\+poisson\+\_\+sizes}} (NL)
+\begin{DoxyCompactList}\small\item\em Pack information about matrix sizes into send vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_abaf4c695d86ffc61c52437623fbf957e}\label{namespacescrc_abaf4c695d86ffc61c52437623fbf957e}} 
+subroutine \mbox{\hyperlink{namespacescrc_abaf4c695d86ffc61c52437623fbf957e}{scarc\+\_\+unpack\+\_\+poisson\+\_\+sizes}} (NM, N\+OM, NL)
+\begin{DoxyCompactList}\small\item\em Unpack information about matrix sizes into send vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac5fa687730486042815137c699572bd2}\label{namespacescrc_ac5fa687730486042815137c699572bd2}} 
+subroutine \mbox{\hyperlink{namespacescrc_ac5fa687730486042815137c699572bd2}{scarc\+\_\+pack\+\_\+poisson\+\_\+diags}} (N\+T\+Y\+PE)
+\begin{DoxyCompactList}\small\item\em Pack overlapping information about matrix diagonals (compact storage technique only) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_af787ac406d4088abf29a011cf65c2e34}\label{namespacescrc_af787ac406d4088abf29a011cf65c2e34}} 
+subroutine \mbox{\hyperlink{namespacescrc_af787ac406d4088abf29a011cf65c2e34}{scarc\+\_\+unpack\+\_\+poisson\+\_\+diags}} (NM, N\+OM)
+\begin{DoxyCompactList}\small\item\em Unpack overlapping information about matrix diagonals (compact storage technique only) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a3db9333c6bb1d63d4dd12d997215b109}\label{namespacescrc_a3db9333c6bb1d63d4dd12d997215b109}} 
+subroutine \mbox{\hyperlink{namespacescrc_a3db9333c6bb1d63d4dd12d997215b109}{scarc\+\_\+pack\+\_\+cell\+\_\+neighbors}} (NM)
+\begin{DoxyCompactList}\small\item\em Pack zones numbers along interfaces. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac6e46c62e146662b83a6c3d0e9925d99}\label{namespacescrc_ac6e46c62e146662b83a6c3d0e9925d99}} 
+subroutine \mbox{\hyperlink{namespacescrc_ac6e46c62e146662b83a6c3d0e9925d99}{scarc\+\_\+unpack\+\_\+cell\+\_\+neighbors}} (NM, N\+OM)
+\begin{DoxyCompactList}\small\item\em Unpack zones numbers along interfaces. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab21261bf01e5557f847d2481ab935f83}\label{namespacescrc_ab21261bf01e5557f847d2481ab935f83}} 
+subroutine \mbox{\hyperlink{namespacescrc_ab21261bf01e5557f847d2481ab935f83}{scarc\+\_\+pack\+\_\+zone\+\_\+neighbors}} (NM)
+\begin{DoxyCompactList}\small\item\em Pack zones numbers along interfaces. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab6e2ff2d473284d13c96b381f9253953}\label{namespacescrc_ab6e2ff2d473284d13c96b381f9253953}} 
+subroutine \mbox{\hyperlink{namespacescrc_ab6e2ff2d473284d13c96b381f9253953}{scarc\+\_\+unpack\+\_\+zone\+\_\+neighbors}} (NM, N\+OM)
+\begin{DoxyCompactList}\small\item\em Unpack zones numbers along interfaces. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae5ef9caa6cce3d62f088cd50f9b88b45}\label{namespacescrc_ae5ef9caa6cce3d62f088cd50f9b88b45}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae5ef9caa6cce3d62f088cd50f9b88b45}{scarc\+\_\+pack\+\_\+zone\+\_\+types}} (NM)
+\begin{DoxyCompactList}\small\item\em Pack zones information into send vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae4e56bd76bb60ad0ba97bb171b4a9439}\label{namespacescrc_ae4e56bd76bb60ad0ba97bb171b4a9439}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae4e56bd76bb60ad0ba97bb171b4a9439}{scarc\+\_\+unpack\+\_\+zone\+\_\+types}} (NM, N\+OM)
+\begin{DoxyCompactList}\small\item\em Unpack zones information into send vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a709904eb11bef9974f04c6de01d88899}\label{namespacescrc_a709904eb11bef9974f04c6de01d88899}} 
+logical function \mbox{\hyperlink{namespacescrc_a709904eb11bef9974f04c6de01d88899}{scarc\+\_\+forbidden\+\_\+zone}} (S\+E\+N\+D\+\_\+\+B\+U\+F\+F\+E\+R\+\_\+\+I\+NT, IZ, I\+C\+G1, I\+C\+G2)
+\begin{DoxyCompactList}\small\item\em Determine if cell should be considered during packing of zone numbers. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a3ebcf049adddcdd5a5316d495581fdbc}\label{namespacescrc_a3ebcf049adddcdd5a5316d495581fdbc}} 
+logical function \mbox{\hyperlink{namespacescrc_a3ebcf049adddcdd5a5316d495581fdbc}{match}} (V\+A\+L1, V\+A\+L2)
+\begin{DoxyCompactList}\small\item\em Check if difference of two values is less than a given tolerance. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae2cd478f862c783e66fc06cbe0792cec}\label{namespacescrc_ae2cd478f862c783e66fc06cbe0792cec}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae2cd478f862c783e66fc06cbe0792cec}{scarc\+\_\+filter\+\_\+meanvalue}} (NV, NL)
+\begin{DoxyCompactList}\small\item\em Filter out mean value. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a04a500e2034392941522bbbd39617ba0}\label{namespacescrc_a04a500e2034392941522bbbd39617ba0}} 
+subroutine \mbox{\hyperlink{namespacescrc_a04a500e2034392941522bbbd39617ba0}{scarc\+\_\+restore\+\_\+last\+\_\+cell}} (XX, NL)
+\begin{DoxyCompactList}\small\item\em Restore last cell of last mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_af2f032499f0d33c4fe05fe8cfadd3d9c}\label{namespacescrc_af2f032499f0d33c4fe05fe8cfadd3d9c}} 
+subroutine \mbox{\hyperlink{namespacescrc_af2f032499f0d33c4fe05fe8cfadd3d9c}{scarc\+\_\+point\+\_\+to\+\_\+mesh}} (NM)
+\begin{DoxyCompactList}\small\item\em Point to specified mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ad289748d05ddb6d7ff08878b195ffd25}\label{namespacescrc_ad289748d05ddb6d7ff08878b195ffd25}} 
+subroutine \mbox{\hyperlink{namespacescrc_ad289748d05ddb6d7ff08878b195ffd25}{scarc\+\_\+point\+\_\+to\+\_\+level}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Point to specified combination of mesh and grid level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a2ce7af5db2f6dc96a87b3ee3977f27c0}\label{namespacescrc_a2ce7af5db2f6dc96a87b3ee3977f27c0}} 
+subroutine \mbox{\hyperlink{namespacescrc_a2ce7af5db2f6dc96a87b3ee3977f27c0}{scarc\+\_\+point\+\_\+to\+\_\+none}}
+\begin{DoxyCompactList}\small\item\em Unset Sca\+RC pointers ~\newline
+ \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_abb3efd999d06703cb0d76a8ecb7d40c5}\label{namespacescrc_abb3efd999d06703cb0d76a8ecb7d40c5}} 
+subroutine \mbox{\hyperlink{namespacescrc_abb3efd999d06703cb0d76a8ecb7d40c5}{scarc\+\_\+point\+\_\+to\+\_\+grid}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Point to specified combination of a mesh level and discretization type. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a4c92f38b46afb473c820b6d1046e4c7c}\label{namespacescrc_a4c92f38b46afb473c820b6d1046e4c7c}} 
+subroutine \mbox{\hyperlink{namespacescrc_a4c92f38b46afb473c820b6d1046e4c7c}{scarc\+\_\+point\+\_\+to\+\_\+multigrid}} (NM, N\+L1, N\+L2)
+\begin{DoxyCompactList}\small\item\em Point to specified pairing of mesh levels and discretization types. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_af184bf24e5e3171ed723f5542502997e}\label{namespacescrc_af184bf24e5e3171ed723f5542502997e}} 
+subroutine \mbox{\hyperlink{namespacescrc_af184bf24e5e3171ed723f5542502997e}{scarc\+\_\+point\+\_\+to\+\_\+other\+\_\+grid}} (NM, N\+OM, NL)
+\begin{DoxyCompactList}\small\item\em Point to specified combination of a neighboring mesh level and discretization type. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a5bbe9c8c170fcace7570314dbcd80ff8}\label{namespacescrc_a5bbe9c8c170fcace7570314dbcd80ff8}} 
+subroutine \mbox{\hyperlink{namespacescrc_a5bbe9c8c170fcace7570314dbcd80ff8}{scarc\+\_\+point\+\_\+to\+\_\+other\+\_\+multigrid}} (NM, N\+OM, N\+L1, N\+L2)
+\begin{DoxyCompactList}\small\item\em Point to specified combination of a neighboring mesh level and a discretization type. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab0744a85eaff5e87a4bd77d890158777}\label{namespacescrc_ab0744a85eaff5e87a4bd77d890158777}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type) function, pointer \mbox{\hyperlink{namespacescrc_ab0744a85eaff5e87a4bd77d890158777}{scarc\+\_\+point\+\_\+to\+\_\+cmatrix}} (G, N\+T\+Y\+PE)
+\begin{DoxyCompactList}\small\item\em Point to specified matrix in compact storage technique. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a752cbf4b14431984f5bfd98fbe1a2255}\label{namespacescrc_a752cbf4b14431984f5bfd98fbe1a2255}} 
+type(scarc\+\_\+matrix\+\_\+bandwise\+\_\+type) function, pointer \mbox{\hyperlink{namespacescrc_a752cbf4b14431984f5bfd98fbe1a2255}{scarc\+\_\+point\+\_\+to\+\_\+bmatrix}} (G, N\+T\+Y\+PE)
+\begin{DoxyCompactList}\small\item\em Point to specified matrix in bandwise storage technique. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a16ad3b5f25841d4a79ad0d3f11484ef7}\label{namespacescrc_a16ad3b5f25841d4a79ad0d3f11484ef7}} 
+type(scarc\+\_\+matrix\+\_\+compact\+\_\+type) function, pointer \mbox{\hyperlink{namespacescrc_a16ad3b5f25841d4a79ad0d3f11484ef7}{scarc\+\_\+point\+\_\+to\+\_\+other\+\_\+cmatrix}} (OG, N\+T\+Y\+PE)
+\begin{DoxyCompactList}\small\item\em Point to specified neighboring matrix in compact storage technique. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a466354430accb8d51a775e5750002af9}\label{namespacescrc_a466354430accb8d51a775e5750002af9}} 
+type(scarc\+\_\+matrix\+\_\+bandwise\+\_\+type) function, pointer \mbox{\hyperlink{namespacescrc_a466354430accb8d51a775e5750002af9}{scarc\+\_\+point\+\_\+to\+\_\+other\+\_\+bmatrix}} (OG, N\+T\+Y\+PE)
+\begin{DoxyCompactList}\small\item\em Point to specified neighboring matrix in bandwise storage technique. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae067ddfd27723f9aea38e7ab45e6336b}\label{namespacescrc_ae067ddfd27723f9aea38e7ab45e6336b}} 
+integer function, dimension(\+:), pointer \mbox{\hyperlink{namespacescrc_ae067ddfd27723f9aea38e7ab45e6336b}{scarc\+\_\+point\+\_\+to\+\_\+buffer\+\_\+int}} (NM, N\+OM, N\+T\+Y\+PE)
+\begin{DoxyCompactList}\small\item\em Point to specified integer receive buffer for data exchanges. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a83e67309d2a827395a9c7c53704e1c27}\label{namespacescrc_a83e67309d2a827395a9c7c53704e1c27}} 
+real(eb) function, dimension(\+:), pointer \mbox{\hyperlink{namespacescrc_a83e67309d2a827395a9c7c53704e1c27}{scarc\+\_\+point\+\_\+to\+\_\+buffer\+\_\+real}} (NM, N\+OM, N\+T\+Y\+PE)
+\begin{DoxyCompactList}\small\item\em Point to specified integer receive buffer for data exchanges. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a942f1359918daa404c92beb6e7f6684d}\label{namespacescrc_a942f1359918daa404c92beb6e7f6684d}} 
+logical function \mbox{\hyperlink{namespacescrc_a942f1359918daa404c92beb6e7f6684d}{are\+\_\+neighbors}} (NM, N\+OM)
+\begin{DoxyCompactList}\small\item\em Check if two meshes are neighbors. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_afbc380711ccad0b54f44cc03e4e26bfd}\label{namespacescrc_afbc380711ccad0b54f44cc03e4e26bfd}} 
+real(eb) function, dimension(\+:), pointer \mbox{\hyperlink{namespacescrc_afbc380711ccad0b54f44cc03e4e26bfd}{scarc\+\_\+point\+\_\+to\+\_\+vector}} (NM, NL, NV)
+\begin{DoxyCompactList}\small\item\em Point to specified vector on a given grid level. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aaf96189a8b8f36b049db0ff41965c537}\label{namespacescrc_aaf96189a8b8f36b049db0ff41965c537}} 
+real(fb) function, dimension(\+:), pointer \mbox{\hyperlink{namespacescrc_aaf96189a8b8f36b049db0ff41965c537}{scarc\+\_\+point\+\_\+to\+\_\+vector\+\_\+fb}} (NM, NL, NV)
+\begin{DoxyCompactList}\small\item\em Point to specified vector on a given grid level (single precision version) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a728848a709bb7689d6cdf5a39ff8b77f}\label{namespacescrc_a728848a709bb7689d6cdf5a39ff8b77f}} 
+real(eb) function, dimension(\+:,\+:,\+:), pointer \mbox{\hyperlink{namespacescrc_a728848a709bb7689d6cdf5a39ff8b77f}{point\+\_\+to\+\_\+hvector}} (NM, NV)
+\begin{DoxyCompactList}\small\item\em Point to pressure vector in predictor or corrector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_adca98154b949f84ed3a9d18d26204fce}\label{namespacescrc_adca98154b949f84ed3a9d18d26204fce}} 
+subroutine \mbox{\hyperlink{namespacescrc_adca98154b949f84ed3a9d18d26204fce}{scarc\+\_\+daxpy\+\_\+constant}} (N, DA, DX, DY)
+\begin{DoxyCompactList}\small\item\em Vector multiplied with a constant scalar is added to another vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a80e7a45694f0d794c01f33947583ac0a}\label{namespacescrc_a80e7a45694f0d794c01f33947583ac0a}} 
+subroutine \mbox{\hyperlink{namespacescrc_a80e7a45694f0d794c01f33947583ac0a}{scarc\+\_\+daxpy\+\_\+constant\+\_\+double}} (N, D\+A1, DX, D\+A2, DY)
+\begin{DoxyCompactList}\small\item\em Vector multiplied with a constant scalar is added to vector multiplied with another scalar. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a47d4cf66d829ea95e3c8fbeeeaa1ad82}\label{namespacescrc_a47d4cf66d829ea95e3c8fbeeeaa1ad82}} 
+subroutine \mbox{\hyperlink{namespacescrc_a47d4cf66d829ea95e3c8fbeeeaa1ad82}{scarc\+\_\+daxpy\+\_\+variable}} (N, DA, DX, DY)
+\begin{DoxyCompactList}\small\item\em Vector multiplied with variable scalars (componentwise) is added to another vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab135b8963f1df96a99d9941255b18d7c}\label{namespacescrc_ab135b8963f1df96a99d9941255b18d7c}} 
+subroutine \mbox{\hyperlink{namespacescrc_ab135b8963f1df96a99d9941255b18d7c}{scarc\+\_\+scaling\+\_\+constant}} (N, S\+C\+AL, DX, DY)
+\begin{DoxyCompactList}\small\item\em Vector is multiplied with a constant scalar. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a53e77913a6263102013843209cfd9c40}\label{namespacescrc_a53e77913a6263102013843209cfd9c40}} 
+subroutine \mbox{\hyperlink{namespacescrc_a53e77913a6263102013843209cfd9c40}{scarc\+\_\+scaling\+\_\+variable}} (N, DA, DX, DY)
+\begin{DoxyCompactList}\small\item\em Vector is multiplied with variable scalars (componentwise) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac86ad2f72b1250040b214018e1de4422}\label{namespacescrc_ac86ad2f72b1250040b214018e1de4422}} 
+subroutine \mbox{\hyperlink{namespacescrc_ac86ad2f72b1250040b214018e1de4422}{scarc\+\_\+setup\+\_\+algebraic\+\_\+multigrid}}
+\begin{DoxyCompactList}\small\item\em Setup algebraic multigrid structures. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a237a353cbe79126ef3a278781eaca079}\label{namespacescrc_a237a353cbe79126ef3a278781eaca079}} 
+subroutine \mbox{\hyperlink{namespacescrc_a237a353cbe79126ef3a278781eaca079}{scarc\+\_\+setup\+\_\+aggregation\+\_\+order}}
+\begin{DoxyCompactList}\small\item\em Setup order in which aggregation is performed over mesh decomposition. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a8eca568af7e97c9ed88d192d6856ca39}\label{namespacescrc_a8eca568af7e97c9ed88d192d6856ca39}} 
+subroutine \mbox{\hyperlink{namespacescrc_a8eca568af7e97c9ed88d192d6856ca39}{scarc\+\_\+invert\+\_\+matrix\+\_\+diagonal}} (NL)
+\begin{DoxyCompactList}\small\item\em Invert matrix diagonal which is already stored in D\+I\+A\+G-\/vector (reuse workspace) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a177ade5012c44b7f936a004fce3726e9}\label{namespacescrc_a177ade5012c44b7f936a004fce3726e9}} 
+subroutine \mbox{\hyperlink{namespacescrc_a177ade5012c44b7f936a004fce3726e9}{scarc\+\_\+setup\+\_\+strength\+\_\+of\+\_\+connection}} (NL)
+\begin{DoxyCompactList}\small\item\em Compute a strength of connection matrix based on symmetric smoothed aggregation heuristic. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab700004745ef4a15f8c6aa6da13875db}\label{namespacescrc_ab700004745ef4a15f8c6aa6da13875db}} 
+subroutine \mbox{\hyperlink{namespacescrc_ab700004745ef4a15f8c6aa6da13875db}{scarc\+\_\+setup\+\_\+aggregation\+\_\+zones}} (NL)
+\begin{DoxyCompactList}\small\item\em Setup aggregation zones for Smoothed Aggregation Algebraic Multigrid Method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a9a34ec6914cb8d90b33822794fd4a69f}\label{namespacescrc_a9a34ec6914cb8d90b33822794fd4a69f}} 
+subroutine \mbox{\hyperlink{namespacescrc_a9a34ec6914cb8d90b33822794fd4a69f}{scarc\+\_\+setup\+\_\+aggregated\+\_\+zones}} (NM, G, C)
+\begin{DoxyCompactList}\small\item\em Standard aggregation prodecure based on strength of connection matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a3b571c34337d7e86d2ecd1c54fa81a46}\label{namespacescrc_a3b571c34337d7e86d2ecd1c54fa81a46}} 
+subroutine \mbox{\hyperlink{namespacescrc_a3b571c34337d7e86d2ecd1c54fa81a46}{scarc\+\_\+setup\+\_\+cubic\+\_\+zones}} (L, G)
+\begin{DoxyCompactList}\small\item\em Selfdefined geometric motivated aggregation procedure using cubic zones. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a671a523798823a0fcc66cd12a975b901}\label{namespacescrc_a671a523798823a0fcc66cd12a975b901}} 
+subroutine \mbox{\hyperlink{namespacescrc_a671a523798823a0fcc66cd12a975b901}{scarc\+\_\+clean\+\_\+workspace\+\_\+system}} (NL)
+\begin{DoxyCompactList}\small\item\em Remove workspace on specified grid level which will no longer be needed after matrix setup. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_abb3743741d9c04b991dc47507801bb81}\label{namespacescrc_abb3743741d9c04b991dc47507801bb81}} 
+subroutine \mbox{\hyperlink{namespacescrc_abb3743741d9c04b991dc47507801bb81}{scarc\+\_\+clean\+\_\+workspace\+\_\+amg}} (NL)
+\begin{DoxyCompactList}\small\item\em Remove workspace on specified grid level which will no longer be needed in S\+A\+MG method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a67b8586639e5a92c163847e753f07027}\label{namespacescrc_a67b8586639e5a92c163847e753f07027}} 
+subroutine \mbox{\hyperlink{namespacescrc_a67b8586639e5a92c163847e753f07027}{scarc\+\_\+relax\+\_\+nullspace}} (NL)
+\begin{DoxyCompactList}\small\item\em Perform relaxation of nullspac. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aa005c07a402b454d68b6b298a5093cdd}\label{namespacescrc_aa005c07a402b454d68b6b298a5093cdd}} 
+subroutine \mbox{\hyperlink{namespacescrc_aa005c07a402b454d68b6b298a5093cdd}{scarc\+\_\+setup\+\_\+zone\+\_\+operator}} (NL)
+\begin{DoxyCompactList}\small\item\em Setup basic structure of prolongation matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab121963cf86a14181ac1d4039e33cd5e}\label{namespacescrc_ab121963cf86a14181ac1d4039e33cd5e}} 
+subroutine \mbox{\hyperlink{namespacescrc_ab121963cf86a14181ac1d4039e33cd5e}{scarc\+\_\+setup\+\_\+prolongation}} (NL)
+\begin{DoxyCompactList}\small\item\em Determine tentative prolongator for current level by computing Q\+R-\/decomposition of smoothed. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab683054800a7b43b7b4274c33ac9154f}\label{namespacescrc_ab683054800a7b43b7b4274c33ac9154f}} 
+subroutine \mbox{\hyperlink{namespacescrc_ab683054800a7b43b7b4274c33ac9154f}{scarc\+\_\+setup\+\_\+nullspace\+\_\+coarse}} (NL)
+\begin{DoxyCompactList}\small\item\em Define nullspace for next coarser level, if coarsest level isn\textquotesingle{}t reached yet. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a6fbe7cc878a94c74c8bc183675e6fc4a}\label{namespacescrc_a6fbe7cc878a94c74c8bc183675e6fc4a}} 
+integer function \mbox{\hyperlink{namespacescrc_a6fbe7cc878a94c74c8bc183675e6fc4a}{scarc\+\_\+match\+\_\+matrix\+\_\+column}} (A, IC, JC)
+\begin{DoxyCompactList}\small\item\em Determine which columns of system matrix are involved in multiplication with tentative prolongator. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a2e3ad2b4066b31ed619563314c125103}\label{namespacescrc_a2e3ad2b4066b31ed619563314c125103}} 
+subroutine \mbox{\hyperlink{namespacescrc_a2e3ad2b4066b31ed619563314c125103}{scarc\+\_\+setup\+\_\+restriction}} (NL)
+\begin{DoxyCompactList}\small\item\em Setup restriction matrix\+: Build transpose of prolongation matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a04f082c3ec75a6b17adc300c04a16757}\label{namespacescrc_a04f082c3ec75a6b17adc300c04a16757}} 
+integer function \mbox{\hyperlink{namespacescrc_a04f082c3ec75a6b17adc300c04a16757}{scarc\+\_\+find\+\_\+matching\+\_\+column}} (A, JC, I\+C\+CG)
+\begin{DoxyCompactList}\small\item\em Find matching column index during matrix-\/matrix multiplication of compact matrices. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_adb6763b5f9046a7985685acfcbc21264}\label{namespacescrc_adb6763b5f9046a7985685acfcbc21264}} 
+subroutine \mbox{\hyperlink{namespacescrc_adb6763b5f9046a7985685acfcbc21264}{scarc\+\_\+setup\+\_\+poisson\+\_\+times\+\_\+prol}} (NL)
+\begin{DoxyCompactList}\small\item\em Perform matrix multiplication between fine Poisson matrix and prolongation matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a03acb90019f3107fd7ca61c23bb57b1b}\label{namespacescrc_a03acb90019f3107fd7ca61c23bb57b1b}} 
+integer function \mbox{\hyperlink{namespacescrc_a03acb90019f3107fd7ca61c23bb57b1b}{scarc\+\_\+map\+\_\+global\+\_\+to\+\_\+local}} (G, I\+CG, NM, NL)
+\begin{DoxyCompactList}\small\item\em Map global to local cell number. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac099a7ed22a82f0e1b9a7b8b70c6463e}\label{namespacescrc_ac099a7ed22a82f0e1b9a7b8b70c6463e}} 
+subroutine \mbox{\hyperlink{namespacescrc_ac099a7ed22a82f0e1b9a7b8b70c6463e}{scarc\+\_\+setup\+\_\+galerkin}} (NL)
+\begin{DoxyCompactList}\small\item\em Setup Galerkin matrix on coarser grid level (A\+MG only) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a492988d5c1f4e3639ba46c9029b9ab39}\label{namespacescrc_a492988d5c1f4e3639ba46c9029b9ab39}} 
+double precision function \mbox{\hyperlink{namespacescrc_a492988d5c1f4e3639ba46c9029b9ab39}{scarc\+\_\+value\+\_\+rap}} (IC, I\+CC)
+\begin{DoxyCompactList}\small\item\em Compute entry of Poisson times Prolongation matrix at specified position. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a985fc72f55b09a4d96a51f9a1682b023}\label{namespacescrc_a985fc72f55b09a4d96a51f9a1682b023}} 
+subroutine \mbox{\hyperlink{namespacescrc_a985fc72f55b09a4d96a51f9a1682b023}{scarc\+\_\+resort\+\_\+matrix\+\_\+rows}} (NL)
+\begin{DoxyCompactList}\small\item\em Resort matrix entries such that diagonal entry comes first (compact storage technique only) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_af7e934f0f13ed9fdeaf647eec22ec426}\label{namespacescrc_af7e934f0f13ed9fdeaf647eec22ec426}} 
+double precision function \mbox{\hyperlink{namespacescrc_af7e934f0f13ed9fdeaf647eec22ec426}{exact}} (X, Z)
+\begin{DoxyCompactList}\small\item\em Set exact solution according to specified function. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_adbd4dbd700a8b17a34407fde79bb0461}\label{namespacescrc_adbd4dbd700a8b17a34407fde79bb0461}} 
+double precision function \mbox{\hyperlink{namespacescrc_adbd4dbd700a8b17a34407fde79bb0461}{rhs}} (X, Z)
+\begin{DoxyCompactList}\small\item\em Set right hand side according to specified function. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a3dec783e22e1fa159699d96b98af1d91}\label{namespacescrc_a3dec783e22e1fa159699d96b98af1d91}} 
+subroutine \mbox{\hyperlink{namespacescrc_a3dec783e22e1fa159699d96b98af1d91}{scarc\+\_\+preset\+\_\+exact}} (NE, NL)
+\begin{DoxyCompactList}\small\item\em Preset right hand side in such a way that exact solution is known. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a509034cce4d97501c3502aaa0e793c8f}\label{namespacescrc_a509034cce4d97501c3502aaa0e793c8f}} 
+subroutine \mbox{\hyperlink{namespacescrc_a509034cce4d97501c3502aaa0e793c8f}{scarc\+\_\+preset\+\_\+vector}} (NV, NL)
+\begin{DoxyCompactList}\small\item\em Preset vector with specific values. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a820701910407eff05a660aafdf1cd499}\label{namespacescrc_a820701910407eff05a660aafdf1cd499}} 
+subroutine \mbox{\hyperlink{namespacescrc_a820701910407eff05a660aafdf1cd499}{scarc\+\_\+preset\+\_\+rhs}} (NV, NL)
+\begin{DoxyCompactList}\small\item\em Preset right hand side in such a way that exact solution is known. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aaffc82b7a43c0dd7735d99926a90fb72}\label{namespacescrc_aaffc82b7a43c0dd7735d99926a90fb72}} 
+subroutine \mbox{\hyperlink{namespacescrc_aaffc82b7a43c0dd7735d99926a90fb72}{scarc\+\_\+update\+\_\+memory}} (N\+D\+A\+TA, N\+S\+T\+A\+TE, N\+D\+IM, N\+I\+N\+IT, N\+L1, N\+R1, N\+L2, N\+R2, N\+L3, N\+R3, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Update list of arrays within Sca\+RC memory management. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a54b5efcf97add55ba20a8b32c29525f9}\label{namespacescrc_a54b5efcf97add55ba20a8b32c29525f9}} 
+integer function \mbox{\hyperlink{namespacescrc_a54b5efcf97add55ba20a8b32c29525f9}{scarc\+\_\+update\+\_\+memory\+\_\+counters}} (N\+D\+A\+TA, NP, N\+S\+C\+AL)
+\begin{DoxyCompactList}\small\item\em Update memory statistics w.\+r.\+t to occupied workspace and number of allocated arrays. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a2630884663e225b5a620963f664c06a3}\label{namespacescrc_a2630884663e225b5a620963f664c06a3}} 
+character(10) function \mbox{\hyperlink{namespacescrc_a2630884663e225b5a620963f664c06a3}{scarc\+\_\+get\+\_\+memory\+\_\+state}} (N\+S\+T\+A\+TE, N\+D\+A\+TA, N\+W\+O\+RK, N\+S\+UM)
+\begin{DoxyCompactList}\small\item\em Get full text information about the allocation state of the currently processed array. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a89cd3273edaa6f4b4c10b70aa7db1177}\label{namespacescrc_a89cd3273edaa6f4b4c10b70aa7db1177}} 
+character(10) function \mbox{\hyperlink{namespacescrc_a89cd3273edaa6f4b4c10b70aa7db1177}{scarc\+\_\+get\+\_\+data\+\_\+type}} (N\+D\+A\+TA)
+\begin{DoxyCompactList}\small\item\em Get full text information about the data type of the currently processed array. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a148308edac1ebf7d33d7afcc1588286b}\label{namespacescrc_a148308edac1ebf7d33d7afcc1588286b}} 
+character(10) function \mbox{\hyperlink{namespacescrc_a148308edac1ebf7d33d7afcc1588286b}{scarc\+\_\+get\+\_\+dimension}} (N\+D\+IM)
+\begin{DoxyCompactList}\small\item\em Get full text information about the dimension of the currently processed array. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aed8d35120dcb659bc9ace6fc3ad6266a}\label{namespacescrc_aed8d35120dcb659bc9ace6fc3ad6266a}} 
+character(10) function \mbox{\hyperlink{namespacescrc_aed8d35120dcb659bc9ace6fc3ad6266a}{scarc\+\_\+get\+\_\+init\+\_\+type}} (N\+I\+N\+IT)
+\begin{DoxyCompactList}\small\item\em Get full text information about the initialization type of the currently processed array. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a9d182af69aeeb13f327a6006e2f1a2dd}\label{namespacescrc_a9d182af69aeeb13f327a6006e2f1a2dd}} 
+subroutine \mbox{\hyperlink{namespacescrc_a9d182af69aeeb13f327a6006e2f1a2dd}{scarc\+\_\+allocate\+\_\+int1}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+L1, N\+R1, N\+I\+N\+IT, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize integer array of dimension 1. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a5ec49704e3423a7892e2ea407c79b432}\label{namespacescrc_a5ec49704e3423a7892e2ea407c79b432}} 
+subroutine \mbox{\hyperlink{namespacescrc_a5ec49704e3423a7892e2ea407c79b432}{scarc\+\_\+allocate\+\_\+int2}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+L1, N\+R1, N\+L2, N\+R2, N\+I\+N\+IT, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize integer array of dimension 2. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac4a85c2a09b81325d50a31a24313650c}\label{namespacescrc_ac4a85c2a09b81325d50a31a24313650c}} 
+subroutine \mbox{\hyperlink{namespacescrc_ac4a85c2a09b81325d50a31a24313650c}{scarc\+\_\+allocate\+\_\+int3}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+L1, N\+R1, N\+L2, N\+R2, N\+L3, N\+R3, N\+I\+N\+IT, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize integer array of dimension 3. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_afc6e1c1740f885464c025cbed6c65b3d}\label{namespacescrc_afc6e1c1740f885464c025cbed6c65b3d}} 
+subroutine \mbox{\hyperlink{namespacescrc_afc6e1c1740f885464c025cbed6c65b3d}{scarc\+\_\+allocate\+\_\+log1}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+L1, N\+R1, N\+I\+N\+IT, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize Logical array of dimension 1. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a442159c9c41c6bc0a9d8a8354d92149b}\label{namespacescrc_a442159c9c41c6bc0a9d8a8354d92149b}} 
+subroutine \mbox{\hyperlink{namespacescrc_a442159c9c41c6bc0a9d8a8354d92149b}{scarc\+\_\+allocate\+\_\+log2}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+L1, N\+R1, N\+L2, N\+R2, N\+I\+N\+IT, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize Logical array of dimension 2. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a5d67550251fbeb080d440aea70acccbf}\label{namespacescrc_a5d67550251fbeb080d440aea70acccbf}} 
+subroutine \mbox{\hyperlink{namespacescrc_a5d67550251fbeb080d440aea70acccbf}{scarc\+\_\+allocate\+\_\+log3}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+L1, N\+R1, N\+L2, N\+R2, N\+L3, N\+R3, N\+I\+N\+IT, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize Logical array of dimension 3. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a9f735ac8f173c76c36f64276a82ebb06}\label{namespacescrc_a9f735ac8f173c76c36f64276a82ebb06}} 
+subroutine \mbox{\hyperlink{namespacescrc_a9f735ac8f173c76c36f64276a82ebb06}{scarc\+\_\+allocate\+\_\+real1}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+L1, N\+R1, N\+I\+N\+IT, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize real array of dimension 1. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a56145f115a7e676c3ad096aeb6a50d64}\label{namespacescrc_a56145f115a7e676c3ad096aeb6a50d64}} 
+subroutine \mbox{\hyperlink{namespacescrc_a56145f115a7e676c3ad096aeb6a50d64}{scarc\+\_\+allocate\+\_\+real1\+\_\+fb}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+L1, N\+R1, N\+I\+N\+IT, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize real array of dimension 1. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a4f893823eb05a975801214bdcade2b76}\label{namespacescrc_a4f893823eb05a975801214bdcade2b76}} 
+subroutine \mbox{\hyperlink{namespacescrc_a4f893823eb05a975801214bdcade2b76}{scarc\+\_\+allocate\+\_\+real2}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+L1, N\+R1, N\+L2, N\+R2, N\+I\+N\+IT, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize real array of dimension 2. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a4e341929cf761499c0b4925aeb8d3532}\label{namespacescrc_a4e341929cf761499c0b4925aeb8d3532}} 
+subroutine \mbox{\hyperlink{namespacescrc_a4e341929cf761499c0b4925aeb8d3532}{scarc\+\_\+allocate\+\_\+real3}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+L1, N\+R1, N\+L2, N\+R2, N\+L3, N\+R3, N\+I\+N\+IT, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Allocate and initialize real array of dimension 3. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a5d9cfa1f30730263d4c9d90b2ba67e71}\label{namespacescrc_a5d9cfa1f30730263d4c9d90b2ba67e71}} 
+subroutine \mbox{\hyperlink{namespacescrc_a5d9cfa1f30730263d4c9d90b2ba67e71}{scarc\+\_\+deallocate\+\_\+int1}} (W\+O\+R\+K\+S\+P\+A\+CE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Deallocate one-\/dimensional integer vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a7bffe8ac5dbca90100b734697360a59c}\label{namespacescrc_a7bffe8ac5dbca90100b734697360a59c}} 
+subroutine \mbox{\hyperlink{namespacescrc_a7bffe8ac5dbca90100b734697360a59c}{scarc\+\_\+deallocate\+\_\+int2}} (W\+O\+R\+K\+S\+P\+A\+CE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Deallocate two-\/dimensional integer vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac46f99fb777feb500c6404fa8219bd55}\label{namespacescrc_ac46f99fb777feb500c6404fa8219bd55}} 
+subroutine \mbox{\hyperlink{namespacescrc_ac46f99fb777feb500c6404fa8219bd55}{scarc\+\_\+deallocate\+\_\+int3}} (W\+O\+R\+K\+S\+P\+A\+CE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Deallocate three-\/dimensional integer vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a701adc05ffec4243a4e536f573c6f7c1}\label{namespacescrc_a701adc05ffec4243a4e536f573c6f7c1}} 
+subroutine \mbox{\hyperlink{namespacescrc_a701adc05ffec4243a4e536f573c6f7c1}{scarc\+\_\+deallocate\+\_\+log1}} (W\+O\+R\+K\+S\+P\+A\+CE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Deallocate one-\/dimensional logical vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_af3d7a7c0430c9a11ea684cbd9ad24016}\label{namespacescrc_af3d7a7c0430c9a11ea684cbd9ad24016}} 
+subroutine \mbox{\hyperlink{namespacescrc_af3d7a7c0430c9a11ea684cbd9ad24016}{scarc\+\_\+deallocate\+\_\+log2}} (W\+O\+R\+K\+S\+P\+A\+CE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Deallocate two-\/dimensional logical vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae5e2cb36456d10a2114d09e25693266d}\label{namespacescrc_ae5e2cb36456d10a2114d09e25693266d}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae5e2cb36456d10a2114d09e25693266d}{scarc\+\_\+deallocate\+\_\+log3}} (W\+O\+R\+K\+S\+P\+A\+CE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Deallocate three-\/dimensional logical vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a74543e3ad9ef34f7c0a9f8666999b6d8}\label{namespacescrc_a74543e3ad9ef34f7c0a9f8666999b6d8}} 
+subroutine \mbox{\hyperlink{namespacescrc_a74543e3ad9ef34f7c0a9f8666999b6d8}{scarc\+\_\+deallocate\+\_\+real1}} (W\+O\+R\+K\+S\+P\+A\+CE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Deallocate one-\/dimensional double precision vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a367546cdb84b0d9da05f182974d20d7b}\label{namespacescrc_a367546cdb84b0d9da05f182974d20d7b}} 
+subroutine \mbox{\hyperlink{namespacescrc_a367546cdb84b0d9da05f182974d20d7b}{scarc\+\_\+deallocate\+\_\+real2}} (W\+O\+R\+K\+S\+P\+A\+CE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Deallocate two-\/dimensional double precision vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_acd3c95dec78ab7e253f80f6560e6b95f}\label{namespacescrc_acd3c95dec78ab7e253f80f6560e6b95f}} 
+subroutine \mbox{\hyperlink{namespacescrc_acd3c95dec78ab7e253f80f6560e6b95f}{scarc\+\_\+deallocate\+\_\+real3}} (W\+O\+R\+K\+S\+P\+A\+CE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Deallocate three-\/dimensional double precision vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_abf2350d607a8670832124579256e0704}\label{namespacescrc_abf2350d607a8670832124579256e0704}} 
+subroutine \mbox{\hyperlink{namespacescrc_abf2350d607a8670832124579256e0704}{scarc\+\_\+deallocate\+\_\+real1\+\_\+fb}} (W\+O\+R\+K\+S\+P\+A\+CE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Deallocate one-\/dimensional single precision vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac2381f4db1fb6fa20b429239d9b14b62}\label{namespacescrc_ac2381f4db1fb6fa20b429239d9b14b62}} 
+subroutine \mbox{\hyperlink{namespacescrc_ac2381f4db1fb6fa20b429239d9b14b62}{scarc\+\_\+deallocate\+\_\+real2\+\_\+fb}} (W\+O\+R\+K\+S\+P\+A\+CE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Deallocate one-\/dimensional single precision vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a911ec02dadc8b75b89db14ff3a7f7035}\label{namespacescrc_a911ec02dadc8b75b89db14ff3a7f7035}} 
+subroutine \mbox{\hyperlink{namespacescrc_a911ec02dadc8b75b89db14ff3a7f7035}{scarc\+\_\+deallocate\+\_\+real3\+\_\+fb}} (W\+O\+R\+K\+S\+P\+A\+CE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Deallocate one-\/dimensional single precision vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a6b66d3ab71c0c43417cdeb5251f6cb79}\label{namespacescrc_a6b66d3ab71c0c43417cdeb5251f6cb79}} 
+subroutine \mbox{\hyperlink{namespacescrc_a6b66d3ab71c0c43417cdeb5251f6cb79}{scarc\+\_\+resize\+\_\+int1}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+L1, N\+R1, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Resize one-\/dimensional integer vector to requested bounds. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a1d3c8dd890d38ba0b660813619fe7272}\label{namespacescrc_a1d3c8dd890d38ba0b660813619fe7272}} 
+subroutine \mbox{\hyperlink{namespacescrc_a1d3c8dd890d38ba0b660813619fe7272}{scarc\+\_\+resize\+\_\+int2}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+L1, N\+R1, N\+L2, N\+R2, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Resize two-\/dimensional integer vector to requested bounds. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a6ddbfb38d08978a4a37d2e270690c2d4}\label{namespacescrc_a6ddbfb38d08978a4a37d2e270690c2d4}} 
+subroutine \mbox{\hyperlink{namespacescrc_a6ddbfb38d08978a4a37d2e270690c2d4}{scarc\+\_\+reduce\+\_\+int1}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+S\+I\+ZE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Reduce size of integer vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a24a68343165d767f256b53b4823595fb}\label{namespacescrc_a24a68343165d767f256b53b4823595fb}} 
+subroutine \mbox{\hyperlink{namespacescrc_a24a68343165d767f256b53b4823595fb}{scarc\+\_\+reduce\+\_\+int2}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+S\+I\+Z\+E1, N\+S\+I\+Z\+E2, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Reduce size of integer array with dimension 2. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_abd1a3dbae047a087652ea9e5bebb523a}\label{namespacescrc_abd1a3dbae047a087652ea9e5bebb523a}} 
+subroutine \mbox{\hyperlink{namespacescrc_abd1a3dbae047a087652ea9e5bebb523a}{scarc\+\_\+expand\+\_\+int1}} (W\+O\+R\+K\+S\+P\+A\+CE, W\+O\+R\+K\+S\+P\+A\+C\+E\+\_\+\+A\+DD, N\+S\+I\+ZE, N\+S\+I\+Z\+E\+\_\+\+A\+DD, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Expand size of integer vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a455c11d4ff2541fd7cac60790921201c}\label{namespacescrc_a455c11d4ff2541fd7cac60790921201c}} 
+subroutine \mbox{\hyperlink{namespacescrc_a455c11d4ff2541fd7cac60790921201c}{scarc\+\_\+reduce\+\_\+real1}} (W\+O\+R\+K\+S\+P\+A\+CE, N\+S\+I\+ZE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Reduce size of integer vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a27436ca011fc0362c66c37689bcb1819}\label{namespacescrc_a27436ca011fc0362c66c37689bcb1819}} 
+subroutine \mbox{\hyperlink{namespacescrc_a27436ca011fc0362c66c37689bcb1819}{scarc\+\_\+allocate\+\_\+cmatrix}} (A, NL, N\+P\+R\+EC, N\+T\+Y\+PE, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Allocate matrix in compact storage format. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a0f4f85d91bdf77d24165f7a5aeb97c8d}\label{namespacescrc_a0f4f85d91bdf77d24165f7a5aeb97c8d}} 
+subroutine \mbox{\hyperlink{namespacescrc_a0f4f85d91bdf77d24165f7a5aeb97c8d}{scarc\+\_\+deallocate\+\_\+cmatrix}} (A, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Dellocate matrix in compact storage format. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aecf723643fc2adbb6bd6cdd4ec993991}\label{namespacescrc_aecf723643fc2adbb6bd6cdd4ec993991}} 
+subroutine \mbox{\hyperlink{namespacescrc_aecf723643fc2adbb6bd6cdd4ec993991}{scarc\+\_\+reduce\+\_\+cmatrix}} (A, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Reduce size of matrix in compact storage format. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a571ffa12b5390630c2f89f0e19bad38c}\label{namespacescrc_a571ffa12b5390630c2f89f0e19bad38c}} 
+subroutine \mbox{\hyperlink{namespacescrc_a571ffa12b5390630c2f89f0e19bad38c}{scarc\+\_\+allocate\+\_\+bmatrix}} (A, NL, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Allocate matrix in bandwise storage format. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_af1dc5647f4c36494438237bd0ba576e2}\label{namespacescrc_af1dc5647f4c36494438237bd0ba576e2}} 
+subroutine \mbox{\hyperlink{namespacescrc_af1dc5647f4c36494438237bd0ba576e2}{scarc\+\_\+deallocate\+\_\+bmatrix}} (A, C\+N\+A\+ME, C\+S\+C\+O\+PE)
+\begin{DoxyCompactList}\small\item\em Deallocate matrix in bandwise storage format. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a7082ce138af8ce20ad417edc1c1b0fe2}\label{namespacescrc_a7082ce138af8ce20ad417edc1c1b0fe2}} 
+subroutine \mbox{\hyperlink{namespacescrc_a7082ce138af8ce20ad417edc1c1b0fe2}{scarc\+\_\+dump\+\_\+csv}} (I\+SM, NS, NL)
+\begin{DoxyCompactList}\small\item\em Dump residual information. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a5076fecdd908066f2df61168e33d4622}\label{namespacescrc_a5076fecdd908066f2df61168e33d4622}} 
+subroutine, public \mbox{\hyperlink{namespacescrc_a5076fecdd908066f2df61168e33d4622}{scarc\+\_\+dump\+\_\+timers}}
+\begin{DoxyCompactList}\small\item\em Dump C\+PU times of several routines. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ad1fca6f16e13e4c3d31996c0bb89f233}\label{namespacescrc_ad1fca6f16e13e4c3d31996c0bb89f233}} 
+subroutine \mbox{\hyperlink{namespacescrc_ad1fca6f16e13e4c3d31996c0bb89f233}{scarc\+\_\+store\+\_\+mgm}} (NL, N\+T\+Y\+PE)
+\begin{DoxyCompactList}\small\item\em Store preliminary solution vector in Mc\+Keeney-\/\+Greengard-\/\+Mayo method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_afe38edca69a1065b9886f5e310bd43a1}\label{namespacescrc_afe38edca69a1065b9886f5e310bd43a1}} 
+subroutine \mbox{\hyperlink{namespacescrc_afe38edca69a1065b9886f5e310bd43a1}{scarc\+\_\+mgm\+\_\+internal\+\_\+velocity}} (NL)
+\begin{DoxyCompactList}\small\item\em Set internal boundary conditions for unstructured, homogeneous part of Mc\+Keeney-\/\+Greengard-\/\+Mayo method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae06b08f231963b4cd3431fd53ee20be5}\label{namespacescrc_ae06b08f231963b4cd3431fd53ee20be5}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae06b08f231963b4cd3431fd53ee20be5}{scarc\+\_\+setup\+\_\+mgm}} (N\+L\+M\+IN, N\+L\+M\+AX)
+\begin{DoxyCompactList}\small\item\em Allocate velocity vectors for the setting of internal boundary conditions in Mc\+Keeney-\/\+Greengard-\/\+Mayo method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_af882bc364e7fbe3c826e982c555634da}\label{namespacescrc_af882bc364e7fbe3c826e982c555634da}} 
+subroutine \mbox{\hyperlink{namespacescrc_af882bc364e7fbe3c826e982c555634da}{scarc\+\_\+setup\+\_\+mgm\+\_\+lu}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Setup L\+U-\/decomposition for Mc\+Keeney-\/\+Greengard-\/\+Mayo method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae1235d8463128c3b41a97d2e7ab92405}\label{namespacescrc_ae1235d8463128c3b41a97d2e7ab92405}} 
+subroutine \mbox{\hyperlink{namespacescrc_ae1235d8463128c3b41a97d2e7ab92405}{scarc\+\_\+setup\+\_\+mgm\+\_\+ilu}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Setup I\+L\+U-\/decomposition for Mc\+Keeney-\/\+Greengard-\/\+Mayo method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a2bf43e2f72ef77d9875a226e455cb00b}\label{namespacescrc_a2bf43e2f72ef77d9875a226e455cb00b}} 
+subroutine \mbox{\hyperlink{namespacescrc_a2bf43e2f72ef77d9875a226e455cb00b}{scarc\+\_\+method\+\_\+mgm\+\_\+lu}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Perform L\+U-\/decomposition for Mc\+Keeney-\/\+Greengard-\/\+Mayo method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ad328a422de0c460586eacf5e2645d8be}\label{namespacescrc_ad328a422de0c460586eacf5e2645d8be}} 
+subroutine \mbox{\hyperlink{namespacescrc_ad328a422de0c460586eacf5e2645d8be}{scarc\+\_\+method\+\_\+mgm\+\_\+ilu}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Perform I\+L\+U-\/decomposition for Mc\+Keeney-\/\+Greengard-\/\+Mayo method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a69c36b3ba5a4edb679338ef15ba492c6}\label{namespacescrc_a69c36b3ba5a4edb679338ef15ba492c6}} 
+subroutine \mbox{\hyperlink{namespacescrc_a69c36b3ba5a4edb679338ef15ba492c6}{scarc\+\_\+dump\+\_\+quantity}} (NV, C\+N\+A\+ME, I\+SM, NS, NL)
+\begin{DoxyCompactList}\small\item\em Debugging version only\+: Dump out information for specified quantity. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a620606a50a1c7c20359c7490866d1e54}\label{namespacescrc_a620606a50a1c7c20359c7490866d1e54}} 
+subroutine \mbox{\hyperlink{namespacescrc_a620606a50a1c7c20359c7490866d1e54}{scarc\+\_\+debug\+\_\+int1}} (A\+RR, I1, I2, C\+N\+A\+ME, C\+T\+E\+XT)
+\begin{DoxyCompactList}\small\item\em Debugging version only\+: Print out debug information for integer vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a46f21ed217e7cdc10a8269bb10711990}\label{namespacescrc_a46f21ed217e7cdc10a8269bb10711990}} 
+subroutine \mbox{\hyperlink{namespacescrc_a46f21ed217e7cdc10a8269bb10711990}{scarc\+\_\+debug\+\_\+real1}} (A\+RR, I1, I2, C\+N\+A\+ME, C\+T\+E\+XT)
+\begin{DoxyCompactList}\small\item\em Debugging version only\+: Print out debug information for double precision vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a073f7bd72cbc226a036336a5d21fb015}\label{namespacescrc_a073f7bd72cbc226a036336a5d21fb015}} 
+subroutine \mbox{\hyperlink{namespacescrc_a073f7bd72cbc226a036336a5d21fb015}{scarc\+\_\+debug\+\_\+zones}} (G, IC, I\+T\+Y\+PE, C\+T\+E\+XT)
+\begin{DoxyCompactList}\small\item\em Debugging version only\+: Print out debug information for aggregation zones. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac6cd7e671cd3bad3352866985417937c}\label{namespacescrc_ac6cd7e671cd3bad3352866985417937c}} 
+subroutine \mbox{\hyperlink{namespacescrc_ac6cd7e671cd3bad3352866985417937c}{scarc\+\_\+debug\+\_\+cmatrix}} (A, C\+N\+A\+ME, C\+T\+E\+XT)
+\begin{DoxyCompactList}\small\item\em Debugging version only\+: Print out debug information for compactly stored matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ac8cc9a49696ebf59427efe449a736d83}\label{namespacescrc_ac8cc9a49696ebf59427efe449a736d83}} 
+subroutine \mbox{\hyperlink{namespacescrc_ac8cc9a49696ebf59427efe449a736d83}{scarc\+\_\+debug\+\_\+level}} (NV, C\+V\+EC, NL)
+\begin{DoxyCompactList}\small\item\em Debugging version only\+: Print out debug information for specified vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aad6feb419abe6d39c356ed9da8fc4a4a}\label{namespacescrc_aad6feb419abe6d39c356ed9da8fc4a4a}} 
+subroutine \mbox{\hyperlink{namespacescrc_aad6feb419abe6d39c356ed9da8fc4a4a}{scarc\+\_\+debug\+\_\+quantity}} (N\+T\+Y\+PE, NL, C\+Q\+U\+A\+N\+T\+I\+TY)
+\begin{DoxyCompactList}\small\item\em Debugging version only\+: Print out debug information for specified quantity. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aeb880f4fa4240dbd787c5422c5509a07}\label{namespacescrc_aeb880f4fa4240dbd787c5422c5509a07}} 
+subroutine \mbox{\hyperlink{namespacescrc_aeb880f4fa4240dbd787c5422c5509a07}{scarc\+\_\+matlab\+\_\+vector}} (NV, C\+V\+EC, NL)
+\begin{DoxyCompactList}\small\item\em Debugging version only\+: Print out vector information on specified level for M\+A\+T\+L\+AB. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a21677601e49bd9470cb425c188795605}\label{namespacescrc_a21677601e49bd9470cb425c188795605}} 
+subroutine \mbox{\hyperlink{namespacescrc_a21677601e49bd9470cb425c188795605}{scarc\+\_\+matlab\+\_\+matrix}} (V\+AL, R\+OW, C\+OL, N\+C1, N\+C2, NM, NL, C\+N\+A\+ME)
+\begin{DoxyCompactList}\small\item\em Debugging version only\+: Print out matrix information on specified level for M\+A\+T\+L\+AB. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a0cdf53e69dcc0f55c53e47bce2f98a77}\label{namespacescrc_a0cdf53e69dcc0f55c53e47bce2f98a77}} 
+subroutine \mbox{\hyperlink{namespacescrc_a0cdf53e69dcc0f55c53e47bce2f98a77}{scarc\+\_\+python\+\_\+matrix}} (NL, C\+N\+A\+ME)
+\begin{DoxyCompactList}\small\item\em Debugging version only\+: Print out matrix information on specified level for P\+Y\+T\+H\+ON. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a6063327cb64b241552283e47b5b839bf}\label{namespacescrc_a6063327cb64b241552283e47b5b839bf}} 
+subroutine \mbox{\hyperlink{namespacescrc_a6063327cb64b241552283e47b5b839bf}{scarc\+\_\+python\+\_\+zones}} (NM, NL, C\+N\+A\+ME)
+\begin{DoxyCompactList}\small\item\em Debugging version only\+: Print out aggregation zones information on specified level for P\+Y\+T\+H\+ON. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab96b760d37ff8e697abbcb10c3656fef}\label{namespacescrc_ab96b760d37ff8e697abbcb10c3656fef}} 
+subroutine \mbox{\hyperlink{namespacescrc_ab96b760d37ff8e697abbcb10c3656fef}{scarc\+\_\+blender\+\_\+zones}} (NM, NL)
+\begin{DoxyCompactList}\small\item\em Debugging version only\+: Print out matrix information on specified level for B\+L\+E\+N\+D\+ER. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab80713e9ae2ed80860823b524c3bc43f}\label{namespacescrc_ab80713e9ae2ed80860823b524c3bc43f}} 
+subroutine \mbox{\hyperlink{namespacescrc_ab80713e9ae2ed80860823b524c3bc43f}{scarc\+\_\+preset\+\_\+b1\+\_\+case}}
+\begin{DoxyCompactList}\small\item\em Temporarily preset B1 case with specified aggregation pattern. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a9ef5df839e3588da24682188b6be869b}\label{namespacescrc_a9ef5df839e3588da24682188b6be869b}} 
+subroutine \mbox{\hyperlink{namespacescrc_a9ef5df839e3588da24682188b6be869b}{scarc\+\_\+preset\+\_\+b14\+\_\+case}}
+\begin{DoxyCompactList}\small\item\em Temporarily preset B14 case with specified aggregation pattern. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ad66a5fe7041d40ffde847a302897f0c5}\label{namespacescrc_ad66a5fe7041d40ffde847a302897f0c5}} 
+subroutine \mbox{\hyperlink{namespacescrc_ad66a5fe7041d40ffde847a302897f0c5}{scarc\+\_\+preset\+\_\+b14big\+\_\+case}}
+\begin{DoxyCompactList}\small\item\em Temporarily preset B14\+\_\+\+B\+IG case with specified aggregation pattern. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a40529bdbaa0bbeb8503056b1d3a223f1}\label{namespacescrc_a40529bdbaa0bbeb8503056b1d3a223f1}} 
+subroutine \mbox{\hyperlink{namespacescrc_a40529bdbaa0bbeb8503056b1d3a223f1}{scarc\+\_\+dump\+\_\+system}} (N\+S\+T\+A\+CK, I\+T\+Y\+PE)
+\begin{DoxyCompactList}\small\item\em Standalone version only\+: Dump matrix and vectors belonging to pressure system. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a42aae7b07d0e3c6962c08fb782ad00c5}\label{namespacescrc_a42aae7b07d0e3c6962c08fb782ad00c5}} 
+subroutine \mbox{\hyperlink{namespacescrc_a42aae7b07d0e3c6962c08fb782ad00c5}{scarc\+\_\+dump\+\_\+environment}}
+\begin{DoxyCompactList}\small\item\em Standalone version only\+: Dump several arrays and structures needed for the standalone version of Sca\+RC. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_af82778456a6945d5d94edf79d6ab3b3c}\label{namespacescrc_af82778456a6945d5d94edf79d6ab3b3c}} 
+subroutine \mbox{\hyperlink{namespacescrc_af82778456a6945d5d94edf79d6ab3b3c}{scarc\+\_\+restore\+\_\+environment}}
+\begin{DoxyCompactList}\small\item\em Standalone version only\+: Dump several arrays and structures needed for Sca\+RC -\/ standalone version. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a3f23c382a1805c3af7931051e6200efd}\label{namespacescrc_a3f23c382a1805c3af7931051e6200efd}} 
+subroutine \mbox{\hyperlink{namespacescrc_a3f23c382a1805c3af7931051e6200efd}{scarc\+\_\+setup\+\_\+pressure}} ()
+\begin{DoxyCompactList}\small\item\em Standalone version only\+: Allocate and initialize vectors pressure diagnostics -\/ only for developping purposes. \end{DoxyCompactList}\item 
+subroutine \mbox{\hyperlink{namespacescrc_af310021670f8c679935a3ab453b35c73}{scarc\+\_\+pressure\+\_\+difference}} (NL)
+\begin{DoxyCompactList}\small\item\em Standalone version only\+: Compute Differences between old and new pressure solutions -\/ only for developping purposes. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{namespacescrc_adea362fb24b59b0261baf879678f853b}\label{namespacescrc_adea362fb24b59b0261baf879678f853b}} 
+type(scarc\+\_\+type), dimension(\+:), allocatable, target, save \mbox{\hyperlink{namespacescrc_adea362fb24b59b0261baf879678f853b}{scarc}}
+\begin{DoxyCompactList}\small\item\em Main Sca\+RC data structure. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a69ec582ed601073e99bc6ffd0d8b6693}\label{namespacescrc_a69ec582ed601073e99bc6ffd0d8b6693}} 
+type(scarc\+\_\+stack\+\_\+type), dimension(\+:), allocatable, target, save \mbox{\hyperlink{namespacescrc_a69ec582ed601073e99bc6ffd0d8b6693}{stack}}
+\begin{DoxyCompactList}\small\item\em Stack of consecutive solvers. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a53d19ff6a4a73dce7b7e668666496722}\label{namespacescrc_a53d19ff6a4a73dce7b7e668666496722}} 
+type(scarc\+\_\+cpu\+\_\+type), dimension(\+:), allocatable, target, save \mbox{\hyperlink{namespacescrc_a53d19ff6a4a73dce7b7e668666496722}{cpu}}
+\begin{DoxyCompactList}\small\item\em C\+P\+U-\/times of different routines. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a15c0f42c2c7af026701208d145cf7727}\label{namespacescrc_a15c0f42c2c7af026701208d145cf7727}} 
+type(scarc\+\_\+memory\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a15c0f42c2c7af026701208d145cf7727}{memory}}
+\begin{DoxyCompactList}\small\item\em Memory administration for Sca\+RC arrays. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a75da452afefbf2530fea31dae3e8d431}\label{namespacescrc_a75da452afefbf2530fea31dae3e8d431}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a75da452afefbf2530fea31dae3e8d431}{main\+\_\+cg}}
+\begin{DoxyCompactList}\small\item\em Solver structure for Krylov main solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a3950333ff372fdd2db2cdcaa123f2981}\label{namespacescrc_a3950333ff372fdd2db2cdcaa123f2981}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a3950333ff372fdd2db2cdcaa123f2981}{main\+\_\+cg\+\_\+structured}}
+\begin{DoxyCompactList}\small\item\em Solver structure for structured Krylov main solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_af99fca9c9823bf9244ba59d171e15ede}\label{namespacescrc_af99fca9c9823bf9244ba59d171e15ede}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_af99fca9c9823bf9244ba59d171e15ede}{main\+\_\+cg\+\_\+unstructured}}
+\begin{DoxyCompactList}\small\item\em Solver structure for unstructured Krylov main solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a883fdba2b0011e016b3b4895c4d3c02c}\label{namespacescrc_a883fdba2b0011e016b3b4895c4d3c02c}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a883fdba2b0011e016b3b4895c4d3c02c}{main\+\_\+gmg}}
+\begin{DoxyCompactList}\small\item\em Solver structure for Multigrid main solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a13e78eae341abe388ff9eca9906a5696}\label{namespacescrc_a13e78eae341abe388ff9eca9906a5696}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a13e78eae341abe388ff9eca9906a5696}{coarse\+\_\+krylov}}
+\begin{DoxyCompactList}\small\item\em Solver structure for Krylov coarse grid solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_acdea14b0bee5b569580a049a485ec451}\label{namespacescrc_acdea14b0bee5b569580a049a485ec451}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_acdea14b0bee5b569580a049a485ec451}{main\+\_\+lu}}
+\begin{DoxyCompactList}\small\item\em Solver structure for L\+U-\/decomposition main solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aaf004adfd407db05133d8d564fd75b64}\label{namespacescrc_aaf004adfd407db05133d8d564fd75b64}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_aaf004adfd407db05133d8d564fd75b64}{coarse\+\_\+cluster}}
+\begin{DoxyCompactList}\small\item\em Solver structure for C\+L\+U\+S\+T\+E\+R\+\_\+\+S\+P\+A\+R\+S\+E\+\_\+\+S\+O\+L\+V\+ER coarse grid solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_accf4733089254c083360670116231506}\label{namespacescrc_accf4733089254c083360670116231506}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_accf4733089254c083360670116231506}{coarse\+\_\+pardiso}}
+\begin{DoxyCompactList}\small\item\em Solver structure for P\+A\+R\+D\+I\+SO coarse grid solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_abc27f0e0c2eeeea5c2161ab02689e994}\label{namespacescrc_abc27f0e0c2eeeea5c2161ab02689e994}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_abc27f0e0c2eeeea5c2161ab02689e994}{precon\+\_\+jac}}
+\begin{DoxyCompactList}\small\item\em Solver structure for Jacobi preconditioner. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_aa6218adb4a3e90ac46d99e88ee7719aa}\label{namespacescrc_aa6218adb4a3e90ac46d99e88ee7719aa}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_aa6218adb4a3e90ac46d99e88ee7719aa}{precon\+\_\+ssor}}
+\begin{DoxyCompactList}\small\item\em Solver structure for S\+S\+OR preconditioner. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a878966962d3ac633990ec5eef09de420}\label{namespacescrc_a878966962d3ac633990ec5eef09de420}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a878966962d3ac633990ec5eef09de420}{precon\+\_\+ilu}}
+\begin{DoxyCompactList}\small\item\em Solver structure for I\+LU preconditioner. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a39a214124aa5b645711833c57598b701}\label{namespacescrc_a39a214124aa5b645711833c57598b701}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a39a214124aa5b645711833c57598b701}{precon\+\_\+fft}}
+\begin{DoxyCompactList}\small\item\em Solver structure for F\+FT preconditioner. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a7617b4697159ac142a617f593cb1c444}\label{namespacescrc_a7617b4697159ac142a617f593cb1c444}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a7617b4697159ac142a617f593cb1c444}{precon\+\_\+ffto}}
+\begin{DoxyCompactList}\small\item\em Solver structure for F\+F\+TO preconditioner (including overlap) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a605dad3bb4c3f380f7fce119ffb02d90}\label{namespacescrc_a605dad3bb4c3f380f7fce119ffb02d90}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a605dad3bb4c3f380f7fce119ffb02d90}{precon\+\_\+mg}}
+\begin{DoxyCompactList}\small\item\em Solver structure for Multigrid preconditioner. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_afc10e2b7580c9f6a2d4f0c4f862ccb40}\label{namespacescrc_afc10e2b7580c9f6a2d4f0c4f862ccb40}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_afc10e2b7580c9f6a2d4f0c4f862ccb40}{precon\+\_\+mjac}}
+\begin{DoxyCompactList}\small\item\em Solver structure for Jacobi preconditioner (matrix version) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a4490e4951b74b3d95668b82a5cee832b}\label{namespacescrc_a4490e4951b74b3d95668b82a5cee832b}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a4490e4951b74b3d95668b82a5cee832b}{precon\+\_\+mgs}}
+\begin{DoxyCompactList}\small\item\em Solver structure for Gauss-\/\+Seidel preconditioner (matrix version) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a6a9cc3f7c9eb7e6cd6c2bb871ae321b0}\label{namespacescrc_a6a9cc3f7c9eb7e6cd6c2bb871ae321b0}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a6a9cc3f7c9eb7e6cd6c2bb871ae321b0}{precon\+\_\+msgs}}
+\begin{DoxyCompactList}\small\item\em Solver structure for Sym. Gauss-\/\+Seidel preconditioner (matrix vs.) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a5e640d9989f2fa6fb48772d67f704274}\label{namespacescrc_a5e640d9989f2fa6fb48772d67f704274}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a5e640d9989f2fa6fb48772d67f704274}{precon\+\_\+msor}}
+\begin{DoxyCompactList}\small\item\em Solver structure for S\+OR preconditioner (matrix version) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae1116e0f39e2291b4608262d5133238d}\label{namespacescrc_ae1116e0f39e2291b4608262d5133238d}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_ae1116e0f39e2291b4608262d5133238d}{precon\+\_\+mssor}}
+\begin{DoxyCompactList}\small\item\em Solver structure for S\+S\+OR preconditioner (matrix version) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a1a7abb0943dee33e80e22a51ebbf18cf}\label{namespacescrc_a1a7abb0943dee33e80e22a51ebbf18cf}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a1a7abb0943dee33e80e22a51ebbf18cf}{smooth\+\_\+jac}}
+\begin{DoxyCompactList}\small\item\em Solver structure for Jacobi smoother. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ae8237ad7bfebf272ec49fdd58d497727}\label{namespacescrc_ae8237ad7bfebf272ec49fdd58d497727}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_ae8237ad7bfebf272ec49fdd58d497727}{smooth\+\_\+ssor}}
+\begin{DoxyCompactList}\small\item\em Solver structure for S\+S\+OR smoother. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a174065d77552f644aab724542c11f342}\label{namespacescrc_a174065d77552f644aab724542c11f342}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a174065d77552f644aab724542c11f342}{smooth\+\_\+ilu}}
+\begin{DoxyCompactList}\small\item\em Solver structure for I\+LU smoother. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab62e590f53a39e35320075c871c27b97}\label{namespacescrc_ab62e590f53a39e35320075c871c27b97}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_ab62e590f53a39e35320075c871c27b97}{smooth\+\_\+fft}}
+\begin{DoxyCompactList}\small\item\em Solver structure for F\+FT smoother. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a3176d5d163b745f714ff6e60ba0b4c85}\label{namespacescrc_a3176d5d163b745f714ff6e60ba0b4c85}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a3176d5d163b745f714ff6e60ba0b4c85}{smooth\+\_\+ffto}}
+\begin{DoxyCompactList}\small\item\em Solver structure for F\+F\+TO smoother (including overlap) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a75876d8b6307acefc9e772a369a23041}\label{namespacescrc_a75876d8b6307acefc9e772a369a23041}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a75876d8b6307acefc9e772a369a23041}{smooth\+\_\+mjac}}
+\begin{DoxyCompactList}\small\item\em Solver structure for Jacobi smoother (matrix version) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a5e9b1238a5def298db4bbd5200368c42}\label{namespacescrc_a5e9b1238a5def298db4bbd5200368c42}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a5e9b1238a5def298db4bbd5200368c42}{smooth\+\_\+mgs}}
+\begin{DoxyCompactList}\small\item\em Solver structure for Gauss-\/\+Seidel smoother (matrix version) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a3c50d79998bf72a14f7c01603e762148}\label{namespacescrc_a3c50d79998bf72a14f7c01603e762148}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a3c50d79998bf72a14f7c01603e762148}{smooth\+\_\+msgs}}
+\begin{DoxyCompactList}\small\item\em Solver structure for Sym. Gauss-\/\+Seidel smoother (matrix vs.) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a6498bd7bdd438a3e84f052a51a4e951b}\label{namespacescrc_a6498bd7bdd438a3e84f052a51a4e951b}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a6498bd7bdd438a3e84f052a51a4e951b}{smooth\+\_\+msor}}
+\begin{DoxyCompactList}\small\item\em Solver structure for S\+OR smoother (matrix version) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a8e81cb9f57a72c3a3331e424fb316239}\label{namespacescrc_a8e81cb9f57a72c3a3331e424fb316239}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a8e81cb9f57a72c3a3331e424fb316239}{smooth\+\_\+mssor}}
+\begin{DoxyCompactList}\small\item\em Solver structure for S\+S\+OR smoother (matrix version) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a981d3b1025c77d81b3bbd292bcd47195}\label{namespacescrc_a981d3b1025c77d81b3bbd292bcd47195}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a981d3b1025c77d81b3bbd292bcd47195}{precon\+\_\+mkl}}
+\begin{DoxyCompactList}\small\item\em Solver structure for M\+KL preconditioner. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a3c6612d0539a417d54de979fa62f8982}\label{namespacescrc_a3c6612d0539a417d54de979fa62f8982}} 
+type(scarc\+\_\+solver\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_a3c6612d0539a417d54de979fa62f8982}{smooth\+\_\+mkl}}
+\begin{DoxyCompactList}\small\item\em Solver structure for M\+KL smoother. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_a25951be34d9df4b88e596bfafeb57394}\label{namespacescrc_a25951be34d9df4b88e596bfafeb57394}} 
+type(scarc\+\_\+message\+\_\+type), save \mbox{\hyperlink{namespacescrc_a25951be34d9df4b88e596bfafeb57394}{msg}}
+\begin{DoxyCompactList}\small\item\em Structure to print out various messages. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescrc_ab81f3f6a75a7ba38389b5f0caf873733}\label{namespacescrc_ab81f3f6a75a7ba38389b5f0caf873733}} 
+type(scarc\+\_\+subdivision\+\_\+type), target, save \mbox{\hyperlink{namespacescrc_ab81f3f6a75a7ba38389b5f0caf873733}{subdivision}}
+\begin{DoxyCompactList}\small\item\em Structure to keep information about subdivision. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Alternative solution of the F\+DS pressure equation by Scalable Recursive Clustering (Sca\+RC) 
+
+Collection of Poisson solvers based on iterative parallel solution strategies (Krylov and multigrid solvers) 
+
+\doxysubsection{Function/\+Subroutine Documentation}
+\mbox{\Hypertarget{namespacescrc_af310021670f8c679935a3ab453b35c73}\label{namespacescrc_af310021670f8c679935a3ab453b35c73}} 
+\index{scrc@{scrc}!scarc\_pressure\_difference@{scarc\_pressure\_difference}}
+\index{scarc\_pressure\_difference@{scarc\_pressure\_difference}!scrc@{scrc}}
+\doxysubsubsection{\texorpdfstring{scarc\_pressure\_difference()}{scarc\_pressure\_difference()}}
+{\footnotesize\ttfamily subroutine scrc\+::scarc\+\_\+pressure\+\_\+difference (\begin{DoxyParamCaption}\item[{integer, intent(in)}]{NL }\end{DoxyParamCaption})}
+
+
+
+Standalone version only\+: Compute Differences between old and new pressure solutions -\/ only for developping purposes. 
+
+Standalone version only\+: Store new pressure vector for comparison in next time step\mbox{\Hypertarget{namespacescrc_abc29c459979a0688a49272d661cec31a}\label{namespacescrc_abc29c459979a0688a49272d661cec31a}} 
+\index{scrc@{scrc}!scarc\_update\_ghostcells@{scarc\_update\_ghostcells}}
+\index{scarc\_update\_ghostcells@{scarc\_update\_ghostcells}!scrc@{scrc}}
+\doxysubsubsection{\texorpdfstring{scarc\_update\_ghostcells()}{scarc\_update\_ghostcells()}}
+{\footnotesize\ttfamily subroutine scrc\+::scarc\+\_\+update\+\_\+ghostcells (\begin{DoxyParamCaption}\item[{integer, intent(in)}]{NL }\end{DoxyParamCaption})}
+
+
+
+Set correct boundary values at external and internal boundaries. 
+
+Perform data exchange to achieve consistency of ghost values along internal boundaries

@@ -1,0 +1,66 @@
+\hypertarget{structscarc__types_1_1scarc__wall__type}{}\doxysection{scarc\+\_\+types\+::scarc\+\_\+wall\+\_\+type Type Reference}
+\label{structscarc__types_1_1scarc__wall__type}\index{scarc\_types::scarc\_wall\_type@{scarc\_types::scarc\_wall\_type}}
+
+
+Wall information related to neighbors and BC\textquotesingle{}s.  
+
+
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_a3e74949be3cb2f1c55e69ce2f7609e65}\label{structscarc__types_1_1scarc__wall__type_a3e74949be3cb2f1c55e69ce2f7609e65}} 
+integer \mbox{\hyperlink{structscarc__types_1_1scarc__wall__type_a3e74949be3cb2f1c55e69ce2f7609e65}{btype}} = 0
+\begin{DoxyCompactList}\small\item\em Type of wall cell (Dirichlet/\+Neumann/\+Internal) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_a4ae3b5d0cd0779080f738383a7f19add}\label{structscarc__types_1_1scarc__wall__type_a4ae3b5d0cd0779080f738383a7f19add}} 
+integer \mbox{\hyperlink{structscarc__types_1_1scarc__wall__type_a4ae3b5d0cd0779080f738383a7f19add}{boundary\+\_\+type}} = 0
+\begin{DoxyCompactList}\small\item\em Type of boundary for wall cell (Solid/\+Interpolated/\+Open)) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_a7f8cf5846e0a01622fb03eb708aac995}\label{structscarc__types_1_1scarc__wall__type_a7f8cf5846e0a01622fb03eb708aac995}} 
+integer \mbox{\hyperlink{structscarc__types_1_1scarc__wall__type_a7f8cf5846e0a01622fb03eb708aac995}{ior}} = 0
+\begin{DoxyCompactList}\small\item\em Orientation of wall cell. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_a533407c56daf2c9c29e79e6a993d071c}\label{structscarc__types_1_1scarc__wall__type_a533407c56daf2c9c29e79e6a993d071c}} 
+integer \mbox{\hyperlink{structscarc__types_1_1scarc__wall__type_a533407c56daf2c9c29e79e6a993d071c}{nom}} = 0
+\begin{DoxyCompactList}\small\item\em Adjacent neighbor at wall cell. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_a9f190b82955f7f612a33f9a1c6230894}\label{structscarc__types_1_1scarc__wall__type_a9f190b82955f7f612a33f9a1c6230894}} 
+integer \mbox{\hyperlink{structscarc__types_1_1scarc__wall__type_a9f190b82955f7f612a33f9a1c6230894}{icw}} = N\+S\+C\+A\+R\+C\+\_\+\+U\+N\+D\+E\+F\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Internal wall cell for IW. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_a43be9d751772228d5fd7b396b3fc4189}\label{structscarc__types_1_1scarc__wall__type_a43be9d751772228d5fd7b396b3fc4189}} 
+integer {\bfseries ixg}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_a3b35ad8024e9328484712dae19cdd7d6}\label{structscarc__types_1_1scarc__wall__type_a3b35ad8024e9328484712dae19cdd7d6}} 
+integer {\bfseries iyg}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_abf7243309515b4843b15efb88cabb6dd}\label{structscarc__types_1_1scarc__wall__type_abf7243309515b4843b15efb88cabb6dd}} 
+integer \mbox{\hyperlink{structscarc__types_1_1scarc__wall__type_abf7243309515b4843b15efb88cabb6dd}{izg}}
+\begin{DoxyCompactList}\small\item\em Coordinate indices of ghost cells. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_a32ffc6000fa4dcdb4a023f20fe938d0e}\label{structscarc__types_1_1scarc__wall__type_a32ffc6000fa4dcdb4a023f20fe938d0e}} 
+integer {\bfseries ixw}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_a638a58d7c3a0dc1c152df7d081a09c00}\label{structscarc__types_1_1scarc__wall__type_a638a58d7c3a0dc1c152df7d081a09c00}} 
+integer {\bfseries iyw}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_a77822b1b1e87c3ae3f47af23946281f0}\label{structscarc__types_1_1scarc__wall__type_a77822b1b1e87c3ae3f47af23946281f0}} 
+integer \mbox{\hyperlink{structscarc__types_1_1scarc__wall__type_a77822b1b1e87c3ae3f47af23946281f0}{izw}}
+\begin{DoxyCompactList}\small\item\em Coordinate indices of (internal) wall cells. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_af5b9fca2fd7d0a1b618607208fd7fa0b}\label{structscarc__types_1_1scarc__wall__type_af5b9fca2fd7d0a1b618607208fd7fa0b}} 
+integer, dimension(2) {\bfseries ixn}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_a8fe94391833b68f5530f200c450f0e81}\label{structscarc__types_1_1scarc__wall__type_a8fe94391833b68f5530f200c450f0e81}} 
+integer, dimension(2) {\bfseries iyn}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_a3f8ac6751f356f4d06f6993687c48276}\label{structscarc__types_1_1scarc__wall__type_a3f8ac6751f356f4d06f6993687c48276}} 
+integer, dimension(2) \mbox{\hyperlink{structscarc__types_1_1scarc__wall__type_a3f8ac6751f356f4d06f6993687c48276}{izn}}
+\begin{DoxyCompactList}\small\item\em Coordinate indices of neighboring cells. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_a2c69d55cd6bfd6f2aac86930b9e76e7e}\label{structscarc__types_1_1scarc__wall__type_a2c69d55cd6bfd6f2aac86930b9e76e7e}} 
+integer {\bfseries ice}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__wall__type_a2cae3357422969547d480b60b7df8ecb}\label{structscarc__types_1_1scarc__wall__type_a2cae3357422969547d480b60b7df8ecb}} 
+integer \mbox{\hyperlink{structscarc__types_1_1scarc__wall__type_a2cae3357422969547d480b60b7df8ecb}{icg}}
+\begin{DoxyCompactList}\small\item\em Flag for externa and ghost cell. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Wall information related to neighbors and BC\textquotesingle{}s. 
+
+The documentation for this type was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+scrc.\+f90\end{DoxyCompactItemize}

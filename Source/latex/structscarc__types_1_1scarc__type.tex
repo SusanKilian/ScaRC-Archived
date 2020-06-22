@@ -1,0 +1,63 @@
+\hypertarget{structscarc__types_1_1scarc__type}{}\doxysection{scarc\+\_\+types\+::scarc\+\_\+type Type Reference}
+\label{structscarc__types_1_1scarc__type}\index{scarc\_types::scarc\_type@{scarc\_types::scarc\_type}}
+
+
+Basic administration type for Sca\+R\+C-\/method.  
+
+
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_a24b0f1ab8156dc22e555da6be30f563a}\label{structscarc__types_1_1scarc__type_a24b0f1ab8156dc22e555da6be30f563a}} 
+type(\mbox{\hyperlink{structscarc__types_1_1scarc__oscarc__type}{scarc\+\_\+oscarc\+\_\+type}}), dimension(\+:), allocatable \mbox{\hyperlink{structscarc__types_1_1scarc__type_a24b0f1ab8156dc22e555da6be30f563a}{oscarc}}
+\begin{DoxyCompactList}\small\item\em Sca\+RC type on other mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_a73212328b20a62d3a14e5814dae499c3}\label{structscarc__types_1_1scarc__type_a73212328b20a62d3a14e5814dae499c3}} 
+type(\mbox{\hyperlink{structscarc__types_1_1scarc__level__type}{scarc\+\_\+level\+\_\+type}}), dimension(\+:), allocatable \mbox{\hyperlink{structscarc__types_1_1scarc__type_a73212328b20a62d3a14e5814dae499c3}{level}}
+\begin{DoxyCompactList}\small\item\em Level related information. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_a009d738c6f520ed042899d7b59f03a4c}\label{structscarc__types_1_1scarc__type_a009d738c6f520ed042899d7b59f03a4c}} 
+real(eb) {\bfseries xs}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_a5522c8ce23a8627429a61c3f01e8bb8f}\label{structscarc__types_1_1scarc__type_a5522c8ce23a8627429a61c3f01e8bb8f}} 
+real(eb) {\bfseries xf}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_ad0cfde2c7697449bb1ef3bc2860b67e8}\label{structscarc__types_1_1scarc__type_ad0cfde2c7697449bb1ef3bc2860b67e8}} 
+real(eb) {\bfseries ys}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_a7da64f3227faaa3e4f3e978381a6926c}\label{structscarc__types_1_1scarc__type_a7da64f3227faaa3e4f3e978381a6926c}} 
+real(eb) {\bfseries yf}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_a69a38173bb2761c5148534671f253295}\label{structscarc__types_1_1scarc__type_a69a38173bb2761c5148534671f253295}} 
+real(eb) {\bfseries zs}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_a2bc8ea271a91e6856dcff4a6d30e124d}\label{structscarc__types_1_1scarc__type_a2bc8ea271a91e6856dcff4a6d30e124d}} 
+real(eb) \mbox{\hyperlink{structscarc__types_1_1scarc__type_a2bc8ea271a91e6856dcff4a6d30e124d}{zf}}
+\begin{DoxyCompactList}\small\item\em x-\/, y-\/ and z-\/bounds of grid \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_a5fafe0d0321f4cfec64eaa758ceb1ae7}\label{structscarc__types_1_1scarc__type_a5fafe0d0321f4cfec64eaa758ceb1ae7}} 
+real(eb) \mbox{\hyperlink{structscarc__types_1_1scarc__type_a5fafe0d0321f4cfec64eaa758ceb1ae7}{rhs\+\_\+end}} = 0.\+0\+\_\+\+EB
+\begin{DoxyCompactList}\small\item\em Very last R\+HS entry, needed for matrix condensing. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_a3efbdfa2c5b7ceee463db58f269bc279}\label{structscarc__types_1_1scarc__type_a3efbdfa2c5b7ceee463db58f269bc279}} 
+integer, dimension(\+:), allocatable \mbox{\hyperlink{structscarc__types_1_1scarc__type_a3efbdfa2c5b7ceee463db58f269bc279}{neighbors}}
+\begin{DoxyCompactList}\small\item\em List of adjacent neighbors of whole mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_a1de03a64e1eeb79e7e78ea34a435d033}\label{structscarc__types_1_1scarc__type_a1de03a64e1eeb79e7e78ea34a435d033}} 
+integer \mbox{\hyperlink{structscarc__types_1_1scarc__type_a1de03a64e1eeb79e7e78ea34a435d033}{n\+\_\+neighbors}} = 0
+\begin{DoxyCompactList}\small\item\em Number of adjacent neighbors of whole mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_a61b1b18d2aa4ed8d294c57a1e981c38e}\label{structscarc__types_1_1scarc__type_a61b1b18d2aa4ed8d294c57a1e981c38e}} 
+integer \mbox{\hyperlink{structscarc__types_1_1scarc__type_a61b1b18d2aa4ed8d294c57a1e981c38e}{nc}} = 0
+\begin{DoxyCompactList}\small\item\em Total number of cells on that mesh. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_aab3c5392d397e83c31c292026569fa16}\label{structscarc__types_1_1scarc__type_aab3c5392d397e83c31c292026569fa16}} 
+integer {\bfseries ibar}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_a4ed363515706e99fcb35cd10697f89e7}\label{structscarc__types_1_1scarc__type_a4ed363515706e99fcb35cd10697f89e7}} 
+integer {\bfseries jbar}
+\item 
+\mbox{\Hypertarget{structscarc__types_1_1scarc__type_a30712be18ae019dcae780e7d596fd70b}\label{structscarc__types_1_1scarc__type_a30712be18ae019dcae780e7d596fd70b}} 
+integer \mbox{\hyperlink{structscarc__types_1_1scarc__type_a30712be18ae019dcae780e7d596fd70b}{kbar}}
+\begin{DoxyCompactList}\small\item\em Number of cells (corresponding to main prg) \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Basic administration type for Sca\+R\+C-\/method. 
+
+The documentation for this type was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+scrc.\+f90\end{DoxyCompactItemize}

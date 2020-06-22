@@ -1,0 +1,431 @@
+\hypertarget{namespacescarc__variables}{}\doxysection{scarc\+\_\+variables Module Reference}
+\label{namespacescarc__variables}\index{scarc\_variables@{scarc\_variables}}
+
+
+Global variables used in different routines of Sca\+RC.  
+
+
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{namespacescarc__variables_a917c0d4de66669a94e4abb591fad8dde}\label{namespacescarc__variables_a917c0d4de66669a94e4abb591fad8dde}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a917c0d4de66669a94e4abb591fad8dde}{scarc\+\_\+grid}} = \textquotesingle{}S\+T\+R\+U\+C\+T\+U\+R\+ED\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Type of discretization (S\+T\+R\+U\+C\+T\+U\+R\+E\+D/\+U\+N\+S\+T\+R\+U\+C\+T\+U\+R\+ED) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a7a6cdb3ac41730fb21bcbe630cf202f0}\label{namespacescarc__variables_a7a6cdb3ac41730fb21bcbe630cf202f0}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a7a6cdb3ac41730fb21bcbe630cf202f0}{scarc\+\_\+method}} = \textquotesingle{}N\+O\+NE\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Type of global Sca\+RC solver (K\+R\+Y\+L\+O\+V/\+M\+U\+L\+T\+I\+G\+R\+ID) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a8f88ddfdcc4e9114bb1175c9be41b44c}\label{namespacescarc__variables_a8f88ddfdcc4e9114bb1175c9be41b44c}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a8f88ddfdcc4e9114bb1175c9be41b44c}{scarc\+\_\+matrix}} = \textquotesingle{}N\+O\+NE\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Type of matrix storage (C\+O\+M\+P\+A\+C\+T/\+B\+A\+N\+D\+W\+I\+SE) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_adb7c1f301b90999fa96c529a196bc0ee}\label{namespacescarc__variables_adb7c1f301b90999fa96c529a196bc0ee}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_adb7c1f301b90999fa96c529a196bc0ee}{scarc\+\_\+stencil}} = \textquotesingle{}V\+A\+R\+I\+A\+B\+LE\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Type of matrix stencil (C\+O\+N\+S\+T\+A\+N\+T/\+V\+A\+R\+I\+A\+B\+LE) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a385883c766ceeddeb8ba9f623f7a9505}\label{namespacescarc__variables_a385883c766ceeddeb8ba9f623f7a9505}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a385883c766ceeddeb8ba9f623f7a9505}{scarc\+\_\+twolevel}} = \textquotesingle{}N\+O\+NE\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Type of two-\/level method (N\+O\+N\+E/\+A\+D\+D\+I\+T\+I\+V\+E/\+M\+U\+L\+T\+I\+P\+L\+I\+C\+A\+T\+I\+VE) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a585155728e886b8167dec81ea96d3245}\label{namespacescarc__variables_a585155728e886b8167dec81ea96d3245}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a585155728e886b8167dec81ea96d3245}{scarc\+\_\+accuracy}} = \textquotesingle{}A\+B\+S\+O\+L\+U\+TE\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Type of accuracy type (A\+B\+S\+O\+L\+U\+T\+E/\+R\+E\+L\+A\+T\+I\+VE) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a001db840362967f069014c817320ac4c}\label{namespacescarc__variables_a001db840362967f069014c817320ac4c}} 
+real(eb) \mbox{\hyperlink{namespacescarc__variables_a001db840362967f069014c817320ac4c}{scarc\+\_\+cappa}} = 0.\+0\+\_\+\+EB
+\begin{DoxyCompactList}\small\item\em Convergence rate of selected ScarC solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a460a65a17e3e10e1f27a999a913f58e1}\label{namespacescarc__variables_a460a65a17e3e10e1f27a999a913f58e1}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a460a65a17e3e10e1f27a999a913f58e1}{scarc\+\_\+iterations}} = 0
+\begin{DoxyCompactList}\small\item\em Number of iterations of selected Sca\+RC solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a760fd055dde545a5bd38e38ac5d4c8e0}\label{namespacescarc__variables_a760fd055dde545a5bd38e38ac5d4c8e0}} 
+real(eb) \mbox{\hyperlink{namespacescarc__variables_a760fd055dde545a5bd38e38ac5d4c8e0}{scarc\+\_\+residual}} = 0.\+0\+\_\+\+EB
+\begin{DoxyCompactList}\small\item\em Residual of globally selected Sca\+RC solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a03f118c8ff31228d11f5ccde527d02ce}\label{namespacescarc__variables_a03f118c8ff31228d11f5ccde527d02ce}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a03f118c8ff31228d11f5ccde527d02ce}{scarc\+\_\+coarse}} = \textquotesingle{}D\+I\+R\+E\+CT\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Type of coarse grid solver (I\+T\+E\+R\+A\+T\+I\+V\+E/\+D\+I\+R\+E\+CT) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a82c68f38cdf049803ea0c8368eb76a49}\label{namespacescarc__variables_a82c68f38cdf049803ea0c8368eb76a49}} 
+real(eb) \mbox{\hyperlink{namespacescarc__variables_a82c68f38cdf049803ea0c8368eb76a49}{scarc\+\_\+coarse\+\_\+accuracy}} = 1.E-\/14\+\_\+\+EB
+\begin{DoxyCompactList}\small\item\em Requested accuracy for iterative solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a2fa0ac472d7b2c30e2517634616ebc52}\label{namespacescarc__variables_a2fa0ac472d7b2c30e2517634616ebc52}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a2fa0ac472d7b2c30e2517634616ebc52}{scarc\+\_\+coarse\+\_\+iterations}} = 100
+\begin{DoxyCompactList}\small\item\em Max number of iterations for iterative solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a3fab8b5416177c98ce17bbf22afb03da}\label{namespacescarc__variables_a3fab8b5416177c98ce17bbf22afb03da}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a3fab8b5416177c98ce17bbf22afb03da}{scarc\+\_\+coarse\+\_\+level}} = 1
+\begin{DoxyCompactList}\small\item\em Coarse grid level for twolevel-\/\+Krylov method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a81d3f0e8619f713205ca7f53e903ddb9}\label{namespacescarc__variables_a81d3f0e8619f713205ca7f53e903ddb9}} 
+real(eb) \mbox{\hyperlink{namespacescarc__variables_a81d3f0e8619f713205ca7f53e903ddb9}{scarc\+\_\+coarse\+\_\+omega}} = 0.\+80E+0\+\_\+\+EB
+\begin{DoxyCompactList}\small\item\em Relaxation parameter. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a7fe228c7259e254a6c4327f1b121caaa}\label{namespacescarc__variables_a7fe228c7259e254a6c4327f1b121caaa}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a7fe228c7259e254a6c4327f1b121caaa}{scarc\+\_\+coarsening}} = \textquotesingle{}D\+O\+U\+B\+L\+ED\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Coarsening strategy (D\+O\+U\+B\+L\+E\+D/\+C\+U\+B\+I\+C/\+A\+G\+G\+R\+E\+G\+A\+T\+ED) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a602cc1c6a69e4113f1ba855cb7040e33}\label{namespacescarc__variables_a602cc1c6a69e4113f1ba855cb7040e33}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a602cc1c6a69e4113f1ba855cb7040e33}{scarc\+\_\+krylov}} = \textquotesingle{}CG\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Type of Krylov-\/method (C\+G/\+B\+I\+CG) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a3c1efc3e4d69da49ea865953b2662b69}\label{namespacescarc__variables_a3c1efc3e4d69da49ea865953b2662b69}} 
+real(eb) \mbox{\hyperlink{namespacescarc__variables_a3c1efc3e4d69da49ea865953b2662b69}{scarc\+\_\+krylov\+\_\+accuracy}} = 1.E-\/8\+\_\+\+EB
+\begin{DoxyCompactList}\small\item\em Requested accuracy for convergence. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a84761db119967ecbb52a955228ff3f5e}\label{namespacescarc__variables_a84761db119967ecbb52a955228ff3f5e}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a84761db119967ecbb52a955228ff3f5e}{scarc\+\_\+krylov\+\_\+interpol}} = \textquotesingle{}C\+O\+N\+S\+T\+A\+NT\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Twolevel-\/interpolation (C\+O\+N\+S\+T\+A\+N\+T/\+B\+I\+L\+I\+N\+E\+AR) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a664b1d78b68a1942d6c3dc6b26b8a85e}\label{namespacescarc__variables_a664b1d78b68a1942d6c3dc6b26b8a85e}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a664b1d78b68a1942d6c3dc6b26b8a85e}{scarc\+\_\+krylov\+\_\+iterations}} = 1000
+\begin{DoxyCompactList}\small\item\em Max number of iterations. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a4eba62296900cb752cbdd9f097efb971}\label{namespacescarc__variables_a4eba62296900cb752cbdd9f097efb971}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a4eba62296900cb752cbdd9f097efb971}{scarc\+\_\+multigrid}} = \textquotesingle{}G\+E\+O\+M\+E\+T\+R\+IC\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Type of M\+G-\/method (G\+E\+O\+M\+E\+T\+R\+I\+C/\+A\+L\+G\+E\+B\+R\+A\+IC) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a1c607c540ffb44e6a8eb06464fa43884}\label{namespacescarc__variables_a1c607c540ffb44e6a8eb06464fa43884}} 
+real(eb) \mbox{\hyperlink{namespacescarc__variables_a1c607c540ffb44e6a8eb06464fa43884}{scarc\+\_\+multigrid\+\_\+accuracy}} = 1.E-\/8\+\_\+\+EB
+\begin{DoxyCompactList}\small\item\em Requested accuracy for convergence. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a9f69097c6106a59112776e5d99e8001d}\label{namespacescarc__variables_a9f69097c6106a59112776e5d99e8001d}} 
+character(3) \mbox{\hyperlink{namespacescarc__variables_a9f69097c6106a59112776e5d99e8001d}{scarc\+\_\+multigrid\+\_\+cycle}} = \textquotesingle{}V\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Cycling type (F/\+V/\+W/\+F\+U\+LL) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a47dd542e5cb1c1a46c8649e3215a1675}\label{namespacescarc__variables_a47dd542e5cb1c1a46c8649e3215a1675}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a47dd542e5cb1c1a46c8649e3215a1675}{scarc\+\_\+multigrid\+\_\+interpol}} = \textquotesingle{}C\+O\+N\+S\+T\+A\+NT\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Interpolation strategy (C\+O\+N\+S\+T\+A\+N\+T/\+B\+I\+L\+I\+N\+E\+AR) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ae1fcdf6a0ecce9133acdef04daf53a2b}\label{namespacescarc__variables_ae1fcdf6a0ecce9133acdef04daf53a2b}} 
+integer \mbox{\hyperlink{namespacescarc__variables_ae1fcdf6a0ecce9133acdef04daf53a2b}{scarc\+\_\+multigrid\+\_\+iterations}} = 100
+\begin{DoxyCompactList}\small\item\em Max number of iterations. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a83c71978ddb967677e8d9f4b2b755c9f}\label{namespacescarc__variables_a83c71978ddb967677e8d9f4b2b755c9f}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a83c71978ddb967677e8d9f4b2b755c9f}{scarc\+\_\+multigrid\+\_\+level}} = -\/1
+\begin{DoxyCompactList}\small\item\em User defined number of M\+G-\/levels (optionally, maximum else) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_aaa069b1b8ab99b1d11f2e51e512043d4}\label{namespacescarc__variables_aaa069b1b8ab99b1d11f2e51e512043d4}} 
+integer \mbox{\hyperlink{namespacescarc__variables_aaa069b1b8ab99b1d11f2e51e512043d4}{scarc\+\_\+multigrid\+\_\+presmooth}} = 4
+\begin{DoxyCompactList}\small\item\em Number of presmoothing iterations. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_aab961c0b2ec7451b7f387556c4c260c6}\label{namespacescarc__variables_aab961c0b2ec7451b7f387556c4c260c6}} 
+integer \mbox{\hyperlink{namespacescarc__variables_aab961c0b2ec7451b7f387556c4c260c6}{scarc\+\_\+multigrid\+\_\+postsmooth}} = 4
+\begin{DoxyCompactList}\small\item\em Number of postsmoothing iterations. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ae4cafa035f73e15f32152757bbf1a3da}\label{namespacescarc__variables_ae4cafa035f73e15f32152757bbf1a3da}} 
+real(eb) \mbox{\hyperlink{namespacescarc__variables_ae4cafa035f73e15f32152757bbf1a3da}{scarc\+\_\+multigrid\+\_\+theta}} = 0.\+1E+0\+\_\+\+EB
+\begin{DoxyCompactList}\small\item\em Threshold for strength of connection matrix (A\+MG only) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a868f9624a64bd7d024689cbc0b7026c2}\label{namespacescarc__variables_a868f9624a64bd7d024689cbc0b7026c2}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a868f9624a64bd7d024689cbc0b7026c2}{scarc\+\_\+smooth}} = \textquotesingle{}S\+S\+OR\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Smoother for MG (J\+A\+C\+O\+B\+I/\+S\+S\+OR) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ab8581f81ef1c1262aa01786ab75724ca}\label{namespacescarc__variables_ab8581f81ef1c1262aa01786ab75724ca}} 
+real(eb) \mbox{\hyperlink{namespacescarc__variables_ab8581f81ef1c1262aa01786ab75724ca}{scarc\+\_\+smooth\+\_\+accuracy}} = 1.E-\/8\+\_\+\+EB
+\begin{DoxyCompactList}\small\item\em Requested accuracy for convergence. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_adaaed4f7cdd46f6c6878f6ea6c0e6c2a}\label{namespacescarc__variables_adaaed4f7cdd46f6c6878f6ea6c0e6c2a}} 
+integer \mbox{\hyperlink{namespacescarc__variables_adaaed4f7cdd46f6c6878f6ea6c0e6c2a}{scarc\+\_\+smooth\+\_\+iterations}} = 4
+\begin{DoxyCompactList}\small\item\em Max number of iterations. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a4f5c1b79be003f8bc847dfb72b6be873}\label{namespacescarc__variables_a4f5c1b79be003f8bc847dfb72b6be873}} 
+real(eb) \mbox{\hyperlink{namespacescarc__variables_a4f5c1b79be003f8bc847dfb72b6be873}{scarc\+\_\+smooth\+\_\+omega}} = 0.\+80E+0\+\_\+\+EB
+\begin{DoxyCompactList}\small\item\em Relaxation parameter. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ade23d5d9d42ea69cf4d0e8d828552f9b}\label{namespacescarc__variables_ade23d5d9d42ea69cf4d0e8d828552f9b}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_ade23d5d9d42ea69cf4d0e8d828552f9b}{scarc\+\_\+smooth\+\_\+scope}} = \textquotesingle{}G\+L\+O\+B\+AL\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Scope of action (L\+O\+C\+A\+L/\+G\+L\+O\+B\+AL) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a10041aee53cb70b5be5f7a6f804dfdcc}\label{namespacescarc__variables_a10041aee53cb70b5be5f7a6f804dfdcc}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a10041aee53cb70b5be5f7a6f804dfdcc}{scarc\+\_\+precon}} = \textquotesingle{}N\+O\+NE\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Preconditioner for C\+G/\+B\+I\+CG (J\+A\+C\+O\+B\+I/\+S\+S\+O\+R/\+F\+F\+T/\+P\+A\+R\+D\+I\+S\+O/\+MG) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_af7220ca743bc80c2419ac8f8a5855649}\label{namespacescarc__variables_af7220ca743bc80c2419ac8f8a5855649}} 
+real(eb) \mbox{\hyperlink{namespacescarc__variables_af7220ca743bc80c2419ac8f8a5855649}{scarc\+\_\+precon\+\_\+accuracy}} = 1.E-\/10\+\_\+\+EB
+\begin{DoxyCompactList}\small\item\em Requested accuracy for convergence. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a108cafd201708b3a3a80c78e7763392c}\label{namespacescarc__variables_a108cafd201708b3a3a80c78e7763392c}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a108cafd201708b3a3a80c78e7763392c}{scarc\+\_\+precon\+\_\+iterations}} = 100
+\begin{DoxyCompactList}\small\item\em Max number of iterations. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ad8b17ea7196b7cae5a1ac68bfdd1b2c3}\label{namespacescarc__variables_ad8b17ea7196b7cae5a1ac68bfdd1b2c3}} 
+real(eb) \mbox{\hyperlink{namespacescarc__variables_ad8b17ea7196b7cae5a1ac68bfdd1b2c3}{scarc\+\_\+precon\+\_\+omega}} = 1.\+50E+0\+\_\+\+EB
+\begin{DoxyCompactList}\small\item\em Relaxation parameter. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a4d4f8611a8b297e8da2ecfb7f87d9a6a}\label{namespacescarc__variables_a4d4f8611a8b297e8da2ecfb7f87d9a6a}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a4d4f8611a8b297e8da2ecfb7f87d9a6a}{scarc\+\_\+precon\+\_\+scope}} = \textquotesingle{}L\+O\+C\+AL\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Scope of action (L\+O\+C\+A\+L/\+G\+L\+O\+B\+AL) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ad2e4d90ee15240eecf2273fcf8001642}\label{namespacescarc__variables_ad2e4d90ee15240eecf2273fcf8001642}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_ad2e4d90ee15240eecf2273fcf8001642}{scarc\+\_\+mkl}} = \textquotesingle{}G\+L\+O\+B\+AL\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Type of M\+KL solver (L\+O\+C\+AL\+:Pardiso/\+G\+L\+O\+B\+AL\+:Cluster\+\_\+\+Sparse\+\_\+solver) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a19148e37923c2478ced1427093fbc2f6}\label{namespacescarc__variables_a19148e37923c2478ced1427093fbc2f6}} 
+character(40) \mbox{\hyperlink{namespacescarc__variables_a19148e37923c2478ced1427093fbc2f6}{scarc\+\_\+mkl\+\_\+mtype}} = \textquotesingle{}S\+Y\+M\+M\+E\+T\+R\+IC\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Type of M\+KL matrix (S\+Y\+M\+M\+E\+T\+R\+I\+C/\+U\+N\+S\+Y\+M\+M\+E\+T\+R\+IC) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a402c086165303fd68765519e3b029868}\label{namespacescarc__variables_a402c086165303fd68765519e3b029868}} 
+character(6) \mbox{\hyperlink{namespacescarc__variables_a402c086165303fd68765519e3b029868}{scarc\+\_\+mkl\+\_\+precision}} = \textquotesingle{}D\+O\+U\+B\+LE\textquotesingle{}
+\begin{DoxyCompactList}\small\item\em Single/double precision for M\+KL solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a7e4a58aff9bef7abbefe5eaea34769a0}\label{namespacescarc__variables_a7e4a58aff9bef7abbefe5eaea34769a0}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a7e4a58aff9bef7abbefe5eaea34769a0}{scarc\+\_\+error\+\_\+file}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Print Sca\+RC statistics into chid\+\_\+scarc.\+csv (T\+R\+U\+E/\+F\+A\+L\+SE) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_aa9ae690c2141c99b55d2697a851c61e1}\label{namespacescarc__variables_aa9ae690c2141c99b55d2697a851c61e1}} 
+integer \mbox{\hyperlink{namespacescarc__variables_aa9ae690c2141c99b55d2697a851c61e1}{ierror}} = 0
+\begin{DoxyCompactList}\small\item\em General error flag -\/ used at different positions. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a331d4164a931f1bbe0d44dab2765b220}\label{namespacescarc__variables_a331d4164a931f1bbe0d44dab2765b220}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a331d4164a931f1bbe0d44dab2765b220}{scarc\+\_\+dump}} = .T\+R\+U\+E.
+\begin{DoxyCompactList}\small\item\em Dump out several arrays for standalone use of Sca\+RC. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a9cc5a5240511a61a4f3fd2c6adc58816}\label{namespacescarc__variables_a9cc5a5240511a61a4f3fd2c6adc58816}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a9cc5a5240511a61a4f3fd2c6adc58816}{is\+\_\+structured}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for structured discretization. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a671cec3059d840b82759ec24ae9016ea}\label{namespacescarc__variables_a671cec3059d840b82759ec24ae9016ea}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a671cec3059d840b82759ec24ae9016ea}{is\+\_\+unstructured}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for unstructured discretization. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a0bf9d662ed8c15a9c946891951ffddd3}\label{namespacescarc__variables_a0bf9d662ed8c15a9c946891951ffddd3}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a0bf9d662ed8c15a9c946891951ffddd3}{is\+\_\+pure\+\_\+neumann}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for pure Neumann system. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a816d079d5d35e83fc7f9898cbcb7d743}\label{namespacescarc__variables_a816d079d5d35e83fc7f9898cbcb7d743}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a816d079d5d35e83fc7f9898cbcb7d743}{is\+\_\+mg}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for Multigrid-\/method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a4b1bf8dc0d93e876bca1e2caf68e7a97}\label{namespacescarc__variables_a4b1bf8dc0d93e876bca1e2caf68e7a97}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a4b1bf8dc0d93e876bca1e2caf68e7a97}{is\+\_\+amg}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for Algebraic Multigrid-\/method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_abd1ad7ba5bac853ca6029a5ce12fdf70}\label{namespacescarc__variables_abd1ad7ba5bac853ca6029a5ce12fdf70}} 
+logical \mbox{\hyperlink{namespacescarc__variables_abd1ad7ba5bac853ca6029a5ce12fdf70}{is\+\_\+gmg}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for Geometric Multigrid-\/method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a66474351489b5ddf28041b43714b1584}\label{namespacescarc__variables_a66474351489b5ddf28041b43714b1584}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a66474351489b5ddf28041b43714b1584}{is\+\_\+cg}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for Krylov-\/method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a5d04f8d3dca017c8730a40334adae5aa}\label{namespacescarc__variables_a5d04f8d3dca017c8730a40334adae5aa}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a5d04f8d3dca017c8730a40334adae5aa}{is\+\_\+cg\+\_\+add}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for additive twolevel-\/\+Krylov-\/method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a726f9e023d2a0d0c7faca153a09b2856}\label{namespacescarc__variables_a726f9e023d2a0d0c7faca153a09b2856}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a726f9e023d2a0d0c7faca153a09b2856}{is\+\_\+cg\+\_\+amg}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for Krylov-\/method with A\+M\+G-\/preconditioning. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_af789df1384323b1d97610845ee4ed25f}\label{namespacescarc__variables_af789df1384323b1d97610845ee4ed25f}} 
+logical \mbox{\hyperlink{namespacescarc__variables_af789df1384323b1d97610845ee4ed25f}{is\+\_\+cg\+\_\+gmg}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for Krylov-\/method with G\+M\+G-\/preconditioning. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_acd76968382b41938beec7a0c34e8967e}\label{namespacescarc__variables_acd76968382b41938beec7a0c34e8967e}} 
+logical \mbox{\hyperlink{namespacescarc__variables_acd76968382b41938beec7a0c34e8967e}{is\+\_\+cg\+\_\+coarse}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for only coarse grid solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ad8315382a75c9dec97df1e840384df37}\label{namespacescarc__variables_ad8315382a75c9dec97df1e840384df37}} 
+logical \mbox{\hyperlink{namespacescarc__variables_ad8315382a75c9dec97df1e840384df37}{is\+\_\+cg\+\_\+macro}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for macro coarse grid solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a812584312cebd5e7a84fdf3081e716c6}\label{namespacescarc__variables_a812584312cebd5e7a84fdf3081e716c6}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a812584312cebd5e7a84fdf3081e716c6}{is\+\_\+cg\+\_\+mg}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for Krylov-\/method with M\+G-\/preconditioning. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a576966ff5222cbfea622e52c19d15bcf}\label{namespacescarc__variables_a576966ff5222cbfea622e52c19d15bcf}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a576966ff5222cbfea622e52c19d15bcf}{is\+\_\+cg\+\_\+mul}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for multiplicative Twolevel-\/\+Krylov-\/method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a55b14f80056fa432bd15c684805efc7f}\label{namespacescarc__variables_a55b14f80056fa432bd15c684805efc7f}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a55b14f80056fa432bd15c684805efc7f}{is\+\_\+cg\+\_\+mul2}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for multiplicative-\/type2 Twolevel-\/\+Krylov-\/method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_abce09c814de3bcc71b405a8be74818a7}\label{namespacescarc__variables_abce09c814de3bcc71b405a8be74818a7}} 
+logical \mbox{\hyperlink{namespacescarc__variables_abce09c814de3bcc71b405a8be74818a7}{is\+\_\+coarse\+\_\+amg}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for A\+M\+G-\/based coarse grid solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a9ca5339b8dd375116909f025d1a5d325}\label{namespacescarc__variables_a9ca5339b8dd375116909f025d1a5d325}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a9ca5339b8dd375116909f025d1a5d325}{is\+\_\+coarse\+\_\+gmg}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for A\+M\+G-\/based coarse grid solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_aeef661ed8cc7839b9e6b5c3058d3271b}\label{namespacescarc__variables_aeef661ed8cc7839b9e6b5c3058d3271b}} 
+logical \mbox{\hyperlink{namespacescarc__variables_aeef661ed8cc7839b9e6b5c3058d3271b}{is\+\_\+coarse\+\_\+aggregated}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for aggregation-\/based coarse grid solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a1e208f9b1a33e6a0f5f9ba69b2adc77b}\label{namespacescarc__variables_a1e208f9b1a33e6a0f5f9ba69b2adc77b}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a1e208f9b1a33e6a0f5f9ba69b2adc77b}{is\+\_\+coarse\+\_\+aggregateds}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for aggregation-\/based staggered coarse grid solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ab950eb7a1645427d5828b768fe6be8ef}\label{namespacescarc__variables_ab950eb7a1645427d5828b768fe6be8ef}} 
+logical \mbox{\hyperlink{namespacescarc__variables_ab950eb7a1645427d5828b768fe6be8ef}{is\+\_\+coarse\+\_\+doubled}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for default coarse grid solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ac263e04487d5167da0ce5aca1d9e8eb8}\label{namespacescarc__variables_ac263e04487d5167da0ce5aca1d9e8eb8}} 
+logical \mbox{\hyperlink{namespacescarc__variables_ac263e04487d5167da0ce5aca1d9e8eb8}{is\+\_\+coarse\+\_\+cubic}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for geometry-\/based coarse grid solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ad4ec3e6e5be422fbbc8b6a735b10147e}\label{namespacescarc__variables_ad4ec3e6e5be422fbbc8b6a735b10147e}} 
+logical \mbox{\hyperlink{namespacescarc__variables_ad4ec3e6e5be422fbbc8b6a735b10147e}{is\+\_\+fft}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for F\+F\+T-\/method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ac8b5cbdb66b69b0da3906d4c5964b01c}\label{namespacescarc__variables_ac8b5cbdb66b69b0da3906d4c5964b01c}} 
+logical \mbox{\hyperlink{namespacescarc__variables_ac8b5cbdb66b69b0da3906d4c5964b01c}{is\+\_\+ffto}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for F\+F\+T\+O-\/method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a721faf9dce186289a01edfc8b1a9d5ba}\label{namespacescarc__variables_a721faf9dce186289a01edfc8b1a9d5ba}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a721faf9dce186289a01edfc8b1a9d5ba}{is\+\_\+mgm}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for Mc\+Keeney-\/\+Greengard-\/\+Mayo method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a78bcd324d38e677ec149c71ac44c55bf}\label{namespacescarc__variables_a78bcd324d38e677ec149c71ac44c55bf}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a78bcd324d38e677ec149c71ac44c55bf}{is\+\_\+mkl}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for M\+K\+L-\/method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_aa20b2054765ff9cf78196527df94ce15}\label{namespacescarc__variables_aa20b2054765ff9cf78196527df94ce15}} 
+logical, dimension(10) \mbox{\hyperlink{namespacescarc__variables_aa20b2054765ff9cf78196527df94ce15}{is\+\_\+mkl\+\_\+level}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for level-\/dependent M\+KL method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a22703ba0c77254e166636822ab385d3b}\label{namespacescarc__variables_a22703ba0c77254e166636822ab385d3b}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a22703ba0c77254e166636822ab385d3b}{has\+\_\+csv\+\_\+dump}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for C\+S\+V-\/file to be dumped out. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a0cb94b5864fc0c784b08dfb86a6678b6}\label{namespacescarc__variables_a0cb94b5864fc0c784b08dfb86a6678b6}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a0cb94b5864fc0c784b08dfb86a6678b6}{has\+\_\+grids\+\_\+multiple}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for multiple discretization types. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a4677a9f736a0d962833863be1c6ef3a6}\label{namespacescarc__variables_a4677a9f736a0d962833863be1c6ef3a6}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a4677a9f736a0d962833863be1c6ef3a6}{has\+\_\+levels\+\_\+two}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for two grid levels. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ad8c94a86095856d2ab464bc3a4eb6773}\label{namespacescarc__variables_ad8c94a86095856d2ab464bc3a4eb6773}} 
+logical \mbox{\hyperlink{namespacescarc__variables_ad8c94a86095856d2ab464bc3a4eb6773}{has\+\_\+levels\+\_\+multiple}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for multiple grid levels. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a6d4787732c63c80b7a047250848ea57a}\label{namespacescarc__variables_a6d4787732c63c80b7a047250848ea57a}} 
+logical \mbox{\hyperlink{namespacescarc__variables_a6d4787732c63c80b7a047250848ea57a}{has\+\_\+levels\+\_\+amg}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for A\+M\+G-\/based grid levels. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_aed73422607ea26790592825e2f1cfc39}\label{namespacescarc__variables_aed73422607ea26790592825e2f1cfc39}} 
+logical \mbox{\hyperlink{namespacescarc__variables_aed73422607ea26790592825e2f1cfc39}{has\+\_\+levels\+\_\+gmg}} = .F\+A\+L\+S\+E.
+\begin{DoxyCompactList}\small\item\em Flag for G\+M\+G-\/based grid levels. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a6dee0ad871264b0eaa711960c17f2507}\label{namespacescarc__variables_a6dee0ad871264b0eaa711960c17f2507}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a6dee0ad871264b0eaa711960c17f2507}{type\+\_\+accuracy}} = N\+S\+C\+A\+R\+C\+\_\+\+A\+C\+C\+U\+R\+A\+C\+Y\+\_\+\+A\+B\+S\+O\+L\+U\+TE
+\begin{DoxyCompactList}\small\item\em Type of requested accuracy. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a0f2f871ae4a6304f5d48b98671341c67}\label{namespacescarc__variables_a0f2f871ae4a6304f5d48b98671341c67}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a0f2f871ae4a6304f5d48b98671341c67}{type\+\_\+coarse}} = N\+S\+C\+A\+R\+C\+\_\+\+C\+O\+A\+R\+S\+E\+\_\+\+D\+I\+R\+E\+CT
+\begin{DoxyCompactList}\small\item\em Type of coarse grid solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a9cb19c0769921a21552762739c7a489c}\label{namespacescarc__variables_a9cb19c0769921a21552762739c7a489c}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a9cb19c0769921a21552762739c7a489c}{type\+\_\+coarsening}} = N\+S\+C\+A\+R\+C\+\_\+\+C\+O\+A\+R\+S\+E\+N\+I\+N\+G\+\_\+\+D\+O\+U\+B\+L\+ED
+\begin{DoxyCompactList}\small\item\em Type of grid coarsening. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ae5883109cb71e44bc13a5d87824a9062}\label{namespacescarc__variables_ae5883109cb71e44bc13a5d87824a9062}} 
+integer \mbox{\hyperlink{namespacescarc__variables_ae5883109cb71e44bc13a5d87824a9062}{type\+\_\+cycling}} = N\+S\+C\+A\+R\+C\+\_\+\+C\+Y\+C\+L\+I\+N\+G\+\_\+V
+\begin{DoxyCompactList}\small\item\em Type of cycling for multigrid method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a054a5f8879da0df7b18b9b8b3a9f8a8f}\label{namespacescarc__variables_a054a5f8879da0df7b18b9b8b3a9f8a8f}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a054a5f8879da0df7b18b9b8b3a9f8a8f}{type\+\_\+grid}} = N\+S\+C\+A\+R\+C\+\_\+\+G\+R\+I\+D\+\_\+\+S\+T\+R\+U\+C\+T\+U\+R\+ED
+\begin{DoxyCompactList}\small\item\em Type of discretization. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ac39ed5c008208d94d50b077a7e795b56}\label{namespacescarc__variables_ac39ed5c008208d94d50b077a7e795b56}} 
+integer \mbox{\hyperlink{namespacescarc__variables_ac39ed5c008208d94d50b077a7e795b56}{type\+\_\+exchange}} = N\+S\+C\+A\+R\+C\+\_\+\+U\+N\+D\+E\+F\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Type of data exchange. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a72f61eb5e8305967c68934e76fa350f6}\label{namespacescarc__variables_a72f61eb5e8305967c68934e76fa350f6}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a72f61eb5e8305967c68934e76fa350f6}{type\+\_\+exchange\+\_\+matrix}} = N\+S\+C\+A\+R\+C\+\_\+\+M\+A\+T\+R\+I\+X\+\_\+\+P\+O\+I\+S\+S\+ON
+\begin{DoxyCompactList}\small\item\em Type of matrix for exchange. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a509d765d0d82a7f00fe851dadb865c4c}\label{namespacescarc__variables_a509d765d0d82a7f00fe851dadb865c4c}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a509d765d0d82a7f00fe851dadb865c4c}{type\+\_\+interpol}} = N\+S\+C\+A\+R\+C\+\_\+\+I\+N\+T\+E\+R\+P\+O\+L\+\_\+\+C\+O\+N\+S\+T\+A\+NT
+\begin{DoxyCompactList}\small\item\em Type of interpolation method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a6561c521f9597195c1936a9882d7d855}\label{namespacescarc__variables_a6561c521f9597195c1936a9882d7d855}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a6561c521f9597195c1936a9882d7d855}{type\+\_\+krylov}} = N\+S\+C\+A\+R\+C\+\_\+\+K\+R\+Y\+L\+O\+V\+\_\+\+CG
+\begin{DoxyCompactList}\small\item\em Type of Krylov method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a86995753d4717cfd303d45251cbaea8d}\label{namespacescarc__variables_a86995753d4717cfd303d45251cbaea8d}} 
+integer, dimension(0\+:2) \mbox{\hyperlink{namespacescarc__variables_a86995753d4717cfd303d45251cbaea8d}{type\+\_\+level}} = N\+S\+C\+A\+R\+C\+\_\+\+U\+N\+D\+E\+F\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Type of levels. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ad0d8390fa281cf26813e85f54e7bc0c4}\label{namespacescarc__variables_ad0d8390fa281cf26813e85f54e7bc0c4}} 
+integer \mbox{\hyperlink{namespacescarc__variables_ad0d8390fa281cf26813e85f54e7bc0c4}{type\+\_\+matrix}} = N\+S\+C\+A\+R\+C\+\_\+\+M\+A\+T\+R\+I\+X\+\_\+\+C\+O\+M\+P\+A\+CT
+\begin{DoxyCompactList}\small\item\em Type of storage for matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a6b71c0b77d17cc6551bf1db07a2a1130}\label{namespacescarc__variables_a6b71c0b77d17cc6551bf1db07a2a1130}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a6b71c0b77d17cc6551bf1db07a2a1130}{type\+\_\+matvec}} = N\+S\+C\+A\+R\+C\+\_\+\+M\+A\+T\+V\+E\+C\+\_\+\+G\+L\+O\+B\+AL
+\begin{DoxyCompactList}\small\item\em Type of matrix-\/vector multiplication. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ac5676c50e4d45cca08793412d412b3b3}\label{namespacescarc__variables_ac5676c50e4d45cca08793412d412b3b3}} 
+integer \mbox{\hyperlink{namespacescarc__variables_ac5676c50e4d45cca08793412d412b3b3}{type\+\_\+method}} = N\+S\+C\+A\+R\+C\+\_\+\+M\+E\+T\+H\+O\+D\+\_\+\+K\+R\+Y\+L\+OV
+\begin{DoxyCompactList}\small\item\em Type of Sca\+RC method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ae5fbb822c529a7ae9881ac16efd6bf28}\label{namespacescarc__variables_ae5fbb822c529a7ae9881ac16efd6bf28}} 
+integer, dimension(0\+:10) \mbox{\hyperlink{namespacescarc__variables_ae5fbb822c529a7ae9881ac16efd6bf28}{type\+\_\+mkl}} = N\+S\+C\+A\+R\+C\+\_\+\+M\+K\+L\+\_\+\+N\+O\+NE
+\begin{DoxyCompactList}\small\item\em Type of use of M\+KL solvers. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a5a57d7d215c08623bda389cce19b1772}\label{namespacescarc__variables_a5a57d7d215c08623bda389cce19b1772}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a5a57d7d215c08623bda389cce19b1772}{type\+\_\+mkl\+\_\+precision}} = N\+S\+C\+A\+R\+C\+\_\+\+P\+R\+E\+C\+I\+S\+I\+O\+N\+\_\+\+D\+O\+U\+B\+LE
+\begin{DoxyCompactList}\small\item\em Type of double precision M\+KL solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a2b903f14e01181257c12d4b5d9c198c3}\label{namespacescarc__variables_a2b903f14e01181257c12d4b5d9c198c3}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a2b903f14e01181257c12d4b5d9c198c3}{type\+\_\+multigrid}} = N\+S\+C\+A\+R\+C\+\_\+\+M\+U\+L\+T\+I\+G\+R\+I\+D\+\_\+\+G\+E\+O\+M\+E\+T\+R\+IC
+\begin{DoxyCompactList}\small\item\em Type of multigrid method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_acf955c56cd884268889b51d85cc98e55}\label{namespacescarc__variables_acf955c56cd884268889b51d85cc98e55}} 
+integer \mbox{\hyperlink{namespacescarc__variables_acf955c56cd884268889b51d85cc98e55}{type\+\_\+parent}} = N\+S\+C\+A\+R\+C\+\_\+\+U\+N\+D\+E\+F\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Type of parent (calling) solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_aa4b2a2740fca2b3192ae947120297259}\label{namespacescarc__variables_aa4b2a2740fca2b3192ae947120297259}} 
+integer \mbox{\hyperlink{namespacescarc__variables_aa4b2a2740fca2b3192ae947120297259}{type\+\_\+precon}} = N\+S\+C\+A\+R\+C\+\_\+\+U\+N\+D\+E\+F\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Type of preconditioner for iterative solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a9bc2f3d9c12287438e4e94b1fceeb393}\label{namespacescarc__variables_a9bc2f3d9c12287438e4e94b1fceeb393}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a9bc2f3d9c12287438e4e94b1fceeb393}{type\+\_\+relax}} = N\+S\+C\+A\+R\+C\+\_\+\+U\+N\+D\+E\+F\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Type of preconditioner for iterative solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_aa6c71191ff71d5b986202f0f680a4540}\label{namespacescarc__variables_aa6c71191ff71d5b986202f0f680a4540}} 
+integer, dimension(0\+:2) \mbox{\hyperlink{namespacescarc__variables_aa6c71191ff71d5b986202f0f680a4540}{type\+\_\+scope}} = N\+S\+C\+A\+R\+C\+\_\+\+S\+C\+O\+P\+E\+\_\+\+L\+O\+C\+AL
+\begin{DoxyCompactList}\small\item\em Type of method scopes. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a05e8ee09e766dc7c4e9799bbb8f893c0}\label{namespacescarc__variables_a05e8ee09e766dc7c4e9799bbb8f893c0}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a05e8ee09e766dc7c4e9799bbb8f893c0}{type\+\_\+smooth}} = N\+S\+C\+A\+R\+C\+\_\+\+U\+N\+D\+E\+F\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Type of smoother for multigrid method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a6eb70063c17efea1085abe8822834ab8}\label{namespacescarc__variables_a6eb70063c17efea1085abe8822834ab8}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a6eb70063c17efea1085abe8822834ab8}{type\+\_\+solver}} = N\+S\+C\+A\+R\+C\+\_\+\+S\+O\+L\+V\+E\+R\+\_\+\+M\+A\+IN
+\begin{DoxyCompactList}\small\item\em Type of surrounding solver stage. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_af707e82b31ad834ccae531c0241b1cea}\label{namespacescarc__variables_af707e82b31ad834ccae531c0241b1cea}} 
+integer \mbox{\hyperlink{namespacescarc__variables_af707e82b31ad834ccae531c0241b1cea}{type\+\_\+stage}} = N\+S\+C\+A\+R\+C\+\_\+\+S\+T\+A\+G\+E\+\_\+\+O\+NE
+\begin{DoxyCompactList}\small\item\em Type of surrounding solver stage. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_aa8a84c95e3ff2a16cb053dd2f49bafd1}\label{namespacescarc__variables_aa8a84c95e3ff2a16cb053dd2f49bafd1}} 
+integer \mbox{\hyperlink{namespacescarc__variables_aa8a84c95e3ff2a16cb053dd2f49bafd1}{type\+\_\+stencil}} = N\+S\+C\+A\+R\+C\+\_\+\+S\+T\+E\+N\+C\+I\+L\+\_\+\+V\+A\+R\+I\+A\+B\+LE
+\begin{DoxyCompactList}\small\item\em Type of storage for matrix. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_aabb6d5577445551348ce0e8316f45c4b}\label{namespacescarc__variables_aabb6d5577445551348ce0e8316f45c4b}} 
+integer \mbox{\hyperlink{namespacescarc__variables_aabb6d5577445551348ce0e8316f45c4b}{type\+\_\+twolevel}} = N\+S\+C\+A\+R\+C\+\_\+\+T\+W\+O\+L\+E\+V\+E\+L\+\_\+\+N\+O\+NE
+\begin{DoxyCompactList}\small\item\em Type of twolevel method. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ab875db65255849bb84146c996930147b}\label{namespacescarc__variables_ab875db65255849bb84146c996930147b}} 
+integer \mbox{\hyperlink{namespacescarc__variables_ab875db65255849bb84146c996930147b}{type\+\_\+vector}} = N\+S\+C\+A\+R\+C\+\_\+\+U\+N\+D\+E\+F\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Type of vector to point to. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ae329e82505fd8005f1fb42abe9417ef9}\label{namespacescarc__variables_ae329e82505fd8005f1fb42abe9417ef9}} 
+integer {\bfseries nlevel\+\_\+min}
+\item 
+\mbox{\Hypertarget{namespacescarc__variables_a81790458250be25f7cd8b32a5e7e6047}\label{namespacescarc__variables_a81790458250be25f7cd8b32a5e7e6047}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a81790458250be25f7cd8b32a5e7e6047}{nlevel\+\_\+max}}
+\begin{DoxyCompactList}\small\item\em Minimum and maximum number of multigrid levels. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ac9b747a2907e8dc11c42acc8faaee870}\label{namespacescarc__variables_ac9b747a2907e8dc11c42acc8faaee870}} 
+integer, dimension(20) \mbox{\hyperlink{namespacescarc__variables_ac9b747a2907e8dc11c42acc8faaee870}{nc\+\_\+global}} = 0
+\begin{DoxyCompactList}\small\item\em Number of global cells. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_af55fb621d0ca0160b8d275fb02b13079}\label{namespacescarc__variables_af55fb621d0ca0160b8d275fb02b13079}} 
+integer, dimension(20) \mbox{\hyperlink{namespacescarc__variables_af55fb621d0ca0160b8d275fb02b13079}{n\+\_\+diric\+\_\+global}} = 0
+\begin{DoxyCompactList}\small\item\em Global number of Dirichlet B\+Cs. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a0c21a75909512f11c1709227f1ec36b8}\label{namespacescarc__variables_a0c21a75909512f11c1709227f1ec36b8}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a0c21a75909512f11c1709227f1ec36b8}{n\+\_\+stack\+\_\+total}}
+\begin{DoxyCompactList}\small\item\em Maximum number of used solvers in stack. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a62154654b254bf5d625689158157fba1}\label{namespacescarc__variables_a62154654b254bf5d625689158157fba1}} 
+integer {\bfseries n\+\_\+req}
+\item 
+\mbox{\Hypertarget{namespacescarc__variables_abb30907802c379a585e7d9c4393158dc}\label{namespacescarc__variables_abb30907802c379a585e7d9c4393158dc}} 
+integer {\bfseries n\+\_\+exchanges}
+\item 
+\mbox{\Hypertarget{namespacescarc__variables_a998124863159e82cd45c6425cc24e47f}\label{namespacescarc__variables_a998124863159e82cd45c6425cc24e47f}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a998124863159e82cd45c6425cc24e47f}{tag}}
+\begin{DoxyCompactList}\small\item\em Information for data exchange. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ab0b9b199e556da16ae7de83f2f57e456}\label{namespacescarc__variables_ab0b9b199e556da16ae7de83f2f57e456}} 
+integer {\bfseries snode}
+\item 
+\mbox{\Hypertarget{namespacescarc__variables_afceab5c77c8224bffb1161e385544b9c}\label{namespacescarc__variables_afceab5c77c8224bffb1161e385544b9c}} 
+integer \mbox{\hyperlink{namespacescarc__variables_afceab5c77c8224bffb1161e385544b9c}{rnode}}
+\begin{DoxyCompactList}\small\item\em Process Indicator for data exchange. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a5288ab8e8bddaaa9a0821a42cf6b0ba0}\label{namespacescarc__variables_a5288ab8e8bddaaa9a0821a42cf6b0ba0}} 
+integer, dimension(\+:), allocatable \mbox{\hyperlink{namespacescarc__variables_a5288ab8e8bddaaa9a0821a42cf6b0ba0}{req}}
+\begin{DoxyCompactList}\small\item\em Request array for data exchange. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ab55307c511649402d601dbe61ab23d20}\label{namespacescarc__variables_ab55307c511649402d601dbe61ab23d20}} 
+integer, dimension(\+:), allocatable \mbox{\hyperlink{namespacescarc__variables_ab55307c511649402d601dbe61ab23d20}{counts}}
+\begin{DoxyCompactList}\small\item\em Counter array for data exchange. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ac56d3119d487c351aedd2cf464c28a0a}\label{namespacescarc__variables_ac56d3119d487c351aedd2cf464c28a0a}} 
+integer, dimension(\+:), allocatable \mbox{\hyperlink{namespacescarc__variables_ac56d3119d487c351aedd2cf464c28a0a}{displs}}
+\begin{DoxyCompactList}\small\item\em Displacement array for data exchange. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a9bc9e0bd2c1c08a5514da9fa3e056943}\label{namespacescarc__variables_a9bc9e0bd2c1c08a5514da9fa3e056943}} 
+integer, dimension(\+:), allocatable \mbox{\hyperlink{namespacescarc__variables_a9bc9e0bd2c1c08a5514da9fa3e056943}{mesh\+\_\+int}}
+\begin{DoxyCompactList}\small\item\em Local integer data array for data exchange. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a96d32a04e7614859fa9759590f82792e}\label{namespacescarc__variables_a96d32a04e7614859fa9759590f82792e}} 
+real(eb), dimension(\+:), allocatable \mbox{\hyperlink{namespacescarc__variables_a96d32a04e7614859fa9759590f82792e}{mesh\+\_\+real}}
+\begin{DoxyCompactList}\small\item\em Local real data array for data exchange. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a62bbd92f4a133a843073fffef66f0310}\label{namespacescarc__variables_a62bbd92f4a133a843073fffef66f0310}} 
+integer {\bfseries global\+\_\+int}
+\item 
+\mbox{\Hypertarget{namespacescarc__variables_a4fd3c74185ea0e7bbae8c5e4978480bc}\label{namespacescarc__variables_a4fd3c74185ea0e7bbae8c5e4978480bc}} 
+integer {\bfseries rank\+\_\+int}
+\item 
+\mbox{\Hypertarget{namespacescarc__variables_a5872c26b85d2f394ef5b366719df6792}\label{namespacescarc__variables_a5872c26b85d2f394ef5b366719df6792}} 
+real(eb) {\bfseries global\+\_\+real}
+\item 
+\mbox{\Hypertarget{namespacescarc__variables_a26597b1c53da600e639e804f3302cda8}\label{namespacescarc__variables_a26597b1c53da600e639e804f3302cda8}} 
+real(eb) {\bfseries rank\+\_\+real}
+\item 
+\mbox{\Hypertarget{namespacescarc__variables_a63428584916ef8db5da661eb4979728b}\label{namespacescarc__variables_a63428584916ef8db5da661eb4979728b}} 
+integer, dimension(6) \mbox{\hyperlink{namespacescarc__variables_a63428584916ef8db5da661eb4979728b}{face\+\_\+orientation}} = (/1,-\/1,2,-\/2,3,-\/3/)
+\begin{DoxyCompactList}\small\item\em Coordinate direction related order of mesh faces. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a1a0247cae9f4334587fdbf60f695c4e4}\label{namespacescarc__variables_a1a0247cae9f4334587fdbf60f695c4e4}} 
+character(10) {\bfseries cform\+\_\+int}
+\item 
+\mbox{\Hypertarget{namespacescarc__variables_a30377b415df900352bf44897ad101e19}\label{namespacescarc__variables_a30377b415df900352bf44897ad101e19}} 
+character(10) {\bfseries cform\+\_\+real}
+\item 
+\mbox{\Hypertarget{namespacescarc__variables_ad61a154e271a12051839293245099ff6}\label{namespacescarc__variables_ad61a154e271a12051839293245099ff6}} 
+character(60) {\bfseries cname}
+\item 
+\mbox{\Hypertarget{namespacescarc__variables_a3559b6b13332b0449decfd112aa10ae4}\label{namespacescarc__variables_a3559b6b13332b0449decfd112aa10ae4}} 
+character(60) {\bfseries croutine}
+\item 
+\mbox{\Hypertarget{namespacescarc__variables_ab4eca522789eddeb231ceb21508aa0e6}\label{namespacescarc__variables_ab4eca522789eddeb231ceb21508aa0e6}} 
+integer \mbox{\hyperlink{namespacescarc__variables_ab4eca522789eddeb231ceb21508aa0e6}{current\+\_\+bmatrix}}
+\begin{DoxyCompactList}\small\item\em Bandwise matrix to which is currently pointed. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ac4b019f3a1b3ab11875431fed640b60c}\label{namespacescarc__variables_ac4b019f3a1b3ab11875431fed640b60c}} 
+integer \mbox{\hyperlink{namespacescarc__variables_ac4b019f3a1b3ab11875431fed640b60c}{current\+\_\+buffer\+\_\+int}}
+\begin{DoxyCompactList}\small\item\em Integer buffer to which is currently pointed. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_af5d794895c8d300f389e5497529a9a4a}\label{namespacescarc__variables_af5d794895c8d300f389e5497529a9a4a}} 
+integer \mbox{\hyperlink{namespacescarc__variables_af5d794895c8d300f389e5497529a9a4a}{current\+\_\+buffer\+\_\+real}}
+\begin{DoxyCompactList}\small\item\em Real buffer to which is currently pointed. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_aee214bcd63d1ba024146704a4dc929d8}\label{namespacescarc__variables_aee214bcd63d1ba024146704a4dc929d8}} 
+integer \mbox{\hyperlink{namespacescarc__variables_aee214bcd63d1ba024146704a4dc929d8}{current\+\_\+hvector}}
+\begin{DoxyCompactList}\small\item\em Pressure vector to which is currently pointed. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ad8d36523553c69fb6bc58884f8cd97e7}\label{namespacescarc__variables_ad8d36523553c69fb6bc58884f8cd97e7}} 
+integer \mbox{\hyperlink{namespacescarc__variables_ad8d36523553c69fb6bc58884f8cd97e7}{current\+\_\+cmatrix}}
+\begin{DoxyCompactList}\small\item\em Compact matrix to which is currently pointed. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_aa8fb6ac2f535318302d8e2bfdee2e3db}\label{namespacescarc__variables_aa8fb6ac2f535318302d8e2bfdee2e3db}} 
+integer \mbox{\hyperlink{namespacescarc__variables_aa8fb6ac2f535318302d8e2bfdee2e3db}{current\+\_\+level}}
+\begin{DoxyCompactList}\small\item\em Level to which is currently pointed. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_aa6106c28d2a689b95b52165cb08e58bf}\label{namespacescarc__variables_aa6106c28d2a689b95b52165cb08e58bf}} 
+integer \mbox{\hyperlink{namespacescarc__variables_aa6106c28d2a689b95b52165cb08e58bf}{current\+\_\+levelp}}
+\begin{DoxyCompactList}\small\item\em Second level to which is currently pointed. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a217547fdd29dd55c1845a171bfffd082}\label{namespacescarc__variables_a217547fdd29dd55c1845a171bfffd082}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a217547fdd29dd55c1845a171bfffd082}{current\+\_\+mesh}}
+\begin{DoxyCompactList}\small\item\em Mesh to which is currently pointed. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_ad5c017aaefb936ac36cf289f38bc18df}\label{namespacescarc__variables_ad5c017aaefb936ac36cf289f38bc18df}} 
+integer \mbox{\hyperlink{namespacescarc__variables_ad5c017aaefb936ac36cf289f38bc18df}{current\+\_\+neighbor}}
+\begin{DoxyCompactList}\small\item\em Neighbor to which is currently pointed. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a4750203fb9bb5fe1493f1b6aa87c8347}\label{namespacescarc__variables_a4750203fb9bb5fe1493f1b6aa87c8347}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a4750203fb9bb5fe1493f1b6aa87c8347}{current\+\_\+other\+\_\+cmatrix}}
+\begin{DoxyCompactList}\small\item\em Neighboring compact matrix to which is currently pointed. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a8ee992d5702716dee43f4dbd493b489d}\label{namespacescarc__variables_a8ee992d5702716dee43f4dbd493b489d}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a8ee992d5702716dee43f4dbd493b489d}{current\+\_\+other\+\_\+bmatrix}}
+\begin{DoxyCompactList}\small\item\em Neighboring bandwise matrix to which is currently pointed. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a2fc072695b7d75e2803b612a8275bdc3}\label{namespacescarc__variables_a2fc072695b7d75e2803b612a8275bdc3}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a2fc072695b7d75e2803b612a8275bdc3}{current\+\_\+vector}}
+\begin{DoxyCompactList}\small\item\em Vector to which is currently pointed. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__variables_a5d74149ad571e0d27a4fe718f172a9eb}\label{namespacescarc__variables_a5d74149ad571e0d27a4fe718f172a9eb}} 
+integer \mbox{\hyperlink{namespacescarc__variables_a5d74149ad571e0d27a4fe718f172a9eb}{current\+\_\+vector\+\_\+fb}}
+\begin{DoxyCompactList}\small\item\em Vector to which is currently pointed -\/ single precision. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Global variables used in different routines of Sca\+RC. 

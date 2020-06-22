@@ -1,3 +1,4 @@
+! ================================================================================================================
 !> \brief Scalable Recursive Clustering (ScaRC): Collection of alternative solvers for the FDS pressure equation
 ! ================================================================================================================
 ! Use of different directives possible
@@ -9,7 +10,7 @@
 ! ================================================================================================================
 !#undef WITH_MKL
 #define WITH_SCARC_VERBOSE
-#define WITH_SCARC_DEBUG
+#undef WITH_SCARC_DEBUG
 #undef WITH_SCARC_STANDALONE
 #undef WITH_SCARC_MGM
 
@@ -24,6 +25,17 @@ IMPLICIT NONE
 
 INTEGER, PARAMETER :: NSCARC_ACCURACY_ABSOLUTE       =  1    !< Type of requested accuracy of method: absolute
 INTEGER, PARAMETER :: NSCARC_ACCURACY_RELATIVE       =  2    !< Type of requested accuracy of method: relative
+                   
+INTEGER, PARAMETER :: NSCARC_ALLOC_BMATRIX           =  1    !< Type of allocated structure: bandwise stored matrix
+INTEGER, PARAMETER :: NSCARC_ALLOC_CMATRIX           =  2    !< Type of allocated structure: compactly stored matrix
+INTEGER, PARAMETER :: NSCARC_ALLOC_CREATE            =  3    !< State of array: still active
+INTEGER, PARAMETER :: NSCARC_ALLOC_INT               =  4    !< Type of allocated structure: integer array
+INTEGER, PARAMETER :: NSCARC_ALLOC_LOG               =  5    !< Type of allocated structure: integer array
+INTEGER, PARAMETER :: NSCARC_ALLOC_RESIZE            =  6    !< State of array: already reduced in size
+INTEGER, PARAMETER :: NSCARC_ALLOC_REMOVE            =  7    !< State of array: already removed
+INTEGER, PARAMETER :: NSCARC_ALLOC_REAL_EB           =  8    !< Type of allocated structure: double precision array
+INTEGER, PARAMETER :: NSCARC_ALLOC_REAL_FB           =  9    !< Type of allocated structure: single precision array
+INTEGER, PARAMETER :: NSCARC_ALLOC_MAX               = 10000 !< Current maximum of allocatable arrays (may be increased)
                    
 INTEGER, PARAMETER :: NSCARC_BUFFER_FULL             =  1    !< Length of exchange buffer: full length
 INTEGER, PARAMETER :: NSCARC_BUFFER_LAYER1           =  2    !< Length of exchange buffer: one ghost cell layer
@@ -120,6 +132,7 @@ INTEGER, PARAMETER :: NSCARC_INIT_ZERO               =   0   !< Type of data all
 INTEGER, PARAMETER :: NSCARC_INIT_ONE                =   1   !< Type of data allocation: initialize with one
 INTEGER, PARAMETER :: NSCARC_INIT_TRUE               =   2   !< Type of data allocation: initialize with .TRUE.
 INTEGER, PARAMETER :: NSCARC_INIT_FALSE              =   3   !< Type of data allocation: initialize with .FALSE.
+INTEGER, PARAMETER :: NSCARC_INIT_HUGE               =   4   !< Type of data allocation: initialize with .FALSE.
 
 INTEGER, PARAMETER :: NSCARC_INTERPOL_BILINEAR       =  1    !< Type of grid interpolation: bilinear 
 INTEGER, PARAMETER :: NSCARC_INTERPOL_CONSTANT       =  2    !< Type of grid interpolation: constant 
@@ -271,7 +284,8 @@ CHARACTER(40), PARAMETER :: SCARC_NONE = 'NONE'                         !< Flag 
 INTEGER, PARAMETER  :: NSCARC_NONE                   = -123456789       !< Flag for a dummy integer value 
 
 INTEGER, PARAMETER  :: NSCARC_HUGE_INT               = -999999999       !< Flag for an undefined integer value
-REAL(EB), PARAMETER :: NSCARC_HUGE_REAL              = -999999999_EB    !< Flag for an undefined double precision value
+REAL(EB), PARAMETER :: NSCARC_HUGE_REAL_EB           = -999999999_EB    !< Flag for an undefined double precision value
+REAL(FB), PARAMETER :: NSCARC_HUGE_REAL_FB           = -999999999_FB    !< Flag for an undefined double precision value
 
 REAL(EB), PARAMETER :: NSCARC_THRESHOLD_CONVERGENCE  = 1.0E-15_EB       !< Threshold for convergence
 REAL(EB), PARAMETER :: NSCARC_THRESHOLD_DIVGERGENCE  = 1.0E+15_EB       !< Threshold for divergence
@@ -459,7 +473,7 @@ REAL(EB) :: GLOBAL_REAL, RANK_REAL
 INTEGER :: FACE_ORIENTATION(6) = (/1,-1,2,-2,3,-3/)         !< Coordinate direction related order of mesh faces
 
 CHARACTER(10) :: CFORM_INT, CFORM_REAL
-CHARACTER(60) :: CNAME
+CHARACTER(60) :: CNAME, CROUTINE
 
 ! ---------- Structures to which is currently pointed
 
@@ -535,17 +549,70 @@ USE MKL_CLUSTER_SPARSE_SOLVER
 #endif
 IMPLICIT NONE
 
+!> \brief Management information about an array created within the ScaRC memory structure
+
+TYPE SCARC_ALLOCATION_TYPE
+
+   INTEGER :: NTYPE  = NSCARC_INIT_NONE               !< Data type of array
+   INTEGER :: NDIM   = NSCARC_INIT_NONE               !< Dimension of array
+   INTEGER :: NINIT  = NSCARC_INIT_NONE               !< Initialization type of array
+   INTEGER :: NRANK  = NSCARC_INIT_NONE               !< Rank of array (order of allocation)
+   INTEGER :: NSTATE = NSCARC_INIT_NONE               !< State of array (allocated/removed)
+
+   INTEGER :: LBND(3) = NSCARC_INIT_NONE           !< left bounds of array
+   INTEGER :: RBND(3) = NSCARC_INIT_NONE           !< right bounds of array
+
+   CHARACTER(60) :: CNAME                             !< Name of array
+   CHARACTER(60) :: CSCOPE                            !< Name of allocating routine 
+
+END TYPE SCARC_ALLOCATION_TYPE
+ 
+!> \brief Own ScaRC memory management type
+ 
+TYPE SCARC_MEMORY_TYPE
+
+   TYPE (SCARC_ALLOCATION_TYPE), ALLOCATABLE, DIMENSION(:) :: ALLOCATION_LIST  !< Administrative list of allocated structures
+
+   INTEGER :: IP                                           !< Pointer to current array entry
+   INTEGER :: IRANK                                        !< Rank of memory accesses
+
+   INTEGER :: NSUM_INT     = NSCARC_INIT_ZERO              !< Total sum of all allocated integer data
+   INTEGER :: NSUM_REAL_EB = NSCARC_INIT_ZERO              !< Total sum of all allocated double precision data
+   INTEGER :: NSUM_REAL_FB = NSCARC_INIT_ZERO              !< Total sum of all allocated single precision data
+
+   INTEGER :: N_ARRAYS  = NSCARC_INIT_ZERO                 !< Number of allocated arrays
+   INTEGER :: N_INT     = NSCARC_INIT_ZERO                 !< Number of allocated integer data
+   INTEGER :: N_REAL_EB = NSCARC_INIT_ZERO                 !< Number of allocated double precision data
+   INTEGER :: N_REAL_FB = NSCARC_INIT_ZERO                 !< Number of allocated single precision data
+   INTEGER :: N_LOG     = NSCARC_INIT_ZERO                 !< Number of allocated logical data
+   INTEGER :: N_CMATRIX = NSCARC_INIT_ZERO                 !< Number of allocated compactly stored matrices
+   INTEGER :: N_BMATRIX = NSCARC_INIT_ZERO                 !< Number of allocated bandwise stored matrices
+
+   INTEGER :: NWORK_INT     = NSCARC_INIT_ZERO             !< Workspace occupied by integer arrays
+   INTEGER :: NWORK_REAL_EB = NSCARC_INIT_ZERO             !< Workspace occupied by double precision arrays
+   INTEGER :: NWORK_REAL_FB = NSCARC_INIT_ZERO             !< Workspace occupied by single precision arrays
+   INTEGER :: NWORK_LOG     = NSCARC_INIT_ZERO             !< Workspace occupied by logical arrays
+
+END TYPE SCARC_MEMORY_TYPE
+
 !> \brief Messaging and debugging mechanisms
  
 TYPE SCARC_MESSAGE_TYPE
 
-   CHARACTER(60) :: FILE_STAT, FILE_CPU           !< Output file name for convergence and CPU statistcis
-   INTEGER :: LU_STAT, LU_CPU                     !< Logical unit for convergence and CPU statistics
+   CHARACTER(60) :: FILE_STAT                     !< Output file name for convergence statistcis
+   CHARACTER(60) :: FILE_CPU                      !< Output file name for CPU measurements
+   CHARACTER(60) :: FILE_MEM                      !< Output file name for memory management information
+   INTEGER :: LU_STAT                             !< Logical unit for convergence statistics
+   INTEGER :: LU_CPU                              !< Logical unit for CPU measurements
+   INTEGER :: LU_MEM                              !< Logical unit for memory management information
 
 #ifdef WITH_SCARC_DEBUG
-   CHARACTER(60) :: FILE_DEBUG, FILE_DUMP         !< Output file name for debugging and dumping information
-   INTEGER :: LU_DEBUG, LU_DUMP                   !< Logical unit for debugging and dumping information
+   CHARACTER(60) :: FILE_DEBUG                    !< Output file name for debugging information
+   CHARACTER(60) :: FILE_DUMP                     !< Output file name for dumping information
+   INTEGER :: LU_DEBUG                            !< Logical unit for debugging information
+   INTEGER :: LU_DUMP                             !< Logical unit for dumping information
 #endif
+
 #ifdef WITH_SCARC_VERBOSE
    CHARACTER(60)  :: FILE_VERBOSE                 !< Output file name for verbose messages
    INTEGER :: LU_VERBOSE                          !< Logical unit for verbose messages
@@ -1132,6 +1199,8 @@ TYPE (WALL_TYPE), POINTER :: MWC=>NULL()                !< Pointer to specified 
 
 TYPE (EXTERNAL_WALL_TYPE), POINTER :: EWC=>NULL()       !< Pointer to specified external wall cell
 
+TYPE (SCARC_ALLOCATION_TYPE), POINTER :: AL=>NULL()     !< Pointer to allocated structure within ScaRC memory management
+
 TYPE (SCARC_TYPE), POINTER :: S=>NULL()                 !< Pointer to ScaRC-structure on a specified mesh
 TYPE (SCARC_OSCARC_TYPE), POINTER :: OS=>NULL()         !< Pointer to ScaRC-structure on a specified neighboring
 
@@ -1297,6 +1366,8 @@ TYPE (SCARC_TYPE)       , SAVE, DIMENSION(:), ALLOCATABLE, TARGET :: SCARC      
 TYPE (SCARC_STACK_TYPE) , SAVE, DIMENSION(:), ALLOCATABLE, TARGET :: STACK       !< Stack of consecutive solvers
 TYPE (SCARC_CPU_TYPE)   , SAVE, DIMENSION(:), ALLOCATABLE, TARGET :: CPU         !< CPU-times of different routines
 
+TYPE (SCARC_MEMORY_TYPE), SAVE, TARGET :: MEMORY                   !< Memory administration for ScaRC arrays
+
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: MAIN_CG                  !< Solver structure for Krylov main solver 
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: MAIN_CG_STRUCTURED       !< Solver structure for structured Krylov main solver 
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: MAIN_CG_UNSTRUCTURED     !< Solver structure for unstructured Krylov main solver 
@@ -1352,10 +1423,11 @@ REAL(EB) :: TNOW
 
 TNOW = CURRENT_TIME()
 
-! Setup messaging/debugging mechanisms and time measurements
+! Setup mechanisms for own memory management, different messaging services and CPU-time measurements
  
-CALL SCARC_SETUP_MESSAGING
-CALL SCARC_SETUP_TIMING
+CALL SCARC_SETUP_MEMORY_MANAGEMENT
+CALL SCARC_SETUP_MESSAGE_SERVICES
+CALL SCARC_SETUP_TIME_MEASUREMENTS
 
  
 ! Parse all ScaRC parameters which have been read in read.f90
@@ -1386,7 +1458,6 @@ ELSE
    CALL SCARC_SETUP_WALLS                   ; IF (STOP_STATUS==SETUP_STOP) RETURN
 ENDIF
 
- 
 ! Setup information for data exchanges, matrix systems, aggregation zones, used methods and vectors
  
 CALL SCARC_SETUP_EXCHANGES                  ; IF (STOP_STATUS==SETUP_STOP) RETURN
@@ -1398,7 +1469,6 @@ IF (HAS_LEVELS_AMG) &
 CALL SCARC_SETUP_METHODS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
 CALL SCARC_SETUP_VECTORS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
 
- 
 ! Perform some error statistics for pressure if corresponding flag is set
  
 #ifdef WITH_SCARC_STANDALONE
@@ -1412,18 +1482,26 @@ END SUBROUTINE SCARC_SETUP
 
 
 ! ------------------------------------------------------------------------------------------------
+!> \brief Setup memory management
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_MEMORY_MANAGEMENT
+ALLOCATE (MEMORY%ALLOCATION_LIST(NSCARC_ALLOC_MAX), STAT = IERROR)
+CALL CHKMEMERR ('SCARC_SETUP_MEMORY_MANAGMENT', 'ALLOCATION_LIST', IERROR)
+END SUBROUTINE SCARC_SETUP_MEMORY_MANAGEMENT
+
+! ------------------------------------------------------------------------------------------------
 !> \brief Setup time measurements
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_TIMING
+SUBROUTINE SCARC_SETUP_TIME_MEASUREMENTS
 ALLOCATE (CPU(0:N_MPI_PROCESSES-1), STAT = IERROR)
-CALL CHKMEMERR ('SCARC_SETUP_TIMING', 'CPU', IERROR)
-END SUBROUTINE SCARC_SETUP_TIMING
+CALL CHKMEMERR ('SCARC_SETUP_TIME_MEASUREMENTS', 'CPU', IERROR)
+END SUBROUTINE SCARC_SETUP_TIME_MEASUREMENTS
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Setup debug file if requested
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_MESSAGING
+SUBROUTINE SCARC_SETUP_MESSAGE_SERVICES
 #if defined(WITH_SCARC_VERBOSE) || defined(WITH_SCARC_DEBUG)
 INTEGER :: NM, LASTID
 #endif
@@ -1466,7 +1544,15 @@ ENDIF
 
 #ifdef WITH_SCARC_VERBOSE
  
-! If requested, open file for log-information
+! If verbose directive is set, open file for log-information
+
+IF (MYID == 0) THEN
+   WRITE (MSG%FILE_MEM, '(A,A)') TRIM(CHID),'_scarc.mem'
+   MSG%LU_MEM = GET_FILE_NUMBER()
+   OPEN (MSG%LU_MEM, FILE=MSG%FILE_MEM)
+   WRITE(MSG%LU_MEM,1001) 'Number','Rank','Name','Calling routine','Type','State','Init-type','Dimension',&
+                          'Lef1','Right1','Left2','Right2','Left3','Right3','Size','Sum(INTEGER)','Sum(REAL_EB)','Sum(REAL_FB)'
+ENDIF
  
 LASTID = -NSCARC_HUGE_INT
 DO NM=LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -1480,7 +1566,7 @@ ENDDO
 
 #ifdef WITH_SCARC_DEBUG
  
-! If requested, open file for debug messages
+! If debug directive is set, open file for debug messages
  
 LASTID = -NSCARC_HUGE_INT
 DO NM=LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -1492,7 +1578,9 @@ DO NM=LOWER_MESH_INDEX, UPPER_MESH_INDEX
 ENDDO
 #endif
 
-END SUBROUTINE SCARC_SETUP_MESSAGING
+1001 FORMAT(A8,',',A8,',',A30,',',A40,',',A10,',',A10,',',A10,',',A3,',',A10,',', &
+            A10,',',A10,',',A10,',',A10,',',A10,',',A10,',',A15,',',A15,',',A15)
+END SUBROUTINE SCARC_SETUP_MESSAGE_SERVICES
 
 
 ! ------------------------------------------------------------------------------------------------
@@ -2369,10 +2457,10 @@ USE SCARC_POINTERS, ONLY: M, S, L, G, XCOR, YCOR, ZCOR, XMID, YMID, ZMID
 INTEGER :: NL, NM, NC, IX, IY, IZ, IO
 INTEGER :: IBAR, JBAR, KBAR
 
- 
+CROUTINE = 'SCARC_SETUP_GRIDS'
+
 ! ---------- On all grid levels 
 ! Specify general mesh related geometry information
- 
 
 MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -2440,9 +2528,9 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
          ! Allocate and compute coordinate information for coarser levels
 
-         CALL SCARC_ALLOCATE_REAL1(L%XCOR, 0, L%NX, NSCARC_INIT_NONE, 'L%XCOR')
-         CALL SCARC_ALLOCATE_REAL1(L%YCOR, 0, L%NY, NSCARC_INIT_NONE, 'L%YCOR')
-         CALL SCARC_ALLOCATE_REAL1(L%ZCOR, 0, L%NZ, NSCARC_INIT_NONE, 'L%ZCOR')
+         CALL SCARC_ALLOCATE_REAL1(L%XCOR, 0, L%NX, NSCARC_INIT_NONE, 'L%XCOR', CROUTINE)
+         CALL SCARC_ALLOCATE_REAL1(L%YCOR, 0, L%NY, NSCARC_INIT_NONE, 'L%YCOR', CROUTINE)
+         CALL SCARC_ALLOCATE_REAL1(L%ZCOR, 0, L%NZ, NSCARC_INIT_NONE, 'L%ZCOR', CROUTINE)
 
          DO IX = 0, L%NX
             L%XCOR(IX) = S%XS + IX*L%DX
@@ -2456,9 +2544,9 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
          ! Allocate and compute midpoint information for coarser levels
 
-         CALL SCARC_ALLOCATE_REAL1(L%XMID, 0, L%NX+1, NSCARC_INIT_NONE, 'L%XMID')
-         CALL SCARC_ALLOCATE_REAL1(L%YMID, 0, L%NY+1, NSCARC_INIT_NONE, 'L%YMID')
-         CALL SCARC_ALLOCATE_REAL1(L%ZMID, 0, L%NZ+1, NSCARC_INIT_NONE, 'L%ZMID')
+         CALL SCARC_ALLOCATE_REAL1(L%XMID, 0, L%NX+1, NSCARC_INIT_NONE, 'L%XMID', CROUTINE)
+         CALL SCARC_ALLOCATE_REAL1(L%YMID, 0, L%NY+1, NSCARC_INIT_NONE, 'L%YMID', CROUTINE)
+         CALL SCARC_ALLOCATE_REAL1(L%ZMID, 0, L%NZ+1, NSCARC_INIT_NONE, 'L%ZMID', CROUTINE)
 
          L%XMID(0) = S%XS - 0.5_EB*L%DX
          DO IX = 1, L%NX
@@ -2485,9 +2573,9 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       ! Allocate vectors for step sizes in different directions
 
-      CALL SCARC_ALLOCATE_REAL1(L%DXL, 0, L%NX, NSCARC_INIT_ZERO, 'L%DXL')
-      CALL SCARC_ALLOCATE_REAL1(L%DYL, 0, L%NY, NSCARC_INIT_ZERO, 'L%DYL')
-      CALL SCARC_ALLOCATE_REAL1(L%DZL, 0, L%NZ, NSCARC_INIT_ZERO, 'L%DZL')
+      CALL SCARC_ALLOCATE_REAL1(L%DXL, 0, L%NX, NSCARC_INIT_ZERO, 'L%DXL', CROUTINE)
+      CALL SCARC_ALLOCATE_REAL1(L%DYL, 0, L%NY, NSCARC_INIT_ZERO, 'L%DYL', CROUTINE)
+      CALL SCARC_ALLOCATE_REAL1(L%DZL, 0, L%NZ, NSCARC_INIT_ZERO, 'L%DZL', CROUTINE)
 
       ! Set step sizes between cell midpoints, use interior step sizes for ghost cells as initial values
       ! correct sizes for ghost cells are exchanged later
@@ -2528,7 +2616,7 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    ! Allocate and initialize IS_SOLID array which indicates the state of a cell (gasphase/solid)
 
-   CALL SCARC_ALLOCATE_LOG3(L%IS_SOLID, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_TRUE, 'L%IS_SOLID')
+   CALL SCARC_ALLOCATE_LOG3(L%IS_SOLID, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_TRUE, 'L%IS_SOLID', CROUTINE)
    L%IS_SOLID (1:L%NX, 1:L%NY, 1:L%NZ) = .FALSE.
 
    ! Identify and mark solid obstruction cells in IS_SOLID-part of the discretization
@@ -2555,8 +2643,8 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       ! Number of local cells per mesh
 
-      CALL SCARC_ALLOCATE_INT1(G%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'G%NC_LOCAL')
-      CALL SCARC_ALLOCATE_INT1(G%NC_OFFSET, 1, NMESHES, NSCARC_INIT_ZERO, 'G%NC_OFFSET')
+      CALL SCARC_ALLOCATE_INT1(G%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'G%NC_LOCAL', CROUTINE)
+      CALL SCARC_ALLOCATE_INT1(G%NC_OFFSET, 1, NMESHES, NSCARC_INIT_ZERO, 'G%NC_OFFSET', CROUTINE)
 
       ! Allocate wall information array
 
@@ -2566,7 +2654,7 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       ! Allocate and preset cell numbers array
 
       CALL SCARC_ALLOCATE_INT3(G%CELL_NUMBER, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, &
-                               NSCARC_INIT_UNDEF, 'CELL_NUMBER')
+                               NSCARC_INIT_UNDEF, 'CELL_NUMBER', CROUTINE)
 
       ! Define local cell numbers for Poisson equation
 
@@ -2592,12 +2680,12 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       ! Also allocate and preset cell numbers and state arrays for unstructured discretization
 
       CALL SCARC_ALLOCATE_INT3(G%CELL_NUMBER, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, &
-                               NSCARC_INIT_UNDEF, 'G%CELL_NUMBER')
+                               NSCARC_INIT_UNDEF, 'G%CELL_NUMBER', CROUTINE)
 
       ! Number of local cells per mesh
 
-      CALL SCARC_ALLOCATE_INT1(G%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'G%NC_LOCAL')
-      CALL SCARC_ALLOCATE_INT1(G%NC_OFFSET, 1, NMESHES, NSCARC_INIT_ZERO, 'G%NC_OFFSET')
+      CALL SCARC_ALLOCATE_INT1(G%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'G%NC_LOCAL', CROUTINE)
+      CALL SCARC_ALLOCATE_INT1(G%NC_OFFSET, 1, NMESHES, NSCARC_INIT_ZERO, 'G%NC_OFFSET', CROUTINE)
 
       ! Allocate wall information array
 
@@ -2634,19 +2722,19 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       ! Also allocate and preset cell numbers and state arrays for unstructured discretization
 
       CALL SCARC_ALLOCATE_INT3(G%CELL_NUMBER, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, &
-                               NSCARC_INIT_UNDEF, 'CELL_NUMBER')
+                               NSCARC_INIT_UNDEF, 'CELL_NUMBER', CROUTINE)
 
       ! Allocate index array which specifies I, J, K components for all degrees of freedom
 
       NC = L%NX * L%NY * L%NZ
-      CALL SCARC_ALLOCATE_INT1(G%ICX, 1, NC, NSCARC_INIT_UNDEF, 'G%ICX')
-      CALL SCARC_ALLOCATE_INT1(G%ICY, 1, NC, NSCARC_INIT_UNDEF, 'G%ICY')
-      CALL SCARC_ALLOCATE_INT1(G%ICZ, 1, NC, NSCARC_INIT_UNDEF, 'G%ICZ')
+      CALL SCARC_ALLOCATE_INT1(G%ICX, 1, NC, NSCARC_INIT_UNDEF, 'G%ICX', CROUTINE)
+      CALL SCARC_ALLOCATE_INT1(G%ICY, 1, NC, NSCARC_INIT_UNDEF, 'G%ICY', CROUTINE)
+      CALL SCARC_ALLOCATE_INT1(G%ICZ, 1, NC, NSCARC_INIT_UNDEF, 'G%ICZ', CROUTINE)
 
       ! Number of local cells per mesh
 
-      CALL SCARC_ALLOCATE_INT1(G%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'G%NC_LOCAL')
-      CALL SCARC_ALLOCATE_INT1(G%NC_OFFSET, 1, NMESHES, NSCARC_INIT_ZERO, 'G%NC_OFFSET')
+      CALL SCARC_ALLOCATE_INT1(G%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'G%NC_LOCAL', CROUTINE)
+      CALL SCARC_ALLOCATE_INT1(G%NC_OFFSET, 1, NMESHES, NSCARC_INIT_ZERO, 'G%NC_OFFSET', CROUTINE)
 
       ! Allocate wall information array
 
@@ -2690,11 +2778,13 @@ USE SCARC_POINTERS, ONLY: LF, LC, GC
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, NC, IXF, IYF, IZF, IX, IY, IZ, NSTEP
 
+CROUTINE = 'SCARC_SETUP_GRID_LEVEL'
+
 MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTIGRID (NM, NLEVEL_MIN, NL)
 
-   CALL SCARC_ALLOCATE_LOG3(LC%IS_SOLID, 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, NSCARC_INIT_FALSE, 'LC%IS_SOLID')
+   CALL SCARC_ALLOCATE_LOG3(LC%IS_SOLID, 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, NSCARC_INIT_FALSE, 'LC%IS_SOLID', CROUTINE)
    LC%IS_SOLID (1:LC%NX, 1:LC%NY, 1:LC%NZ)  = .FALSE.
 
    NSTEP = 2**(NL - NLEVEL_MIN)
@@ -2706,16 +2796,16 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
  
       CASE (NSCARC_GRID_STRUCTURED)
 
-         CALL SCARC_ALLOCATE_INT1(GC%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'GC%NC_LOCAL')
-         CALL SCARC_ALLOCATE_INT1(GC%NC_OFFSET, 1, NMESHES, NSCARC_INIT_ZERO, 'GC%NC_OFFSET')
+         CALL SCARC_ALLOCATE_INT1(GC%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'GC%NC_LOCAL', CROUTINE)
+         CALL SCARC_ALLOCATE_INT1(GC%NC_OFFSET, 1, NMESHES, NSCARC_INIT_ZERO, 'GC%NC_OFFSET', CROUTINE)
 
          CALL SCARC_ALLOCATE_INT3(GC%CELL_NUMBER, 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, &
-                                  NSCARC_INIT_UNDEF, 'GC%CELL_NUMBER')
+                                  NSCARC_INIT_UNDEF, 'GC%CELL_NUMBER', CROUTINE)
 
          NC = LC%NX * LC%NY * LC%NZ
-         CALL SCARC_ALLOCATE_INT1(GC%ICX , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICX')
-         CALL SCARC_ALLOCATE_INT1(GC%ICY , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICY')
-         CALL SCARC_ALLOCATE_INT1(GC%ICZ , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICZ')
+         CALL SCARC_ALLOCATE_INT1(GC%ICX , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICX', CROUTINE)
+         CALL SCARC_ALLOCATE_INT1(GC%ICY , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICY', CROUTINE)
+         CALL SCARC_ALLOCATE_INT1(GC%ICZ , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICZ', CROUTINE)
 
          GC%CELL_NUMBER = NSCARC_UNDEF_INT
 
@@ -2746,16 +2836,16 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
  
       CASE (NSCARC_GRID_UNSTRUCTURED)
 
-         CALL SCARC_ALLOCATE_INT1(GC%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'GC%NC_LOCAL')
-         CALL SCARC_ALLOCATE_INT1(GC%NC_OFFSET, 1, NMESHES, NSCARC_INIT_ZERO, 'GC%NC_OFFSET')
+         CALL SCARC_ALLOCATE_INT1(GC%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'GC%NC_LOCAL', CROUTINE)
+         CALL SCARC_ALLOCATE_INT1(GC%NC_OFFSET, 1, NMESHES, NSCARC_INIT_ZERO, 'GC%NC_OFFSET', CROUTINE)
 
          CALL SCARC_ALLOCATE_INT3(GC%CELL_NUMBER, 0, LC%NX+1, 0, LC%NY+1, 0, LC%NZ+1, &
-                                  NSCARC_INIT_UNDEF, 'GC%CELL_NUMBER')
+                                  NSCARC_INIT_UNDEF, 'GC%CELL_NUMBER', CROUTINE)
 
          NC = LC%NX * LC%NY * LC%NZ
-         CALL SCARC_ALLOCATE_INT1(GC%ICX , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICX')
-         CALL SCARC_ALLOCATE_INT1(GC%ICY , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICY')
-         CALL SCARC_ALLOCATE_INT1(GC%ICZ , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICZ')
+         CALL SCARC_ALLOCATE_INT1(GC%ICX , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICX', CROUTINE)
+         CALL SCARC_ALLOCATE_INT1(GC%ICY , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICY', CROUTINE)
+         CALL SCARC_ALLOCATE_INT1(GC%ICZ , 1, NC, NSCARC_INIT_UNDEF, 'GC%ICZ', CROUTINE)
 
          GC%CELL_NUMBER = NSCARC_UNDEF_INT
 
@@ -2881,6 +2971,8 @@ INTEGER :: MESH_NEIGHBORS(6*NSCARC_MAX_FACE_NEIGHBORS)
 INTEGER :: N_FACE_NEIGHBORS(-3:3)
 INTEGER :: N_MESH_NEIGHBORS
 
+CROUTINE = 'SCARC_SETUP_FACES'
+
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    !CALL SCARC_POINT_TO_LEVEL(NM, NLEVEL_MIN)             ! consider only finest grid level
@@ -2954,7 +3046,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ! Allocate array which stores numbers of all neighboring meshes
  
    IF (N_MESH_NEIGHBORS /= 0) &
-      CALL SCARC_ALLOCATE_INT1(S%NEIGHBORS, 1, N_MESH_NEIGHBORS, NSCARC_INIT_UNDEF, 'S%NEIGHBORS')
+      CALL SCARC_ALLOCATE_INT1(S%NEIGHBORS, 1, N_MESH_NEIGHBORS, NSCARC_INIT_UNDEF, 'S%NEIGHBORS', CROUTINE)
    S%N_NEIGHBORS = N_MESH_NEIGHBORS
 
    NEIGHBORS_OF_FACE_LOOP: DO IOR0 = -3, 3
@@ -2969,7 +3061,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          ! Allocate array for storing the numbers of the single neighbors
 
          F%N_NEIGHBORS = N_FACE_NEIGHBORS(IOR0)
-         CALL SCARC_ALLOCATE_INT1(F%NEIGHBORS, 1, N_FACE_NEIGHBORS(IOR0), NSCARC_INIT_NONE, 'F%NEIGHBORS')
+         CALL SCARC_ALLOCATE_INT1(F%NEIGHBORS, 1, N_FACE_NEIGHBORS(IOR0), NSCARC_INIT_NONE, 'F%NEIGHBORS', CROUTINE)
 
          ! Store every neighbor and allocate corresponding administration arrays on finest level
 
@@ -3004,6 +3096,8 @@ INTEGER, ALLOCATABLE, DIMENSION(:) :: COUNTS_NBR
 INTEGER, ALLOCATABLE, DIMENSION(:) :: DISPLS_NBR    
 INTEGER :: N, NM, INBR, IP, MAX_NBR
 
+CROUTINE = 'SCARC_SETUP_SUBDIVISION'
+
 ! Determine number of neighbors for each mesh and make them available in a global array
 SUB => SUBDIVISION
 
@@ -3011,7 +3105,7 @@ SUB => SUBDIVISION
 WRITE(MSG%LU_DEBUG,*) '================= DETERMINE SUB%NEIGHBORS'
 #endif
 
-CALL SCARC_ALLOCATE_INT1 (SUB%N_NEIGHBORS, 1, NMESHES, NSCARC_INIT_ZERO, 'SUB%N_NEIGHBORS')
+CALL SCARC_ALLOCATE_INT1 (SUB%N_NEIGHBORS, 1, NMESHES, NSCARC_INIT_ZERO, 'SUB%N_NEIGHBORS', CROUTINE)
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    SUB%N_NEIGHBORS(NM) = SCARC(NM)%N_NEIGHBORS
 #ifdef WITH_SCARC_DEBUG
@@ -3023,8 +3117,8 @@ IF (N_MPI_PROCESSES > 1) &
    CALL MPI_ALLGATHERV(MPI_IN_PLACE,1,MPI_INTEGER,SUB%N_NEIGHBORS,COUNTS,DISPLS, MPI_INTEGER,MPI_COMM_WORLD,IERROR)
 SUB%N_NEIGHBORS_TOTAL = SUM(SUB%N_NEIGHBORS)
 
-CALL SCARC_ALLOCATE_INT1 (COUNTS_NBR, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'COUNTS_NBR')
-CALL SCARC_ALLOCATE_INT1 (DISPLS_NBR, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'DISPLS_NBR')
+CALL SCARC_ALLOCATE_INT1 (COUNTS_NBR, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'COUNTS_NBR', CROUTINE)
+CALL SCARC_ALLOCATE_INT1 (DISPLS_NBR, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'DISPLS_NBR', CROUTINE)
 
 DO N = 0, N_MPI_PROCESSES - 1
    DO NM = 1, NMESHES
@@ -3041,7 +3135,7 @@ WRITE(MSG%LU_DEBUG,*) 'N, DISPLS_NBR=', N, DISPLS_NBR(N)
 #endif
 ENDDO
 
-CALL SCARC_ALLOCATE_INT1 (BUFFER_INT, 1, SUB%N_NEIGHBORS_TOTAL, NSCARC_INIT_ZERO, 'BUFFER_INT')
+CALL SCARC_ALLOCATE_INT1 (BUFFER_INT, 1, SUB%N_NEIGHBORS_TOTAL, NSCARC_INIT_ZERO, 'BUFFER_INT', CROUTINE)
 IP = 1
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    DO INBR = 1, SCARC(NM)%N_NEIGHBORS
@@ -3057,7 +3151,8 @@ IF (N_MPI_PROCESSES > 1) &
    CALL MPI_ALLGATHERV(MPI_IN_PLACE,1,MPI_INTEGER,BUFFER_INT,COUNTS_NBR,DISPLS_NBR, MPI_INTEGER,MPI_COMM_WORLD,IERROR)
 MAX_NBR = MAXVAL(SUB%N_NEIGHBORS)
 
-CALL SCARC_ALLOCATE_INT2 (SUB%NEIGHBORS, 1, MAX_NBR, 1, NMESHES,  NSCARC_INIT_ZERO, 'SUB%NEIGHBORS')
+CALL SCARC_ALLOCATE_INT2 (SUB%NEIGHBORS, 1, MAX_NBR, 1, NMESHES,  NSCARC_INIT_ZERO, 'SUB%NEIGHBORS', CROUTINE)
+
 DO NM = 1, NMESHES
    DO INBR = 1, SUB%N_NEIGHBORS(NM)
       SUB%NEIGHBORS(INBR, NM) = BUFFER_INT(DISPLS_NBR(PROCESS(NM)) + INBR)
@@ -3067,9 +3162,9 @@ WRITE(MSG%LU_DEBUG,*) 'MESH ', NM,': SUB%NEIGHBORS:', SUB%NEIGHBORS(1:SUB%N_NEIG
 #endif
 ENDDO
 
-DEALLOCATE(BUFFER_INT)
-DEALLOCATE(COUNTS_NBR)
-DEALLOCATE(DISPLS_NBR)
+CALL SCARC_DEALLOCATE_INT1(COUNTS_NBR, 'COUNTS_NBR', CROUTINE)
+CALL SCARC_DEALLOCATE_INT1(DISPLS_NBR, 'DISPLS_NBR', CROUTINE)
+CALL SCARC_DEALLOCATE_INT1(BUFFER_INT, 'BUFFER_INT', CROUTINE)
 
 END SUBROUTINE SCARC_SETUP_SUBDIVISION
 
@@ -3206,6 +3301,7 @@ INTEGER :: NL, NM, NOM
 INTEGER :: IREFINE, IFACE, IOR0, JOR0, INBR, IWG, IWC, ICW
 LOGICAL :: IS_KNOWN(-3:3), IS_DIRIC, IS_OPEN
 
+CROUTINE = 'SCARC_SETUP_WALLS'
  
 ! -------- Get dimensionings for wall cells
  
@@ -3291,8 +3387,8 @@ WRITE(MSG%LU_DEBUG,*) 'NM, NOM, IWG, IOR0, NCG, NCE2:', NM, NOM, IWG, IOR0, OG%N
  
    IF (G%NCE > G%NC) THEN
       G%N_FINE = G%NCE
-      CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_IWG, G%NC+1, G%NCE, NSCARC_INIT_ZERO, 'G%ICE_TO_IWG')
-      CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_ICN, G%NC+1, G%NCE, NSCARC_INIT_ZERO, 'G%ICE_TO_IWG')
+      CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_IWG, G%NC+1, G%NCE, NSCARC_INIT_ZERO, 'G%ICE_TO_IWG', CROUTINE)
+      CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_ICN, G%NC+1, G%NCE, NSCARC_INIT_ZERO, 'G%ICE_TO_IWG', CROUTINE)
    ENDIF
 
    FACE_NEIGHBORS_LOOP: DO IOR0 = -3, 3
@@ -3303,13 +3399,13 @@ WRITE(MSG%LU_DEBUG,*) 'NM, NOM, IWG, IOR0, NCG, NCE2:', NM, NOM, IWG, IOR0, OG%N
          NOM = L%FACE(IOR0)%NEIGHBORS(INBR)
          CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NLEVEL_MIN)
 
-         CALL SCARC_ALLOCATE_INT1 (OG%ICG_TO_IWG, 1, OG%NCG, NSCARC_INIT_ZERO, 'OG%ICG_TO_IWG')
+         CALL SCARC_ALLOCATE_INT1 (OG%ICG_TO_IWG, 1, OG%NCG, NSCARC_INIT_ZERO, 'OG%ICG_TO_IWG', CROUTINE)
          IF (HAS_LEVELS_AMG) THEN
-            CALL SCARC_ALLOCATE_INT2 (OG%ICG_TO_ICW, 1, OG%NCG, 1, 2, NSCARC_INIT_ZERO, 'OG%ICG_TO_ICW')
-            CALL SCARC_ALLOCATE_INT2 (OG%ICG_TO_ICE, 1, OG%NCG, 1, 2, NSCARC_INIT_ZERO, 'OG%ICG_TO_ICE')
+            CALL SCARC_ALLOCATE_INT2 (OG%ICG_TO_ICW, 1, OG%NCG, 1, 2, NSCARC_INIT_ZERO, 'OG%ICG_TO_ICW', CROUTINE)
+            CALL SCARC_ALLOCATE_INT2 (OG%ICG_TO_ICE, 1, OG%NCG, 1, 2, NSCARC_INIT_ZERO, 'OG%ICG_TO_ICE', CROUTINE)
          ELSE
-            CALL SCARC_ALLOCATE_INT2 (OG%ICG_TO_ICW, 1, OG%NCG, 1, 1, NSCARC_INIT_ZERO, 'OG%ICG_TO_ICW')
-            CALL SCARC_ALLOCATE_INT2 (OG%ICG_TO_ICE, 1, OG%NCG, 1, 1, NSCARC_INIT_ZERO, 'OG%ICG_TO_ICE')
+            CALL SCARC_ALLOCATE_INT2 (OG%ICG_TO_ICW, 1, OG%NCG, 1, 1, NSCARC_INIT_ZERO, 'OG%ICG_TO_ICW', CROUTINE)
+            CALL SCARC_ALLOCATE_INT2 (OG%ICG_TO_ICE, 1, OG%NCG, 1, 1, NSCARC_INIT_ZERO, 'OG%ICG_TO_ICE', CROUTINE)
          ENDIF
 
       ENDDO
@@ -3460,8 +3556,8 @@ MULTI_LEVEL_IF: IF (HAS_LEVELS_GMG) THEN
          ! First allocate administrative mapping arrays for own mesh
  
          IF (GC%NCE > GC%NC) THEN
-            CALL SCARC_ALLOCATE_INT1 (GC%ICE_TO_IWG , GC%NC+1, GC%NCE, NSCARC_INIT_ZERO, 'GC%ICE_TO_IWG')
-            CALL SCARC_ALLOCATE_INT1 (GC%ICE_TO_ICN , GC%NC+1, GC%NCE, NSCARC_INIT_ZERO, 'GC%ICE_TO_ICN')
+            CALL SCARC_ALLOCATE_INT1 (GC%ICE_TO_IWG , GC%NC+1, GC%NCE, NSCARC_INIT_ZERO, 'GC%ICE_TO_IWG', CROUTINE)
+            CALL SCARC_ALLOCATE_INT1 (GC%ICE_TO_ICN , GC%NC+1, GC%NCE, NSCARC_INIT_ZERO, 'GC%ICE_TO_ICN', CROUTINE)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'ALLOCATING ICE_TO_ICN ON COARSE LEVEL IN LENGTH ', GC%NC+1, GC%NCE, 1, 1
 #endif
@@ -3489,7 +3585,7 @@ WRITE(MSG%LU_DEBUG,*) 'ALLOCATING ICE_TO_ICN ON COARSE LEVEL IN LENGTH ', GC%NC+
             FC%N_NEIGHBORS = FF%N_NEIGHBORS
 
             IF (FC%N_NEIGHBORS /= 0) &
-               CALL SCARC_ALLOCATE_INT1(FC%NEIGHBORS, 1, FC%N_NEIGHBORS, NSCARC_INIT_NONE, 'FC%FACE_NEIGHBORS')
+               CALL SCARC_ALLOCATE_INT1(FC%NEIGHBORS, 1, FC%N_NEIGHBORS, NSCARC_INIT_NONE, 'FC%FACE_NEIGHBORS', CROUTINE)
             DO INBR= 1, FC%N_NEIGHBORS
                FC%NEIGHBORS(INBR) = FF%NEIGHBORS(INBR)
             ENDDO
@@ -3531,9 +3627,9 @@ WRITE(MSG%LU_DEBUG,*) 'ALLOCATING ICE_TO_ICN ON COARSE LEVEL IN LENGTH ', GC%NC+
 
                   CALL SCARC_SETUP_EXCHANGE_DIMENSIONS(IREFINE, NM, NOM, NL)
 
-                  CALL SCARC_ALLOCATE_INT1(OGC%ICG_TO_IWG, 1, OGC%NCG, NSCARC_INIT_ZERO, 'OGC%ICG_TO_IWG')
-                  CALL SCARC_ALLOCATE_INT2(OGC%ICG_TO_ICW, 1, OGC%NCG, 1, 1, NSCARC_INIT_ZERO, 'OGC%ICG_TO_ICW')
-                  CALL SCARC_ALLOCATE_INT2(OGC%ICG_TO_ICE, 1, OGC%NCG, 1, 1, NSCARC_INIT_ZERO, 'OGC%ICG_TO_ICE')
+                  CALL SCARC_ALLOCATE_INT1(OGC%ICG_TO_IWG, 1, OGC%NCG, NSCARC_INIT_ZERO, 'OGC%ICG_TO_IWG', CROUTINE)
+                  CALL SCARC_ALLOCATE_INT2(OGC%ICG_TO_ICW, 1, OGC%NCG, 1, 1, NSCARC_INIT_ZERO, 'OGC%ICG_TO_ICW', CROUTINE)
+                  CALL SCARC_ALLOCATE_INT2(OGC%ICG_TO_ICE, 1, OGC%NCG, 1, 1, NSCARC_INIT_ZERO, 'OGC%ICG_TO_ICE', CROUTINE)
 
                ENDDO
             ENDIF
@@ -3585,9 +3681,10 @@ END SUBROUTINE SCARC_SETUP_WALLS
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_EXCHANGES
 USE SCARC_POINTERS, ONLY:  OS, OG
-INTEGER :: NL, NM, NOM
+INTEGER :: NL, NM, NOM, NLEN
 INTEGER :: INBR
 
+CROUTINE = 'SCARC_SETUP_EXCHANGES'
  
 ! Allocate request array for data exchanges
 ! Exchange basic information about wall sizes (needed for the dimensioning of the exchange buffers)
@@ -3615,11 +3712,11 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       ! Define maximum lengths for the single overlapping buffers
 
-      OS%NLEN_MAX_BUFFER_LAYER1  = OG%NCG
-      OS%NLEN_MAX_BUFFER_LAYER2  = OG%NCG * 2
-      OS%NLEN_MAX_BUFFER_LAYER4  = OG%NCG * 4
-      OS%NLEN_MAX_BUFFER_STENCIL = OG%NCG * NSCARC_MAX_STENCIL 
-      OS%NLEN_MAX_BUFFER_FULL    = OG%NCG * NSCARC_MAX_STENCIL * 4
+      OS%NLEN_MAX_BUFFER_LAYER1  = MAX(OS%NLEN_MAX_BUFFER_LAYER1, OG%NCG+1)
+      OS%NLEN_MAX_BUFFER_LAYER2  = MAX(OS%NLEN_MAX_BUFFER_LAYER2, (OG%NCG+1) * 2)
+      OS%NLEN_MAX_BUFFER_LAYER4  = MAX(OS%NLEN_MAX_BUFFER_LAYER2, (OG%NCG+1) * 4)
+      OS%NLEN_MAX_BUFFER_STENCIL = MAX(OS%NLEN_MAX_BUFFER_LAYER2, (OG%NCG+1) * NSCARC_MAX_STENCIL)
+      OS%NLEN_MAX_BUFFER_FULL    = MAX(OS%NLEN_MAX_BUFFER_LAYER2, (OG%NCG+1) * NSCARC_MAX_STENCIL * 4)
 
       ! Allocate buffers in maximum length for finest grid level (same buffers are used in shorter length on coarse levels, too)
 
@@ -3629,10 +3726,21 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       OG%NLEN_BUFFER_STENCIL = OS%NLEN_MAX_BUFFER_STENCIL
       OG%NLEN_BUFFER_FULL    = OS%NLEN_MAX_BUFFER_FULL
      
-      CALL SCARC_ALLOCATE_INT1 (OS%SEND_BUFFER_INT , 1, 2*OS%NLEN_MAX_BUFFER_FULL, NSCARC_INIT_UNDEF, 'OS%SEND_BUFFER_INT')
-      CALL SCARC_ALLOCATE_INT1 (OS%RECV_BUFFER_INT , 1, 2*OS%NLEN_MAX_BUFFER_FULL, NSCARC_INIT_UNDEF, 'OS%RECV_BUFFER_INT')
-      CALL SCARC_ALLOCATE_REAL1(OS%SEND_BUFFER_REAL, 1, 2*OS%NLEN_MAX_BUFFER_FULL, NSCARC_INIT_UNDEF, 'OS%SEND_BUFFER_REAL')
-      CALL SCARC_ALLOCATE_REAL1(OS%RECV_BUFFER_REAL, 1, 2*OS%NLEN_MAX_BUFFER_FULL, NSCARC_INIT_UNDEF, 'OS%RECV_BUFFER_REAL')
+      NLEN = 2*OS%NLEN_MAX_BUFFER_FULL 
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SIZES: NM, NOM, OG%NCG=',OG%NCG
+WRITE(MSG%LU_DEBUG,*) 'SIZES: NM, NOM, NLEN_BUFFER_LAYER1 =', NM, NOM, OG%NLEN_BUFFER_LAYER1
+WRITE(MSG%LU_DEBUG,*) 'SIZES: NM, NOM, NLEN_BUFFER_LAYER2 =', NM, NOM, OG%NLEN_BUFFER_LAYER2
+WRITE(MSG%LU_DEBUG,*) 'SIZES: NM, NOM, NLEN_BUFFER_LAYER4 =', NM, NOM, OG%NLEN_BUFFER_LAYER4
+WRITE(MSG%LU_DEBUG,*) 'SIZES: NM, NOM, NLEN_BUFFER_STENCIL=', NM, NOM, OG%NLEN_BUFFER_STENCIL
+WRITE(MSG%LU_DEBUG,*) 'SIZES: NM, NOM, NLEN_BUFFER_FULL   =', NM, NOM, OG%NLEN_BUFFER_FULL
+#endif
+
+      CALL SCARC_ALLOCATE_INT1 (OS%SEND_BUFFER_INT , 1, NLEN, NSCARC_INIT_HUGE, 'OS%SEND_BUFFER_INT', CROUTINE)
+      CALL SCARC_ALLOCATE_INT1 (OS%RECV_BUFFER_INT , 1, NLEN, NSCARC_INIT_HUGE, 'OS%RECV_BUFFER_INT', CROUTINE)
+      CALL SCARC_ALLOCATE_REAL1(OS%SEND_BUFFER_REAL, 1, NLEN, NSCARC_INIT_HUGE, 'OS%SEND_BUFFER_REAL', CROUTINE)
+      CALL SCARC_ALLOCATE_REAL1(OS%RECV_BUFFER_REAL, 1, NLEN, NSCARC_INIT_HUGE, 'OS%RECV_BUFFER_REAL', CROUTINE)
 
       ! Neighboring wall structures for common wall cells
       ALLOCATE (OG%WALL(OG%NCG), STAT=IERROR)
@@ -3693,6 +3801,8 @@ USE SCARC_POINTERS, ONLY: M, L, OB
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: I, J, K, NOBST
 
+CROUTINE = 'SCARC_SETUP_CELL_INDEX'
+
 CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
 
 ! If finest level, the corresponding CELL_INDEX array is already available by surrounding routines
@@ -3703,7 +3813,7 @@ IF (NL == NLEVEL_MIN) THEN
 
 ELSE
 
-   CALL SCARC_ALLOCATE_INT3(L%CELL_INDEX, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_ZERO, 'L%CELL_INDEX')
+   CALL SCARC_ALLOCATE_INT3(L%CELL_INDEX, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_ZERO, 'L%CELL_INDEX', CROUTINE)
    L%CELL_INDEX_PTR => L%CELL_INDEX
    L%N_CELL_INDEX = 0
 
@@ -3791,6 +3901,7 @@ USE SCARC_POINTERS, ONLY: M, L, G
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: I, J, K, ICG, IW, IOR0
 
+CROUTINE = 'SCARC_SETUP_WALL_INDEX'
 
 CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
 
@@ -3802,7 +3913,7 @@ IF (NL == NLEVEL_MIN) THEN
    ! if on coarser levels, it must still be computed
 ELSE
 
-   CALL SCARC_ALLOCATE_INT2(L%WALL_INDEX, 1, L%N_CELL_INDEX, -3, 3, NSCARC_INIT_ZERO, 'L%WALL_INDEX')
+   CALL SCARC_ALLOCATE_INT2(L%WALL_INDEX, 1, L%N_CELL_INDEX, -3, 3, NSCARC_INIT_ZERO, 'L%WALL_INDEX', CROUTINE)
    L%WALL_INDEX_PTR => L%WALL_INDEX
 
    DO IW = 1, L%N_WALL_CELLS_EXT
@@ -4932,11 +5043,13 @@ END SUBROUTINE SCARC_SETUP_EXCHANGE_DIMENSIONS
 SUBROUTINE SCARC_SETUP_GLOBALS
 INTEGER :: NM, NP
 
+CROUTINE = 'SCARC_SETUP_GLOBALS'
+
 IF (N_MPI_PROCESSES > 1) THEN
 
    ! Allocate and preset counter and displacement vector for global data exchanges
-   CALL SCARC_ALLOCATE_INT1 (COUNTS, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'COUNTS')
-   CALL SCARC_ALLOCATE_INT1 (DISPLS, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'DISPLS')
+   CALL SCARC_ALLOCATE_INT1 (COUNTS, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'COUNTS', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1 (DISPLS, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'DISPLS', CROUTINE)
 
    ! Get number of data to send per process
    DO NP = 0, N_MPI_PROCESSES-1
@@ -4952,8 +5065,8 @@ IF (N_MPI_PROCESSES > 1) THEN
 
 ENDIF
 
-CALL SCARC_ALLOCATE_INT1 (MESH_INT , 1, NMESHES, NSCARC_INIT_ZERO, 'MESH_INT')
-CALL SCARC_ALLOCATE_REAL1(MESH_REAL, 1, NMESHES, NSCARC_INIT_ZERO, 'MESH_REAL')
+CALL SCARC_ALLOCATE_INT1 (MESH_INT , 1, NMESHES, NSCARC_INIT_ZERO, 'MESH_INT', CROUTINE)
+CALL SCARC_ALLOCATE_REAL1(MESH_REAL, 1, NMESHES, NSCARC_INIT_ZERO, 'MESH_REAL', CROUTINE)
 
 CALL SCARC_SETUP_DIMENSIONS(NLEVEL_MIN)
 
@@ -5046,6 +5159,8 @@ USE SCARC_POINTERS, ONLY: G, AC, OAC
 INTEGER :: NM, NOM, NL, INBR
 
   
+CROUTINE = 'SCARC_SETUP_SYSTEMS'
+
 ! ------ Setup sizes for system matrices
   
 SELECT_SCARC_METHOD_SIZES: SELECT CASE (TYPE_METHOD)
@@ -5230,13 +5345,13 @@ NMESHES_IF: IF (NMESHES > 1) THEN
 
          CALL SCARC_POINT_TO_GRID (NM, NLEVEL_MIN)    
          AC => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
-         CALL SCARC_REDUCE_CMATRIX(AC, 'G%POISSONC')
+         CALL SCARC_REDUCE_CMATRIX(AC, 'G%POISSONC', CROUTINE)
 
          OMESHES_FINE_LOOP: DO INBR = 1, S%N_NEIGHBORS
             NOM = S%NEIGHBORS(INBR)
             CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NLEVEL_MIN)
             OAC => SCARC_POINT_TO_OTHER_CMATRIX (OG, NSCARC_MATRIX_POISSON)
-            CALL SCARC_REDUCE_CMATRIX(OAC, 'OG%POISSONC')
+            CALL SCARC_REDUCE_CMATRIX(OAC, 'OG%POISSONC', CROUTINE)
          ENDDO OMESHES_FINE_LOOP
 
 #ifdef WITH_SCARC_DEBUG
@@ -5259,13 +5374,13 @@ CALL SCARC_DEBUG_CMATRIX(AC, 'G%POISSONC', 'SETUP_SYSTEMS: AFTER EXTRAXT_MATRIX_
 
                CALL SCARC_POINT_TO_GRID (NM, NL)    
                AC => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
-               CALL SCARC_REDUCE_CMATRIX(AC, 'G%POISSONC')
+               CALL SCARC_REDUCE_CMATRIX(AC, 'G%POISSONC', CROUTINE)
 
                OMESHES_COARSE_LOOP: DO INBR = 1, S%N_NEIGHBORS
                   NOM = S%NEIGHBORS(INBR)
                   CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
                   OAC => SCARC_POINT_TO_OTHER_CMATRIX (OG, NSCARC_MATRIX_POISSON)
-                  CALL SCARC_REDUCE_CMATRIX(OAC, 'OG%POISSONC')
+                  CALL SCARC_REDUCE_CMATRIX(OAC, 'OG%POISSONC', CROUTINE)
                ENDDO OMESHES_COARSE_LOOP
 
 #ifdef WITH_SCARC_DEBUG
@@ -5314,14 +5429,16 @@ USE SCARC_POINTERS, ONLY : G
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, NOM, IC, IW, ICE, ICN
 
+CROUTINE = 'SCARC_SETUP_GLOBAL_CELL_NUMBERING'
+
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   CALL SCARC_POINT_TO_GRID (NM, NL)             ! set grid pointer G
+   CALL SCARC_POINT_TO_GRID (NM, NL)      
 
    IF (HAS_LEVELS_AMG) THEN
-      CALL SCARC_ALLOCATE_INT1 (G%LOCAL_TO_GLOBAL, 1, G%NCE2, NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL')
-   ELSE                                          ! else: only consider one overlapping layer
-      CALL SCARC_ALLOCATE_INT1 (G%LOCAL_TO_GLOBAL, 1, G%NCE , NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL')
+      CALL SCARC_ALLOCATE_INT1 (G%LOCAL_TO_GLOBAL, 1, G%NCE2, NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL', CROUTINE)    ! two layers
+   ELSE
+      CALL SCARC_ALLOCATE_INT1 (G%LOCAL_TO_GLOBAL, 1, G%NCE , NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL', CROUTINE)    ! one layers
    ENDIF
 
    DO IC = 1, G%NC
@@ -5427,6 +5544,7 @@ USE SCARC_POINTERS, ONLY: L, G, OG, A, AB, OA, OAB
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: IX, IY, IZ, IC, IP, INBR, NOM
 
+CROUTINE = 'SCARC_SETUP_POISSON'
  
 ! Compute single matrix entries and corresponding row and column pointers
 ! Along internal boundaries use placeholders for the neighboring matrix entries
@@ -5443,7 +5561,7 @@ SELECT_STORAGE_TYPE: SELECT CASE (SCARC_MATRIX_LEVEL(NL))
 
       CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
       A => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
-      CALL SCARC_ALLOCATE_CMATRIX (A, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'G%POISSONC')
+      CALL SCARC_ALLOCATE_CMATRIX (A, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'G%POISSONC', CROUTINE)
 
       ! For every neighbor allocate small matrix on overlapping part of mesh
 
@@ -5451,7 +5569,7 @@ SELECT_STORAGE_TYPE: SELECT CASE (SCARC_MATRIX_LEVEL(NL))
          NOM = S%NEIGHBORS(INBR)
          CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
          OA => SCARC_POINT_TO_OTHER_CMATRIX (OG, NSCARC_MATRIX_POISSON)
-         CALL SCARC_ALLOCATE_CMATRIX(OA, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OG%POISSONC')
+         CALL SCARC_ALLOCATE_CMATRIX(OA, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OG%POISSONC', CROUTINE)
       ENDDO
 
       IP = 1
@@ -5497,7 +5615,7 @@ SELECT_STORAGE_TYPE: SELECT CASE (SCARC_MATRIX_LEVEL(NL))
 
       CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
       AB => SCARC_POINT_TO_BMATRIX (G, NSCARC_MATRIX_POISSON)
-      CALL SCARC_ALLOCATE_BMATRIX(AB, NL, 'G%POISSONB')
+      CALL SCARC_ALLOCATE_BMATRIX(AB, NL, 'G%POISSONB', CROUTINE)
    
       ! For every neighbor allocate little matrix on overlapping part of mesh
 
@@ -5505,7 +5623,7 @@ SELECT_STORAGE_TYPE: SELECT CASE (SCARC_MATRIX_LEVEL(NL))
          NOM = S%NEIGHBORS(INBR)
          CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
          OAB => SCARC_POINT_TO_BMATRIX (G, NSCARC_MATRIX_POISSON)
-         CALL SCARC_ALLOCATE_BMATRIX(OAB, NL, 'OG%POISSONB')
+         CALL SCARC_ALLOCATE_BMATRIX(OAB, NL, 'OG%POISSONB', CROUTINE)
       ENDDO
    
       IP  = 1
@@ -5832,6 +5950,8 @@ REAL(EB) :: VAL = 0.0_EB, VALS = 0.0_EB, DIFF
 LOGICAL  :: BSYM, BCHECK_SYMMETRY = .FALSE.
 INTEGER, DIMENSION(:), ALLOCATABLE :: AUX_ICOL, AUX_IC
 
+CROUTINE = 'SCARC_SETUP_POISSON_MKL'
+
 CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
 A  => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
 AS => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON_SYM)
@@ -5908,7 +6028,7 @@ ENDIF
 CALL SCARC_GET_MATRIX_STENCIL_MAX(A, G%NC)
 AS%N_ROW = G%NC+1
 AS%N_VAL = A%N_STENCIL_MAX * G%NC
-CALL SCARC_ALLOCATE_CMATRIX (AS, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'G%AS')
+CALL SCARC_ALLOCATE_CMATRIX (AS, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'G%AS', CROUTINE)
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'A%N_STENCIL_MAX=',A%N_STENCIL_MAX
@@ -5919,8 +6039,8 @@ WRITE(MSG%LU_DEBUG,*) 'AS%N_VAL=',AS%N_VAL
 ! If global MKL method is used, also allocate auxiliary space for computation of global numbering
 
 IF (IS_MKL_LEVEL(NL)) THEN
-   CALL SCARC_ALLOCATE_INT1(AUX_ICOL, 1, A%N_STENCIL_MAX, NSCARC_HUGE_INT, 'AUX_ICOL')
-   CALL SCARC_ALLOCATE_INT1(AUX_IC  , 1, A%N_STENCIL_MAX, NSCARC_HUGE_INT, 'AUX_IC')
+   CALL SCARC_ALLOCATE_INT1(AUX_ICOL, 1, A%N_STENCIL_MAX, NSCARC_HUGE_INT, 'AUX_ICOL', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1(AUX_IC  , 1, A%N_STENCIL_MAX, NSCARC_HUGE_INT, 'AUX_IC', CROUTINE)
 ENDIF
 
   
@@ -6039,11 +6159,11 @@ CALL SCARC_DEBUG_CMATRIX(AS, 'POISSON_SYM', 'SETUP_MATRIX_MKL: BEFORE REDUCE')
 #endif
 
 IF (IS_MKL_LEVEL(NL)) THEN
-   DEALLOCATE (AUX_ICOL, STAT=IERROR)
-   DEALLOCATE (AUX_IC,   STAT=IERROR)
+   CALL SCARC_DEALLOCATE_INT1 (AUX_ICOL, 'AUX_COL', CROUTINE)
+   CALL SCARC_DEALLOCATE_INT1 (AUX_IC,  'AUX_IC', CROUTINE)
 ENDIF
 
-CALL SCARC_REDUCE_CMATRIX (AS, 'POISSON_SYM')
+CALL SCARC_REDUCE_CMATRIX (AS, 'POISSON_SYM', CROUTINE)
 
 #ifdef WITH_SCARC_DEBUG
 CALL SCARC_DEBUG_CMATRIX(AS, 'POISSON_SYM', 'SETUP_MATRIX_MKL: END')
@@ -6628,24 +6748,20 @@ WRITE(MSG%LU_DEBUG,*) 'CALLING EXTRACT_MATRIX_OVERLAPS, NMATRIX, NL:', NMATRIX, 
                         ICE2 = OG%ICG_TO_ICE(ICG+1, 1)
                         IF (G%LOCAL_TO_GLOBAL(ICE2) == ICN) THEN
                            A%COL(IP) = ICE2
-WRITE(MSG%LU_DEBUG,'(A, 7I8)') 'A: NM, ICG, ICE, ICOL, ICN, IP, ICE2:', NM, ICG, ICE, ICOL, ICN, IP, ICE2
                         ENDIF
                      ELSE IF (ICG == OL%GHOST_LASTW(IOR0)) THEN
                         ICE1 = OG%ICG_TO_ICE(ICG-1, 1)
                         IF (G%LOCAL_TO_GLOBAL(ICE1) == ICN) THEN
                            A%COL(IP) = ICE1
-WRITE(MSG%LU_DEBUG,'(A, 7I8)') 'B: NM, ICG, ICE, ICOL, ICN, IP, ICE1:', NM, ICG, ICE, ICOL, ICN, IP, ICE1
                         ENDIF
                      ELSE
                         ICE1 = OG%ICG_TO_ICE(ICG-1, 1)
                         ICE2 = OG%ICG_TO_ICE(ICG+1, 1)
                         IF (G%LOCAL_TO_GLOBAL(ICE1) == ICN) THEN
                            A%COL(IP) = ICE1
-WRITE(MSG%LU_DEBUG,'(A, 7I8)') 'C: NM, ICG, ICE, ICOL, ICN, IP, ICE1:', NM, ICG, ICE, ICOL, ICN, IP, ICE1
                         ENDIF
                         IF (G%LOCAL_TO_GLOBAL(ICE2) == ICN) THEN
                            A%COL(IP) = ICE2
-WRITE(MSG%LU_DEBUG,'(A, 7I8)') 'D: NM, ICG, ICE, ICOL, ICN, IP, ICE2:', NM, ICG, ICE, ICOL, ICN, IP, ICE2
                         ENDIF
                      ENDIF
                   ENDIF
@@ -6686,12 +6802,14 @@ USE SCARC_POINTERS, ONLY: G, A
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, IC, JC, ICOL
 
+CROUTINE = 'SCARC_EXTRACT_MATRIX_DIAGONAL'
+
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
    A => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
 
-   CALL SCARC_ALLOCATE_REAL1 (G%DIAG, 1, G%NCE, NSCARC_INIT_ZERO, 'G%DIAG')
+   CALL SCARC_ALLOCATE_REAL1 (G%DIAG, 1, G%NCE, NSCARC_INIT_ZERO, 'G%DIAG', CROUTINE)
    DO IC = 1, G%NC
       DO ICOL = A%ROW(IC), A%ROW(IC+1) - 1
          JC = A%COL(ICOL)
@@ -6720,15 +6838,16 @@ USE SCARC_POINTERS, ONLY : G, OL
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, INBR, IOR0, NOM, ICG, ICE, ICE2, ICW, ICW2, IOFF
 
+CROUTINE = 'SCARC_EXTRACT_CELL_OVERLAPS'
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
 
-   CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_ECELL, G%NC+1, G%NCE2, NSCARC_INIT_ZERO, 'G%ICE_TO_ECELL')
-   CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_ICELL, G%NC+1, G%NCE2, NSCARC_INIT_ZERO, 'G%ICE_TO_ICELL')
-   CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_OCELL, G%NC+1, G%NCE2, NSCARC_INIT_ZERO, 'G%ICE_TO_OCELL')
-   CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_GCELL, G%NC+1, G%NCE2, NSCARC_INIT_ZERO, 'G%ICE_TO_GCELL')
+   CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_ECELL, G%NC+1, G%NCE2, NSCARC_INIT_ZERO, 'G%ICE_TO_ECELL', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_ICELL, G%NC+1, G%NCE2, NSCARC_INIT_ZERO, 'G%ICE_TO_ICELL', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_OCELL, G%NC+1, G%NCE2, NSCARC_INIT_ZERO, 'G%ICE_TO_OCELL', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1 (G%ICE_TO_GCELL, G%NC+1, G%NCE2, NSCARC_INIT_ZERO, 'G%ICE_TO_GCELL', CROUTINE)
 
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) 'ALLOCATING ICE_TO_OCELL IN LENGTH ', G%NC+1, G%NCE, G%NCE2
@@ -6801,14 +6920,16 @@ INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, INBR, IOR0, NOM, IZ, ICG, ICE, ICE2, ICW, ICW2, IFOUND, IZL_CURRENT, ZONE_PREV
 INTEGER :: IZL1, IZL2, IZG1, IZG2
 
+CROUTINE = 'SCARC_EXTRACT_ZONE_OVERLAPS'
+
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)    
 
-   CALL SCARC_ALLOCATE_INT1 (GF%ICE_TO_OZONE, GF%NC+1, GF%NCE2, NSCARC_INIT_ZERO, 'GF%ICE_TO_OZONE')
-   CALL SCARC_ALLOCATE_INT1 (GF%ICE_TO_GZONE, GF%NC+1, GF%NCE2, NSCARC_INIT_ZERO, 'GF%ICE_TO_GZONE')
-   CALL SCARC_ALLOCATE_INT1 (GF%ICE_TO_IZONE, GF%NC+1, GF%NCE2, NSCARC_INIT_ZERO, 'GF%ICE_TO_IZONE')
-   CALL SCARC_ALLOCATE_INT1 (GF%ICE_TO_EZONE, GF%NC+1, GF%NCE2, NSCARC_INIT_ZERO, 'GF%ICE_TO_EZONE')
+   CALL SCARC_ALLOCATE_INT1 (GF%ICE_TO_OZONE, GF%NC+1, GF%NCE2, NSCARC_INIT_ZERO, 'GF%ICE_TO_OZONE', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1 (GF%ICE_TO_GZONE, GF%NC+1, GF%NCE2, NSCARC_INIT_ZERO, 'GF%ICE_TO_GZONE', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1 (GF%ICE_TO_IZONE, GF%NC+1, GF%NCE2, NSCARC_INIT_ZERO, 'GF%ICE_TO_IZONE', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1 (GF%ICE_TO_EZONE, GF%NC+1, GF%NCE2, NSCARC_INIT_ZERO, 'GF%ICE_TO_EZONE', CROUTINE)
 
    ! Clear overlapping parts and fill them with the recently exchanged data
    GF%ZONES_LOCAL (GF%NC+1: GF%NCE2) = 0
@@ -6917,6 +7038,8 @@ USE SCARC_POINTERS, ONLY : S, GF, OLF, OGF, OGC
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, INBR, IOR0, NOM, IZ, ICW1, ICW2, ICE1, ICE2, IZL1, IZL2, ICG, IZW, IZE, NCGE_TOTAL = 0
 
+CROUTINE = 'SCARC_EXTRACT_ZONE_POINTERS'
+
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)    
@@ -6926,8 +7049,8 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       NOM = S%NEIGHBORS(INBR)
       CALL SCARC_POINT_TO_OTHER_MULTIGRID(NM, NOM, NL, NL+1)
     
-      CALL SCARC_ALLOCATE_INT1(OGF%ICG_TO_IZONE, 1, 2*OGF%NCG, NSCARC_INIT_ZERO, 'OGF%ICG_TO_IZONE')
-      CALL SCARC_ALLOCATE_INT1(OGF%ICG_TO_EZONE, 1, 2*OGF%NCG, NSCARC_INIT_ZERO, 'OGF%ICG_TO_EZONE')
+      CALL SCARC_ALLOCATE_INT1(OGF%ICG_TO_IZONE, 1, 2*OGF%NCG, NSCARC_INIT_ZERO, 'OGF%ICG_TO_IZONE', CROUTINE)
+      CALL SCARC_ALLOCATE_INT1(OGF%ICG_TO_EZONE, 1, 2*OGF%NCG, NSCARC_INIT_ZERO, 'OGF%ICG_TO_EZONE', CROUTINE)
 
       ORIENTATION_LOOP: DO IOR0 = -3, 3
          IF (OLF%GHOST_LASTW(IOR0) == 0) CYCLE
@@ -6961,11 +7084,11 @@ WRITE(MSG%LU_DEBUG,'(A, 8I6)') 'NM, ,NBR, NOM, IOR0, ICG, ICW2, IZL2, IZ :', &
 
          ENDDO INTERNAL_ZONES_LOOP
          OGF%NCGI = IZ
-         CALL SCARC_REDUCE_INT1(OGF%ICG_TO_IZONE, OGF%NCGI, 'OGF%ICG_TO_IZONE')
+         CALL SCARC_REDUCE_INT1(OGF%ICG_TO_IZONE, OGF%NCGI, 'OGF%ICG_TO_IZONE', CROUTINE)
 
          !First allocate in fine cell related length
 
-         CALL SCARC_ALLOCATE_INT2(OGC%ICG_TO_ICW, 1, OGF%NCGI, 1, 1, NSCARC_INIT_ZERO, 'OGF%ICG_TO_ICW')
+         CALL SCARC_ALLOCATE_INT2(OGC%ICG_TO_ICW, 1, OGF%NCGI, 1, 1, NSCARC_INIT_ZERO, 'OGF%ICG_TO_ICW', CROUTINE)
          
          IZ = 0
          DO ICG = 1, OGF%NCGI
@@ -6989,7 +7112,7 @@ WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': GHOST_LASTW(',IOR0,')=', OLC%GHOST_LASTW(IOR0)
 #endif
          ! Then reduce to zone related length 
 
-         CALL SCARC_REDUCE_INT2(OGC%ICG_TO_ICW, OGC%NCGI, 1, 'OGC%ICG_TO_ICW')
+         CALL SCARC_REDUCE_INT2(OGC%ICG_TO_ICW, OGC%NCGI, 1, 'OGC%ICG_TO_ICW', CROUTINE)
 
 
          IZ  = 0 
@@ -7021,11 +7144,11 @@ WRITE(MSG%LU_DEBUG,'(A, 8I6)') 'NM, INBR, NOM, IOR0, ICG, ICE2, IZL2, IZ :', &
 
          ENDDO EXTERNAL_ZONES_LOOP
          OGF%NCGE = IZ
-         CALL SCARC_REDUCE_INT1(OGF%ICG_TO_EZONE, OGF%NCGE, 'OGF%ICG_TO_IZONE')
+         CALL SCARC_REDUCE_INT1(OGF%ICG_TO_EZONE, OGF%NCGE, 'OGF%ICG_TO_IZONE', CROUTINE)
 
          ! First allocate in fine cell related length
 
-         CALL SCARC_ALLOCATE_INT2 (OGC%ICG_TO_ICE, 1, 2*OGF%NCGE, 1, 1, NSCARC_INIT_ZERO, 'OGC%ICG_TO_ICE')
+         CALL SCARC_ALLOCATE_INT2 (OGC%ICG_TO_ICE, 1, 2*OGF%NCGE, 1, 1, NSCARC_INIT_ZERO, 'OGC%ICG_TO_ICE', CROUTINE)
          
          IZ = 0
          DO ICG = 1, OGF%NCGE
@@ -7049,7 +7172,7 @@ WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': GHOST_LASTE(',IOR0,')=', OLC%GHOST_LASTE(IOR0)
 #endif
          ! Then reduce to zone related length 
 
-         CALL SCARC_REDUCE_INT2(OGC%ICG_TO_ICE, OGC%NCGE, 1, 'OGC%ICG_TO_ICE')
+         CALL SCARC_REDUCE_INT2(OGC%ICG_TO_ICE, OGC%NCGE, 1, 'OGC%ICG_TO_ICE', CROUTINE)
 
 
          GC%N_STENCIL_MAX = 20                  ! TODO: ONLY TEMPORARILY
@@ -7565,6 +7688,8 @@ SUBROUTINE SCARC_SETUP_VECTORS()
 USE SCARC_POINTERS, ONLY: G, SV, ST
 INTEGER :: NM, NSTACK, NL
 
+CROUTINE = 'SCARC_SETUP_VECTORS'
+
 DO NSTACK = 1, N_STACK_TOTAL
 
    SV  => STACK(NSTACK)%SOLVER
@@ -7578,23 +7703,23 @@ DO NSTACK = 1, N_STACK_TOTAL
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'Allocating arrays for NSTACK, NM, NL, G%NCE:', NSTACK, NM, NL, G%NCE
 #endif
-         IF (SV%X /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%X, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%X')
-         IF (SV%B /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%B, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%B')
-         IF (SV%D /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%D, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%D')
-         IF (SV%R /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%R, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%R')
-         IF (SV%V /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%V, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%V')
-         IF (SV%Y /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%Y, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%Y')
-         IF (SV%Z /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%Z, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%Z')
+         IF (SV%X /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%X, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%X', CROUTINE)
+         IF (SV%B /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%B, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%B', CROUTINE)
+         IF (SV%D /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%D, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%D', CROUTINE)
+         IF (SV%R /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%R, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%R', CROUTINE)
+         IF (SV%V /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%V, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%V', CROUTINE)
+         IF (SV%Y /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%Y, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%Y', CROUTINE)
+         IF (SV%Z /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%Z, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%Z', CROUTINE)
 
 #ifdef WITH_SCARC_DEBUG
-         IF (SV%E /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%E, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%E')
+         IF (SV%E /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%E, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%E', CROUTINE)
 #endif
 
          IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
-            IF (SV%X_FB /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1_FB(ST%X_FB, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%X_FB')
-            IF (SV%B_FB /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1_FB(ST%B_FB, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%B_FB')
-            IF (SV%R_FB /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1_FB(ST%R_FB, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%R_FB')
-            IF (SV%V_FB /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1_FB(ST%V_FB, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%V_FB')
+            IF (SV%X_FB /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1_FB(ST%X_FB, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%X_FB', CROUTINE)
+            IF (SV%B_FB /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1_FB(ST%B_FB, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%B_FB', CROUTINE)
+            IF (SV%R_FB /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1_FB(ST%R_FB, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%R_FB', CROUTINE)
+            IF (SV%V_FB /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1_FB(ST%V_FB, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%V_FB', CROUTINE)
          ENDIF
 
       ENDDO
@@ -8111,18 +8236,20 @@ USE SCARC_POINTERS, ONLY: G, ST
 INTEGER, INTENT(IN) :: NSTAGE, NLMIN, NLMAX
 INTEGER :: NM, NL
 
+CROUTINE = 'SCARC_SETUP_INTERPOLATION'
+
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    LEVEL_LOOP: DO NL = NLMIN, NLMAX
 
       CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
       ST => SCARC(NM)%LEVEL(NL)%STAGE(NSTAGE)
 
-      CALL SCARC_ALLOCATE_REAL1(ST%X, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%X')
-      CALL SCARC_ALLOCATE_REAL1(ST%B, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%B')
-      CALL SCARC_ALLOCATE_REAL1(ST%V, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%Q')
-      CALL SCARC_ALLOCATE_REAL1(ST%R, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%W')
-      CALL SCARC_ALLOCATE_REAL1(ST%Y, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%Y')
-      CALL SCARC_ALLOCATE_REAL1(ST%Z, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%Z')
+      CALL SCARC_ALLOCATE_REAL1(ST%X, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%X', CROUTINE)
+      CALL SCARC_ALLOCATE_REAL1(ST%B, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%B', CROUTINE)
+      CALL SCARC_ALLOCATE_REAL1(ST%V, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%Q', CROUTINE)
+      CALL SCARC_ALLOCATE_REAL1(ST%R, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%W', CROUTINE)
+      CALL SCARC_ALLOCATE_REAL1(ST%Y, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%Y', CROUTINE)
+      CALL SCARC_ALLOCATE_REAL1(ST%Z, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%Z', CROUTINE)
 
    ENDDO LEVEL_LOOP
 ENDDO MESHES_LOOP
@@ -8140,6 +8267,7 @@ USE POIS, ONLY: H2CZIS, H3CZIS
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL
 
+CROUTINE = 'SCARC_SETUP_FFT'
  
 ! Allocate working space for FFT routine
  
@@ -8175,56 +8303,56 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       FFT%LSAVE = (FFT%ITRN+1)*FFT%JTRN*FFT%KTRN+7*FFT%ITRN+5*FFT%JTRN+6*FFT%KTRN+56
       FFT%LWORK = (FFT%ITRN+1)*FFT%JTRN*FFT%KTRN
 
-      CALL SCARC_ALLOCATE_REAL1(FFT%SAVE1, -3, FFT%LSAVE, NSCARC_INIT_ZERO, 'FFT%SAVE1')
-      CALL SCARC_ALLOCATE_REAL1(FFT%WORK ,  1, FFT%LWORK, NSCARC_INIT_ZERO, 'FFT%WORK')
+      CALL SCARC_ALLOCATE_REAL1(FFT%SAVE1, -3, FFT%LSAVE, NSCARC_INIT_ZERO, 'FFT%SAVE1', CROUTINE)
+      CALL SCARC_ALLOCATE_REAL1(FFT%WORK ,  1, FFT%LWORK, NSCARC_INIT_ZERO, 'FFT%WORK', CROUTINE)
 
       ! Allocate stretching vector (set to 1)
-      CALL SCARC_ALLOCATE_REAL1(FFT%HX, 0, FFT%ITRN, NSCARC_INIT_ONE, 'FFT%HX')
+      CALL SCARC_ALLOCATE_REAL1(FFT%HX, 0, FFT%ITRN, NSCARC_INIT_ONE, 'FFT%HX', CROUTINE)
 
       ! Allocate RHS vector for FFT routine
       IF (L%NY == 1) THEN
-         CALL SCARC_ALLOCATE_REAL3(FFT%PRHS, 1, FFT%ITRN, 1,        1, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%PRHS')
+         CALL SCARC_ALLOCATE_REAL3(FFT%PRHS, 1, FFT%ITRN, 1,        1, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%PRHS', CROUTINE)
       ELSE
-         CALL SCARC_ALLOCATE_REAL3(FFT%PRHS, 1, FFT%ITRN, 1, FFT%JTRN, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%PRHS')
+         CALL SCARC_ALLOCATE_REAL3(FFT%PRHS, 1, FFT%ITRN, 1, FFT%JTRN, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%PRHS', CROUTINE)
       ENDIF
 
       ! Allocate boundary data vector for XS
       IF (L%NZ>1) THEN
-         IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1, FFT%JTRN, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXS')
-         IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1,        1, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXS')
+         IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1, FFT%JTRN, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXS', CROUTINE)
+         IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1,        1, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXS', CROUTINE)
       ELSE
-         CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1, FFT%JTRN, 1, 1, NSCARC_INIT_ZERO, 'FFT%BXS')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1, FFT%JTRN, 1, 1, NSCARC_INIT_ZERO, 'FFT%BXS', CROUTINE)
       ENDIF
 
       ! Allocate boundary data vector for XF
       IF (L%NZ>1) THEN
-         IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1, FFT%JTRN, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXF')
-         IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1,        1, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXF')
+         IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1, FFT%JTRN, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXF', CROUTINE)
+         IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1,        1, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXF', CROUTINE)
       ELSE
-         CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1, FFT%JTRN, 1, 1, NSCARC_INIT_ZERO, 'FFT%BXF')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1, FFT%JTRN, 1, 1, NSCARC_INIT_ZERO, 'FFT%BXF', CROUTINE)
       ENDIF
 
       ! Allocate boundary data vector for YS
       IF (L%NZ > 1) THEN
-         CALL SCARC_ALLOCATE_REAL2(FFT%BYS, 1, FFT%ITRN,1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BYS')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BYS, 1, FFT%ITRN,1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BYS', CROUTINE)
       ELSE
-         CALL SCARC_ALLOCATE_REAL2(FFT%BYS, 1, FFT%ITRN,1,        1, NSCARC_INIT_ZERO, 'FFT%BYS')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BYS, 1, FFT%ITRN,1,        1, NSCARC_INIT_ZERO, 'FFT%BYS', CROUTINE)
       ENDIF
 
       ! Allocate boundary data vector for YF
       IF (L%NZ > 1) THEN
-         CALL SCARC_ALLOCATE_REAL2(FFT%BYF, 1, FFT%ITRN,1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BYF')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BYF, 1, FFT%ITRN,1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BYF', CROUTINE)
       ELSE
-         CALL SCARC_ALLOCATE_REAL2(FFT%BYF, 1, FFT%ITRN,1,        1, NSCARC_INIT_ZERO, 'FFT%BYF')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BYF, 1, FFT%ITRN,1,        1, NSCARC_INIT_ZERO, 'FFT%BYF', CROUTINE)
       ENDIF
 
       ! Allocate boundary data vector for ZS
-      IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZS, 1, FFT%ITRN, 1, FFT%JTRN, NSCARC_INIT_ZERO, 'FFT%BZS')
-      IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZS, 1, FFT%ITRN, 1,        1, NSCARC_INIT_ZERO, 'FFT%BZS')
+      IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZS, 1, FFT%ITRN, 1, FFT%JTRN, NSCARC_INIT_ZERO, 'FFT%BZS', CROUTINE)
+      IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZS, 1, FFT%ITRN, 1,        1, NSCARC_INIT_ZERO, 'FFT%BZS', CROUTINE)
 
       ! Allocate boundary data vector for ZF
-      IF (L%NY  >1)  CALL SCARC_ALLOCATE_REAL2(FFT%BZF, 1, FFT%ITRN, 1, FFT%JTRN, NSCARC_INIT_ZERO, 'FFT%BZF')
-      IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZF, 1, FFT%ITRN, 1,        1, NSCARC_INIT_ZERO, 'FFT%BZF')
+      IF (L%NY  >1)  CALL SCARC_ALLOCATE_REAL2(FFT%BZF, 1, FFT%ITRN, 1, FFT%JTRN, NSCARC_INIT_ZERO, 'FFT%BZF', CROUTINE)
+      IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZF, 1, FFT%ITRN, 1,        1, NSCARC_INIT_ZERO, 'FFT%BZF', CROUTINE)
 
       IF (TWO_D) THEN
          CALL H2CZIS(FFT%XS,FFT%XF,FFT%IBAR,FFT%LBC,&
@@ -8252,7 +8380,8 @@ USE POIS, ONLY: H2CZIS, H3CZIS
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL
 
- 
+CROUTINE = 'SCARC_SEtUP_FFTO'
+
 ! Allocate working space for FFT routine
  
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -8298,64 +8427,64 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       FFT%LSAVE = (FFT%ITRN+1)*FFT%JTRN*FFT%KTRN+7*FFT%ITRN+5*FFT%JTRN+6*FFT%KTRN+56
       FFT%LWORK = (FFT%ITRN+1)*FFT%JTRN*FFT%KTRN
 
-      CALL SCARC_ALLOCATE_REAL1(FFT%SAVE1, -3, FFT%LSAVE, NSCARC_INIT_ZERO, 'FFT%SAVE1')
-      CALL SCARC_ALLOCATE_REAL1(FFT%WORK ,  1, FFT%LWORK, NSCARC_INIT_ZERO, 'FFT%WORK')
+      CALL SCARC_ALLOCATE_REAL1(FFT%SAVE1, -3, FFT%LSAVE, NSCARC_INIT_ZERO, 'FFT%SAVE1', CROUTINE)
+      CALL SCARC_ALLOCATE_REAL1(FFT%WORK ,  1, FFT%LWORK, NSCARC_INIT_ZERO, 'FFT%WORK', CROUTINE)
 
       ! Allocate stretching vector (set to 1)
 
-      CALL SCARC_ALLOCATE_REAL1(FFT%HX, 0, FFT%ITRN, NSCARC_INIT_ONE, 'FFT')
+      CALL SCARC_ALLOCATE_REAL1(FFT%HX, 0, FFT%ITRN, NSCARC_INIT_ONE, 'FFT', CROUTINE)
 
       ! Allocate RHS vector for FFT routine
 
       IF (L%NY == 1) THEN
-         CALL SCARC_ALLOCATE_REAL3(FFT%PRHS, 1, FFT%ITRN, 1,        1, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%PRHS')
+         CALL SCARC_ALLOCATE_REAL3(FFT%PRHS, 1, FFT%ITRN, 1,        1, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%PRHS', CROUTINE)
       ELSE
-         CALL SCARC_ALLOCATE_REAL3(FFT%PRHS, 1, FFT%ITRN, 1, FFT%JTRN, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%PRHS')
+         CALL SCARC_ALLOCATE_REAL3(FFT%PRHS, 1, FFT%ITRN, 1, FFT%JTRN, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%PRHS', CROUTINE)
       ENDIF
 
       ! Allocate boundary data vector for XS
 
       IF (L%NZ>1) THEN
-         IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1, FFT%JTRN, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXS')
-         IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1,        1, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXS')
+         IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1, FFT%JTRN, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXS', CROUTINE)
+         IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1,        1, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXS', CROUTINE)
       ELSE
-         CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1, FFT%JTRN, 1, 1, NSCARC_INIT_ZERO, 'FFT%BXS')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BXS, 1, FFT%JTRN, 1, 1, NSCARC_INIT_ZERO, 'FFT%BXS', CROUTINE)
       ENDIF
 
       ! Allocate boundary data vector for XF
 
       IF (L%NZ>1) THEN
-         IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1, FFT%JTRN, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXF')
-         IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1,        1, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXF')
+         IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1, FFT%JTRN, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXF', CROUTINE)
+         IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1,        1, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BXF', CROUTINE)
       ELSE
-         CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1, FFT%JTRN, 1, 1, NSCARC_INIT_ZERO, 'FFT%BXF')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BXF, 1, FFT%JTRN, 1, 1, NSCARC_INIT_ZERO, 'FFT%BXF', CROUTINE)
       ENDIF
 
       ! Allocate boundary data vector for YS
 
       IF (L%NZ > 1) THEN
-         CALL SCARC_ALLOCATE_REAL2(FFT%BYS, 1, FFT%ITRN, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BYS')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BYS, 1, FFT%ITRN, 1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BYS', CROUTINE)
       ELSE
-         CALL SCARC_ALLOCATE_REAL2(FFT%BYS, 1, FFT%ITRN, 1,        1, NSCARC_INIT_ZERO, 'FFT%BYS')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BYS, 1, FFT%ITRN, 1,        1, NSCARC_INIT_ZERO, 'FFT%BYS', CROUTINE)
       ENDIF
 
       ! Allocate boundary data vector for YF
 
       IF (L%NZ > 1) THEN
-         CALL SCARC_ALLOCATE_REAL2(FFT%BYF, 1, FFT%ITRN,1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BYF')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BYF, 1, FFT%ITRN,1, FFT%KTRN, NSCARC_INIT_ZERO, 'FFT%BYF', CROUTINE)
       ELSE
-         CALL SCARC_ALLOCATE_REAL2(FFT%BYF, 1, FFT%ITRN,1,        1, NSCARC_INIT_ZERO, 'FFT%BYF')
+         CALL SCARC_ALLOCATE_REAL2(FFT%BYF, 1, FFT%ITRN,1,        1, NSCARC_INIT_ZERO, 'FFT%BYF', CROUTINE)
       ENDIF
 
       ! Allocate boundary data vector for ZS
 
-      IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZS, 1, FFT%ITRN, 1, FFT%JTRN, NSCARC_INIT_ZERO, 'FFT%BZS')
-      IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZS, 1, FFT%ITRN, 1,        1, NSCARC_INIT_ZERO, 'FFT%BZS')
+      IF (L%NY  > 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZS, 1, FFT%ITRN, 1, FFT%JTRN, NSCARC_INIT_ZERO, 'FFT%BZS', CROUTINE)
+      IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZS, 1, FFT%ITRN, 1,        1, NSCARC_INIT_ZERO, 'FFT%BZS', CROUTINE)
 
       ! Allocate boundary data vector for ZF
 
-      IF (L%NY  >1)  CALL SCARC_ALLOCATE_REAL2(FFT%BZF, 1, FFT%ITRN, 1, FFT%JTRN, NSCARC_INIT_ZERO, 'FFT%BZF')
-      IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZF, 1, FFT%ITRN, 1,        1, NSCARC_INIT_ZERO, 'FFT%BZF')
+      IF (L%NY  >1)  CALL SCARC_ALLOCATE_REAL2(FFT%BZF, 1, FFT%ITRN, 1, FFT%JTRN, NSCARC_INIT_ZERO, 'FFT%BZF', CROUTINE)
+      IF (L%NY == 1) CALL SCARC_ALLOCATE_REAL2(FFT%BZF, 1, FFT%ITRN, 1,        1, NSCARC_INIT_ZERO, 'FFT%BZF', CROUTINE)
 
       IF (TWO_D) THEN
          CALL H2CZIS(FFT%XS,FFT%XF,FFT%IBAR,FFT%LBC,&
@@ -8386,6 +8515,8 @@ USE SCARC_POINTERS, ONLY: G, A, AB
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL, IC
 
+CROUTINE = 'SCARC_SETUP_MJAC'
+
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    LEVEL_LOOP: DO NL = NLMIN, NLMAX
 
@@ -8394,13 +8525,13 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       SELECT CASE(TYPE_MATRIX)
          CASE (NSCARC_MATRIX_COMPACT)
             A => G%POISSONC
-            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, G%NC, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX')
+            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, G%NC, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX', CROUTINE)
             DO IC = 1, G%NC
                A%RELAX(IC) = 1.0_EB/A%VAL(A%ROW(IC))
             ENDDO 
          CASE (NSCARC_MATRIX_BANDWISE)
             AB => G%POISSONB
-            CALL SCARC_ALLOCATE_REAL1(AB%RELAXD, 1, AB%N_DIAG,  NSCARC_INIT_ZERO, 'G%POISSONC%RELAXD')
+            CALL SCARC_ALLOCATE_REAL1(AB%RELAXD, 1, AB%N_DIAG,  NSCARC_INIT_ZERO, 'G%POISSONC%RELAXD', CROUTINE)
             DO IC = 1, G%NC
                AB%RELAXD(IC) = 1.0_EB/AB%VAL(IC, AB%POS(0))
             ENDDO 
@@ -8426,6 +8557,7 @@ USE SCARC_POINTERS, ONLY: G, A, AB
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL, IC, JC, IPTR
 
+CROUTINE = 'SCARC_SETUP_MGS'
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    LEVEL_LOOP: DO NL = NLMIN, NLMAX
 
@@ -8439,7 +8571,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_MATRIX_COMPACT)
 
             A => G%POISSONC
-            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX')
+            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX', CROUTINE)
 
             DO IC = 1, G%NC
                DO IPTR = A%ROW(IC), A%ROW(IC+1)-1
@@ -8455,7 +8587,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_MATRIX_BANDWISE)
 
             AB => G%POISSONB
-            CALL SCARC_ALLOCATE_REAL2(AB%RELAX, 1, AB%N_DIAG, 1, AB%N_STENCIL, NSCARC_INIT_ZERO, 'G%POISSONB%RELAX')
+            CALL SCARC_ALLOCATE_REAL2(AB%RELAX, 1, AB%N_DIAG, 1, AB%N_STENCIL, NSCARC_INIT_ZERO, 'G%POISSONB%RELAX', CROUTINE)
             WRITE(*,*) 'SCARC_SETUP_MGS: BANDWISE: NOT FINISHED YET'
 
       END SELECT
@@ -8480,6 +8612,7 @@ USE SCARC_POINTERS, ONLY: G, A, AB
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL, IC, JC, IPTR, I, IS, IL, IOR0
 
+CROUTINE = 'SCARC_SETUP_MSGS'
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    LEVEL_LOOP: DO NL = NLMIN, NLMAX
 
@@ -8493,7 +8626,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_MATRIX_COMPACT)
 
             A => G%POISSONC
-            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX')
+            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX', CROUTINE)
             A%RELAX = A%VAL
 
             DO IC = 1, G%NC
@@ -8510,7 +8643,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_MATRIX_BANDWISE)
 
             AB => G%POISSONB
-            CALL SCARC_ALLOCATE_REAL2(AB%RELAX, 1, AB%N_DIAG, 1, AB%N_STENCIL, NSCARC_INIT_ZERO, 'G%AB%RELAX')
+            CALL SCARC_ALLOCATE_REAL2(AB%RELAX, 1, AB%N_DIAG, 1, AB%N_STENCIL, NSCARC_INIT_ZERO, 'G%AB%RELAX', CROUTINE)
             AB%RELAX = AB%VAL
             DO IOR0 = 3, 1, -1
                IS = AB%TARGET(IOR0)
@@ -8543,6 +8676,7 @@ INTEGER, INTENT(IN) :: NLMIN, NLMAX, NSTACK
 REAL (EB) :: OMEGA
 INTEGER :: NM, NL, IC, JC, IPTR
 
+CROUTINE = 'SCARC_SETUP_MSOR'
 OMEGA = STACK(NSTACK)%SOLVER%OMEGA
 
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -8558,7 +8692,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_MATRIX_COMPACT)
 
             A => G%POISSONC
-            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX')
+            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX', CROUTINE)
       
             DO IC = 1, G%NC
       
@@ -8586,7 +8720,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_MATRIX_BANDWISE)
 
             AB => G%POISSONB
-            CALL SCARC_ALLOCATE_REAL2(AB%RELAX, 1, AB%N_DIAG, 1, AB%N_STENCIL, NSCARC_INIT_ZERO, 'G%POISSONB%RELAX')
+            CALL SCARC_ALLOCATE_REAL2(AB%RELAX, 1, AB%N_DIAG, 1, AB%N_STENCIL, NSCARC_INIT_ZERO, 'G%POISSONB%RELAX', CROUTINE)
             WRITE(*,*) 'SCARC_SETUP_MSOR: BANDWISE: NOT FINISHED YET'
       
       END SELECT
@@ -8620,6 +8754,8 @@ INTEGER, INTENT(IN) :: NLMIN, NLMAX, NSTACK
 INTEGER :: NM, NL, IC, JC, IPTR, INCR, IS, IL, IOR0, I
 REAL(EB) :: OMEGA, SCAL1, SCAL2
 
+CROUTINE = 'SCARC_SETUP_MSSOR'
+
 OMEGA = STACK(NSTACK)%SOLVER%OMEGA
 SCAL1  = 1.0_EB / (OMEGA * (2.0_EB - OMEGA))
 SCAL2  = 1.0_EB / (2.0_EB - OMEGA)
@@ -8637,7 +8773,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_MATRIX_COMPACT)
 
             A => G%POISSONC
-            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX')
+            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX', CROUTINE)
       
             DO IC = 1, G%NC
       
@@ -8660,7 +8796,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_MATRIX_BANDWISE)
 
             AB => G%POISSONB
-            CALL SCARC_ALLOCATE_REAL2(AB%RELAX, 1, AB%N_DIAG, 1, AB%N_STENCIL, NSCARC_INIT_ZERO, 'G%POISSONB%RELAX')
+            CALL SCARC_ALLOCATE_REAL2(AB%RELAX, 1, AB%N_DIAG, 1, AB%N_STENCIL, NSCARC_INIT_ZERO, 'G%POISSONB%RELAX', CROUTINE)
 
             IF (TWO_D) THEN
                INCR = -2
@@ -8718,6 +8854,7 @@ INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL, IC, JC, KC, IPTR, JPTR, KPTR, KPTR0, IOR0, JOR0, KOR0
 LOGICAL :: BFOUND
 
+CROUTINE = 'SCARC_SETUP_ILU'
 
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    LEVEL_LOOP: DO NL = NLMIN, NLMAX
@@ -8732,7 +8869,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_MATRIX_COMPACT)
 
             A => G%POISSONC
-            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX')
+            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX', CROUTINE)
             A%RELAX = A%VAL
       
             CELL_LOOP: DO IC = 2, G%NC
@@ -8771,7 +8908,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CASE (NSCARC_MATRIX_BANDWISE)
 
             AB => G%POISSONB
-            CALL SCARC_ALLOCATE_REAL2(AB%RELAX, 1, AB%N_DIAG, 1, AB%N_STENCIL, NSCARC_INIT_ZERO, 'G%POISSONB%RELAX')
+            CALL SCARC_ALLOCATE_REAL2(AB%RELAX, 1, AB%N_DIAG, 1, AB%N_STENCIL, NSCARC_INIT_ZERO, 'G%POISSONB%RELAX', CROUTINE)
             AB%RELAX = AB%VAL
       
             CELL_BANDWISE_LOOP: DO IC = 2, G%NC
@@ -8832,6 +8969,7 @@ REAL (EB) :: DUMMY(1)=0.0_EB
 REAL (FB) :: DUMMY_FB(1)=0.0_FB
 
 TNOW = CURRENT_TIME()
+CROUTINE = 'SCARC_SETUP_CLUSTER'
 
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    LEVEL_LOOP: DO NL = NLMIN, NLMAX
@@ -8843,7 +8981,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       ! Allocate workspace for parameters and pointers needed in MKL-routine
  
-      CALL SCARC_ALLOCATE_INT1(MKL%IPARM, 1, 64, NSCARC_INIT_ZERO, 'MKL%IPARM')
+      CALL SCARC_ALLOCATE_INT1(MKL%IPARM, 1, 64, NSCARC_INIT_ZERO, 'MKL%IPARM', CROUTINE)
 
       IF (.NOT.ALLOCATED(MKL%CT)) THEN
          ALLOCATE(MKL%CT(64), STAT=IERROR)
@@ -8960,6 +9098,7 @@ REAL (EB) :: DUMMY(1)=0.0_EB
 REAL (FB) :: DUMMY_FB(1)=0.0_FB
 
 TNOW = CURRENT_TIME()
+CROUTINE = 'SCARC_SETUP_PARDISO'
 
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    LEVEL_LOOP: DO NL = NLMIN, NLMAX
@@ -8971,7 +9110,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
  
       ! Allocate workspace for parameters nnd pointers eeded in MKL-routine
  
-      CALL SCARC_ALLOCATE_INT1(MKL%IPARM, 1, 64, NSCARC_INIT_ZERO, 'MKL%IPARM')
+      CALL SCARC_ALLOCATE_INT1(MKL%IPARM, 1, 64, NSCARC_INIT_ZERO, 'MKL%IPARM', CROUTINE)
 
       IF (.NOT.ALLOCATED(MKL%PT)) THEN
          ALLOCATE(MKL%PT(64), STAT=IERROR)
@@ -12519,10 +12658,10 @@ RECEIVE_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             CALL SCARC_RECV_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_LAYER2, 'NULLSPACE')
 
          CASE (NSCARC_EXCHANGE_POISSON_COLS)
-            CALL SCARC_RECV_MESSAGE_INT (NM, NOM, NL, NSCARC_BUFFER_STENCIL, 'POISSON COLS')
+            CALL SCARC_RECV_MESSAGE_INT (NM, NOM, NL, NSCARC_BUFFER_FULL, 'POISSON COLS')
 
          CASE (NSCARC_EXCHANGE_POISSON_COLSG)
-            CALL SCARC_RECV_MESSAGE_INT (NM, NOM, NL, NSCARC_BUFFER_STENCIL, 'POISSON COLSG')
+            CALL SCARC_RECV_MESSAGE_INT (NM, NOM, NL, NSCARC_BUFFER_FULL, 'POISSON COLSG')
 
          CASE (NSCARC_EXCHANGE_POISSON_DIAGS)
             CALL SCARC_RECV_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_LAYER1, 'POISSON DIAGS')
@@ -12531,7 +12670,7 @@ RECEIVE_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             CALL SCARC_RECV_MESSAGE_INT (NM, NOM, NL, NSCARC_BUFFER_BASIC, 'POISSON SIZES')
 
          CASE (NSCARC_EXCHANGE_POISSON_VALS)
-            CALL SCARC_RECV_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_STENCIL, 'POISSON VALS')
+            CALL SCARC_RECV_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_FULL, 'POISSON VALS')
 
          CASE (NSCARC_EXCHANGE_PRESSURE)
             CALL SCARC_RECV_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_LAYER1, 'PRESSURE')
@@ -12574,6 +12713,10 @@ SEND_PACK_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       SNODE = PROCESS(NOM)
       RNODE = PROCESS(NM)
 
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM,': NOM=',NOM,': SCARC_EXCHANGE_PACK_LOOP'
+#endif
+
       SEND_PACK_OMESHES_SELECT: SELECT CASE (NTYPE)
 
          CASE (NSCARC_EXCHANGE_AUXILIARY)
@@ -12609,16 +12752,16 @@ SEND_PACK_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             CALL SCARC_SEND_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_LAYER1, 'POISSON DIAGS')
 
          CASE (NSCARC_EXCHANGE_POISSON_COLS)
-            CALL SCARC_PACK_POISSON_COLS(NPARAM)
-            CALL SCARC_SEND_MESSAGE_INT (NM, NOM, NL, NSCARC_BUFFER_STENCIL, 'POISSON COLS')
+            CALL SCARC_PACK_POISSON_COLS(NM, NPARAM)
+            CALL SCARC_SEND_MESSAGE_INT (NM, NOM, NL, NSCARC_BUFFER_FULL, 'POISSON COLS')
 
          CASE (NSCARC_EXCHANGE_POISSON_COLSG)
-            CALL SCARC_PACK_POISSON_COLSG(NPARAM)
-            CALL SCARC_SEND_MESSAGE_INT (NM, NOM, NL, NSCARC_BUFFER_STENCIL, 'POISSON COLSG')
+            CALL SCARC_PACK_POISSON_COLSG(NM, NPARAM)
+            CALL SCARC_SEND_MESSAGE_INT (NM, NOM, NL, NSCARC_BUFFER_FULL, 'POISSON COLSG')
 
          CASE (NSCARC_EXCHANGE_POISSON_VALS)
             CALL SCARC_PACK_POISSON_VALS(NPARAM, NL)
-            CALL SCARC_SEND_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_STENCIL, 'POISSON VALS')
+            CALL SCARC_SEND_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_FULL, 'POISSON VALS')
 
          CASE (NSCARC_EXCHANGE_PRESSURE)
             CALL SCARC_PACK_PRESSURE(NM)
@@ -12671,6 +12814,9 @@ SEND_UNPACK_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       IF (.NOT. ARE_NEIGHBORS(NM, NOM)) CYCLE SEND_UNPACK_OMESHES_LOOP
       CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM,': NOM=',NOM,': SCARC_EXCHANGE_UNPACK_LOOP'
+#endif
 
       SEND_UNPACK_OMESHES_SELECT: SELECT CASE (NTYPE)
 
@@ -12774,10 +12920,12 @@ IDUMMY = NM; IDUMMY = NOM; IDUMMY = NL                ! prevent compilation warn
 CDUMMY = CTEXT
 #endif
 
-RECV_BUFFER_INT = NSCARC_INIT_UNDEF
-
+RECV_BUFFER_INT = NSCARC_HUGE_INT
 CALL MPI_IRECV(RECV_BUFFER_INT, NLEN, MPI_INTEGER, SNODE, TAG, MPI_COMM_WORLD, REQ(N_REQ),IERROR)
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': NOM=',NOM,': RECEIVING INT MESSAGE OF LENGTH ', NLEN, ' and TYPE ', NTYPE
+#endif
 #ifdef WITH_SCARC_VERBOSE2
 WRITE(MSG%LU_VERBOSE,*) ' ...  done'
 1000 FORMAT('SCARC_RECV_MESSAGE_INT  : Receiving ',A20, ' in length =', I8,' from ',I8, ' to ', I8, ' on level ', I4)
@@ -12875,6 +13023,10 @@ CDUMMY = CTEXT
 #endif
 
 CALL MPI_ISEND(SEND_BUFFER_INT, NLEN, MPI_INTEGER, SNODE, TAG, MPI_COMM_WORLD, REQ(N_REQ),IERROR)
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': NOM=',NOM,': SENDING INT MESSAGE OF LENGTH ', NLEN, ' and TYPE ', NTYPE
+#endif
       
 #ifdef WITH_SCARC_VERBOSE2
 WRITE(MSG%LU_VERBOSE,*) ' ...  done'
@@ -12939,7 +13091,7 @@ SUBROUTINE SCARC_PACK_CELL_NUMBERS
 USE SCARC_POINTERS, ONLY: G, OL, OG
 INTEGER :: IOR0, ICG, IWG, IXW, IYW, IZW
 
-OS%SEND_BUFFER_INT = NSCARC_INIT_UNDEF
+OS%SEND_BUFFER_INT = NSCARC_HUGE_INT
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
    DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
@@ -13068,7 +13220,7 @@ IF (PREDICTOR) THEN
 ELSE
    VC => POINT_TO_HVECTOR (NM, NSCARC_VECTOR_HS)
 ENDIF
-OS%SEND_BUFFER_REAL = NSCARC_ZERO_REAL_EB
+OS%SEND_BUFFER_REAL = NSCARC_HUGE_REAL_EB
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
    DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
@@ -13118,7 +13270,7 @@ USE SCARC_POINTERS, ONLY: OL, OG, OS, F
 INTEGER :: IOR0, ICG, ICW1, ICW2, IWG, IXW, IYW, IZW, LL
 
 LL = 1
-OS%SEND_BUFFER_REAL = 0.0_EB
+OS%SEND_BUFFER_REAL = NSCARC_HUGE_REAL_EB
 DO IOR0 = -3, 3
 
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
@@ -13185,7 +13337,7 @@ USE SCARC_POINTERS, ONLY: OL, OG, OS, F
 INTEGER :: IOR0, ICG, ICW1, ICW2, IWG, IXW, IYW, IZW, LL
 
 LL = 1
-OS%SEND_BUFFER_REAL = NSCARC_ZERO_REAL_EB
+OS%SEND_BUFFER_REAL = NSCARC_HUGE_REAL_EB
 DO IOR0 = -3, 3
 
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
@@ -13262,7 +13414,7 @@ WRITE(MSG%LU_DEBUG,*) '====================================================='
 WRITE(MSG%LU_DEBUG,*) ' PACK_VECTOR_PLAIN : MESH ', NM, ' LEVEL ', NL, ' LENGTH ', OG%NCG
 WRITE(MSG%LU_DEBUG,'(6E14.6)') VC
 #endif
-OS%SEND_BUFFER_REAL = NSCARC_ZERO_REAL_EB
+OS%SEND_BUFFER_REAL = NSCARC_HUGE_REAL_EB
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
    DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
@@ -13333,7 +13485,7 @@ INTEGER :: IOR0, ICG, ICW, ICE, LL
 
 VC => SCARC_POINT_TO_VECTOR(NM, NL, NVECTOR)
 LL = 1
-OS%SEND_BUFFER_REAL = NSCARC_ZERO_REAL_EB
+OS%SEND_BUFFER_REAL = NSCARC_HUGE_REAL_EB
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
    DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
@@ -13389,9 +13541,9 @@ END SUBROUTINE SCARC_UNPACK_VECTOR_MEAN
 ! ------------------------------------------------------------------------------------------------
 !> \brief Pack overlapping information about matrix columns (compact storage technique only)
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_PACK_POISSON_COLS(NMATRIX)                
+SUBROUTINE SCARC_PACK_POISSON_COLS(NM, NMATRIX)                
 USE SCARC_POINTERS, ONLY: OS, OL, OG, AC
-INTEGER, INTENT(IN) :: NMATRIX
+INTEGER, INTENT(IN) :: NMATRIX, NM
 INTEGER :: IOR0, LL, ICOL, ICG, ICW
 
 AC => SCARC_POINT_TO_CMATRIX(G, NMATRIX)
@@ -13401,10 +13553,11 @@ WRITE(MSG%LU_DEBUG,*) '=============== EXCHANGE_COLS: TYPE_EXCHANGE=', TYPE_EXCH
 WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%ROW)', SIZE(AC%ROW)
 WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%COL)', SIZE(AC%COL)
 WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%VAL)', SIZE(AC%VAL)
+WRITE(MSG%LU_DEBUG,*) 'HUGE(LL)=',HUGE(LL)
 #endif
          
 LL = 1
-OS%SEND_BUFFER_INT = NSCARC_INIT_UNDEF 
+OS%SEND_BUFFER_INT = NSCARC_HUGE_INT
 
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
@@ -13412,27 +13565,30 @@ DO IOR0 = -3, 3
    DO ICG= OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
       ICW = OG%ICG_TO_ICW(ICG, 1)
       IF (ICW < 0) CYCLE                               ! skip solid cells
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,'----------> PACK_POISSON_COLS: ICW=',ICW
+#endif
       ICOL = AC%ROW(ICW)
       OS%SEND_BUFFER_INT(LL) = -AC%COL(ICOL)           ! send first element with negative sign (thus, mark beginning)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,5I8)') 'PACK_POISSON_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
-                               IOR0, ICG, ICW, AC%ROW(ICW), OS%SEND_BUFFER_INT(LL)
+WRITE(MSG%LU_DEBUG,'(A,6I8)') 'PACK_POISSON_COLS: SEND: IOR0, ICG, ICW, ICOL, LL, VAL:', &
+                               IOR0, ICG, ICW, AC%ROW(ICW), LL, OS%SEND_BUFFER_INT(LL)
 #endif
       LL = LL + 1                            
       DO ICOL = AC%ROW(ICW)+1, AC%ROW(ICW+1)-1
          OS%SEND_BUFFER_INT(LL) = AC%COL(ICOL)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,5I8)') 'PACK_POISSON_COLS: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
-                            IOR0, ICG, ICW, ICOL, OS%SEND_BUFFER_INT(LL)
+WRITE(MSG%LU_DEBUG,'(A,6I8)') 'PACK_POISSON_COLS: SEND: IOR0, ICG, ICW, ICOL, LL, VAL:', &
+                            IOR0, ICG, ICW, ICOL, LL, OS%SEND_BUFFER_INT(LL)
 #endif
          LL = LL + 1
       ENDDO
    ENDDO
 ENDDO
 
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) 'SEND_BUFFER:'
-WRITE(MSG%LU_DEBUG,'(10I6)') OS%SEND_BUFFER_INT
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SEND_BUFFER:', LL-1
+WRITE(MSG%LU_DEBUG,'(8I12)') OS%SEND_BUFFER_INT
 #endif
 END SUBROUTINE SCARC_PACK_POISSON_COLS
 
@@ -13445,16 +13601,16 @@ USE SCARC_POINTERS, ONLY: OL, OG, OAC, RECV_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM, NMATRIX
 INTEGER :: IOR0, ICG, LL, ICP
 
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) 'UNPACK_POISSON_COLS: OAC%N_ROW, OAC%N_VAL=',OAC%N_ROW, OAC%N_VAL, NM, NOM, NMATRIX
-WRITE(MSG%LU_DEBUG,*) 'UNPACK_POISSON_COLS: SIZE(OAC%COL)=', SIZE(OAC%COL)
-WRITE(MSG%LU_DEBUG,*) 'UNPACK_POISSON_COLS: SIZE(OAC%ROW)=', SIZE(OAC%ROW)
-WRITE(MSG%LU_DEBUG,*) 'POISSON_COLS: RECV_BUFFER_INT:'
-WRITE(MSG%LU_DEBUG,'(10I6)') OS%RECV_BUFFER_INT
-#endif
-
 RECV_BUFFER_INT => SCARC_POINT_TO_BUFFER_INT (NM, NOM, 1)
 OAC => SCARC_POINT_TO_OTHER_CMATRIX(OG, NMATRIX)
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':UNPACK_POISSON_COLS: OAC%N_ROW, OAC%N_VAL=',OAC%N_ROW, OAC%N_VAL, NM, NOM, NMATRIX
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':UNPACK_POISSON_COLS: SIZE(OAC%COL)=', SIZE(OAC%COL)
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':UNPACK_POISSON_COLS: SIZE(OAC%ROW)=', SIZE(OAC%ROW)
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':POISSON_COLS: RECV_BUFFER_INT:'
+WRITE(MSG%LU_DEBUG,'(8I12)') RECV_BUFFER_INT
+#endif
 
 LL = 1                                 
 ICP = 1
@@ -13462,20 +13618,21 @@ DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
    OAC%ROW(ICP) = 1
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '----------> UNPACK_POISSON_COLS: OAC%ROW(',ICP,')=',OAC%ROW(ICP)
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,'----------> UNPACK_POISSON_COLS: OAC%ROW(',ICP,')=',OAC%ROW(ICP)
 #endif
    DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
       IF (OG%ICG_TO_ICE(ICG,1) < 0) CYCLE                          ! skip solid cells
       OAC%COL(LL) = ABS(RECV_BUFFER_INT(LL))
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 4I8)') 'UNPACK_POISSON_COLS: A: RECV: ICG, LL, RECV_BUFFER_INT, OAC%ROW(ICG), OAC%COL(LL):', &
-                                ICG, LL, RECV_BUFFER_INT(LL), OAC%COL(LL)
+WRITE(MSG%LU_DEBUG,'(A,I6,A,4I12,I12)') 'NM=',NM,&
+     ':UNPACK_POISSON_COLS:A:RECV:ICG,LL,RECV_BUFFER_INT,OAC%ROW(ICG),OAC%COL(LL), NEXT:', &
+                                ICG, LL, RECV_BUFFER_INT(LL), OAC%COL(LL), RECV_BUFFER_INT(LL+1)
 #endif
       DO WHILE (RECV_BUFFER_INT(LL+1) >= 0)
          LL = LL + 1
          OAC%COL(LL) = ABS(RECV_BUFFER_INT(LL))
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 4I8)') 'UNPACK_POISSON_COLS: B: RECV: ICG, LL, RECV_BUFFER_INT, OAC%ROW(ICG), OAC%COL(LL):', &
+WRITE(MSG%LU_DEBUG,'(A,I6,A, 4I12)') 'NM=',NM,':UNPACK_POISSON_COLS:B:RECV:ICG,LL,RECV_BUFFER_INT,OAC%ROW(ICG),OAC%COL(LL):', &
                                 ICG, LL, RECV_BUFFER_INT(LL), OAC%COL(LL)
 #endif
       ENDDO
@@ -13483,14 +13640,14 @@ WRITE(MSG%LU_DEBUG,'(A, 4I8)') 'UNPACK_POISSON_COLS: B: RECV: ICG, LL, RECV_BUFF
       ICP = ICP + 1
       OAC%ROW(ICP) = LL
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '----------> UNPACK_POISSON_COLS: OAC%ROW(',ICP,')=',OAC%ROW(ICP)
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,'----------> UNPACK_POISSON_COLS: OAC%ROW(',ICP,')=',OAC%ROW(ICP)
 #endif
    ENDDO
    OAC%N_ROW = ICP  
    OAC%N_VAL = LL - 1
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 4I8)') 'UNPACK_POISSON_COLS: OAC%N_ROW=',OAC%N_ROW
-WRITE(MSG%LU_DEBUG,'(A, 4I8)') 'UNPACK_POISSON_COLS: OAC%N_VAL=',OAC%N_VAL
+WRITE(MSG%LU_DEBUG,'(A,I6,A, 4I12)') 'NM=',NM,':UNPACK_POISSON_COLS: OAC%N_ROW=',OAC%N_ROW
+WRITE(MSG%LU_DEBUG,'(A,I6,A, 4I12)') 'NM=',NM,':UNPACK_POISSON_COLS: OAC%N_VAL=',OAC%N_VAL
 #endif
 ENDDO
 
@@ -13500,22 +13657,22 @@ END SUBROUTINE SCARC_UNPACK_POISSON_COLS
 ! ------------------------------------------------------------------------------------------------
 !> \brief Pack overlapping information about matrix columns (compact storage technique only)
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_PACK_POISSON_COLSG(NMATRIX)                
+SUBROUTINE SCARC_PACK_POISSON_COLSG(NM, NMATRIX)                
 USE SCARC_POINTERS, ONLY: OS, OL, OG, AC
-INTEGER, INTENT(IN) :: NMATRIX
+INTEGER, INTENT(IN) :: NMATRIX, NM
 INTEGER :: IOR0, ICG, ICW, LL, ICOL
 
 AC => SCARC_POINT_TO_CMATRIX(G, NMATRIX)
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '========= EXCHANGE_COLSG: TYPE_EXCHANGE=', TYPE_EXCHANGE
-WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%ROW)', SIZE(AC%ROW)
-WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%COL)', SIZE(AC%COL)
-WRITE(MSG%LU_DEBUG,*) 'SIZE(AC%VAL)', SIZE(AC%VAL)
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,'========= EXCHANGE_COLSG: TYPE_EXCHANGE=', TYPE_EXCHANGE
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':SIZE(AC%ROW)', SIZE(AC%ROW)
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':SIZE(AC%COL)', SIZE(AC%COL)
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':SIZE(AC%VAL)', SIZE(AC%VAL)
 #endif
          
 LL = 1
-OS%SEND_BUFFER_INT = NSCARC_INIT_UNDEF
+OS%SEND_BUFFER_INT = NSCARC_HUGE_INT
 
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
@@ -13526,14 +13683,14 @@ DO IOR0 = -3, 3
       ICOL = AC%ROW(ICW)
       OS%SEND_BUFFER_INT(LL) = -AC%COLG(ICOL)          ! send first element with negative sign (thus, mark beginning)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,5I8)') 'PACK_POISSON_COLSG: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
+WRITE(MSG%LU_DEBUG,'(A,I6,A,5I8)') 'NM=',NM,':PACK_POISSON_COLSG: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
                                IOR0, ICG, ICW, AC%ROW(ICW), OS%SEND_BUFFER_INT(LL)
 #endif
       LL = LL + 1                              
       DO ICOL = AC%ROW(ICW)+1, AC%ROW(ICW+1)-1
          OS%SEND_BUFFER_INT(LL) = AC%COLG(ICOL)   
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,5I8)') 'PACK_POISSON_COLSG: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
+WRITE(MSG%LU_DEBUG,'(A,I6,A,5I8)') 'NM=',NM,':PACK_POISSON_COLSG: SEND: IOR0, ICG, ICW, ICOL, VAL:', &
                       IOR0, ICG, ICW, ICOL, OS%SEND_BUFFER_INT(LL)
 #endif
          LL = LL + 1
@@ -13556,7 +13713,7 @@ RECV_BUFFER_INT => SCARC_POINT_TO_BUFFER_INT (NM, NOM, 1)
 OAC => SCARC_POINT_TO_OTHER_CMATRIX(OG, NMATRIX)
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'UNPACK_POISSON_COLSG: OAC%N_ROW, OAC%N_VAL=',OAC%N_ROW, OAC%N_VAL
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':UNPACK_POISSON_COLSG: OAC%N_ROW, OAC%N_VAL=',OAC%N_ROW, OAC%N_VAL
 #endif
 LL = 1                                 
 ICP = 1
@@ -13567,14 +13724,14 @@ DO IOR0 = -3, 3
       IF (OG%ICG_TO_ICE(ICG,1) < 0) CYCLE                     ! skip solid cells
       OAC%COLG(LL) = ABS(RECV_BUFFER_INT(LL))
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 4I10)') 'UNPACK_POISSON_COLSG: A: RECV: ICG, LL, RECV_BUFFER_INT, OAC%ROW(ICG), OAC%COLG(LL):', &
+WRITE(MSG%LU_DEBUG,'(A,I6,A,4I10)') 'NM=',NM,':UNPACK_POISSON_COLSG:A:RECV:ICG,LL,RECV_BUFFER_INT,OAC%ROW(ICG),OAC%COLG(LL):', &
                                 ICG, LL, RECV_BUFFER_INT(LL), OAC%COLG(LL)
 #endif
       DO WHILE (RECV_BUFFER_INT(LL+1) > 0)
          LL = LL + 1
          OAC%COLG(LL) = ABS(RECV_BUFFER_INT(LL))
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 4I10)') 'UNPACK_POISSON_COLSG: B: RECV: ICG, LL, RECV_BUFFER_INT, OAC%ROW(ICG), OAC%COLG(LL):', &
+WRITE(MSG%LU_DEBUG,'(A,I6,A, 4I10)') 'NM=',NM,':UNPACK_POISSON_COLSG:B:RECV:ICG,LL,RECV_BUFFER_INT,OAC%ROW(ICG),OAC%COLG(LL):', &
                                 ICG, LL, RECV_BUFFER_INT(LL), OAC%COLG(LL)
 #endif
       ENDDO
@@ -13582,14 +13739,14 @@ WRITE(MSG%LU_DEBUG,'(A, 4I10)') 'UNPACK_POISSON_COLSG: B: RECV: ICG, LL, RECV_BU
       ICP = ICP + 1
       OAC%ROW(ICP) = LL
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '----------> UNPACK_POISSON_COLSG: OAC%ROW(',ICP,')=',OAC%ROW(ICP)
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,'----------> UNPACK_POISSON_COLSG: OAC%ROW(',ICP,')=',OAC%ROW(ICP)
 #endif
    ENDDO
    OAC%N_ROW = ICP  
    OAC%N_VAL = LL - 1
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A, 4I10)') 'UNPACK_POISSON_COLSG: OAC%N_ROW=',OAC%N_ROW
-WRITE(MSG%LU_DEBUG,'(A, 4I10)') 'UNPACK_POISSON_COLSG: OAC%N_VAL=',OAC%N_VAL
+WRITE(MSG%LU_DEBUG,'(A,I6,A, 4I10)') 'NM=',NM,':UNPACK_POISSON_COLSG: OAC%N_ROW=',OAC%N_ROW
+WRITE(MSG%LU_DEBUG,'(A,I6,A, 4I10)') 'NM=',NM,':UNPACK_POISSON_COLSG: OAC%N_VAL=',OAC%N_VAL
 #endif
 ENDDO
 
@@ -13776,7 +13933,7 @@ INTEGER :: IOR0, ICG, ICW, ICOL
 
 AC => SCARC_POINT_TO_CMATRIX(G, NTYPE)
 
-OS%SEND_BUFFER_INT = NSCARC_ZERO_REAL_EB
+OS%SEND_BUFFER_REAL = NSCARC_ZERO_REAL_EB
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
    DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
@@ -13830,7 +13987,7 @@ INTEGER :: IOR0, ICG, ICW, ICWG, LL, IWG, IXW, IYW, IZW
 INTEGER, INTENT(IN) :: NM
 
 A => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_POISSON)
-OS%SEND_BUFFER_INT = NSCARC_INIT_UNDEF
+OS%SEND_BUFFER_INT = NSCARC_HUGE_INT
 LL = 1
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
@@ -13874,14 +14031,16 @@ USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM
 INTEGER :: ICG, IOR0, LL, IOFF
 
+CROUTINE = 'SCARC_UNPACK_CELL_NEIGHBORS'
+
 RECV_BUFFER_INT => SCARC_POINT_TO_BUFFER_INT (NM, NOM, 1)
 
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) 'NM=', NM,': CELL_NEIGHBORS: RECV_BUFFER_INT: OG%NCG:', OG%NCG
-   WRITE(MSG%LU_DEBUG,'(9I6)') RECV_BUFFER_INT
+   WRITE(MSG%LU_DEBUG,'(8I12)') RECV_BUFFER_INT
 #endif
-CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_OCELL, 1, 2*OG%NCG, NSCARC_INIT_ZERO, 'G%ICG_TO_OCELL')
-CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_GCELL, 1, 2*OG%NCG, NSCARC_INIT_ZERO, 'G%ICG_TO_GCELL')
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_OCELL, 1, 2*OG%NCG, NSCARC_INIT_ZERO, 'G%ICG_TO_OCELL', CROUTINE)
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_GCELL, 1, 2*OG%NCG, NSCARC_INIT_ZERO, 'G%ICG_TO_GCELL', CROUTINE)
 
 LL = 1
 DO IOR0 = -3, 3
@@ -13936,7 +14095,7 @@ INTEGER :: IOR0, ICG, ICW, LL, IWG, IXW, IYW, IZW, IZWG
 INTEGER, INTENT(IN) :: NM
 
 A => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_POISSON)
-OS%SEND_BUFFER_INT = NSCARC_INIT_UNDEF
+OS%SEND_BUFFER_INT = NSCARC_HUGE_INT
 LL = 1
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
@@ -13970,7 +14129,7 @@ WRITE(MSG%LU_DEBUG,'(A,I6,A,8I6)') 'NM=',NM,': PACK_CELL_NEIGHBORS:B: IOR0, IWG,
    ENDDO
 ENDDO
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(8I6)') OS%SEND_BUFFER_INT(1:2*OG%NCG)
+WRITE(MSG%LU_DEBUG,'(8I12)') OS%SEND_BUFFER_INT(1:2*OG%NCG)
 #endif
 
 END SUBROUTINE SCARC_PACK_ZONE_NEIGHBORS
@@ -13984,10 +14143,11 @@ USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM
 INTEGER :: ICG, IOR0, LL, KK
 
+CROUTINE = 'SCARC_UNPACK_ZONE_NEIGHBORS'
 RECV_BUFFER_INT => SCARC_POINT_TO_BUFFER_INT (NM, NOM, 1)
 
-CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_OZONE, 1, 2*OG%NCG, NSCARC_INIT_ZERO, 'G%ICG_TO_OZONE')
-CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_GZONE, 1, 2*OG%NCG, NSCARC_INIT_ZERO, 'G%ICG_TO_GZONE')
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_OZONE, 1, 2*OG%NCG, NSCARC_INIT_ZERO, 'G%ICG_TO_OZONE', CROUTINE)
+CALL SCARC_ALLOCATE_INT1(OG%ICG_TO_GZONE, 1, 2*OG%NCG, NSCARC_INIT_ZERO, 'G%ICG_TO_GZONE', CROUTINE)
 
 LL = 1
 KK = 1
@@ -14033,7 +14193,7 @@ INTEGER, INTENT(IN) :: NM
 INTEGER :: IOR0, ICG, ICW, ICE, LL
 
 LL = 1
-OS%SEND_BUFFER_INT = NSCARC_INIT_UNDEF
+OS%SEND_BUFFER_INT = NSCARC_HUGE_INT
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'NM=',NM,'ZONE_TYPES'
 CALL SCARC_DEBUG_ZONES(G, -1, 1, 'IN PACK_ZONE_TYPES')
@@ -14064,7 +14224,7 @@ WRITE(MSG%LU_DEBUG,'(A,I6,A, 5I8)') 'NM=',NM,':PACK_ZONE_TYPES: IOR0, ICG, ICW, 
 ENDDO
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':PACK_ZONE_TYPES: SENDING'
-WRITE(MSG%LU_DEBUG,'(6I8)') OS%SEND_BUFFER_INT(1:2*OG%NCG)
+WRITE(MSG%LU_DEBUG,'(8I12)') OS%SEND_BUFFER_INT(1:2*OG%NCG)
 #endif
 END SUBROUTINE SCARC_PACK_ZONE_TYPES
 
@@ -14080,7 +14240,7 @@ INTEGER :: IOR0, LL, ICG, ICW, ICE
 RECV_BUFFER_INT => SCARC_POINT_TO_BUFFER_INT (NM, NOM, 1)
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':ZONE_TYPES: RECV_BUFFER_INT:'
-   WRITE(MSG%LU_DEBUG,'(8I8)') RECV_BUFFER_INT
+   WRITE(MSG%LU_DEBUG,'(8I12)') RECV_BUFFER_INT
 #endif
 
 LL = 1
@@ -14796,7 +14956,7 @@ WRITE(MSG%LU_DEBUG,*) '========================================================'
    CALL SCARC_SETUP_PROLONGATION(NL)                ! Setup prolongation matrix based on QR-decomposition
    CALL SCARC_SETUP_NULLSPACE_COARSE(NL)            ! Setup nullspace on coarser level
    CALL SCARC_SETUP_RESTRICTION(NL)                 ! Setup corresponding restriction matrix 
-   CALL SCARC_SETUP_AP(NL)             
+   CALL SCARC_SETUP_POISSON_TIMES_PROL(NL)             
    CALL SCARC_SETUP_GALERKIN(NL)             
    CALL SCARC_CLEAN_WORKSPACE_AMG(NL)
       
@@ -14816,10 +14976,11 @@ USE SCARC_POINTERS, ONLY: SUB, S
 LOGICAL, ALLOCATABLE, DIMENSION(:) :: NOT_AGGREGATED
 INTEGER :: NM, NOM, INBR, ICYCLE
 
+CROUTINE = 'SCARC_SETUP_AGGREGATION_ORDER'
 SUB => SUBDIVISION
 
-CALL SCARC_ALLOCATE_INT2(SUB%ORDER, 1, NMESHES, 1, NMESHES, NSCARC_INIT_NONE, 'SUB%ORDER')
-CALL SCARC_ALLOCATE_LOG1(NOT_AGGREGATED, 1, NMESHES, NSCARC_INIT_TRUE, 'NOT_AGGREGATED')
+CALL SCARC_ALLOCATE_INT2(SUB%ORDER, 1, NMESHES, 1, NMESHES, NSCARC_INIT_NONE, 'SUB%ORDER', CROUTINE)
+CALL SCARC_ALLOCATE_LOG1(NOT_AGGREGATED, 1, NMESHES, NSCARC_INIT_TRUE, 'NOT_AGGREGATED', CROUTINE)
 
 ICYCLE = 1
 DO WHILE (ANY(NOT_AGGREGATED)) 
@@ -14851,7 +15012,7 @@ DO ICYCLE = 1, SUB%N_CYCLES
 ENDDO
 #endif
 
-DEALLOCATE(NOT_AGGREGATED)
+CALL SCARC_DEALLOCATE_LOG1 (NOT_AGGREGATED, 'NOT_AGGREGATED', CROUTINE)
 
 END SUBROUTINE SCARC_SETUP_AGGREGATION_ORDER
 
@@ -14894,6 +15055,8 @@ INTEGER, INTENT(IN) :: NL
 REAL(EB):: VAL, EPS, SCAL, CVAL_MAX
 INTEGER :: NM, NOM, IC, JC, ICOL, IZONE, INBR
 
+CROUTINE = 'SCARC_SETUP_STRENGTH_OF_CONNECTION'
+
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
@@ -14904,7 +15067,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ! Allocate workspace for strength of connection matrix (use same size as Poisson matrix)
    C%N_VAL = A%N_VAL                         
    C%N_ROW = A%N_ROW
-   CALL SCARC_ALLOCATE_CMATRIX(C, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_LIGHT, 'G%CONNECTION')
+   CALL SCARC_ALLOCATE_CMATRIX(C, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_LIGHT, 'G%CONNECTION', CROUTINE)
 
    DO INBR = 1, SCARC(NM)%N_NEIGHBORS
 
@@ -14916,7 +15079,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       OC%N_VAL = 2*OA%N_VAL                   ! use double layers
       OC%N_ROW = OA%N_ROW           
-      CALL SCARC_ALLOCATE_CMATRIX(OC, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_LIGHT, 'OG%CONNECTION')
+      CALL SCARC_ALLOCATE_CMATRIX(OC, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_LIGHT, 'OG%CONNECTION', CROUTINE)
       
    ENDDO 
 
@@ -14997,6 +15160,8 @@ USE SCARC_POINTERS, ONLY: SUB, C, CF, G, GF, GC
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, NM2, ICYCLE, IC, IZL
 
+CROUTINE = 'SCARC_SETUP_AGGREGATION_ZONES'
+
 SUB => SUBDIVISION
 MESH_INT = -1
 
@@ -15009,9 +15174,9 @@ MESHES_ALLOCATION_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
 
-   CALL SCARC_ALLOCATE_INT1 (G%CPOINTS,      1, G%NCE,  NSCARC_INIT_ZERO, 'G%CPOINTS')
-   CALL SCARC_ALLOCATE_INT1 (G%ZONES_GLOBAL, 1, G%NCE2, NSCARC_INIT_ZERO, 'G%ZONES_GLOBAL')
-   CALL SCARC_ALLOCATE_INT1 (G%ZONES_LOCAL,  1, G%NCE2, NSCARC_INIT_ZERO, 'G%ZONES_LOCAL')
+   CALL SCARC_ALLOCATE_INT1 (G%CPOINTS,      1, G%NCE,  NSCARC_INIT_ZERO, 'G%CPOINTS', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1 (G%ZONES_GLOBAL, 1, G%NCE2, NSCARC_INIT_ZERO, 'G%ZONES_GLOBAL', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1 (G%ZONES_LOCAL,  1, G%NCE2, NSCARC_INIT_ZERO, 'G%ZONES_LOCAL', CROUTINE)
 
 ENDDO MESHES_ALLOCATION_LOOP
 
@@ -15158,7 +15323,7 @@ WRITE(MSG%LU_DEBUG,*) 'GC%NC_OFFSET(1:NMESHES) ', GC%NC_OFFSET(1:NMESHES)
 
    ! Setup mapping from local zones to global zones
 
-   CALL SCARC_ALLOCATE_INT1(GC%LOCAL_TO_GLOBAL, 1, GF%NCE, NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL')
+   CALL SCARC_ALLOCATE_INT1(GC%LOCAL_TO_GLOBAL, 1, GF%NCE, NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL', CROUTINE)
    DO IZL = 1, GC%NC
       GC%LOCAL_TO_GLOBAL(IZL) = IZL + GC%NC_OFFSET(NM)
 #ifdef WITH_SCARC_DEBUG
@@ -15200,11 +15365,11 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    GC%NCE2 = GF%N_ZONES
    GF%N_COARSE = GF%N_ZONES
 
-   CALL SCARC_REDUCE_INT1(GF%ZONES_LOCAL, GF%NCE2, 'GC%LOCAL_TO_GLOBAL')
-   CALL SCARC_REDUCE_INT1(GF%ZONES_GLOBAL, GF%NCE2, 'GC%LOCAL_TO_GLOBAL')
-   CALL SCARC_REDUCE_INT1(GC%LOCAL_TO_GLOBAL, GC%NCE2, 'GC%LOCAL_TO_GLOBAL')
+   CALL SCARC_REDUCE_INT1(GF%ZONES_LOCAL, GF%NCE2, 'GC%LOCAL_TO_GLOBAL', CROUTINE)
+   CALL SCARC_REDUCE_INT1(GF%ZONES_GLOBAL, GF%NCE2, 'GC%LOCAL_TO_GLOBAL', CROUTINE)
+   CALL SCARC_REDUCE_INT1(GC%LOCAL_TO_GLOBAL, GC%NCE2, 'GC%LOCAL_TO_GLOBAL', CROUTINE)
 
-   CALL SCARC_DEALLOCATE_CMATRIX(CF, 'STRENGTH OF CONNECTION')
+   CALL SCARC_DEALLOCATE_CMATRIX(CF, 'STRENGTH OF CONNECTION', CROUTINE)
 
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': ================== END OF SETUP AGGREGATION_ZONES '
@@ -15222,7 +15387,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    WRITE(MSG%LU_DEBUG,'(8I6)') GC%LOCAL_TO_GLOBAL
 #endif
 
-#ifdef WITH_SCARC_VERBOSE
+#ifdef WITH_SCARC_DEBUG
    IF (NL == NLEVEL_MIN) CALL SCARC_BLENDER_ZONES(NM, NL)
 #endif
 
@@ -15239,6 +15404,8 @@ TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
 INTEGER, INTENT(IN) :: NM
 INTEGER :: IC, ICOL, JC, IZONE, JZONE
 LOGICAL :: HAS_NEIGHBORS, HAS_AGGREGATED_NEIGHBORS
+
+CROUTINE = 'SCARC_SETUP_AGGREGATED_ZONES'
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*)  'NM=',NM,': STARTING SETUP_AGGREGATED_ZONES'
@@ -15350,7 +15517,7 @@ IF (MINVAL(G%ZONES_LOCAL) < 0) THEN
    STOP
 ENDIF
       
-!CALL SCARC_REDUCE_INT1(G%CPOINTS, G%N_ZONES-1, 'G%CPOINTS')           ! TODO
+!CALL SCARC_REDUCE_INT1(G%CPOINTS, G%N_ZONES-1, 'G%CPOINTS', CROUTINE)           ! TODO
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*)  '-------------- NM=',NM
@@ -15375,6 +15542,8 @@ LOGICAL :: BFIRST
 WRITE(MSG%LU_DEBUG,*)  'STARTING SETUP_CUBIC_ZONES'
 #endif
 
+CROUTINE = 'SCARC_SETUP_CUBIC_ZONES'
+
 NXM = MOD(L%NX,2)
 NXD = L%NX/2
 
@@ -15397,9 +15566,9 @@ IF ((L%NX < 4) .OR. (.NOT.TWO_D .AND. L%NY < 4) .OR. (L%NZ < 4)) THEN
    STOP
 ENDIF
 
-CALL SCARC_ALLOCATE_INT1 (OFFX, 1, NXD, NSCARC_INIT_ZERO, 'OFFX')
-CALL SCARC_ALLOCATE_INT1 (OFFY, 1, NXD, NSCARC_INIT_ZERO, 'OFFY')
-CALL SCARC_ALLOCATE_INT1 (OFFZ, 1, NZD, NSCARC_INIT_ZERO, 'OFFZ')
+CALL SCARC_ALLOCATE_INT1 (OFFX, 1, NXD, NSCARC_INIT_ZERO, 'OFFX', CROUTINE)
+CALL SCARC_ALLOCATE_INT1 (OFFY, 1, NXD, NSCARC_INIT_ZERO, 'OFFY', CROUTINE)
+CALL SCARC_ALLOCATE_INT1 (OFFZ, 1, NZD, NSCARC_INIT_ZERO, 'OFFZ', CROUTINE)
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'SETUP_CUBIC_ZONES:'
@@ -15558,9 +15727,9 @@ WRITE(MSG%LU_DEBUG,'(A,9I6)') 'IX, IY, IZ, IXP, IYP, IZP, IC, ZONES_LOCAL(IC), N
    ENDDO
 ENDIF DIMENSION_IF
 
-DEALLOCATE(OFFX)
-DEALLOCATE(OFFY)
-DEALLOCATE(OFFZ)
+CALL SCARC_DEALLOCATE_INT1 (OFFX, 'OFFX', CROUTINE)
+CALL SCARC_DEALLOCATE_INT1 (OFFY, 'OFFY', CROUTINE)
+CALL SCARC_DEALLOCATE_INT1 (OFFZ, 'OFFZ', CROUTINE)
 
 #ifdef WITH_SCARC_DEBUG
 CALL SCARC_DEBUG_ZONES(G, IC, 1, 'AFTER GMG-AGG ')
@@ -15591,13 +15760,15 @@ SUBROUTINE SCARC_CLEAN_WORKSPACE_AMG(NL)
 INTEGER, INTENT(IN) :: NL
 INTEGER:: NM
 
+CROUTINE = 'SCARC_CLEAN_WORKSPACE_AMG'
+
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_POINT_TO_GRID (NM, NL)
-   DEALLOCATE (G%CPOINTS, STAT = IERROR)
-   DEALLOCATE (G%AUX1, STAT = IERROR)
-   DEALLOCATE (G%AUX2, STAT = IERROR)
-   DEALLOCATE (G%RR, STAT = IERROR)
-   DEALLOCATE (G%QQ, STAT = IERROR)
+   CALL SCARC_DEALLOCATE_INT1 (G%CPOINTS, 'G%CPOINTS', CROUTINE)
+   CALL SCARC_DEALLOCATE_REAL1 (G%AUX1, 'G%AUX1', CROUTINE)
+   CALL SCARC_DEALLOCATE_REAL1 (G%AUX2, 'G%AUX2', CROUTINE)
+   CALL SCARC_DEALLOCATE_REAL1 (G%RR, 'G%RR', CROUTINE)
+   CALL SCARC_DEALLOCATE_REAL1 (G%QQ, 'G%QQ', CROUTINE)
 ENDDO
 
 END SUBROUTINE SCARC_CLEAN_WORKSPACE_AMG
@@ -15614,6 +15785,8 @@ USE SCARC_POINTERS, ONLY: L, G, A, MG
 INTEGER, INTENT(IN) :: NL
 INTEGER :: IC, JC, ICOL, IDIAG, NM
 
+CROUTINE = 'SCARC_RELAX_NULLSPACE'
+
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
@@ -15625,9 +15798,9 @@ WRITE(MSG%LU_DEBUG,*) '-------------------- NM=',NM
    CALL SCARC_DEBUG_CMATRIX (A, 'POISSON', 'START RELAX NULLSPACE')
 #endif
 
-   CALL SCARC_ALLOCATE_REAL1 (G%NULLSPACE, 1, G%NCE2,   NSCARC_INIT_ONE,  'G%NULLSPACE')
-   CALL SCARC_ALLOCATE_REAL1 (G%AUX1,      1, G%NCE2+1, NSCARC_INIT_ZERO, 'G%AUX1')
-   CALL SCARC_ALLOCATE_REAL1 (G%AUX2,      1, G%NCE2+1, NSCARC_INIT_ZERO, 'G%AUX2')
+   CALL SCARC_ALLOCATE_REAL1 (G%NULLSPACE, 1, G%NCE2,   NSCARC_INIT_ONE,  'G%NULLSPACE', CROUTINE)
+   CALL SCARC_ALLOCATE_REAL1 (G%AUX1,      1, G%NCE2+1, NSCARC_INIT_ZERO, 'G%AUX1', CROUTINE)
+   CALL SCARC_ALLOCATE_REAL1 (G%AUX2,      1, G%NCE2+1, NSCARC_INIT_ZERO, 'G%AUX2', CROUTINE)
 
    MG%OMEGA = 1.0_EB                                   ! currently used default
    MG%OMEGA = MG%OMEGA/MG%APPROX_SPECTRAL_RADIUS
@@ -15721,6 +15894,8 @@ INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, ICC, ICCL, ICCG, IC, IP, N_ROW, N_VAL
 LOGICAL :: IS_INCLUDED 
 
+CROUTINE = 'SCARC_SETUP_ZONE_OPERATOR'
+
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)                       ! Sets grid pointer GF and GC
@@ -15733,11 +15908,11 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    ZF%N_VAL = AF%N_VAL                  
    ZF%N_ROW = AF%N_VAL                  
-   CALL SCARC_ALLOCATE_CMATRIX(ZF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_MINIMAL, 'GF%ZONES')
+   CALL SCARC_ALLOCATE_CMATRIX(ZF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_MINIMAL, 'GF%ZONES', CROUTINE)
   
    ! Again conservative upper bound for length - to be reduced later 
 
-   CALL SCARC_ALLOCATE_INT1(GF%ZONES_LOCAL, 1, GF%NCE2, NSCARC_INIT_ZERO, 'GF%ZONES_LOCAL')
+   CALL SCARC_ALLOCATE_INT1(GF%ZONES_LOCAL, 1, GF%NCE2, NSCARC_INIT_ZERO, 'GF%ZONES_LOCAL', CROUTINE)
 
 
 #ifdef WITH_SCARC_DEBUG
@@ -15801,8 +15976,6 @@ WRITE(MSG%LU_DEBUG,'(A, I6,A,4I8)') 'NM=',NM,':      bingo, IC, ICC, ICCL, ICCG:
    ZF%N_ROW=N_ROW
    ZF%N_VAL=N_VAL
 
-   WRITE(*,*) 'NM=',NM,': ZF%N_ROW= ',ZF%N_ROW,' : ZF%N_VAL=',ZF%N_VAL
-
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '------------- NM=',NM
 WRITE(MSG%LU_DEBUG,*) ' ICC =',ICC
@@ -15814,7 +15987,7 @@ WRITE(MSG%LU_DEBUG,*) 'ZF%N_VAL =',ZF%N_VAL
 CALL SCARC_DEBUG_CMATRIX (ZF, 'ZONES','AFTER SETUP AGGREGATION ZONES 1 ')
 #endif
 
-   CALL SCARC_REDUCE_CMATRIX(ZF, 'ZF')
+   CALL SCARC_REDUCE_CMATRIX(ZF, 'ZF', CROUTINE)
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '------------- NM=',NM
@@ -15843,7 +16016,8 @@ INTEGER, INTENT(IN) :: NL
 REAL(EB):: DSUM, SCAL, PSAVE !, TOL = 1.0E-12_EB
 INTEGER :: NM, NOM, IC, JC, ICC, ICOL, ICCOL, JCCOL, IP, JCC, IQ, INBR
 
- 
+CROUTINE = 'SCARC_SETUP_PROLONGATION'
+
 ! Allocate several workspaces (with conservative bounds which will be reduced later)
 !    - prolongation matrix on internal part of mesh 
 !    - for every neighbor small prolongation matrix for corresponding overlap
@@ -15860,7 +16034,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    P%N_VAL = A%N_VAL + 1        
    P%N_ROW = G%NCE + 1                  
-   CALL SCARC_ALLOCATE_CMATRIX(P, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'G%PROLONGATION')
+   CALL SCARC_ALLOCATE_CMATRIX(P, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'G%PROLONGATION', CROUTINE)
 
    DO INBR = 1, SCARC(NM)%N_NEIGHBORS
 
@@ -15872,12 +16046,12 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       OP%N_VAL = OA%N_VAL + 1              ! TODO : CHECK : MUCH TOO BIG !!!
       OP%N_ROW = G%NCE + 1                 ! TODO : CHECK : MUCH TOO BIG !!!
-      CALL SCARC_ALLOCATE_CMATRIX(OP, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OG%PROLONGATION')
+      CALL SCARC_ALLOCATE_CMATRIX(OP, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OG%PROLONGATION', CROUTINE)
 
    ENDDO
 
-   CALL SCARC_ALLOCATE_REAL1(G%QQ, 1, G%NCE2+1, NSCARC_INIT_ZERO, 'G%QQ')
-   CALL SCARC_ALLOCATE_REAL1(G%RR, 1, G%NCE2+1, NSCARC_INIT_ZERO, 'G%RR')     ! TODO check length!
+   CALL SCARC_ALLOCATE_REAL1(G%QQ, 1, G%NCE2+1, NSCARC_INIT_ZERO, 'G%QQ', CROUTINE)
+   CALL SCARC_ALLOCATE_REAL1(G%RR, 1, G%NCE2+1, NSCARC_INIT_ZERO, 'G%RR', CROUTINE)     ! TODO check length!
 
 
  
@@ -15903,21 +16077,21 @@ WRITE(MSG%LU_DEBUG,'(A,I6,A,3I6,2E12.4)') 'NM=',NM,':QQ: ICC, IC, IQ, QQ(IQ), DS
       G%RR(ICC) = DSUM
    ENDDO
 
-   CALL SCARC_REDUCE_REAL1(G%QQ, IQ, 'G%QQ')
-   CALL SCARC_REDUCE_REAL1(G%RR, Z%N_ROW, 'G%RR')
+   CALL SCARC_REDUCE_REAL1(G%QQ, IQ, 'G%QQ', CROUTINE)
+   CALL SCARC_REDUCE_REAL1(G%RR, Z%N_ROW, 'G%RR', CROUTINE)
 
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': ================================ PART 0 :'
-   WRITE(MSG%LU_DEBUG,*) 'Z%N_ROW:', Z%N_ROW
-   WRITE(MSG%LU_DEBUG,*) 'G%NULLSPACE:'
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':Z%N_ROW:', Z%N_ROW
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':G%NULLSPACE:'
    WRITE(MSG%LU_DEBUG,'(6E12.4)') G%NULLSPACE(1:G%NCE2)
-   WRITE(MSG%LU_DEBUG,*) 'G%AUX2:'
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':G%AUX2:'
    WRITE(MSG%LU_DEBUG,'(6E12.4)') G%AUX2(1:G%NCE2)
-   WRITE(MSG%LU_DEBUG,*) 'G%QQ:'
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':G%QQ:'
    WRITE(MSG%LU_DEBUG,'(6E12.4)') G%QQ(1:G%NCE2)
-   WRITE(MSG%LU_DEBUG,*) 'G%AUX1:'
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':G%AUX1:'
    WRITE(MSG%LU_DEBUG,'(6E12.4)') G%AUX1(1:G%NCE2)
-   WRITE(MSG%LU_DEBUG,*) 'G%RR:'
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':G%RR:'
    WRITE(MSG%LU_DEBUG,'(6E12.4)') G%RR
 #endif
 
@@ -15930,9 +16104,9 @@ IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_AUXILIARY, NSCARC_NONE, NL
    
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':================================ PART 1 :'
-   WRITE(MSG%LU_DEBUG,*) 'G%QQ:'
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':G%QQ:'
    WRITE(MSG%LU_DEBUG,*) G%QQ(1:G%NCE2)
-   WRITE(MSG%LU_DEBUG,*) 'G%AUX1:'
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':G%AUX1:'
    WRITE(MSG%LU_DEBUG,*) G%AUX1(1:G%NCE2)
 #endif
 
@@ -15980,7 +16154,7 @@ ENDDO
    
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':================================ PART 2 :'
-   WRITE(MSG%LU_DEBUG,*) 'G%QQ:'
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':G%QQ:'
    WRITE(MSG%LU_DEBUG,'(6E12.4)') G%QQ(1:G%NCE2)
 #endif
 
@@ -16004,7 +16178,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':================================ PART 3 :'
-   WRITE(MSG%LU_DEBUG,*) 'G%QQ:'
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':G%QQ:'
    WRITE(MSG%LU_DEBUG,'(6E12.4)') G%QQ
    CALL SCARC_DEBUG_CMATRIX(Z, 'ZONES','BEFORE FIRST RELAX STEP')
 #endif
@@ -16031,7 +16205,7 @@ WRITE(MSG%LU_DEBUG,'(A,5I6,4E12.4)') 'RELAX: IC, ICC, ICCOL, JC, ICOL, DSUM:', &
             P%VAL(IP) = DSUM
             P%COL(IP) = ICC
 #ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) '-----------------> IP, VAL, COL,:', IP, DSUM, ICC
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':-----------------> IP, VAL, COL,:', IP, DSUM, ICC
 #endif
             IP = IP + 1
          ENDIF
@@ -16111,6 +16285,7 @@ WRITE(MSG%LU_DEBUG,*) 'PROL: LOCAL_TO_GLOBAL: IC, JCCOL, JCC, RES:', IC, JCCOL, 
    ENDDO
    
 #ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '----------- NM =',NM
    CALL SCARC_DEBUG_CMATRIX(PF, 'G%PROLONGATION','SETUP_PROLONGATION: AFTER LAST EXCHANGE')
 #endif
 ENDDO
@@ -16130,13 +16305,13 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
    P => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_PROLONGATION)
-   CALL SCARC_REDUCE_CMATRIX(P, 'P%PROLONGATION')
+   CALL SCARC_REDUCE_CMATRIX(P, 'P%PROLONGATION', CROUTINE)
 
    DO INBR = 1, S%N_NEIGHBORS
       NOM = S%NEIGHBORS(INBR)
       CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
       OP => SCARC_POINT_TO_OTHER_CMATRIX(OG, NSCARC_MATRIX_PROLONGATION)
-      CALL SCARC_REDUCE_CMATRIX(OP, 'OP%PROLONGATION')
+      CALL SCARC_REDUCE_CMATRIX(OP, 'OP%PROLONGATION', CROUTINE)
    ENDDO
 
 #ifdef WITH_SCARC_DEBUG
@@ -16156,6 +16331,8 @@ USE SCARC_POINTERS, ONLY:  GC, GF, ZF
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM
 
+CROUTINE = 'SCARC_SETUP_NULLSPACE_COARSE'
+
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTIGRID(NM, NL, NL+1)                   ! Sets pointers GC and GF
@@ -16163,24 +16340,24 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    IF (NL < NLEVEL_MAX) THEN
       GC%N_FINE = GC%NC_LOCAL(NM)
-      CALL SCARC_ALLOCATE_REAL1(GC%NULLSPACE, 1, GC%NCE, NSCARC_INIT_ZERO, 'GC%NULLSPACE')
+      CALL SCARC_ALLOCATE_REAL1(GC%NULLSPACE, 1, GC%NCE, NSCARC_INIT_ZERO, 'GC%NULLSPACE', CROUTINE)
       GC%NULLSPACE(1:GC%NCE) = GF%RR(1:GC%NCE)
-      CALL SCARC_REDUCE_INT1(GC%LOCAL_TO_GLOBAL, GC%NCE, 'GC%LOCAL_TO_GLOBAL')
+      CALL SCARC_REDUCE_INT1(GC%LOCAL_TO_GLOBAL, GC%NCE, 'GC%LOCAL_TO_GLOBAL', CROUTINE)
    ENDIF
 
 #ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) '============== SETUP_NULLSPACE_COARSE ================='
-   WRITE(MSG%LU_DEBUG,*) 'GF%NULLSPACE:'
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,'============== SETUP_NULLSPACE_COARSE ================='
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': GF%NULLSPACE:'
    WRITE(MSG%LU_DEBUG,'(6E12.4)') GF%NULLSPACE
-   WRITE(MSG%LU_DEBUG,*) 'GF%RR'
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': GF%RR'
    WRITE(MSG%LU_DEBUG,'(6E12.4)') GF%RR
-   WRITE(MSG%LU_DEBUG,*) 'GF%QR:'
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': GF%QR:'
    WRITE(MSG%LU_DEBUG,'(6E12.4)') GF%QQ
-   WRITE(MSG%LU_DEBUG,*) 'GC%LOCAL_TO_GLOBAL:'
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': GC%LOCAL_TO_GLOBAL:'
    WRITE(MSG%LU_DEBUG,'(8I6)') GC%LOCAL_TO_GLOBAL
-   WRITE(MSG%LU_DEBUG,*) 'GC%N_FINE:', GC%N_FINE
-   WRITE(MSG%LU_DEBUG,*) 'GC%NC:', GC%NC
-   WRITE(MSG%LU_DEBUG,*) 'GC%NCE:', GC%NCE
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': GC%N_FINE:', GC%N_FINE
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': GC%NC:', GC%NC
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': GC%NCE:', GC%NCE
    WRITE(MSG%LU_DEBUG,*) '==============================================='
 #endif
 
@@ -16216,6 +16393,8 @@ INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, IC, IRROW, IRCOL, IPCOL, IPC, ICCL, ICCG, IFOUND 
 LOGICAL :: IS_INCLUDED
 
+CROUTINE = 'SCARC_SETUP_RESTRICTION'
+
 ! Allocate restriction matrix R on internal mesh part
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -16228,13 +16407,13 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    RF%N_ROW = PF%N_ROW + 100
 
 #ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'RESTRICTION:  N_VAL, N_ROW=', RF%N_VAL, RF%N_ROW 
-   WRITE(MSG%LU_DEBUG,*) 'PROLONGATION: N_VAL, N_ROW=', PF%N_VAL, PF%N_ROW 
-   WRITE(MSG%LU_DEBUG,*) 'GC%LOCAL_TO_GLOBAL:', GC%LOCAL_TO_GLOBAL
-   WRITE(MSG%LU_DEBUG,*) 'GF%NC:', GF%NC
-   WRITE(MSG%LU_DEBUG,*) 'GF%NCE:', GF%NCE
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': RESTRICTION:  N_VAL, N_ROW=', RF%N_VAL, RF%N_ROW 
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': PROLONGATION: N_VAL, N_ROW=', PF%N_VAL, PF%N_ROW 
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': GC%LOCAL_TO_GLOBAL:', GC%LOCAL_TO_GLOBAL
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': GF%NC:', GF%NC
+   WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': GF%NCE:', GF%NCE
 #endif
-   CALL SCARC_ALLOCATE_CMATRIX(RF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%RESTRICTION')
+   CALL SCARC_ALLOCATE_CMATRIX(RF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%RESTRICTION', CROUTINE)
 
    IRROW = 1                             ! counter of current row of restriction matrix - corresponds to coarse cells
    IRCOL = 1                             ! counter of current column of restriction matrix
@@ -16283,9 +16462,10 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ENDDO LOCAL_COARSE_CELLS_LOOP
 
 #ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
    CALL SCARC_DEBUG_CMATRIX (RF, 'GF%RESTRICTION','AFTER SETUP_RESTRICTION')
 #endif
-   CALL SCARC_REDUCE_CMATRIX (RF, 'GF%RESTRICTION')
+   CALL SCARC_REDUCE_CMATRIX (RF, 'GF%RESTRICTION', CROUTINE)
 
 ENDDO MESHES_LOOP
 
@@ -16315,13 +16495,15 @@ END FUNCTION SCARC_FIND_MATCHING_COLUMN
 
 
 ! ------------------------------------------------------------------------------------------------------
-!> \brief Determine coarse grid matrix ACC which is computed as Galerkin operator R*A*P
+!> \brief Perform matrix multiplication between fine Poisson matrix and prolongation matrix 
 ! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_AP(NL)
+SUBROUTINE SCARC_SETUP_POISSON_TIMES_PROL(NL)
 USE SCARC_POINTERS, ONLY: GC, GF, AF, PF, APF, OA, OAP
 INTEGER, INTENT(IN) :: NL
 INTEGER  :: NM, NOM, IC, JC, IACOL, IPCOL, IP, ICCG, INBR, IFOUND
 REAL(EB) :: DSUM, TOL = 1E-12_EB
+
+CROUTINE = 'SCARC_SETUP_POISSON_TIMES_PROL'
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -16332,14 +16514,20 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    APF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_POISSON_PROL)         
 
 #ifdef WITH_SCARC_DEBUG
-   CALL SCARC_DEBUG_CMATRIX (AF, 'POISSON-FINE', 'START OF SETUP_AP')
-   CALL SCARC_DEBUG_CMATRIX (PF, 'PROLONGATION-FINE', 'START OF SETUP_AP')
+   WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
+   CALL SCARC_DEBUG_CMATRIX (AF, 'POISSON-FINE', 'START OF SETUP_POISSON_TIMES_PROL')
+   WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
+   CALL SCARC_DEBUG_CMATRIX (PF, 'PROLONGATION-FINE', 'START OF SETUP_POISSON_TIMES_PROL')
+#endif
+
+#ifdef WITH_SCARC_VERBOSE
+   WRITE(MSG%LU_VERBOSE,*) '--------------> NM=',NM,': BEFORE ALLOCATE APF'
 #endif
 
    ! TODO  Reduce size of AP
    APF%N_ROW = AF%N_ROW
    APF%N_VAL = APF%N_ROW*20            ! TODO: only temporarily
-   CALL SCARC_ALLOCATE_CMATRIX(APF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%AP')
+   CALL SCARC_ALLOCATE_CMATRIX(APF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%APF', CROUTINE)
 
    DO INBR = 1, SCARC(NM)%N_NEIGHBORS
 
@@ -16351,23 +16539,27 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       OAP%N_VAL = AF%N_VAL              ! TODO : CHECK : MUCH TOO BIG !!!
       OAP%N_ROW = GF%NCE + 1            ! TODO : CHECK : MUCH TOO BIG !!!
-      CALL SCARC_ALLOCATE_CMATRIX(OAP, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OGF%AP')
+      CALL SCARC_ALLOCATE_CMATRIX(OAP, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OGF%AP', CROUTINE)
 
    ENDDO
+
+#ifdef WITH_SCARC_VERBOSE
+   WRITE(MSG%LU_VERBOSE,*) '--------------> NM=',NM,': AFTER ALLOCATE APF'
+#endif
 
    IP = 1
    APF%ROW(1) = IP
 
    DO IC = 1, GF%NC
 
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) '=================== IC = ', IC ,' ======================='
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,'=================== IC = ', IC ,' ======================='
 #endif
       DO ICCG = 1, GC%NC_GLOBAL
          IFOUND = -1
          IFOUND = FINDLOC(PF%COLG, VALUE=ICCG, DIM=1)
 #ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) '------------------- ICCG = ', ICCG,' IFOUND =',IFOUND
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,'------------------- ICCG = ', ICCG,' IFOUND =',IFOUND
 #endif
          IF (IFOUND == -1) CYCLE
       
@@ -16382,9 +16574,10 @@ WRITE(MSG%LU_DEBUG,*) '                JC, IPCOL =', JC, IPCOL
 #endif
             IF (IPCOL /= -1) THEN
                DSUM = DSUM + AF%VAL(IACOL) * PF%VAL(IPCOL)
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,'(A,2I6,3E12.4)') 'SETUP_AP:, JC, PF%COL(IPCOL), AF%VAL(IACOL), PF%VAL(IPCOL), DSUM:', &
-                                     JC, PF%COL(IPCOL), AF%VAL(IACOL), PF%VAL(IPCOL), DSUM
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,I6,A,2I6,3E12.4)') 'NM=',NM,&
+                              ':SETUP_POISSON_TIMES_PROL:,JC,PF%COL(IPCOL),AF%VAL(IACOL),PF%VAL(IPCOL),DSUM:', &
+                              JC, PF%COL(IPCOL), AF%VAL(IACOL), PF%VAL(IPCOL), DSUM
 #endif
             ENDIF
          ENDDO
@@ -16394,7 +16587,7 @@ WRITE(MSG%LU_DEBUG,'(A,2I6,3E12.4)') 'SETUP_AP:, JC, PF%COL(IPCOL), AF%VAL(IACOL
             APF%COLG(IP) = ICCG
             APF%VAL(IP)  = DSUM
 #ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,'(A,2I6,E12.4)') '      bingo: IP, COL, VAL :', IP, ICCG, DSUM
+WRITE(MSG%LU_DEBUG,'(A,I6,A,2I6,E12.4)') 'NM=',NM,'      bingo: IP, COL, VAL :', IP, ICCG, DSUM
 #endif
             IP = IP + 1
          ENDIF
@@ -16404,7 +16597,17 @@ WRITE(MSG%LU_DEBUG,'(A,2I6,E12.4)') '      bingo: IP, COL, VAL :', IP, ICCG, DSU
 
    ENDDO
 
+
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
+   CALL SCARC_DEBUG_CMATRIX (APF, 'AP-FINE','SUSISUSISUSI')
+#endif
+
 ENDDO
+
+#ifdef WITH_SCARC_VERBOSE
+   WRITE(MSG%LU_VERBOSE,*) '--------------> NM=',NM,': BEFORE EXCHANGE POISSON_PROL'
+#endif
 
 ! Exchange overlapping parts of prolongation matrix and extract exchanged data
 IF (NMESHES > 1) THEN
@@ -16414,6 +16617,9 @@ IF (NMESHES > 1) THEN
    CALL SCARC_EXTRACT_MATRIX_OVERLAPS(NSCARC_MATRIX_POISSON_PROL, 0, NL)
 ENDIF
 
+#ifdef WITH_SCARC_VERBOSE
+   WRITE(MSG%LU_VERBOSE,*) '--------------> NM=',NM,': AFTER EXCHANGE POISSON_PROL'
+#endif
 ! Reduce workspace for prolongation matrix to really needed size
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -16421,14 +16627,18 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    APF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_POISSON_PROL)         
 
 #ifdef WITH_SCARC_DEBUG
-   CALL SCARC_DEBUG_CMATRIX (APF, 'AP-FINE','END SETUP_AP')
+   WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
+   CALL SCARC_DEBUG_CMATRIX (APF, 'AP-FINE','END SETUP_POISSON_TIMES_PROL')
 #endif
 
-   CALL SCARC_REDUCE_CMATRIX (APF, 'POISSON-PROL')
+   CALL SCARC_REDUCE_CMATRIX (APF, 'POISSON-PROL', CROUTINE)
 
 ENDDO
 
-END SUBROUTINE SCARC_SETUP_AP
+#ifdef WITH_SCARC_VERBOSE
+   WRITE(MSG%LU_VERBOSE,*) '--------------> NM=',NM,': FINISH POISSON_PROL'
+#endif
+END SUBROUTINE SCARC_SETUP_POISSON_TIMES_PROL
 
 
 ! ------------------------------------------------------------------------------------------------------
@@ -16471,6 +16681,8 @@ INTEGER, INTENT(IN) :: NL
 INTEGER  :: NM, ICCL, ICCG, JCCL, JCCG, IRCOL, IAPCOL, JC, IP, INBR, NOM, IFOUND
 REAL(EB) :: DSUM, TOL = 1E-12_EB
 
+CROUTINE = 'SCARC_SETUP_GALERKIN'
+
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)
@@ -16480,15 +16692,21 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    AC => SCARC_POINT_TO_CMATRIX (GC, NSCARC_MATRIX_POISSON)         
 
 #ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
    CALL SCARC_DEBUG_CMATRIX (RF, 'RESTRICTION-FINE', 'START OF SETUP_GALERKIN')
+   WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
+   CALL SCARC_DEBUG_CMATRIX (AP, 'AP-FINE', 'START OF SETUP_GALERKIN')
 #endif
 
    IF (.NOT.ALLOCATED (AC%VAL)) THEN
       AC%N_ROW = GC%NCE+1
       AC%N_VAL = AC%N_ROW**2             ! only temporarily TODO TOO BIG
-      CALL SCARC_ALLOCATE_CMATRIX(AC, NL+1, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GC%POISSONC')
+      CALL SCARC_ALLOCATE_CMATRIX(AC, NL+1, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GC%POISSONC', CROUTINE)
    ENDIF
 
+#ifdef WITH_SCARC_VERBOSE
+   WRITE(MSG%LU_VERBOSE,*) '--------------> NM=',NM,': AFTER ALLOCATE GALERKIN '
+#endif
    DO INBR = 1, SCARC(NM)%N_NEIGHBORS
 
       NOM = SCARC(NM)%NEIGHBORS(INBR)
@@ -16498,11 +16716,12 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       OAC%N_VAL = AC%N_VAL              ! TODO : CHECK : MUCH TOO BIG !!!
       OAC%N_ROW = GC%NCE2 + 1           ! TODO : CHECK : MUCH TOO BIG !!!
-      CALL SCARC_ALLOCATE_CMATRIX(OAC, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OAC%POISSONC')
+      CALL SCARC_ALLOCATE_CMATRIX(OAC, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OAC%POISSONC', CROUTINE)
 
    ENDDO
 
 #ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
 CALL SCARC_DEBUG_CMATRIX (SCARC(MYID+1)%LEVEL(1)%STRUCTURED%POISSONC, 'AF', 'A in SETUP_GALERKIN 1')
 #endif
 
@@ -16526,8 +16745,8 @@ CALL SCARC_DEBUG_CMATRIX (SCARC(MYID+1)%LEVEL(1)%STRUCTURED%POISSONC, 'AF', 'A i
              ENDIF
           ENDIF
 
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) '--------------- ICCL, ICCG, JCCL, JCCG = ', ICCL, ICCG, JCCL, JCCG 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,I6,A,4I6)') 'NM=',NM,'--------------- ICCL, ICCG, JCCL, JCCG = ', ICCL, ICCG, JCCL, JCCG 
 #endif
          DSUM = 0.0_EB
          DO IRCOL = RF%ROW(ICCL), RF%ROW(ICCL+1)-1
@@ -16535,7 +16754,7 @@ WRITE(MSG%LU_DEBUG,*) '--------------- ICCL, ICCG, JCCL, JCCG = ', ICCL, ICCG, J
             IAPCOL = SCARC_FIND_MATCHING_COLUMN(AP, JC, JCCG) 
             IF (IAPCOL /= -1) THEN
                DSUM = DSUM + RF%VAL(IRCOL) * AP%VAL(IAPCOL)
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,I6,2E12.4)') 'SETUP_GALERKIN:, JC, AP%VAL(IAPCOL), DSUM:', JC, AP%VAL(IAPCOL), DSUM
 #endif
             ENDIF
@@ -16545,8 +16764,8 @@ WRITE(MSG%LU_DEBUG,'(A,I6,2E12.4)') 'SETUP_GALERKIN:, JC, AP%VAL(IAPCOL), DSUM:'
             AC%COL(IP)  = JCCL
             AC%COLG(IP) = JCCG
             AC%VAL(IP) = DSUM
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,'(A,3I6,E12.4)') ' -------- bingo: IP, COL, VAL :', IP, JCCL, JCCG, DSUM
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,I6,A,3I6,E12.4)') 'NM=',NM,' -------- bingo: IP, COL, VAL :', IP, JCCL, JCCG, DSUM
 #endif
             IP = IP + 1
          ENDIF
@@ -16558,14 +16777,18 @@ WRITE(MSG%LU_DEBUG,'(A,3I6,E12.4)') ' -------- bingo: IP, COL, VAL :', IP, JCCL,
    AC%N_ROW = ICCL 
 
 #ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
    CALL SCARC_DEBUG_CMATRIX (AC, 'POISSON-COARSE','END OF RAP')
 #endif
 
-   CALL SCARC_REDUCE_CMATRIX (AC, 'POISSON-COARSE')
+   CALL SCARC_REDUCE_CMATRIX (AC, 'POISSON-COARSE', CROUTINE)
 
 ENDDO
 
 CALL SCARC_RESORT_MATRIX_ROWS(NL+1)             
+#ifdef WITH_SCARC_VERBOSE
+   WRITE(MSG%LU_VERBOSE,*) '--------------> NM=',NM,': AFTER RESORT GALERKIN '
+#endif
  
 MESH_INT = 0                            
 RANK_INT = 0
@@ -16574,7 +16797,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)
    AC => SCARC_POINT_TO_CMATRIX (GC, NSCARC_MATRIX_POISSON)         
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SETUP_GALERKIN: AC%N_STENCIL_MAX =', AC%N_STENCIL_MAX
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': SETUP_GALERKIN: AC%N_STENCIL_MAX =', AC%N_STENCIL_MAX
 #endif
    CALL SCARC_GET_MATRIX_STENCIL_MAX(AC, GC%NC)
    MESH_INT(NM) = AC%N_STENCIL_MAX
@@ -16585,10 +16808,13 @@ IF (N_MPI_PROCESSES>1) &
    CALL MPI_ALLREDUCE(MPI_IN_PLACE, RANK_INT, 1, MPI_INTEGER, MPI_MAX, MPI_COMM_WORLD, IERROR)
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'N_STENCIL_MAX  OVERALL:', RANK_INT
-WRITE(MSG%LU_DEBUG,*) 'TYPE_MKL(0:2):', TYPE_MKL(0:2)
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': N_STENCIL_MAX  OVERALL:', RANK_INT
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': TYPE_MKL(0:2):', TYPE_MKL(0:2)
 #endif
 
+#ifdef WITH_SCARC_VERBOSE
+   WRITE(MSG%LU_VERBOSE,*) '--------------> NM=',NM,': BEFORE GALERKIN MKL'
+#endif
 #ifdef WITH_MKL
 IF (TYPE_MKL(NL+1) == NSCARC_MKL_LOCAL .OR. TYPE_MKL(NL+1) == NSCARC_MKL_GLOBAL) THEN
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -16597,6 +16823,9 @@ IF (TYPE_MKL(NL+1) == NSCARC_MKL_LOCAL .OR. TYPE_MKL(NL+1) == NSCARC_MKL_GLOBAL)
 ENDIF
 #endif
 
+#ifdef WITH_SCARC_VERBOSE
+   WRITE(MSG%LU_VERBOSE,*) '--------------> NM=',NM,': AFTER GALERKIN MKL'
+#endif
 END SUBROUTINE SCARC_SETUP_GALERKIN
 
 
@@ -16635,130 +16864,6 @@ WRITE(MSG%LU_DEBUG,*) 'VALUE_AP: RETURN DSUM=', DSUM
 #endif
 
 END FUNCTION SCARC_VALUE_RAP
-
-
-! ------------------------------------------------------------------------------------------------------
-!> \brief Determine coarse grid matrix ACC which is computed as Galerkin operator R*A*P
-! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_GALERKIN_OPERATOR(NL)
-USE SCARC_POINTERS, ONLY: GF, GC, AF, AC, RF, PF
-INTEGER, INTENT(IN) :: NL
-INTEGER  :: NM, IPC, IRC, IC, IR, IA
-REAL(EB) :: DRSUM, DAP, TOL = 1.0E-12_EB
-
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-   CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)
-
-   PF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_PROLONGATION)     
-   RF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_RESTRICTION)
-   
-   AF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_POISSON)          
-   AC => SCARC_POINT_TO_CMATRIX (GC, NSCARC_MATRIX_POISSON)          
-
-#ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_CMATRIX (AF, 'AF','START OF SETUP_GALERKIN_OPERATOR')
-#endif
-
-   IF (.NOT.ALLOCATED (AC%VAL)) THEN
-      AC%N_ROW = GC%NCE+1
-      AC%N_VAL = AC%N_ROW**2             ! only temporarily TODO TOO BIG
-      CALL SCARC_ALLOCATE_CMATRIX(AC, NL+1, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'AC%POISSONC')
-   ENDIF
-
-   IA = 1
-   AC%ROW(1) = 1
-
-   DO IRC = 1, GC%NCE                      ! rows of restriction matrix
-
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) '======================== IRC = ', IRC,' ============================'
-#endif
-      ! First process diagonal entry
-
-      IPC = IRC
-
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) '------------------------ IPC:A: = ', IPC,' ----------------------------'
-WRITE(MSG%LU_DEBUG,*) '    R%ROW(IRW)-R%ROW(IRC+1)-1: ', (RF%COLG(IR), IR=RF%ROW(IRC),RF%ROW(IRC+1)-1)
-WRITE(MSG%LU_DEBUG,*) '--------------------------------------------------------------------'
-#endif
-      ! Compute entry AC(IRC,IPC) = SUM( R(IRC,IC)*A(IC,:)*P(:,IPC))
-
-      DRSUM = 0.0_EB
-      DO IR = RF%ROW(IRC), RF%ROW(IRC+1) - 1
-         IC = RF%COLG(IR)
-         DAP = SCARC_VALUE_RAP(IC, IPC)
-         DRSUM = DRSUM + DAP*RF%VAL(IR)
-#ifdef WITH_SCARC_DEBUG2
-         WRITE(MSG%LU_DEBUG,'(A,3I8,E12.4)') 'GAL: IRC, IC, IPC, DRSUM:', IRC, IC, IPC, DRSUM
-#endif
-      ENDDO
-      IF (ABS(DRSUM) > TOL) THEN
-         AC%VAL(IA) = DRSUM
-         AC%COL(IA) = IPC
-#ifdef WITH_SCARC_DEBUG2
-         WRITE(MSG%LU_DEBUG,'(A,5I8,E12.4)') 'GALERKIN: IRC, IC, IPC, IA, COL, VAL:',&
-                                              IRC,IC,IPC, IA,AC%COL(IA),AC%VAL(IA)
-#endif
-         IA = IA + 1
-      ENDIF
-
-      ! Then process remaining entries in row
-
-      DO IPC = 1, GC%NCE                             ! columns of prolongation matrix
-
-         IF (IPC == IRC) CYCLE
-
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) '------------------------ IPC:B: = ', IPC,' ----------------------------'
-#endif
-         ! Compute entry AC(ICC,JCC) = SUM( P(:,JCC)*A(IC,:)*R(ICC,IC) )
-
-         DRSUM = 0.0_EB
-         DO IR = RF%ROW(IRC), RF%ROW(IRC+1) - 1
-            IC = RF%COLG(IR)
-            DAP = SCARC_VALUE_RAP(IC, IPC)
-            DRSUM = DRSUM + DAP*RF%VAL(IR)
-#ifdef WITH_SCARC_DEBUG2
-         WRITE(MSG%LU_DEBUG,'(A,3I8,E12.4)') 'GAL: IRC, IC, IPC, DRSUM:', IRC, IC, IPC, DRSUM
-#endif
-         ENDDO
-         IF (ABS(DRSUM) > TOL) THEN
-            AC%VAL(IA) = DRSUM
-            AC%COL(IA) = IPC
-#ifdef WITH_SCARC_DEBUG2
-         WRITE(MSG%LU_DEBUG,'(A,5I8,E12.4)') 'GALERKIN: IRC, IC, IPC, IA, COL, VAL:',&
-                                              IRC,IC,IPC, IA,AC%COL(IA),AC%VAL(IA)
-#endif
-            IA = IA + 1
-         ENDIF
-
-      ENDDO
-
-      AC%ROW(IRC+1) = IA
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) 'AC%ROW(',IRC+1,')=', AC%ROW(IRC+1)
-#endif
-   ENDDO
-
-   ! TODO temporarily
-   AC%N_STENCIL = AF%N_STENCIL
-
-   GC%NC = AC%N_ROW - 1
-
-#ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_CMATRIX(AC, 'POISSON', 'COARSE POISSON AT END OF SETUP_GALERKIN')
-#endif
-
-#ifdef WITH_MKL
-   CALL SCARC_SETUP_POISSON_MKL(NM, NL+1)
-#endif
-
-ENDDO
-
-END SUBROUTINE SCARC_SETUP_GALERKIN_OPERATOR
-
 
 ! ------------------------------------------------------------------------------------------------------
 !> \brief Resort matrix entries such that diagonal entry comes first (compact storage technique only)
@@ -16992,23 +17097,207 @@ ENDDO
 END SUBROUTINE SCARC_PRESET_RHS
 ! ================================================================================================
 ! ================================================================================================
-! Bundle of routines for the administration of different working spaces
+! Bundle of routines for the memory administration within ScaRC
 !  - This includes allocation, deallocation and resizing
 !  - Verbose messages are displayed to chid.logX
 ! ================================================================================================
 ! ================================================================================================
 
 ! ------------------------------------------------------------------------------------------------
+!> \brief Update list of arrays within ScaRC memory management
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_UPDATE_MEMORY(NDATA, NSTATE, NDIM, NINIT, NL1, NR1, NL2, NR2, NL3, NR3, CNAME, CSCOPE)
+USE SCARC_POINTERS, ONLY : AL
+INTEGER, INTENT(IN) :: NDATA, NSTATE, NDIM, NINIT, NL1, NR1, NL2, NR2, NL3, NR3
+INTEGER :: NWORK, NLEN(3), NSUM, I, IP
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+CHARACTER(20) :: CTYPE, CSTATE, CINIT, CDIM
+
+MEMORY%IP = MEMORY%IP + 1
+
+! Extract basic name of allocated structure and name of calling routine
+
+! Get size of requested structure
+
+IF (NSTATE /= NSCARC_ALLOC_REMOVE) THEN
+
+   AL => MEMORY%ALLOCATION_LIST(MEMORY%IP)
+
+   AL%CNAME  = CNAME
+   AL%CSCOPE = CSCOPE
+
+   AL%LBND = NSCARC_INIT_ZERO
+   AL%RBND = NSCARC_INIT_ZERO
+
+   IF (NL1 > 0) AL%LBND(1) = NL1
+   IF (NR1 > 0) AL%RBND(1) = NR1
+   IF (NL2 > 0) AL%LBND(2) = NL2
+   IF (NR2 > 0) AL%RBND(2) = NR2
+   IF (NL3 > 0) AL%LBND(3) = NL3
+   IF (NR3 > 0) AL%RBND(3) = NR3
+ELSE
+   DO IP = 1, MEMORY%N_ARRAYS
+      AL => MEMORY%ALLOCATION_LIST(IP)
+      IF (TRIM(CNAME) == AL%CNAME) EXIT
+   ENDDO
+ENDIF
+
+NWORK = 1
+DO I = 1, 3
+   NLEN(I) = AL%RBND(I) - AL%LBND(I)
+   IF (NLEN(I) /= 0) NWORK = NWORK * NLEN(I)
+ENDDO
+
+! Get some full text information for requested structure to dump out in memory file
+
+CTYPE = SCARC_GET_DATA_TYPE(NDATA)
+CDIM  = SCARC_GET_DIMENSION(NDIM)
+CINIT = SCARC_GET_INIT_TYPE(NDATA, NINIT, NSTATE)
+
+SELECT CASE (NSTATE)
+   CASE (NSCARC_ALLOC_CREATE)
+      CSTATE = 'CREATE'
+      CALL SCARC_UPDATE_MEMORY_COUNTERS(NDATA, NWORK,  1)
+   CASE (NSCARC_ALLOC_RESIZE)
+      CSTATE = 'RESIZE'
+      CALL SCARC_UPDATE_MEMORY_COUNTERS(NDATA, NWORK,  0)
+   CASE (NSCARC_ALLOC_REMOVE)
+      CSTATE = 'REMOVE'
+      CALL SCARC_UPDATE_MEMORY_COUNTERS(NDATA, NWORK, -1)
+      NWORK = -NWORK
+   CASE DEFAULT
+      CSTATE = ' '
+END SELECT
+
+IF (MYID == 0) THEN
+   WRITE(MSG%LU_MEM,1000) MEMORY%N_ARRAYS, MEMORY%IP, AL%CNAME, AL%CSCOPE, CTYPE, CSTATE, CINIT, CDIM, &
+                          AL%LBND(1), AL%RBND(1), AL%LBND(2), AL%RBND(2), AL%LBND(3), AL%RBND(3), NWORK, &
+                          MEMORY%NWORK_INT, MEMORY%NWORK_REAL_EB, MEMORY%NWORK_REAL_FB
+ENDIF
+
+1000 FORMAT(I8,',',I8,',',A30,',',A40,',',A10,',',A10,',',A10,',',A3,',',I10,',',&
+            I10,',',I10,',',I10,',',I10,',',I10,',',I10,',',I15,',',I15,',',I15)
+END SUBROUTINE SCARC_UPDATE_MEMORY
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Update memory statistics w.r.t to occupied workspace and number of allocated arrays
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_UPDATE_MEMORY_COUNTERS(NDATA, NWORK, NSCAL)
+INTEGER, INTENT(IN) :: NDATA, NWORK, NSCAL
+INTEGER :: NSUM
+
+MEMORY%N_ARRAYS = MEMORY%N_ARRAYS + NSCAL
+IF (MEMORY%N_ARRAYS > NSCARC_ALLOC_MAX) WRITE(*,*) 'ERROR in APPEND_TO_ALLOCATION_LIST: list of arrays exceeded!'
+
+SELECT CASE (NDATA) 
+   CASE (NSCARC_ALLOC_INT)
+      MEMORY%N_INT = MEMORY%N_INT + NSCAL 
+      MEMORY%NWORK_INT = MEMORY%NWORK_INT + NSCAL * NWORK
+   CASE (NSCARC_ALLOC_REAL_EB)
+      MEMORY%N_INT = MEMORY%N_REAL_EB + NSCAL 
+      MEMORY%NWORK_REAL_EB = MEMORY%NWORK_REAL_EB + NSCAL * NWORK
+   CASE (NSCARC_ALLOC_REAL_FB)
+      MEMORY%N_INT = MEMORY%N_REAL_FB + NSCAL 
+      MEMORY%NWORK_REAL_FB = MEMORY%NWORK_REAL_FB + NSCAL * NWORK
+   CASE (NSCARC_ALLOC_LOG)
+      MEMORY%N_INT = MEMORY%N_LOG + NSCAL 
+      MEMORY%NWORK_LOG = MEMORY%NWORK_LOG + NSCAL * NWORK
+   CASE (NSCARC_ALLOC_CMATRIX)
+      MEMORY%N_CMATRIX = MEMORY%N_CMATRIX + NSCAL 
+   CASE (NSCARC_ALLOC_BMATRIX)
+      MEMORY%N_BMATRIX = MEMORY%N_BMATRIX + NSCAL 
+END SELECT
+
+END SUBROUTINE SCARC_UPDATE_MEMORY_COUNTERS
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Get full text information about the data type of the currently processed array
+! ------------------------------------------------------------------------------------------------
+CHARACTER(10) FUNCTION SCARC_GET_DATA_TYPE(NDATA)
+INTEGER, INTENT(IN) :: NDATA
+
+SELECT CASE (NDATA)
+   CASE (NSCARC_ALLOC_INT)
+      SCARC_GET_DATA_TYPE = 'INTEGER'
+   CASE (NSCARC_ALLOC_REAL_EB)
+      SCARC_GET_DATA_TYPE = 'REAL_EB'
+   CASE (NSCARC_ALLOC_REAL_FB)
+      SCARC_GET_DATA_TYPE = 'REAL_FB'
+   CASE (NSCARC_ALLOC_LOG)
+      SCARC_GET_DATA_TYPE = 'LOGICAL'
+   CASE (NSCARC_ALLOC_CMATRIX)
+      SCARC_GET_DATA_TYPE = 'CMATRIX'
+   CASE (NSCARC_ALLOC_BMATRIX)
+      SCARC_GET_DATA_TYPE = 'BMATRIX'
+   CASE DEFAULT
+      SCARC_GET_DATA_TYPE = ' '
+END SELECT
+
+END FUNCTION SCARC_GET_DATA_TYPE
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Get full text information about the dimension of the currently processed array
+! ------------------------------------------------------------------------------------------------
+CHARACTER(10) FUNCTION SCARC_GET_DIMENSION(NDIM)
+INTEGER, INTENT(IN) :: NDIM
+
+SELECT CASE (NDIM)
+   CASE (1)
+      SCARC_GET_DIMENSION = '1'
+   CASE (2)
+      SCARC_GET_DIMENSION = '2'
+   CASE (3)
+      SCARC_GET_DIMENSION = '3'
+   CASE DEFAULT
+      SCARC_GET_DIMENSION = ' '
+END SELECT
+
+END FUNCTION SCARC_GET_DIMENSION
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Get full text information about the initialization type of the currently processed array
+! ------------------------------------------------------------------------------------------------
+CHARACTER(10) FUNCTION SCARC_GET_INIT_TYPE(NINIT, NDATA, NSTATE)
+INTEGER, INTENT(IN) :: NINIT, NDATA, NSTATE
+
+SELECT CASE (NINIT)
+   CASE (NSCARC_INIT_UNDEF)
+      SCARC_GET_INIT_TYPE = 'UNDEF'
+   CASE (NSCARC_INIT_NONE)
+      SCARC_GET_INIT_TYPE = 'NONE'
+   CASE (NSCARC_INIT_MINUS)
+      SCARC_GET_INIT_TYPE = 'MINUS'
+   CASE (NSCARC_INIT_ZERO)
+      SCARC_GET_INIT_TYPE = 'ZERO'
+   CASE (NSCARC_INIT_ONE)
+      SCARC_GET_INIT_TYPE = 'ONE'
+   CASE (NSCARC_INIT_TRUE)
+      SCARC_GET_INIT_TYPE = 'TRUE'
+   CASE (NSCARC_INIT_FALSE)
+      SCARC_GET_INIT_TYPE = 'FALSE'
+   CASE (NSCARC_INIT_HUGE)
+      SCARC_GET_INIT_TYPE = 'HUGE'
+   CASE DEFAULT
+      SCARC_GET_INIT_TYPE = ' '
+END SELECT
+
+IF (NDATA == NSCARC_ALLOC_CMATRIX .OR. NDATA == NSCARC_ALLOC_BMATRIX) SCARC_GET_INIT_TYPE = ' '
+IF (NSTATE == NSCARC_ALLOC_REMOVE) SCARC_GET_INIT_TYPE = ' '
+
+END FUNCTION SCARC_GET_INIT_TYPE
+
+! ------------------------------------------------------------------------------------------------
 !> \brief Allocate and initialize integer array of dimension 1
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_ALLOCATE_INT1(WORKSPACE, NL1, NR1, NINIT, CTEXT)
+SUBROUTINE SCARC_ALLOCATE_INT1(WORKSPACE, NL1, NR1, NINIT, CNAME, CSCOPE)
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 INTEGER, DIMENSION(:), ALLOCATABLE, INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NL1, NR1, NINIT
-CHARACTER(*), INTENT(IN) :: CTEXT
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+
 IF (.NOT.ALLOCATED(WORKSPACE)) THEN
    ALLOCATE (WORKSPACE(NL1:NR1), STAT=IERROR)
-   CALL CHKMEMERR ('SCARC_ALLOCATE_INT1', CTEXT, IERROR)
+   CALL CHKMEMERR ('SCARC_ALLOCATE_INT1', CNAME, IERROR)
    SELECT CASE (NINIT)
       CASE (NSCARC_INIT_UNDEF)
          WORKSPACE = NSCARC_UNDEF_INT
@@ -17016,30 +17305,30 @@ IF (.NOT.ALLOCATED(WORKSPACE)) THEN
          WORKSPACE = NSCARC_ZERO_INT
       CASE (NSCARC_INIT_ONE)
          WORKSPACE = NSCARC_ONE_INT
+      CASE (NSCARC_INIT_HUGE)
+         WORKSPACE = NSCARC_HUGE_INT
    END SELECT
-#ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1
-#endif
 ELSE
-   IF (SIZE(WORKSPACE,1) /= NR1-NL1+1) CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
+   IF (SIZE(WORKSPACE,1) /= NR1-NL1+1) CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CNAME, NSCARC_NONE)
 ENDIF
-#ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating INT1     array  ',A20,'(',I8,':',I8,')')
-#endif
+
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_INT, NSCARC_ALLOC_CREATE, 1, NINIT, NL1, NR1, -1, -1, -1, -1, CNAME, CSCOPE)
+
 END SUBROUTINE SCARC_ALLOCATE_INT1
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Allocate and initialize integer array of dimension 2
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_ALLOCATE_INT2(WORKSPACE, NL1, NR1, NL2, NR2, NINIT, CTEXT)
+SUBROUTINE SCARC_ALLOCATE_INT2(WORKSPACE, NL1, NR1, NL2, NR2, NINIT, CNAME, CSCOPE)
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 INTEGER, DIMENSION(:,:), ALLOCATABLE, INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NL1, NR1, NL2, NR2, NINIT
-CHARACTER(*), INTENT(IN) :: CTEXT
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+
 IF (.NOT.ALLOCATED(WORKSPACE)) THEN
    ALLOCATE (WORKSPACE(NL1:NR1, NL2:NR2), STAT=IERROR)
-   CALL CHKMEMERR ('SCARC_ALLOCATE_INT2', CTEXT, IERROR)
+   CALL CHKMEMERR ('SCARC_ALLOCATE_INT2', CNAME, IERROR)
    SELECT CASE (NINIT)
       CASE (NSCARC_INIT_UNDEF)
          WORKSPACE = NSCARC_UNDEF_INT
@@ -17047,33 +17336,33 @@ IF (.NOT.ALLOCATED(WORKSPACE)) THEN
          WORKSPACE = NSCARC_ZERO_INT
       CASE (NSCARC_INIT_ONE)
          WORKSPACE = NSCARC_ONE_INT
+      CASE (NSCARC_INIT_HUGE)
+         WORKSPACE = NSCARC_HUGE_INT
    END SELECT
-#ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1, NL2, NR2
-#endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1 .OR. &
       SIZE(WORKSPACE,2) /= NR2-NL2+1) THEN
-      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
+      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CNAME, NSCARC_NONE)
    ENDIF
 ENDIF
-#ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating INT2     array  ',A20,'(',I8,':',I8,' , ',I8,':',I8,')')
-#endif
+
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_INT, NSCARC_ALLOC_CREATE, 2, NINIT, NL1, NR1, NL2, NR2, -1, -1, CNAME, CSCOPE)
+
 END SUBROUTINE SCARC_ALLOCATE_INT2
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Allocate and initialize integer array of dimension 3
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_ALLOCATE_INT3(WORKSPACE, NL1, NR1, NL2, NR2, NL3, NR3, NINIT, CTEXT)
+SUBROUTINE SCARC_ALLOCATE_INT3(WORKSPACE, NL1, NR1, NL2, NR2, NL3, NR3, NINIT, CNAME, CSCOPE)
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 INTEGER, DIMENSION(:,:,:), ALLOCATABLE, INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NL1, NR1, NL2, NR2, NL3, NR3, NINIT
-CHARACTER(*), INTENT(IN) :: CTEXT
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+
 IF (.NOT.ALLOCATED(WORKSPACE)) THEN
    ALLOCATE (WORKSPACE(NL1:NR1, NL2:NR2, NL3:NR3), STAT=IERROR)
-   CALL CHKMEMERR ('SCARC_ALLOCATE_INT3', CTEXT, IERROR)
+   CALL CHKMEMERR ('SCARC_ALLOCATE_INT3', CNAME, IERROR)
    SELECT CASE (NINIT)
       CASE (NSCARC_INIT_UNDEF)
          WORKSPACE = NSCARC_UNDEF_INT
@@ -17081,133 +17370,126 @@ IF (.NOT.ALLOCATED(WORKSPACE)) THEN
          WORKSPACE = NSCARC_ZERO_INT
       CASE (NSCARC_INIT_ONE)
          WORKSPACE = NSCARC_ONE_INT
+      CASE (NSCARC_INIT_HUGE)
+         WORKSPACE = NSCARC_HUGE_INT
    END SELECT
-#ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1, NL2, NR2, NL3, NR3
-#endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1 .OR. &
       SIZE(WORKSPACE,2) /= NR2-NL2+1 .OR. &
       SIZE(WORKSPACE,3) /= NR3-NL3+1) THEN
-      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
+      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CNAME, NSCARC_NONE)
    ENDIF
 ENDIF
-#ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating INT3     array  ',A20,'(',I8,':',I8,' , ',I8,':',I8,' , ',I8,':',I8,')')
-#endif
+
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_INT, NSCARC_ALLOC_CREATE, 3, NINIT, NL1, NR1, NL2, NR2, NL3, NR3, CNAME, CSCOPE)
+
 END SUBROUTINE SCARC_ALLOCATE_INT3
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Allocate and initialize Logical array of dimension 1
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_ALLOCATE_LOG1(WORKSPACE, NL1, NR1, NINIT, CTEXT)
+SUBROUTINE SCARC_ALLOCATE_LOG1(WORKSPACE, NL1, NR1, NINIT, CNAME, CSCOPE)
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 LOGICAL, DIMENSION(:), ALLOCATABLE, INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NL1, NR1, NINIT
-CHARACTER(*), INTENT(IN) :: CTEXT
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+
 IF (.NOT.ALLOCATED(WORKSPACE)) THEN
    ALLOCATE (WORKSPACE(NL1:NR1), STAT=IERROR)
-   CALL CHKMEMERR ('SCARC_ALLOCATE_INT1', CTEXT, IERROR)
+   CALL CHKMEMERR ('SCARC_ALLOCATE_INT1', CNAME, IERROR)
    SELECT CASE (NINIT)
       CASE (NSCARC_INIT_TRUE)
          WORKSPACE = .TRUE.
       CASE (NSCARC_INIT_FALSE)
          WORKSPACE = .FALSE.
    END SELECT
-#ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1
-#endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1) THEN
-      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
+      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CNAME, NSCARC_NONE)
    ENDIF
 ENDIF
-#ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating LOG3     array  ',A20,'(',I8,':',I8,')')
-#endif
+
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_LOG, NSCARC_ALLOC_CREATE, 1, NINIT, NL1, NR1, -1, -1, -1, -1, CNAME, CSCOPE)
+
 END SUBROUTINE SCARC_ALLOCATE_LOG1
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Allocate and initialize Logical array of dimension 2
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_ALLOCATE_LOG2(WORKSPACE, NL1, NR1, NL2, NR2, NINIT, CTEXT)
+SUBROUTINE SCARC_ALLOCATE_LOG2(WORKSPACE, NL1, NR1, NL2, NR2, NINIT, CNAME, CSCOPE)
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 LOGICAL, DIMENSION(:,:), ALLOCATABLE, INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NL1, NR1, NL2, NR2, NINIT
-CHARACTER(*), INTENT(IN) :: CTEXT
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+
 IF (.NOT.ALLOCATED(WORKSPACE)) THEN
    ALLOCATE (WORKSPACE(NL1:NR1, NL2:NR2), STAT=IERROR)
-   CALL CHKMEMERR ('SCARC_ALLOCATE_INT3', CTEXT, IERROR)
+   CALL CHKMEMERR ('SCARC_ALLOCATE_INT3', CNAME, IERROR)
    SELECT CASE (NINIT)
       CASE (NSCARC_INIT_TRUE)
          WORKSPACE = .TRUE.
       CASE (NSCARC_INIT_FALSE)
          WORKSPACE = .FALSE.
    END SELECT
-#ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1, NL2, NR2
-#endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1 .OR. &
       SIZE(WORKSPACE,2) /= NR2-NL2+1) THEN
-      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
+      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CNAME, NSCARC_NONE)
    ENDIF
 ENDIF
-#ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating LOG3     array  ',A20,'(',I8,':',I8,' , ',I8,':',I8,')')
-#endif
+
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_LOG, NSCARC_ALLOC_CREATE, 2, NINIT, NL1, NR1, NL2, NR2, -1, -1, CNAME, CSCOPE)
+
 END SUBROUTINE SCARC_ALLOCATE_LOG2
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Allocate and initialize Logical array of dimension 3
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_ALLOCATE_LOG3(WORKSPACE, NL1, NR1, NL2, NR2, NL3, NR3, NINIT, CTEXT)
+SUBROUTINE SCARC_ALLOCATE_LOG3(WORKSPACE, NL1, NR1, NL2, NR2, NL3, NR3, NINIT, CNAME, CSCOPE)
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 LOGICAL, DIMENSION(:,:,:), ALLOCATABLE, INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NL1, NR1, NL2, NR2, NL3, NR3, NINIT
-CHARACTER(*), INTENT(IN) :: CTEXT
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+
 IF (.NOT.ALLOCATED(WORKSPACE)) THEN
    ALLOCATE (WORKSPACE(NL1:NR1, NL2:NR2, NL3:NR3), STAT=IERROR)
-   CALL CHKMEMERR ('SCARC_ALLOCATE_INT3', CTEXT, IERROR)
+   CALL CHKMEMERR ('SCARC_ALLOCATE_INT3', CNAME, IERROR)
    SELECT CASE (NINIT)
       CASE (NSCARC_INIT_TRUE)
          WORKSPACE = .TRUE.
       CASE (NSCARC_INIT_FALSE)
          WORKSPACE = .FALSE.
    END SELECT
-#ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1, NL2, NR2, NL3, NR3
-#endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1 .OR. &
       SIZE(WORKSPACE,2) /= NR2-NL2+1 .OR. &
       SIZE(WORKSPACE,3) /= NR3-NL3+1) THEN
-      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
+      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CNAME, NSCARC_NONE)
    ENDIF
 ENDIF
-#ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating LOG3     array  ',A20,'(',I8,':',I8,' , ',I8,':',I8,' , ',I8,':',I8,')')
-#endif
+
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_LOG, NSCARC_ALLOC_CREATE, 3, NINIT, NL1, NR1, NL2, NR2, NL3, NR3, CNAME, CSCOPE)
+
 END SUBROUTINE SCARC_ALLOCATE_LOG3
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Allocate and initialize real array of dimension 1
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_ALLOCATE_REAL1(WORKSPACE, NL1, NR1, NINIT, CTEXT)
+SUBROUTINE SCARC_ALLOCATE_REAL1(WORKSPACE, NL1, NR1, NINIT, CNAME, CSCOPE)
 USE PRECISION_PARAMETERS, ONLY: EB
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 REAL(EB), DIMENSION(:), ALLOCATABLE, INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NL1, NR1, NINIT
-CHARACTER(*), INTENT(IN) :: CTEXT
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 
 IF (.NOT.ALLOCATED(WORKSPACE)) THEN
 
    ALLOCATE (WORKSPACE(NL1:NR1), STAT=IERROR)
-   CALL CHKMEMERR ('SCARC_ALLOCATE_REAL1', CTEXT, IERROR)
+   CALL CHKMEMERR ('SCARC_ALLOCATE_REAL1', CNAME, IERROR)
 
    SELECT CASE (NINIT)
       CASE (NSCARC_INIT_UNDEF)
@@ -17216,34 +17498,33 @@ IF (.NOT.ALLOCATED(WORKSPACE)) THEN
          WORKSPACE = NSCARC_ZERO_REAL_EB
       CASE (NSCARC_INIT_ONE)
          WORKSPACE = NSCARC_ONE_REAL_EB
+      CASE (NSCARC_INIT_HUGE)
+         WORKSPACE = NSCARC_HUGE_REAL_EB
    END SELECT
 
-#ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1
-#endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1) &
-      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
+      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CNAME, NSCARC_NONE)
 ENDIF
 
-#ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating REAL1    array  ',A20,'(',I8,':',I8,')')
-#endif
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_REAL_EB, NSCARC_ALLOC_CREATE, 1, NINIT, NL1, NR1, -1, -1, -1, -1, CNAME, CSCOPE)
+
 END SUBROUTINE SCARC_ALLOCATE_REAL1
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Allocate and initialize real array of dimension 1
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_ALLOCATE_REAL1_FB(WORKSPACE, NL1, NR1, NINIT, CTEXT)
+SUBROUTINE SCARC_ALLOCATE_REAL1_FB(WORKSPACE, NL1, NR1, NINIT, CNAME, CSCOPE)
 USE PRECISION_PARAMETERS, ONLY: FB
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 REAL(FB), DIMENSION(:), ALLOCATABLE, INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NL1, NR1, NINIT
-CHARACTER(*), INTENT(IN) :: CTEXT
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+
 IF (.NOT.ALLOCATED(WORKSPACE)) THEN
    ALLOCATE (WORKSPACE(NL1:NR1), STAT=IERROR)
-   CALL CHKMEMERR ('SCARC_ALLOCATE_REAL1_FB', CTEXT, IERROR)
+   CALL CHKMEMERR ('SCARC_ALLOCATE_REAL1_FB', CNAME, IERROR)
    SELECT CASE (NINIT)
       CASE (NSCARC_INIT_UNDEF)
          WORKSPACE = NSCARC_UNDEF_REAL_FB
@@ -17251,32 +17532,32 @@ IF (.NOT.ALLOCATED(WORKSPACE)) THEN
          WORKSPACE = NSCARC_ZERO_REAL_FB
       CASE (NSCARC_INIT_ONE)
          WORKSPACE = NSCARC_ONE_REAL_FB
+      CASE (NSCARC_INIT_HUGE)
+         WORKSPACE = NSCARC_HUGE_REAL_EB
    END SELECT
-#ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1
-#endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1) &
-      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
+      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CNAME, NSCARC_NONE)
 ENDIF
-#ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating REAL1_FB array  ',A20,'(',I8,':',I8,')')
-#endif
+
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_REAL_FB, NSCARC_ALLOC_CREATE, 1, NINIT, NL1, NR1, -1, -1, -1, -1, CNAME, CSCOPE)
+
 END SUBROUTINE SCARC_ALLOCATE_REAL1_FB
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Allocate and initialize real array of dimension 2
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_ALLOCATE_REAL2(WORKSPACE, NL1, NR1, NL2, NR2, NINIT, CTEXT)
+SUBROUTINE SCARC_ALLOCATE_REAL2(WORKSPACE, NL1, NR1, NL2, NR2, NINIT, CNAME, CSCOPE)
 USE PRECISION_PARAMETERS, ONLY: EB
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 REAL(EB), DIMENSION(:,:), ALLOCATABLE, INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NL1, NR1, NL2, NR2, NINIT
-CHARACTER(*), INTENT(IN) :: CTEXT
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+
 IF (.NOT.ALLOCATED(WORKSPACE)) THEN
    ALLOCATE (WORKSPACE(NL1:NR1, NL2:NR2), STAT=IERROR)
-   CALL CHKMEMERR ('SCARC_ALLOCATE_REAL2', CTEXT, IERROR)
+   CALL CHKMEMERR ('SCARC_ALLOCATE_REAL2', CNAME, IERROR)
    SELECT CASE (NINIT)
       CASE (NSCARC_INIT_UNDEF)
          WORKSPACE = NSCARC_UNDEF_REAL_EB
@@ -17284,34 +17565,34 @@ IF (.NOT.ALLOCATED(WORKSPACE)) THEN
          WORKSPACE = NSCARC_ZERO_REAL_EB
       CASE (NSCARC_INIT_ONE)
          WORKSPACE = NSCARC_ONE_REAL_EB
+      CASE (NSCARC_INIT_HUGE)
+         WORKSPACE = NSCARC_HUGE_REAL_EB
    END SELECT
-#ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1, NL2, NR2
-#endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1 .OR. &
       SIZE(WORKSPACE,2) /= NR2-NL2+1) THEN
-      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
+      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CNAME, NSCARC_NONE)
    ENDIF
 ENDIF
-#ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating REAL2    array  ',A20,'(',I8,':',I8,' , ',I8,':',I8,')')
-#endif
+
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_REAL_EB, NSCARC_ALLOC_CREATE, 2, NINIT, NL1, NR1, NL2, NR2, -1, -1, CNAME, CSCOPE)
+
 END SUBROUTINE SCARC_ALLOCATE_REAL2
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Allocate and initialize real array of dimension 3
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_ALLOCATE_REAL3(WORKSPACE, NL1, NR1, NL2, NR2, NL3, NR3, NINIT, CTEXT)
+SUBROUTINE SCARC_ALLOCATE_REAL3(WORKSPACE, NL1, NR1, NL2, NR2, NL3, NR3, NINIT, CNAME, CSCOPE)
 USE PRECISION_PARAMETERS, ONLY: EB
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 REAL(EB), DIMENSION(:,:,:), ALLOCATABLE, INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NL1, NR1, NL2, NR2, NL3, NR3, NINIT
-CHARACTER(*), INTENT(IN) :: CTEXT
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+
 IF (.NOT.ALLOCATED(WORKSPACE)) THEN
    ALLOCATE (WORKSPACE(NL1:NR1, NL2:NR2, NL3:NR3), STAT=IERROR)
-   CALL CHKMEMERR ('SCARC_ALLOCATE_REAL3', CTEXT, IERROR)
+   CALL CHKMEMERR ('SCARC_ALLOCATE_REAL3', CNAME, IERROR)
    SELECT CASE (NINIT)
       CASE (NSCARC_INIT_UNDEF)
          WORKSPACE = NSCARC_UNDEF_REAL_EB
@@ -17319,57 +17600,260 @@ IF (.NOT.ALLOCATED(WORKSPACE)) THEN
          WORKSPACE = NSCARC_ZERO_REAL_EB
       CASE (NSCARC_INIT_ONE)
          WORKSPACE = NSCARC_ONE_REAL_EB
+      CASE (NSCARC_INIT_HUGE)
+         WORKSPACE = NSCARC_HUGE_REAL_EB
    END SELECT
-#ifdef WITH_SCARC_VERBOSE
-   WRITE(MSG%LU_VERBOSE,1000) CTEXT, NL1, NR1, NL2, NR2, NL3, NR3
-#endif
 ELSE
    IF (SIZE(WORKSPACE,1) /= NR1-NL1+1 .OR. &
       SIZE(WORKSPACE,2) /= NR2-NL2+1 .OR. &
       SIZE(WORKSPACE,3) /= NR3-NL3+1) THEN
-      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CTEXT, NSCARC_NONE)
+      CALL SCARC_SHUTDOWN(NSCARC_ERROR_VECTOR_LENGTH, CNAME, NSCARC_NONE)
    ENDIF
 ENDIF
-#ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating REAL3    array  ',A20,'(',I8,':',I8,' , ',I8,':',I8,' , ',I8,':',I8,')')
-#endif
+
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_REAL_EB, NSCARC_ALLOC_CREATE, 3, NINIT, NL1, NR1, NL2, NR2, NL3, NR3, CNAME, CSCOPE)
+
 END SUBROUTINE SCARC_ALLOCATE_REAL3
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Deallocate one-dimensional integer vector 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DEALLOCATE_INT1(WORKSPACE, CNAME, CSCOPE)
+INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(INOUT) :: WORKSPACE
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+DEALLOCATE(WORKSPACE) 
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_INT, NSCARC_ALLOC_REMOVE, 1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
+END SUBROUTINE SCARC_DEALLOCATE_INT1
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Deallocate two-dimensional integer vector 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DEALLOCATE_INT2(WORKSPACE, CNAME, CSCOPE)
+INTEGER, ALLOCATABLE, DIMENSION(:,:), INTENT(INOUT) :: WORKSPACE
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+DEALLOCATE(WORKSPACE) 
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_INT, NSCARC_ALLOC_REMOVE, 2, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
+END SUBROUTINE SCARC_DEALLOCATE_INT2
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Deallocate three-dimensional integer vector 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DEALLOCATE_INT3(WORKSPACE, CNAME, CSCOPE)
+INTEGER, ALLOCATABLE, DIMENSION(:,:,:), INTENT(INOUT) :: WORKSPACE
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+DEALLOCATE(WORKSPACE) 
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_INT, NSCARC_ALLOC_REMOVE, 3, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
+END SUBROUTINE SCARC_DEALLOCATE_INT3
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Deallocate one-dimensional logical vector 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DEALLOCATE_LOG1(WORKSPACE, CNAME, CSCOPE)
+LOGICAL, ALLOCATABLE, DIMENSION(:), INTENT(INOUT) :: WORKSPACE
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+DEALLOCATE(WORKSPACE) 
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_LOG, NSCARC_ALLOC_REMOVE, 1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
+END SUBROUTINE SCARC_DEALLOCATE_LOG1
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Deallocate two-dimensional logical vector 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DEALLOCATE_LOG2(WORKSPACE, CNAME, CSCOPE)
+LOGICAL, ALLOCATABLE, DIMENSION(:,:), INTENT(INOUT) :: WORKSPACE
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+DEALLOCATE(WORKSPACE) 
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_LOG, NSCARC_ALLOC_REMOVE, 2, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
+END SUBROUTINE SCARC_DEALLOCATE_LOG2
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Deallocate three-dimensional logical vector 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DEALLOCATE_LOG3(WORKSPACE, CNAME, CSCOPE)
+LOGICAL, ALLOCATABLE, DIMENSION(:,:,:), INTENT(INOUT) :: WORKSPACE
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+DEALLOCATE(WORKSPACE) 
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_LOG, NSCARC_ALLOC_REMOVE, 3, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
+END SUBROUTINE SCARC_DEALLOCATE_LOG3
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Deallocate one-dimensional double precision vector 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DEALLOCATE_REAL1(WORKSPACE, CNAME, CSCOPE)
+REAL(EB), ALLOCATABLE, DIMENSION(:), INTENT(INOUT) :: WORKSPACE
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+DEALLOCATE(WORKSPACE) 
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_REAL_EB, NSCARC_ALLOC_REMOVE, 1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
+END SUBROUTINE SCARC_DEALLOCATE_REAL1
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Deallocate two-dimensional double precision vector 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DEALLOCATE_REAL2(WORKSPACE, CNAME, CSCOPE)
+REAL(EB), ALLOCATABLE, DIMENSION(:,:), INTENT(INOUT) :: WORKSPACE
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+DEALLOCATE(WORKSPACE) 
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_REAL_EB, NSCARC_ALLOC_REMOVE, 2, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
+END SUBROUTINE SCARC_DEALLOCATE_REAL2
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Deallocate three-dimensional double precision vector 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DEALLOCATE_REAL3(WORKSPACE, CNAME, CSCOPE)
+REAL(EB), ALLOCATABLE, DIMENSION(:,:,:), INTENT(INOUT) :: WORKSPACE
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+DEALLOCATE(WORKSPACE) 
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_REAL_EB, NSCARC_ALLOC_REMOVE, 3, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
+END SUBROUTINE SCARC_DEALLOCATE_REAL3
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Deallocate one-dimensional single precision vector 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DEALLOCATE_REAL1_FB(WORKSPACE, CNAME, CSCOPE)
+REAL(FB), ALLOCATABLE, DIMENSION(:), INTENT(INOUT) :: WORKSPACE
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+DEALLOCATE(WORKSPACE) 
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_REAL_EB, NSCARC_ALLOC_REMOVE, 1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
+END SUBROUTINE SCARC_DEALLOCATE_REAL1_FB
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Deallocate one-dimensional single precision vector 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DEALLOCATE_REAL2_FB(WORKSPACE, CNAME, CSCOPE)
+REAL(FB), ALLOCATABLE, DIMENSION(:,:), INTENT(INOUT) :: WORKSPACE
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+DEALLOCATE(WORKSPACE) 
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_REAL_EB, NSCARC_ALLOC_REMOVE, 2, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
+END SUBROUTINE SCARC_DEALLOCATE_REAL2_FB
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Deallocate one-dimensional single precision vector 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DEALLOCATE_REAL3_FB(WORKSPACE, CNAME, CSCOPE)
+REAL(FB), ALLOCATABLE, DIMENSION(:,:,:), INTENT(INOUT) :: WORKSPACE
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+DEALLOCATE(WORKSPACE) 
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_REAL_EB, NSCARC_ALLOC_REMOVE, 3, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
+END SUBROUTINE SCARC_DEALLOCATE_REAL3_FB
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Resize one-dimensional integer vector to requested bounds
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_RESIZE_INT1(WORKSPACE, NL1, NR1, CNAME, CSCOPE)
+INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(INOUT) :: WORKSPACE
+INTEGER, INTENT(IN) :: NL1, NR1
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+INTEGER, ALLOCATABLE, DIMENSION(:) :: AUX
+INTEGER :: NLC1, NRC1, NSC, NS
+
+NLC1 = LBOUND(WORKSPACE, DIM=1)
+NRC1 = UBOUND(WORKSPACE, DIM=1)
+
+IF (NL1 == NLC1 .AND. NR1 == NRC1) THEN
+   RETURN
+ELSE
+
+   NSC = NRC1 - NLC1 + 1
+   NS  = NR1  - NL1  + 1
+
+   ALLOCATE(AUX(1:NSC), STAT = IERROR)                        ! don't track it in memory management, only auxiliary
+   AUX(1:NSC) = WORKSPACE(NLC1:NRC1)
+   CALL SCARC_DEALLOCATE_INT1 (WORKSPACE, CNAME, CSCOPE)
+
+   CALL SCARC_ALLOCATE_INT1(WORKSPACE, NL1, NR1, NSCARC_INIT_NONE, CNAME, CSCOPE)
+
+   IF (NS < NSC) THEN
+      WORKSPACE(NL1:NL1 + NS) = AUX(1:NS)
+   ELSE
+      WORKSPACE(NL1:NL1 + NSC) = AUX(1:NSC)
+   ENDIF
+   DEALLOCATE(AUX)
+
+ENDIF
+
+END SUBROUTINE SCARC_RESIZE_INT1
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Resize two-dimensional integer vector to requested bounds
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_RESIZE_INT2(WORKSPACE, NL1, NR1, NL2, NR2, CNAME, CSCOPE)
+INTEGER, ALLOCATABLE, DIMENSION(:,:), INTENT(INOUT) :: WORKSPACE
+INTEGER, INTENT(IN) :: NL1, NR1, NL2, NR2
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
+INTEGER, ALLOCATABLE, DIMENSION(:,:) :: AUX
+INTEGER :: NLC1, NRC1, NSC1, NS1
+INTEGER :: NLC2, NRC2, NSC2, NS2
+
+NLC1 = LBOUND(WORKSPACE, DIM=1)                ! current left  bound for dimension 1
+NRC1 = UBOUND(WORKSPACE, DIM=1)                ! current right bound for dimension 1
+
+NLC2 = LBOUND(WORKSPACE, DIM=2)                ! current left  bound for dimension 2
+NRC2 = UBOUND(WORKSPACE, DIM=2)                ! current right bound for dimension 2
+
+IF (NL1 == NLC1 .AND. NR1 == NRC1 .AND. &
+    NL2 == NLC2 .AND. NR2 == NRC2) THEN
+   RETURN
+ELSE
+
+   NSC1 = NRC1 - NLC1 + 1
+   NSC2 = NRC2 - NLC2 + 1
+
+   NS1 = NR1 - NL1 + 1
+   NS2 = NR2 - NL2 + 1
+
+   ALLOCATE(AUX(1: NSC1, 1: NSC2), STAT = IERROR)                     ! don't track it in memory management, only auxiliary
+   AUX(1:NSC1, 1:NSC2) = WORKSPACE(NLC1:NRC1, NLC2:NRC2)
+   CALL SCARC_DEALLOCATE_INT2(WORKSPACE, CNAME, CSCOPE)
+
+   CALL SCARC_ALLOCATE_INT2(WORKSPACE, NL1, NR1, NL2, NR2, NSCARC_INIT_NONE, CNAME, CSCOPE)
+
+   IF (NS1 < NSC1 .AND. NS2 < NSC2) THEN
+      WORKSPACE(NL1:NL1+NS1, NL2:NL2+NS2) = AUX(1:NS1, 1:NS2)
+   ELSE IF (NS1 < NSC1 .AND. NS2 > NSC2) THEN
+      WORKSPACE(NL1:NL1+NS1, NL2:NL2+NSC2) = AUX(1:NS1, 1:NSC2)
+   ELSE IF (NS1 > NSC1 .AND. NS2 < NSC2) THEN
+      WORKSPACE(NL1:NL1+NSC1, NL2:NL2+NS2) = AUX(1:NSC1, 1:NS2)
+   ELSE
+      WORKSPACE(NL1:NL1+NSC1, NL2:NL2+NSC2) = AUX(1:NSC1, 1:NSC2)
+   ENDIF
+
+   DEALLOCATE(AUX)
+
+ENDIF
+
+END SUBROUTINE SCARC_RESIZE_INT2
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Reduce size of integer vector
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_REDUCE_INT1(WORKSPACE, NSIZE, CNAME)
+SUBROUTINE SCARC_REDUCE_INT1(WORKSPACE, NSIZE, CNAME, CSCOPE)
 INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NSIZE
-CHARACTER(*), INTENT(IN) :: CNAME
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 INTEGER, ALLOCATABLE, DIMENSION(:) :: AUX
 
 IF (NSIZE == SIZE(WORKSPACE)) THEN
    RETURN                                  ! vector already has requested size
 ELSE IF (NSIZE < SIZE(WORKSPACE)) THEN
 
-   CALL SCARC_ALLOCATE_INT1(AUX, 1, NSIZE, NSCARC_INIT_NONE, TRIM(CNAME))
+   ALLOCATE(AUX(1: NSIZE), STAT = IERROR)
    AUX(1:NSIZE) = WORKSPACE(1:NSIZE)
-   DEALLOCATE(WORKSPACE)
+   CALL SCARC_DEALLOCATE_INT1 (WORKSPACE, CNAME, CSCOPE)
 
-   CALL SCARC_ALLOCATE_INT1(WORKSPACE, 1, NSIZE, NSCARC_INIT_NONE, TRIM(CNAME))
+   CALL SCARC_ALLOCATE_INT1(WORKSPACE, 1, NSIZE, NSCARC_INIT_NONE, CNAME, CSCOPE)
    WORKSPACE(1:NSIZE) = AUX(1:NSIZE)
    DEALLOCATE(AUX)
 ENDIF
 
-#ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,1000) CNAME, NSIZE
-1000 FORMAT('Resizing   integer vector ',A20,' to size ',I8)
-#endif
 END SUBROUTINE SCARC_REDUCE_INT1
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Reduce size of integer array with dimension 2
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_REDUCE_INT2(WORKSPACE, NSIZE1, NSIZE2, CNAME)
+SUBROUTINE SCARC_REDUCE_INT2(WORKSPACE, NSIZE1, NSIZE2, CNAME, CSCOPE)
 INTEGER, ALLOCATABLE, DIMENSION(:,:), INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NSIZE1, NSIZE2
-CHARACTER(*), INTENT(IN) :: CNAME
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 INTEGER :: NWORK1, NWORK2, I1, I2
 INTEGER, ALLOCATABLE, DIMENSION(:,:) :: AUX
 
@@ -17379,15 +17863,15 @@ IF (NSIZE1 == NWORK1 .AND. NSIZE2 == NWORK2 ) THEN
    RETURN                                  ! vector already has requested size
 ELSE IF (NSIZE1 <= NWORK1 .AND. NSIZE2 <= NWORK2) THEN
 
-   CALL SCARC_ALLOCATE_INT2(AUX, 1, NWORK1, 1, NWORK2, NSCARC_INIT_NONE, TRIM(CNAME))
+   ALLOCATE(AUX(1: NWORK1, 1: NWORK2), STAT = IERROR) 
    DO I2 = 1, NWORK2
       DO I1 = 1, NWORK1
          AUX(I1, I2) = WORKSPACE(I1, I2)
       ENDDO
    ENDDO
-   DEALLOCATE(WORKSPACE)
+   CALL SCARC_DEALLOCATE_INT2 (WORKSPACE, CNAME, CSCOPE)
 
-   CALL SCARC_ALLOCATE_INT2(WORKSPACE, 1, NSIZE1, 1, NSIZE2, NSCARC_INIT_NONE, TRIM(CNAME))
+   CALL SCARC_ALLOCATE_INT2(WORKSPACE, 1, NSIZE1, 1, NSIZE2, NSCARC_INIT_NONE, TRIM(CNAME), CSCOPE)
    DO I2 = 1, NSIZE2
       DO I1 = 1, NSIZE1
          WORKSPACE(I1, I2) = AUX(I1, I2)
@@ -17398,64 +17882,52 @@ ELSE
    WRITE(*,'(A,2I6,A,2I6)') 'Error in SCARC_REDUCE_INT2, orig ', NWORK1, NWORK2,': new ',NSIZE1, NSIZE2
 ENDIF
 
-#ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,1000) CNAME, NSIZE1, NSIZE2
-1000 FORMAT('Resizing  array ',A20,' to size ',I8, 'x', I8)
-#endif
 END SUBROUTINE SCARC_REDUCE_INT2
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Expand size of integer vector
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_EXPAND_INT1(WORKSPACE, WORKSPACE_ADD, NSIZE, NSIZE_ADD, CNAME)
+SUBROUTINE SCARC_EXPAND_INT1(WORKSPACE, WORKSPACE_ADD, NSIZE, NSIZE_ADD, CNAME, CSCOPE)
 INTEGER, ALLOCATABLE, DIMENSION(:), INTENT(INOUT) :: WORKSPACE, WORKSPACE_ADD
 INTEGER, INTENT(IN) :: NSIZE, NSIZE_ADD
-CHARACTER(*), INTENT(IN) :: CNAME
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 INTEGER, ALLOCATABLE, DIMENSION(:) :: AUX
 
-CALL SCARC_ALLOCATE_INT1(AUX, 1, NSIZE + NSIZE_ADD, NSCARC_INIT_NONE, TRIM(CNAME))
+ALLOCATE(AUX(1: NSIZE + NSIZE_ADD), STAT = IERROR)
 AUX(1:NSIZE) = WORKSPACE(1:NSIZE)
 AUX(NSIZE+1:NSIZE+NSIZE_ADD) = WORKSPACE_ADD(NSIZE+1:NSIZE+NSIZE_ADD)
-DEALLOCATE(WORKSPACE)
+CALL SCARC_DEALLOCATE_INT1 (WORKSPACE, CNAME, CSCOPE)
 
-CALL SCARC_ALLOCATE_INT1(WORKSPACE, 1, NSIZE + NSIZE_ADD, NSCARC_INIT_NONE, TRIM(CNAME))
+CALL SCARC_ALLOCATE_INT1(WORKSPACE, 1, NSIZE + NSIZE_ADD, NSCARC_INIT_NONE, TRIM(CNAME), CSCOPE)
 WORKSPACE(1:NSIZE+NSIZE_ADD) = AUX(1:NSIZE+NSIZE_ADD)
 DEALLOCATE(AUX)
 
-#ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,1000) CNAME, NSIZE + NSIZE_ADD
-1000 FORMAT('Resizing   integer vector ',A20,' to size ',I8)
-#endif
 END SUBROUTINE SCARC_EXPAND_INT1
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Reduce size of integer vector
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_REDUCE_REAL1(WORKSPACE, NSIZE, CNAME)
+SUBROUTINE SCARC_REDUCE_REAL1(WORKSPACE, NSIZE, CNAME, CSCOPE)
 REAL(EB), ALLOCATABLE, DIMENSION(:), INTENT(INOUT) :: WORKSPACE
 INTEGER, INTENT(IN) :: NSIZE
-CHARACTER(*), INTENT(IN) :: CNAME
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 REAL(EB), ALLOCATABLE, DIMENSION(:) :: AUX
 
 IF (NSIZE == SIZE(WORKSPACE)) THEN
    RETURN                                  ! vector already has requested size
 ELSE IF (NSIZE < SIZE(WORKSPACE)) THEN
 
-   CALL SCARC_ALLOCATE_REAL1(AUX, 1, NSIZE, NSCARC_INIT_NONE, TRIM(CNAME))
+   ALLOCATE(AUX(1: NSIZE), STAT = IERROR)
    AUX(1:NSIZE) = WORKSPACE(1:NSIZE)
-   DEALLOCATE(WORKSPACE)
+   CALL SCARC_DEALLOCATE_REAL1 (WORKSPACE, CNAME, CSCOPE)
 
-   CALL SCARC_ALLOCATE_REAL1(WORKSPACE, 1, NSIZE, NSCARC_INIT_NONE, TRIM(CNAME))
+   CALL SCARC_ALLOCATE_REAL1(WORKSPACE, 1, NSIZE, NSCARC_INIT_NONE, TRIM(CNAME), CSCOPE)
    WORKSPACE(1:NSIZE) = AUX(1:NSIZE)
    DEALLOCATE(AUX)
 ENDIF
 
-#ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,1000) CNAME, NSIZE
-1000 FORMAT('Resizing   integer vector ',A20,' to size ',I8)
-#endif
 END SUBROUTINE SCARC_REDUCE_REAL1
 
 
@@ -17466,48 +17938,41 @@ END SUBROUTINE SCARC_REDUCE_REAL1
 !    NTYPE == NSCARC_MATRIX_LIGHT   :  ALLOCATE VAL, COL 
 !    NTYPE == NSCARC_MATRIX_MINIMAL :  ALLOCATE COL 
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_ALLOCATE_CMATRIX(A, NL, NPREC, NTYPE, CNAME)
+SUBROUTINE SCARC_ALLOCATE_CMATRIX(A, NL, NPREC, NTYPE, CNAME, CSCOPE)
 TYPE (SCARC_MATRIX_COMPACT_TYPE), INTENT(INOUT) :: A
 INTEGER, INTENT(IN) :: NPREC, NTYPE, NL
-CHARACTER(*), INTENT(IN) :: CNAME
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 INTEGER :: NDUMMY
 
 A%CNAME = TRIM(CNAME)
 A%NTYPE = NTYPE
-#ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,1000) CNAME, NL
-#endif
 NDUMMY = NL
 
-CALL SCARC_ALLOCATE_INT1(A%ROW, 1, A%N_ROW, NSCARC_INIT_ZERO, 'A%ROW')
-CALL SCARC_ALLOCATE_INT1(A%COL, 1, A%N_VAL, NSCARC_INIT_ZERO, 'A%COL')
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_CMATRIX, NSCARC_ALLOC_CREATE, -1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
+
+CALL SCARC_ALLOCATE_INT1(A%ROW, 1, A%N_ROW, NSCARC_INIT_ZERO, 'A%ROW', CSCOPE)
+CALL SCARC_ALLOCATE_INT1(A%COL, 1, A%N_VAL, NSCARC_INIT_ZERO, 'A%COL', CSCOPE)
 
 IF (NTYPE == NSCARC_MATRIX_LIGHT .OR. NTYPE == NSCARC_MATRIX_FULL) &
-   CALL SCARC_ALLOCATE_INT1(A%COLG, 1, A%N_VAL, NSCARC_INIT_ZERO, 'A%COLG')
+   CALL SCARC_ALLOCATE_INT1(A%COLG, 1, A%N_VAL, NSCARC_INIT_ZERO, 'A%COLG', CSCOPE)
 
 IF (NTYPE /= NSCARC_MATRIX_MINIMAL) THEN
    IF (NPREC == NSCARC_PRECISION_SINGLE) THEN
-      CALL SCARC_ALLOCATE_REAL1_FB(A%VAL_FB, 1, A%N_VAL, NSCARC_INIT_ZERO, 'A%VAL_FB')
+      CALL SCARC_ALLOCATE_REAL1_FB(A%VAL_FB, 1, A%N_VAL, NSCARC_INIT_ZERO, 'A%VAL_FB', CSCOPE)
    ELSE
-      CALL SCARC_ALLOCATE_REAL1(A%VAL, 1, A%N_VAL, NSCARC_INIT_ZERO, 'A%VAL')
+      CALL SCARC_ALLOCATE_REAL1(A%VAL, 1, A%N_VAL, NSCARC_INIT_ZERO, 'A%VAL', CSCOPE)
    ENDIF
 ENDIF
 
-#ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Allocating COMPACT  matrix ',A20,' on level ',I6)
-#endif
 END SUBROUTINE SCARC_ALLOCATE_CMATRIX
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Dellocate matrix in compact storage format
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DEALLOCATE_CMATRIX(A, CNAME)
+SUBROUTINE SCARC_DEALLOCATE_CMATRIX(A, CNAME, CSCOPE)
 TYPE (SCARC_MATRIX_COMPACT_TYPE), INTENT(INOUT) :: A
-CHARACTER(*), INTENT(IN) :: CNAME
-#ifndef WITH_SCARC_VERBOSE
-CHARACTER(60) :: CDUMMY
-#endif
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 
 A%N_STENCIL   = 0
 A%N_CONDENSED = 0
@@ -17516,27 +17981,23 @@ A%N_VAL       = 0
 A%STENCIL     = 0
 A%POS         = 0
 
-IF (ALLOCATED(A%VAL))   DEALLOCATE(A%VAL)
-IF (ALLOCATED(A%ROW))   DEALLOCATE(A%ROW)
-IF (ALLOCATED(A%COL))   DEALLOCATE(A%COL)
-IF (ALLOCATED(A%COLG))  DEALLOCATE(A%COLG)
-IF (ALLOCATED(A%RELAX)) DEALLOCATE(A%RELAX)
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_CMATRIX, NSCARC_ALLOC_REMOVE, -1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 
-#ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,1000) CNAME
-1000 FORMAT('Removing   COMPACT matrix ', A20)
-#else
-CDUMMY = CNAME 
-#endif
+IF (ALLOCATED(A%VAL))   CALL SCARC_DEALLOCATE_REAL1 (A%VAL, 'A%VAL', CSCOPE)
+IF (ALLOCATED(A%ROW))   CALL SCARC_DEALLOCATE_INT1 (A%ROW, 'A%ROW', CSCOPE)
+IF (ALLOCATED(A%COL))   CALL SCARC_DEALLOCATE_INT1 (A%COL, 'A%COL', CSCOPE)
+IF (ALLOCATED(A%COLG))  CALL SCARC_DEALLOCATE_INT1 (A%COLG, 'A%COLG', CSCOPE)
+IF (ALLOCATED(A%RELAX)) CALL SCARC_DEALLOCATE_REAL1 (A%RELAX, 'A%RELAX', CSCOPE)
+
 END SUBROUTINE SCARC_DEALLOCATE_CMATRIX
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Reduce size of matrix in compact storage format
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_REDUCE_CMATRIX(A, CNAME)
+SUBROUTINE SCARC_REDUCE_CMATRIX(A, CNAME, CSCOPE)
 TYPE (SCARC_MATRIX_COMPACT_TYPE), INTENT(INOUT) :: A
-CHARACTER(*), INTENT(IN) :: CNAME
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 REAL(EB), ALLOCATABLE, DIMENSION(:) :: VAL
 INTEGER , ALLOCATABLE, DIMENSION(:) :: COL, COLG
 INTEGER :: NVAL_CURRENT, NVAL_ALLOCATED
@@ -17544,9 +18005,7 @@ INTEGER :: NVAL_CURRENT, NVAL_ALLOCATED
 NVAL_CURRENT = A%ROW(A%N_ROW)
 NVAL_ALLOCATED = SIZE(A%COL)
 
-#ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE, 1000, ADVANCE='NO') CNAME, NVAL_ALLOCATED, NVAL_CURRENT, A%N_ROW
-#endif
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_CMATRIX, NSCARC_ALLOC_RESIZE, -1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 
 ! If the matrix already has the desired size or specified values are to small, return or shutdown
 IF (NVAL_ALLOCATED == NVAL_CURRENT) THEN
@@ -17568,27 +18027,27 @@ IF (NVAL_CURRENT < SIZE(A%COL)) THEN
    WRITE(MSG%LU_VERBOSE,*) 
 #endif
 
-   CALL SCARC_ALLOCATE_INT1(COL,   1, NVAL_CURRENT, NSCARC_INIT_NONE, 'COL')
+   ALLOCATE(COL(1: NVAL_CURRENT), STAT = IERROR)
    COL(1:NVAL_CURRENT) = A%COL(1:NVAL_CURRENT)
-   DEALLOCATE(A%COL)
-   CALL SCARC_ALLOCATE_INT1(A%COL, 1, NVAL_CURRENT, NSCARC_INIT_NONE, 'A%COL')
+   CALL SCARC_DEALLOCATE_INT1 (A%COL, 'A%COL', CSCOPE)
+   CALL SCARC_ALLOCATE_INT1(A%COL, 1, NVAL_CURRENT, NSCARC_INIT_NONE, 'A%COL', CSCOPE)
    A%COL(1:NVAL_CURRENT) = COL(1:NVAL_CURRENT)
    DEALLOCATE(COL)
 
    IF (ALLOCATED(A%COLG)) THEN
-      CALL SCARC_ALLOCATE_INT1(COLG,   1, NVAL_CURRENT, NSCARC_INIT_NONE, 'COLG')
+      ALLOCATE(COLG(1: NVAL_CURRENT), STAT = IERROR)
       COLG(1:NVAL_CURRENT) = A%COLG(1:NVAL_CURRENT)
-      DEALLOCATE(A%COLG)
-      CALL SCARC_ALLOCATE_INT1(A%COLG, 1, NVAL_CURRENT, NSCARC_INIT_NONE, 'A%COLG')
+      CALL SCARC_DEALLOCATE_INT1 (A%COLG, 'A%COLG',CSCOPE)
+      CALL SCARC_ALLOCATE_INT1(A%COLG, 1, NVAL_CURRENT, NSCARC_INIT_NONE, 'A%COLG', CSCOPE)
       A%COLG(1:NVAL_CURRENT) = COLG(1:NVAL_CURRENT)
       DEALLOCATE(COLG)
    ENDIF
 
    IF (A%NTYPE /= NSCARC_MATRIX_MINIMAL) THEN
-      CALL SCARC_ALLOCATE_REAL1(VAL,   1, NVAL_CURRENT, NSCARC_INIT_NONE, 'VAL')
+      ALLOCATE(VAL(1: NVAL_CURRENT), STAT = IERROR)
       VAL(1:NVAL_CURRENT) = A%VAL(1:NVAL_CURRENT)
-      DEALLOCATE(A%VAL)
-      CALL SCARC_ALLOCATE_REAL1(A%VAL, 1, NVAL_CURRENT, NSCARC_INIT_NONE, 'A%VAL')
+      CALL SCARC_DEALLOCATE_REAL1 (A%VAL, 'A%VAL', CSCOPE)
+      CALL SCARC_ALLOCATE_REAL1(A%VAL, 1, NVAL_CURRENT, NSCARC_INIT_NONE, 'A%VAL', CSCOPE)
       A%VAL(1:NVAL_CURRENT) = VAL(1:NVAL_CURRENT)
       DEALLOCATE(VAL)
    ENDIF
@@ -17596,50 +18055,48 @@ IF (NVAL_CURRENT < SIZE(A%COL)) THEN
 
 ENDIF
 
-#ifdef WITH_SCARC_VERBOSE
-1000 FORMAT('Reducing compact matrix',A20,' from ', I8,' to ', I8, ': N_ROW = ', I8)
-#endif
 END SUBROUTINE SCARC_REDUCE_CMATRIX
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Allocate matrix in bandwise storage format
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_ALLOCATE_BMATRIX(A, NL, CNAME)
+SUBROUTINE SCARC_ALLOCATE_BMATRIX(A, NL, CNAME, CSCOPE)
 TYPE (SCARC_MATRIX_BANDWISE_TYPE), INTENT(INOUT) :: A
-CHARACTER(*), INTENT(IN) :: CNAME
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 INTEGER, INTENT(IN) :: NL
 CHARACTER(40) :: CINFO
 
 A%CNAME = CNAME
 
-WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.AUX'
-CALL SCARC_ALLOCATE_REAL1(A%AUX, 1, A%N_DIAG, NSCARC_INIT_ZERO, CINFO)
-WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.VAL'
-CALL SCARC_ALLOCATE_REAL2(A%VAL, 1, A%N_DIAG, 1, A%N_STENCIL, NSCARC_INIT_ZERO, CINFO)
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_BMATRIX, NSCARC_ALLOC_CREATE, -1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 
-#ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,1000) CNAME, A%N_VAL, A%N_DIAG
-1000 FORMAT('Allocating BANDED  matrix ',A20,' with NA=',I8,' and NDIAG=',I8)
-#endif
+WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.AUX'
+CALL SCARC_ALLOCATE_REAL1(A%AUX, 1, A%N_DIAG, NSCARC_INIT_ZERO, CINFO, CSCOPE)
+WRITE(CINFO,'(A,A,I2.2,A)') TRIM(CNAME),'_LEV',NL,'.VAL'
+CALL SCARC_ALLOCATE_REAL2(A%VAL, 1, A%N_DIAG, 1, A%N_STENCIL, NSCARC_INIT_ZERO, CINFO, CSCOPE)
+
 END SUBROUTINE SCARC_ALLOCATE_BMATRIX
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Deallocate matrix in bandwise storage format
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DEALLOCATE_BMATRIX(A)
+SUBROUTINE SCARC_DEALLOCATE_BMATRIX(A, CNAME, CSCOPE)
 TYPE (SCARC_MATRIX_BANDWISE_TYPE), INTENT(INOUT) :: A
+CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 
 A%N_STENCIL   = 0
 A%N_CONDENSED = 0
 A%N_VAL       = 0
 A%N_DIAG      = 0
 
-IF (ALLOCATED(A%AUX))    DEALLOCATE(A%AUX)
-IF (ALLOCATED(A%VAL))    DEALLOCATE(A%VAL)
-IF (ALLOCATED(A%RELAX))  DEALLOCATE(A%RELAX)
-IF (ALLOCATED(A%RELAXD)) DEALLOCATE(A%RELAXD)
+CALL SCARC_UPDATE_MEMORY(NSCARC_ALLOC_BMATRIX, NSCARC_ALLOC_REMOVE, -1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
+
+IF (ALLOCATED(A%AUX))    CALL SCARC_DEALLOCATE_REAL1 (A%AUX, 'A%AUX', CSCOPE)
+IF (ALLOCATED(A%VAL))    CALL SCARC_DEALLOCATE_REAL2 (A%VAL, 'A%VAL', CSCOPE)
+IF (ALLOCATED(A%RELAX))  CALL SCARC_DEALLOCATE_REAL2 (A%RELAX, 'A%RELAX', CSCOPE)
+IF (ALLOCATED(A%RELAXD)) CALL SCARC_DEALLOCATE_REAL1 (A%RELAXD, 'A%RELAXD', CSCOPE)
 A%STENCIL = 0
 
 A%OFFSET = 0
@@ -17647,10 +18104,6 @@ A%LENGTH = 0
 A%SOURCE = 0
 A%TARGET = 0
 
-#ifdef WITH_SCARC_VERBOSE
-WRITE(MSG%LU_VERBOSE,1000)
-1000 FORMAT('Removing   COMPACT matrix ')
-#endif
 END SUBROUTINE SCARC_DEALLOCATE_BMATRIX
 
 
@@ -17813,6 +18266,8 @@ INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL, IC, IW, IP
 LOGICAL, DIMENSION(:), ALLOCATABLE :: IS_PROCESSED
 
+CROUTINE = 'SCARC_SETUP_MGM'
+
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    DO NL = NLMIN, NLMAX
 
@@ -17867,7 +18322,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          IP = IP + 1
       ENDDO
 
-      DEALLOCATE (IS_PROCESSED)
+      CALL SCARC_DEALLOCATE_LOG1 (IS_PROCESSED, 'IS_PROCESSED', CROUTINE)
 
       CALL SCARC_SETUP_MGM_LU(NM, NL)
       CALL SCARC_METHOD_MGM_LU(NM, NL)
@@ -18281,7 +18736,7 @@ END SUBROUTINE SCARC_DUMP_QUANTITY
 !> \brief Debugging version only: Print out debug information for integer vector
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_INT1(ARR, I1, I2, CNAME, CTEXT)
-INTEGER, DIMENSION(:), INTENT(IN) :: ARR
+INTEGER, DIMENSION(:), INTENT(IN) :: AL
 INTEGER, INTENT(IN) :: I1, I2
 CHARACTER(*), INTENT(IN) :: CNAME, CTEXT
 INTEGER :: IC
@@ -18294,7 +18749,7 @@ END SUBROUTINE SCARC_DEBUG_INT1
 !> \brief Debugging version only: Print out debug information for double precision vector
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_REAL1(ARR, I1, I2, CNAME, CTEXT)
-REAL(EB), DIMENSION(:), INTENT(IN) :: ARR
+REAL(EB), DIMENSION(:), INTENT(IN) :: AL
 CHARACTER(*), INTENT(IN) :: CNAME, CTEXT
 INTEGER, INTENT(IN) :: I1, I2
 INTEGER :: IC
@@ -18343,18 +18798,18 @@ WRITE(MSG%LU_DEBUG,*) 'ALLOCATED SIZES N_ROW, N_VAL:', SIZE(A%ROW), SIZE(A%VAL)
 
 WRITE(MSG%LU_DEBUG,*)
 WRITE(MSG%LU_DEBUG,*) "------------->", TRIM(CNAME),'%ROW:'
-WRITE(MSG%LU_DEBUG,'(8I6)') (A%ROW(IC), IC=1, A%N_ROW)
+WRITE(MSG%LU_DEBUG,'(8I12)') (A%ROW(IC), IC=1, A%N_ROW)
 WRITE(MSG%LU_DEBUG,*) "------------->", TRIM(CNAME),'%COL:'
 DO IC = 1, A%N_ROW-1
    IF (A%ROW(IC) == 0) CYCLE
    IF (A%ROW(IC+1)-A%ROW(IC) < 10) THEN
-      CFORM = "(I8,A,10I6)"
+      CFORM = "(I8,A,10I12)"
    ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 20) THEN
-      CFORM = "(I8,A,20I6)"
+      CFORM = "(I8,A,20I12)"
    ELSE IF (A%ROW(IC+1)-A%ROW(IC)  < 30) THEN
-      CFORM = "(I8,A,30I6)"
+      CFORM = "(I8,A,30I12)"
    ELSE
-      CFORM = "(I8,A,40I6)"
+      CFORM = "(I8,A,40I12)"
    ENDIF
    WRITE(MSG%LU_DEBUG,CFORM) IC,':', (A%COL(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
 ENDDO
@@ -18363,13 +18818,13 @@ IF (ALLOCATED(A%COLG)) THEN
    DO IC = 1, A%N_ROW-1
       IF (A%ROW(IC) == 0) CYCLE
       IF (A%ROW(IC+1)-A%ROW(IC) < 10) THEN
-         CFORM = "(I8,A,10I6)"
+         CFORM = "(I8,A,10I12)"
       ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 20) THEN
-         CFORM = "(I8,A,20I6)"
+         CFORM = "(I8,A,20I12)"
       ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 30) THEN
-         CFORM = "(I8,A,30I6)"
+         CFORM = "(I8,A,30I12)"
       ELSE
-         CFORM = "(I8,A,40I6)"
+         CFORM = "(I8,A,40I12)"
       ENDIF
       WRITE(MSG%LU_DEBUG,CFORM) IC,':', (A%COLG(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
    ENDDO

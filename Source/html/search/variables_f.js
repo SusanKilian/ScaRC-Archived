@@ -1,0 +1,24 @@
+var searchData=
+[
+  ['r_2036',['r',['../structscarc__types_1_1scarc__stage__type.html#a0bafab942d7e1900bc8122c69611dacd',1,'scarc_types::scarc_stage_type::r()'],['../structscarc__types_1_1scarc__solver__type.html#a562e6c25bb2da5ceec5b898e475f89f5',1,'scarc_types::scarc_solver_type::r()'],['../namespacescarc__iteration__environment.html#ae9e1fa84961efe65c977c2bb853ed211',1,'scarc_iteration_environment::r()'],['../namespacescarc__pointers.html#a3471471ef18e3d0345a1b5451892da24',1,'scarc_pointers::r()']]],
+  ['r_5ffb_2037',['r_fb',['../structscarc__types_1_1scarc__stage__type.html#ad23ed1b0f20edce7390efa9b1ecf4a17',1,'scarc_types::scarc_stage_type::r_fb()'],['../structscarc__types_1_1scarc__solver__type.html#a267d909b4039cda35544cf4770f88203',1,'scarc_types::scarc_solver_type::r_fb()']]],
+  ['rbnd_2038',['rbnd',['../structscarc__types_1_1scarc__allocation__type.html#a6bd0ef4a00ed1602364db6d055ea556a',1,'scarc_types::scarc_allocation_type']]],
+  ['rc_2039',['rc',['../namespacescarc__pointers.html#aee7aa182fe5a8eb78116979fda9d50cf',1,'scarc_pointers']]],
+  ['recv_5fbuffer_5fint_2040',['recv_buffer_int',['../structscarc__types_1_1scarc__oscarc__type.html#a82b1ac1b3683badf559f81c5316232f0',1,'scarc_types::scarc_oscarc_type']]],
+  ['recv_5fbuffer_5fint0_2041',['recv_buffer_int0',['../structscarc__types_1_1scarc__oscarc__type.html#a46826f878e2f8b1bfbbe7a12df17420c',1,'scarc_types::scarc_oscarc_type']]],
+  ['recv_5fbuffer_5freal_2042',['recv_buffer_real',['../structscarc__types_1_1scarc__oscarc__type.html#a7ac8e6590b755f7d9e3b8940e29b33d1',1,'scarc_types::scarc_oscarc_type']]],
+  ['recv_5fbuffer_5freal0_2043',['recv_buffer_real0',['../structscarc__types_1_1scarc__oscarc__type.html#ace6a9832dd464d1ca4f2a3f429e453e6',1,'scarc_types::scarc_oscarc_type']]],
+  ['relax_2044',['relax',['../structscarc__types_1_1scarc__matrix__compact__type.html#a5a27251e100a2eff906f8969ea829f19',1,'scarc_types::scarc_matrix_compact_type::relax()'],['../structscarc__types_1_1scarc__matrix__bandwise__type.html#a8bc682f8554a03bd1d4b2aeacdca48bd',1,'scarc_types::scarc_matrix_bandwise_type::relax()']]],
+  ['relax_5ffb_2045',['relax_fb',['../structscarc__types_1_1scarc__matrix__compact__type.html#a276f985f0724c3c3c149db49f81affb7',1,'scarc_types::scarc_matrix_compact_type::relax_fb()'],['../structscarc__types_1_1scarc__matrix__bandwise__type.html#af4e5de48c052b7c91dc71a52d0d695fb',1,'scarc_types::scarc_matrix_bandwise_type::relax_fb()']]],
+  ['relaxation_2046',['relaxation',['../structscarc__types_1_1scarc__cpu__type.html#a2af30ef939be7ed07af949e9b1b0641a',1,'scarc_types::scarc_cpu_type']]],
+  ['relaxd_2047',['relaxd',['../structscarc__types_1_1scarc__matrix__bandwise__type.html#a3d6d1added62acde7bd7463a03c23f90',1,'scarc_types::scarc_matrix_bandwise_type']]],
+  ['req_2048',['req',['../namespacescarc__variables.html#a5288ab8e8bddaaa9a0821a42cf6b0ba0',1,'scarc_variables']]],
+  ['res_2049',['res',['../structscarc__types_1_1scarc__solver__type.html#ad96ab0df24d487b3bfd1251b0831f8b5',1,'scarc_types::scarc_solver_type::res()'],['../namespacescarc__iteration__environment.html#aadf1acf7c0b13e5d05d88393d4337804',1,'scarc_iteration_environment::res()']]],
+  ['resin_2050',['resin',['../structscarc__types_1_1scarc__solver__type.html#a03b81cc9af1b3e8aef57bbb2b2ae2c60',1,'scarc_types::scarc_solver_type::resin()'],['../namespacescarc__iteration__environment.html#ae9c292e236c5d94aa9e366633c5c4158',1,'scarc_iteration_environment::resin()']]],
+  ['restriction_2051',['restriction',['../structscarc__types_1_1scarc__grid__type.html#a4bcd6dc3691eb03a12eda0b4b48a15bd',1,'scarc_types::scarc_grid_type']]],
+  ['rf_2052',['rf',['../namespacescarc__pointers.html#ad091208b09e3f0268f481549d6e1ef1c',1,'scarc_pointers']]],
+  ['rhs_5fend_2053',['rhs_end',['../structscarc__types_1_1scarc__type.html#a5fafe0d0321f4cfec64eaa758ceb1ae7',1,'scarc_types::scarc_type']]],
+  ['rnode_2054',['rnode',['../namespacescarc__variables.html#afceab5c77c8224bffb1161e385544b9c',1,'scarc_variables']]],
+  ['row_2055',['row',['../structscarc__types_1_1scarc__matrix__compact__type.html#a1c8f886fcf8bdf315042b5007d198abf',1,'scarc_types::scarc_matrix_compact_type']]],
+  ['rr_2056',['rr',['../structscarc__types_1_1scarc__grid__type.html#aed51dda59ebec1e8f2156b898dc8aa05',1,'scarc_types::scarc_grid_type']]]
+];

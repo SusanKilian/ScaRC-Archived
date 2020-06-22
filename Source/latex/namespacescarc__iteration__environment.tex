@@ -1,0 +1,89 @@
+\hypertarget{namespacescarc__iteration__environment}{}\doxysection{scarc\+\_\+iteration\+\_\+environment Module Reference}
+\label{namespacescarc__iteration__environment}\index{scarc\_iteration\_environment@{scarc\_iteration\_environment}}
+
+
+Iteration parameters and handles for single variants of Sca\+RC.  
+
+
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_afa62e1144749008cbac67044feea49a2}\label{namespacescarc__iteration__environment_afa62e1144749008cbac67044feea49a2}} 
+real(eb) \mbox{\hyperlink{namespacescarc__iteration__environment_afa62e1144749008cbac67044feea49a2}{dt}}
+\begin{DoxyCompactList}\small\item\em Time step width. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_a39de582ed0b21f183b2361fcd63ef35c}\label{namespacescarc__iteration__environment_a39de582ed0b21f183b2361fcd63ef35c}} 
+real(eb) \mbox{\hyperlink{namespacescarc__iteration__environment_a39de582ed0b21f183b2361fcd63ef35c}{dti}}
+\begin{DoxyCompactList}\small\item\em Inverse of time step width. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_ada169065b76c2a502d8c9f27a2dc8dae}\label{namespacescarc__iteration__environment_ada169065b76c2a502d8c9f27a2dc8dae}} 
+real(eb) \mbox{\hyperlink{namespacescarc__iteration__environment_ada169065b76c2a502d8c9f27a2dc8dae}{omega}}
+\begin{DoxyCompactList}\small\item\em Relaxation parameter for current solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_aea1b2215f419126a366fc683af494622}\label{namespacescarc__iteration__environment_aea1b2215f419126a366fc683af494622}} 
+real(eb) \mbox{\hyperlink{namespacescarc__iteration__environment_aea1b2215f419126a366fc683af494622}{eps}}
+\begin{DoxyCompactList}\small\item\em Requested accuracy for current solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_aadf1acf7c0b13e5d05d88393d4337804}\label{namespacescarc__iteration__environment_aadf1acf7c0b13e5d05d88393d4337804}} 
+real(eb) \mbox{\hyperlink{namespacescarc__iteration__environment_aadf1acf7c0b13e5d05d88393d4337804}{res}}
+\begin{DoxyCompactList}\small\item\em Current residual of current solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_ae9c292e236c5d94aa9e366633c5c4158}\label{namespacescarc__iteration__environment_ae9c292e236c5d94aa9e366633c5c4158}} 
+real(eb) \mbox{\hyperlink{namespacescarc__iteration__environment_ae9c292e236c5d94aa9e366633c5c4158}{resin}} = -\/1.\+0\+\_\+\+EB
+\begin{DoxyCompactList}\small\item\em Initial residual of current solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_a1bbd277a051471e71f637a5cff286c3b}\label{namespacescarc__iteration__environment_a1bbd277a051471e71f637a5cff286c3b}} 
+real(eb) \mbox{\hyperlink{namespacescarc__iteration__environment_a1bbd277a051471e71f637a5cff286c3b}{cappa}} = -\/1.\+0\+\_\+\+EB
+\begin{DoxyCompactList}\small\item\em Convergence rate of current solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_a095560279d5de7b62f37f1cbec3bb8e5}\label{namespacescarc__iteration__environment_a095560279d5de7b62f37f1cbec3bb8e5}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_a095560279d5de7b62f37f1cbec3bb8e5}{nit}} = N\+S\+C\+A\+R\+C\+\_\+\+Z\+E\+R\+O\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Maximum number of iterations in current solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_a6ca701f32567180a83cc5c7d37866bbf}\label{namespacescarc__iteration__environment_a6ca701f32567180a83cc5c7d37866bbf}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_a6ca701f32567180a83cc5c7d37866bbf}{ite}} = N\+S\+C\+A\+R\+C\+\_\+\+Z\+E\+R\+O\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Current number of iterations in current solver. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_acb8064765053200e8e965f03572c5268}\label{namespacescarc__iteration__environment_acb8064765053200e8e965f03572c5268}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_acb8064765053200e8e965f03572c5268}{ite\+\_\+cg}} = N\+S\+C\+A\+R\+C\+\_\+\+Z\+E\+R\+O\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Statistical information for Krylov iterations. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_af8812898f75e3ecc14247c0cf905508f}\label{namespacescarc__iteration__environment_af8812898f75e3ecc14247c0cf905508f}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_af8812898f75e3ecc14247c0cf905508f}{ite\+\_\+mg}} = N\+S\+C\+A\+R\+C\+\_\+\+Z\+E\+R\+O\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Statistical information for multigrid iterations. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_a9d8cb417a2cb38ef976b3c20e7785a94}\label{namespacescarc__iteration__environment_a9d8cb417a2cb38ef976b3c20e7785a94}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_a9d8cb417a2cb38ef976b3c20e7785a94}{ite\+\_\+lu}} = N\+S\+C\+A\+R\+C\+\_\+\+Z\+E\+R\+O\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Statistical information for LU iterations. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_a536eddb8320f0c1d71f5526c1684d148}\label{namespacescarc__iteration__environment_a536eddb8320f0c1d71f5526c1684d148}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_a536eddb8320f0c1d71f5526c1684d148}{ite\+\_\+pres}} = N\+S\+C\+A\+R\+C\+\_\+\+Z\+E\+R\+O\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Statistical information for pressure iterations. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_a329ff81703c475c7f8820fe26c28dfc1}\label{namespacescarc__iteration__environment_a329ff81703c475c7f8820fe26c28dfc1}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_a329ff81703c475c7f8820fe26c28dfc1}{ite\+\_\+total}} = N\+S\+C\+A\+R\+C\+\_\+\+Z\+E\+R\+O\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Statistical information for total iterations. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_a44f495c70c6205fb075146924caeeef0}\label{namespacescarc__iteration__environment_a44f495c70c6205fb075146924caeeef0}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_a44f495c70c6205fb075146924caeeef0}{ite\+\_\+smooth}} = N\+S\+C\+A\+R\+C\+\_\+\+Z\+E\+R\+O\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Statistical information for smoothing iterations. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_a7d7d9590830f08afcbc308f2dccaec49}\label{namespacescarc__iteration__environment_a7d7d9590830f08afcbc308f2dccaec49}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_a7d7d9590830f08afcbc308f2dccaec49}{ite\+\_\+coarse}} = N\+S\+C\+A\+R\+C\+\_\+\+Z\+E\+R\+O\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Statistical information for coarse grid iterations. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_a34c49b6d03437cb56f34f72a1f3a8fec}\label{namespacescarc__iteration__environment_a34c49b6d03437cb56f34f72a1f3a8fec}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_a34c49b6d03437cb56f34f72a1f3a8fec}{ite\+\_\+global}} = N\+S\+C\+A\+R\+C\+\_\+\+Z\+E\+R\+O\+\_\+\+I\+NT
+\begin{DoxyCompactList}\small\item\em Statistical information for global iterations. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_a712ad94af1d62baf74dc67c6ed31fa85}\label{namespacescarc__iteration__environment_a712ad94af1d62baf74dc67c6ed31fa85}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_a712ad94af1d62baf74dc67c6ed31fa85}{x}}
+\begin{DoxyCompactList}\small\item\em Handle for solution 1D-\/vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_a8738d2a314c2da97084d036ee27a9c91}\label{namespacescarc__iteration__environment_a8738d2a314c2da97084d036ee27a9c91}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_a8738d2a314c2da97084d036ee27a9c91}{b}}
+\begin{DoxyCompactList}\small\item\em Handle for right hand side one dimensional-\/vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_ab5babd83a6ce6c0f8b306ddcfb79eac8}\label{namespacescarc__iteration__environment_ab5babd83a6ce6c0f8b306ddcfb79eac8}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_ab5babd83a6ce6c0f8b306ddcfb79eac8}{d}}
+\begin{DoxyCompactList}\small\item\em Handle for auxiliary one-\/dimensional vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_ae9e1fa84961efe65c977c2bb853ed211}\label{namespacescarc__iteration__environment_ae9e1fa84961efe65c977c2bb853ed211}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_ae9e1fa84961efe65c977c2bb853ed211}{r}}
+\begin{DoxyCompactList}\small\item\em Handle for auxiliary one-\/dimensional vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_a4d6a583db6c2fa1f5ef5420d9b691c81}\label{namespacescarc__iteration__environment_a4d6a583db6c2fa1f5ef5420d9b691c81}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_a4d6a583db6c2fa1f5ef5420d9b691c81}{v}}
+\begin{DoxyCompactList}\small\item\em Handle for auxiliary one-\/dimensional vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_ab3f1e0f78e98fbc0500eedf7008459ae}\label{namespacescarc__iteration__environment_ab3f1e0f78e98fbc0500eedf7008459ae}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_ab3f1e0f78e98fbc0500eedf7008459ae}{y}}
+\begin{DoxyCompactList}\small\item\em Handle for auxiliary one-\/dimensional vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_abb5da520336c7d8cd25b75e2170e74a7}\label{namespacescarc__iteration__environment_abb5da520336c7d8cd25b75e2170e74a7}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_abb5da520336c7d8cd25b75e2170e74a7}{z}}
+\begin{DoxyCompactList}\small\item\em Handle for auxiliary one-\/dimensional vector. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{namespacescarc__iteration__environment_ab3a3cb2eaf37d17e092914abd6516dfd}\label{namespacescarc__iteration__environment_ab3a3cb2eaf37d17e092914abd6516dfd}} 
+integer \mbox{\hyperlink{namespacescarc__iteration__environment_ab3a3cb2eaf37d17e092914abd6516dfd}{e}}
+\begin{DoxyCompactList}\small\item\em Handle for one-\/dimensional error vector (debugging only) \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Iteration parameters and handles for single variants of Sca\+RC. 
