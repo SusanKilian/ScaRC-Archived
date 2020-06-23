@@ -23,4 +23,6 @@ dump
 *.fed_smv
 *slice.info
 *svn.txt
+*.txt
 
+Lunarc_csv
