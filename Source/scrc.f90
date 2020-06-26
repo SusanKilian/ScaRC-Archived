@@ -719,7 +719,7 @@ END TYPE SCARC_MATRIX_BANDWISE_CONDENSED_TYPE
 !    - corresponding columns pointers
 !    - row pointers
  
-TYPE SCARC_MATRIX_COMPACT_TYPE
+TYPE SCARC_CMATRIX_TYPE
 
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: VAL                !< values of matrix (real precision)
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: ILU                !< ILU-decomposition
@@ -745,7 +745,7 @@ TYPE SCARC_MATRIX_COMPACT_TYPE
 
    CHARACTER(40) :: CNAME                                     !< Name of matrix
 
-END TYPE SCARC_MATRIX_COMPACT_TYPE
+END TYPE SCARC_CMATRIX_TYPE
 
   
 !> \brief Bandwise storage technique for matrices
@@ -753,7 +753,7 @@ END TYPE SCARC_MATRIX_COMPACT_TYPE
 ! Missing entries of subdiagonals are filled with zero
 ! Is based on two arrays: non-zero matrix entries diagonal-wise and  the offsets from the main diagonal
  
-TYPE SCARC_MATRIX_BANDWISE_TYPE
+TYPE SCARC_BMATRIX_TYPE
 
    REAL(EB), ALLOCATABLE, DIMENSION (:)   :: AUX           !< Auxiliary vector (double precision)
    REAL(EB), ALLOCATABLE, DIMENSION (:,:) :: VAL           !< values of matrix (double precision)
@@ -781,7 +781,7 @@ TYPE SCARC_MATRIX_BANDWISE_TYPE
    INTEGER :: N_VAL = 0                                    !< Number of matrix values in general and symmetric cass
    INTEGER :: N_DIAG = 0                                   !< Length of main diagonal
 
-END TYPE SCARC_MATRIX_BANDWISE_TYPE
+END TYPE SCARC_BMATRIX_TYPE
 
 !> \brief Pressure information
   
@@ -874,19 +874,19 @@ TYPE SCARC_GRID_TYPE
    TYPE (SCARC_WALL_TYPE), ALLOCATABLE, DIMENSION(:) :: WALL   !< wall information
 
    ! Matrices in different storage types
-   TYPE (SCARC_MATRIX_BANDWISE_TYPE):: POISSONB                !< Poisson matrix in bandwise storage technique
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: POISSONC                !< Poisson matrix in compact storage technique (default)
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: GALERKIN                !< Galerkin matrix (AMG only)
+   TYPE (SCARC_BMATRIX_TYPE):: POISSONB                !< Poisson matrix in bandwise storage technique
+   TYPE (SCARC_CMATRIX_TYPE) :: POISSONC                !< Poisson matrix in compact storage technique (default)
+   TYPE (SCARC_CMATRIX_TYPE) :: GALERKIN                !< Galerkin matrix (AMG only)
 #ifdef WITH_MKL
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: POISSONC_SYM            !< Symmetric part of compact Poisson matrix (only for MKL)
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: GALERKIN_SYM            !< Galerkin matrix symmetric version (AMG only)
+   TYPE (SCARC_CMATRIX_TYPE) :: POISSONC_SYM            !< Symmetric part of compact Poisson matrix (only for MKL)
+   TYPE (SCARC_CMATRIX_TYPE) :: GALERKIN_SYM            !< Galerkin matrix symmetric version (AMG only)
 #endif
 
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: PROLONGATION            !< prolongation matrix
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: RESTRICTION             !< Restriction matrix
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: CONNECTION              !< Strength of connection matrix
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: ZONES                   !< Aggregation zones matrix
-   TYPE (SCARC_MATRIX_COMPACT_TYPE) :: AP                      !< A*P matrix - only temporarily (AMG only)
+   TYPE (SCARC_CMATRIX_TYPE) :: PROLONGATION            !< prolongation matrix
+   TYPE (SCARC_CMATRIX_TYPE) :: RESTRICTION             !< Restriction matrix
+   TYPE (SCARC_CMATRIX_TYPE) :: CONNECTION              !< Strength of connection matrix
+   TYPE (SCARC_CMATRIX_TYPE) :: ZONES                   !< Aggregation zones matrix
+   TYPE (SCARC_CMATRIX_TYPE) :: AP                      !< A*P matrix - only temporarily (AMG only)
 
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: MEASURES            !< Measure for grid coarsening (AMG only)
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: NULLSPACE           !< Nullspace vector
@@ -894,8 +894,11 @@ TYPE SCARC_GRID_TYPE
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: DIAG                !< Matrix diagonal, possible inverted (AMG only)
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: QQ, RR              !< workspace for QR-decompostion (AMG only)
 
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: ZONES_GLOBAL        !< Global zone numbers (grid coarsening of AMG only)
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: ZONES_LOCAL         !< Local  zone numbers (grid coarsening of AMG only)
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: CELLS_LOCAL         !< Local coarse cells with influence on Galerkin matrix (AMG only)
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: CELLS_GLOBAL        !< Global coarse cells with influence on Galerkin matrix (AMG only)
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: CELLS_EXTERNAL      !< External coarse cell numbers (AMG only)
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: ZONES_GLOBAL        !< Global zone numbers (AMG only)
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: ZONES_LOCAL         !< Local  zone numbers (AMG only)
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: CELLTYPES           !< Celltype for grid coarsening (AMG only)
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: CPOINTS             !< ZONES for grid coarsening (AMG only)
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: ORDER               !< Search order for aggregation
@@ -936,7 +939,8 @@ TYPE SCARC_GRID_TYPE
    ! Cell numbers of all meshes and offsets between meshes
    INTEGER, ALLOCATABLE, DIMENSION (:) :: NC_LOCAL             !< Number of cells in local meshes
    INTEGER, ALLOCATABLE, DIMENSION (:) :: NC_OFFSET            !< Offset in cell numbering between meshes
-   INTEGER :: NC_GLOBAL = NSCARC_ZERO_INT                      !< Global number of cells in all meshes
+   INTEGER :: NC_GLOBAL   = NSCARC_ZERO_INT                    !< Global number of cells in all meshes
+   INTEGER :: NC_GALERKIN = NSCARC_ZERO_INT                    !< Number of cells with influence on Galerkin matrix
 
    ! Local numbers of internal, extended and ghost cells
    INTEGER :: NC   = NSCARC_ZERO_INT                           !< Number of cells needed for matrix
@@ -1240,45 +1244,45 @@ TYPE (SCARC_FFT_TYPE), POINTER :: FFT=>NULL()                 !< Pointer to FFT 
 TYPE (SCARC_MGM_TYPE), POINTER :: MGM=>NULL()                 !< Pointer to McKeeney-Greengard-Mayo structure
 #endif
 
-TYPE (SCARC_MATRIX_BANDWISE_TYPE), POINTER :: AB=>NULL()      !< Pointer to bandwise matrix structure
-TYPE (SCARC_MATRIX_BANDWISE_TYPE), POINTER :: OAB=>NULL()     !< Pointer to neighboring bandwise matrix structure
+TYPE (SCARC_BMATRIX_TYPE), POINTER :: AB=>NULL()      !< Pointer to bandwise matrix structure
+TYPE (SCARC_BMATRIX_TYPE), POINTER :: OAB=>NULL()     !< Pointer to neighboring bandwise matrix structure
 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: A=>NULL()        !< Pointer to compactly stored matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AC=>NULL()       !< Pointer to compactly stored coarse matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AF=>NULL()       !< Pointer to compactly stored fine matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OA=>NULL()       !< Pointer to compactly stored neighboring matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OAC=>NULL()      !< Pointer to compactly stored coarse neighboring matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OAF=>NULL()      !< Pointer to compactly stored fine neighboring matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: A=>NULL()        !< Pointer to compactly stored matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: AC=>NULL()       !< Pointer to compactly stored coarse matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: AF=>NULL()       !< Pointer to compactly stored fine matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OA=>NULL()       !< Pointer to compactly stored neighboring matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OAC=>NULL()      !< Pointer to compactly stored coarse neighboring matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OAF=>NULL()      !< Pointer to compactly stored fine neighboring matrix 
 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: P=>NULL()        !< Pointer to compactly stored prolongation matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: PC=>NULL()       !< Pointer to compactly stored coarse prolongation matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: PF=>NULL()       !< Pointer to compactly stored fine matrix on coarse grid
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OP=>NULL()       !< Pointer to compactly stored neighboring prolongation matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OPC=>NULL()      !< Pointer to compactly stored coarse neighboring prolongation matrix
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OPF=>NULL()      !< Pointer to compactly stored fine neighboring prolongation matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: P=>NULL()        !< Pointer to compactly stored prolongation matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: PC=>NULL()       !< Pointer to compactly stored coarse prolongation matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: PF=>NULL()       !< Pointer to compactly stored fine matrix on coarse grid
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OP=>NULL()       !< Pointer to compactly stored neighboring prolongation matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OPC=>NULL()      !< Pointer to compactly stored coarse neighboring prolongation matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OPF=>NULL()      !< Pointer to compactly stored fine neighboring prolongation matrix 
 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: R=>NULL()        !< Pointer to compactly stored restriction matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: RC=>NULL()       !< Pointer to compactly stored fine restriction matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: RF=>NULL()       !< Pointer to compactly stored coarse restriction matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OR=>NULL()       !< Pointer to compactly stored neighboring restriction matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: ORC=>NULL()      !< Pointer to compactly stored coarse neighboring restriction matrix
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: ORF=>NULL()      !< Pointer to compactly stored fine neighboring restriction matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: R=>NULL()        !< Pointer to compactly stored restriction matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: RC=>NULL()       !< Pointer to compactly stored fine restriction matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: RF=>NULL()       !< Pointer to compactly stored coarse restriction matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OR=>NULL()       !< Pointer to compactly stored neighboring restriction matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: ORC=>NULL()      !< Pointer to compactly stored coarse neighboring restriction matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: ORF=>NULL()      !< Pointer to compactly stored fine neighboring restriction matrix
 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: C=>NULL()        !< Pointer to compactly stored connection matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: CC=>NULL()       !< Pointer to compactly stored coarse connection matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: CF=>NULL()       !< Pointer to compactly stored fine connection matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OC=>NULL()       !< Pointer to compactly stored neighboring connection matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OCC=>NULL()      !< Pointer to compactly stored coarse neighboring connection matrix
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OCF=>NULL()      !< Pointer to compactly stored fine neighboring connection matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: C=>NULL()        !< Pointer to compactly stored connection matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: CC=>NULL()       !< Pointer to compactly stored coarse connection matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: CF=>NULL()       !< Pointer to compactly stored fine connection matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OC=>NULL()       !< Pointer to compactly stored neighboring connection matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OCC=>NULL()      !< Pointer to compactly stored coarse neighboring connection matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OCF=>NULL()      !< Pointer to compactly stored fine neighboring connection matrix
 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: Z=>NULL()        !< Pointer to compactly stored zones matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: ZC=>NULL()       !< Pointer to compactly stored coarse zones matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: ZF=>NULL()       !< Pointer to compactly stored fine zones matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OZ=>NULL()       !< Pointer to compactly stored neighboring zones matrix 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OZC=>NULL()      !< Pointer to compactly stored neighboring coarse zones matrix
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OZF=>NULL()      !< Pointer to compactly stored neighboring fine zones matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: Z=>NULL()        !< Pointer to compactly stored zones matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: ZC=>NULL()       !< Pointer to compactly stored coarse zones matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: ZF=>NULL()       !< Pointer to compactly stored fine zones matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OZ=>NULL()       !< Pointer to compactly stored neighboring zones matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OZC=>NULL()      !< Pointer to compactly stored neighboring coarse zones matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OZF=>NULL()      !< Pointer to compactly stored neighboring fine zones matrix 
 
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AP=>NULL(), APF=>NULL(), APC=>NULL(), OAP=>NULL()
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: AP=>NULL(), PPF=>NULL(), PPC=>NULL(), OAP=>NULL()
 
 TYPE (SCARC_MATRIX_COMPACT_CONDENSED_TYPE),  POINTER :: ACO =>NULL()
 TYPE (SCARC_MATRIX_BANDWISE_CONDENSED_TYPE), POINTER :: ABCO=>NULL()
@@ -1307,8 +1311,8 @@ INTEGER, POINTER, DIMENSION(:) :: KKO_R, KKO_S
 
 #ifdef WITH_MKL
 TYPE (SCARC_MKL_TYPE), POINTER :: MKL=>NULL()
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: AS=>NULL(), ACS=>NULL(), AFS=>NULL()
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: OAS=>NULL(), OACS=>NULL(), OAFS=>NULL()
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: AS=>NULL(), ACS=>NULL(), AFS=>NULL()
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OAS=>NULL(), OACS=>NULL(), OAFS=>NULL()
 REAL(FB), DIMENSION(:), POINTER :: V1_FB=>NULL(), V2_FB=>NULL()
 #endif
 
@@ -5924,7 +5928,7 @@ END SUBROUTINE SCARC_SETUP_POISSONB_SUBDIAG
 ! If NTYPE == 0, only internal matrix part is considered, if NTYPE == 1, also the overlap
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_GET_MATRIX_STENCIL_MAX (A, NLEN)
-TYPE (SCARC_MATRIX_COMPACT_TYPE), INTENT(INOUT) :: A
+TYPE (SCARC_CMATRIX_TYPE), INTENT(INOUT) :: A
 INTEGER, INTENT(IN) :: NLEN
 INTEGER :: IC
 
@@ -7013,6 +7017,7 @@ WRITE(MSG%LU_DEBUG,'(A,8I6)') 'B: NM, ICG, IFOUND, N_ZONES IZL2, ICE, LOCAL(ICE)
       ENDDO
    ENDDO NEIGHBORS_LOOP
 
+
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '===================== EXTRACT_ZONE_OVERLAPS: NM=',NM
 WRITE(MSG%LU_DEBUG,*) 'GF%ICE_TO_IZONE:'
@@ -7023,7 +7028,6 @@ WRITE(MSG%LU_DEBUG,*) 'GF%ICE_TO_GZONE:'
 WRITE(MSG%LU_DEBUG,'(10I6)') GF%ICE_TO_GZONE(GF%NC+1:GF%NCE2)
 WRITE(MSG%LU_DEBUG,*) 'GF%ICE_TO_OZONE:'
 WRITE(MSG%LU_DEBUG,'(10I6)') GF%ICE_TO_OZONE(GF%NC+1:GF%NCE2)
-WRITE(MSG%LU_DEBUG,*) 'FINAL: GC%NCE=',GC%NCE
 CALL SCARC_DEBUG_ZONES(GF, -1, 1, 'AFTER EXTRACT_ZONES')
 CALL SCARC_DEBUG_ZONES(GF, -1, 2, 'AFTER EXTRAXT_ZONES')
 #endif
@@ -13589,7 +13593,7 @@ WRITE(MSG%LU_DEBUG,'(A,6I8)') 'PACK_POISSON_COLS: SEND: IOR0, ICG, ICW, ICOL, LL
    ENDDO
 ENDDO
 
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'SEND_BUFFER:', LL-1
 WRITE(MSG%LU_DEBUG,'(8I12)') OS%SEND_BUFFER_INT
 #endif
@@ -13611,8 +13615,6 @@ OAC => SCARC_POINT_TO_OTHER_CMATRIX(OG, NMATRIX)
 WRITE(MSG%LU_DEBUG,*) 'UNPACK_POISSON_COLS: OAC%N_ROW, OAC%N_VAL=',OAC%N_ROW, OAC%N_VAL, NM, NOM, NMATRIX
 WRITE(MSG%LU_DEBUG,*) 'UNPACK_POISSON_COLS: SIZE(OAC%COL)=', SIZE(OAC%COL)
 WRITE(MSG%LU_DEBUG,*) 'UNPACK_POISSON_COLS: SIZE(OAC%ROW)=', SIZE(OAC%ROW)
-WRITE(MSG%LU_DEBUG,*) 'POISSON_COLS: RECV_BUFFER_INT:'
-WRITE(MSG%LU_DEBUG,'(8I12)') RECV_BUFFER_INT
 #endif
 
 LL = 1                                 
@@ -13812,7 +13814,7 @@ WRITE(MSG%LU_DEBUG,'(A, 5I8,E12.4)') 'PACK_POISSON_VALS:SG: SEND: IOR0, ICG, ICW
 
 END SELECT
 
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'PACK_POISSON_VALS: SEND_BUFFER_REAL:'
 WRITE(MSG%LU_DEBUG,'(8E12.4)') OS%SEND_BUFFER_REAL
 #endif
@@ -13850,7 +13852,7 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
    CASE (NSCARC_MATRIX_COMPACT)
 
       OAC => SCARC_POINT_TO_OTHER_CMATRIX(OG, NMATRIX)
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'RECV_BUFFER_REAL:'
 WRITE(MSG%LU_DEBUG,'(8E12.4)') RECV_BUFFER_REAL
 #endif
@@ -14536,7 +14538,7 @@ END SUBROUTINE SCARC_POINT_TO_OTHER_MULTIGRID
 !> \brief Point to specified matrix in compact storage technique 
 ! ----------------------------------------------------------------------------------------------------
 FUNCTION SCARC_POINT_TO_CMATRIX(G, NTYPE)
-TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: SCARC_POINT_TO_CMATRIX
+TYPE(SCARC_CMATRIX_TYPE), POINTER :: SCARC_POINT_TO_CMATRIX
 TYPE(SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
 INTEGER, INTENT(IN) :: NTYPE
 
@@ -14567,7 +14569,7 @@ END FUNCTION SCARC_POINT_TO_CMATRIX
 !> \brief Point to specified matrix in bandwise storage technique 
 ! ----------------------------------------------------------------------------------------------------
 FUNCTION SCARC_POINT_TO_BMATRIX(G, NTYPE)
-TYPE(SCARC_MATRIX_BANDWISE_TYPE), POINTER :: SCARC_POINT_TO_BMATRIX
+TYPE(SCARC_BMATRIX_TYPE), POINTER :: SCARC_POINT_TO_BMATRIX
 TYPE(SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
 INTEGER, INTENT(IN) :: NTYPE
 
@@ -14586,7 +14588,7 @@ END FUNCTION SCARC_POINT_TO_BMATRIX
 !> \brief Point to specified neighboring matrix in compact storage technique 
 ! ----------------------------------------------------------------------------------------------------
 FUNCTION SCARC_POINT_TO_OTHER_CMATRIX(OG, NTYPE)
-TYPE(SCARC_MATRIX_COMPACT_TYPE), POINTER :: SCARC_POINT_TO_OTHER_CMATRIX
+TYPE(SCARC_CMATRIX_TYPE), POINTER :: SCARC_POINT_TO_OTHER_CMATRIX
 TYPE(SCARC_GRID_TYPE), POINTER, INTENT(IN) :: OG
 INTEGER, INTENT(IN) :: NTYPE
 
@@ -14617,7 +14619,7 @@ END FUNCTION SCARC_POINT_TO_OTHER_CMATRIX
 !> \brief Point to specified neighboring matrix in bandwise storage technique 
 ! ----------------------------------------------------------------------------------------------------
 FUNCTION SCARC_POINT_TO_OTHER_BMATRIX(OG, NTYPE)
-TYPE(SCARC_MATRIX_BANDWISE_TYPE), POINTER :: SCARC_POINT_TO_OTHER_BMATRIX
+TYPE(SCARC_BMATRIX_TYPE), POINTER :: SCARC_POINT_TO_OTHER_BMATRIX
 TYPE(SCARC_GRID_TYPE), POINTER, INTENT(IN) :: OG
 INTEGER, INTENT(IN) :: NTYPE
 
@@ -14959,7 +14961,7 @@ WRITE(MSG%LU_DEBUG,*) '========================================================'
    CALL SCARC_SETUP_PROLONGATION(NL)                ! Setup prolongation matrix based on QR-decomposition
    CALL SCARC_SETUP_NULLSPACE_COARSE(NL)            ! Setup nullspace on coarser level
    CALL SCARC_SETUP_RESTRICTION(NL)                 ! Setup corresponding restriction matrix 
-   CALL SCARC_SETUP_POISSON_TIMES_PROL(NL)             
+   CALL SCARC_SETUP_POISSON_PROL(NL)             
    CALL SCARC_SETUP_GALERKIN(NL)             
    CALL SCARC_CLEAN_WORKSPACE_AMG(NL)
       
@@ -15362,8 +15364,6 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTIGRID(NM, NL, NL+1)         
 
-   CF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_CONNECTION)
-
    GC%NCE  = GF%N_ZONES
    GC%NCE2 = GF%N_ZONES
    GF%N_COARSE = GF%N_ZONES
@@ -15372,6 +15372,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_REDUCE_INT1(GF%ZONES_GLOBAL, GF%NCE2, 'GC%LOCAL_TO_GLOBAL', CROUTINE)
    CALL SCARC_REDUCE_INT1(GC%LOCAL_TO_GLOBAL, GC%NCE2, 'GC%LOCAL_TO_GLOBAL', CROUTINE)
 
+   CF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_CONNECTION)
    CALL SCARC_DEALLOCATE_CMATRIX(CF, 'STRENGTH OF CONNECTION', CROUTINE)
 
 #ifdef WITH_SCARC_DEBUG
@@ -15402,7 +15403,7 @@ END SUBROUTINE SCARC_SETUP_AGGREGATION_ZONES
 !> \brief  Standard aggregation prodecure based on strength of connection matrix
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_AGGREGATED_ZONES(G, C)
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER, INTENT(IN) :: C
+TYPE (SCARC_CMATRIX_TYPE), POINTER, INTENT(IN) :: C
 TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
 INTEGER :: IC, ICOL, JC, IZONE, JZONE
 LOGICAL :: HAS_NEIGHBORS, HAS_AGGREGATED_NEIGHBORS
@@ -16013,7 +16014,7 @@ SUBROUTINE SCARC_SETUP_PROLONGATION(NL)
 USE SCARC_POINTERS, ONLY:  G, A, OA, P, OP, GF, PF
 INTEGER, INTENT(IN) :: NL
 REAL(EB):: DSUM, SCAL, PSAVE !, TOL = 1.0E-12_EB
-INTEGER :: NM, NOM, IC, JC, ICC, ICOL, ICCOL, JCCOL, IP, JCC, IQ, INBR
+INTEGER :: NM, NOM, IC, JC, ICC, ICOL, ICCOL, JCCOL, IP, JCC, IQ, INBR, NLEN
 
 CROUTINE = 'SCARC_SETUP_PROLONGATION'
 
@@ -16302,24 +16303,119 @@ ENDIF
    
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-   P => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_PROLONGATION)
-   CALL SCARC_REDUCE_CMATRIX(P, 'P%PROLONGATION', CROUTINE)
+   CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1) 
+   PF => SCARC_POINT_TO_CMATRIX(GF, NSCARC_MATRIX_PROLONGATION)
 
+   CALL SCARC_ALLOCATE_INT1 (GC%CELLS_EXTERNAL, GC%NC+1, GC%NCE2, NSCARC_INIT_ZERO, 'GC%CELLS_EXTERNAL', CROUTINE)
+   CALL SCARC_GET_CELL_DEPENDENCIES(GC, GF)
+
+   NLEN = 4 * (GC%NCE2 - GC%NC + 1)
+   CALL SCARC_ALLOCATE_INT1 (GC%CELLS_LOCAL, 1, NLEN, NSCARC_INIT_ZERO, 'GC%CELLS_LOCAL', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1 (GC%CELLS_GLOBAL, 1, NLEN, NSCARC_INIT_ZERO, 'GC%CELLS_GLOBAL', CROUTINE)
+
+   CALL SCARC_GET_CELL_DEPENDENCIES_GALERKIN(GC, GF, PF, NLEN)
+
+   CALL SCARC_REDUCE_INT1(GC%CELLS_LOCAL, GC%NC_GALERKIN, 'GC%CELLS_LOCAL', CROUTINE)
+   CALL SCARC_REDUCE_INT1(GC%CELLS_GLOBAL, GC%NC_GALERKIN, 'GC%CELLS_GLOBAL', CROUTINE)
+
+   CALL SCARC_REDUCE_CMATRIX(PF, 'P%PROLONGATION', CROUTINE)
    DO INBR = 1, S%N_NEIGHBORS
       NOM = S%NEIGHBORS(INBR)
       CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
-      OP => SCARC_POINT_TO_OTHER_CMATRIX(OG, NSCARC_MATRIX_PROLONGATION)
-      CALL SCARC_REDUCE_CMATRIX(OP, 'OP%PROLONGATION', CROUTINE)
+      OPF => SCARC_POINT_TO_OTHER_CMATRIX(OGF, NSCARC_MATRIX_PROLONGATION)
+      CALL SCARC_REDUCE_CMATRIX(OPF, 'OP%PROLONGATION', CROUTINE)
    ENDDO
 
 #ifdef WITH_SCARC_DEBUG
-   CALL SCARC_DEBUG_CMATRIX(P, 'G%PROLONGATION','SETUP_PROLONGATION: FINAL')
+   CALL SCARC_DEBUG_CMATRIX(PF, 'GF%PROLONGATION','SETUP_PROLONGATION: FINAL')
 #endif
 
 ENDDO
 
 END SUBROUTINE SCARC_SETUP_PROLONGATION
+
+! -------------------------------------------------------------------------------------------
+!> \brief Determine on which overlapping global coarse cells are given mesh depends
+! -------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_GET_CELL_DEPENDENCIES(GC, GF)
+TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: GC, GF
+INTEGER :: IZ, IP, ICE, IFOUND
+
+IP = GC%NC + 1
+OVERLAPPING_CELLS_LOOP: DO ICE = GF%NC + 1, GF%NCE2
+
+   ! Check if global zone number on overlap is already accounted for
+   IZ = GF%ZONES_GLOBAL(ICE)
+   IFOUND = FINDLOC (GC%CELLS_EXTERNAL(GC%NC+1:GC%NCE2), VALUE = IZ, DIM = 1)
+   IF (IFOUND <= 0) THEN  
+      GC%CELLS_EXTERNAL(IP) = IZ
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'GLOBAL:  ICE, IZ, IFOUND, IP, CELLS_EXTERNAL=', ICE, IZ, IFOUND, IP, GC%CELLS_EXTERNAL(IP)
+WRITE(MSG%LU_DEBUG,*) 
+#endif
+      IP = IP + 1
+   ENDIF
+
+ENDDO OVERLAPPING_CELLS_LOOP
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'GET_CELL_DEPENDENCIES: GC%NC=',GC%NC
+WRITE(MSG%LU_DEBUG,*) 'GET_CELL_DEPENDENCIES: GC%NCE=',GC%NCE
+WRITE(MSG%LU_DEBUG,*) 'GET_CELL_DEPENDENCIES: GC%NCE2=',GC%NCE2
+WRITE(MSG%LU_DEBUG,*) 'GET_CELL_DEPENDENCIES: GC%CELLS_EXTERNAL'
+WRITE(MSG%LU_DEBUG,'(10I6)') GC%CELLS_EXTERNAL(GC%NC+1:GC%NCE2)
+#endif
+END SUBROUTINE SCARC_GET_CELL_DEPENDENCIES
+
+! -------------------------------------------------------------------------------------------
+!> \brief Determine on which overlapping global coarse cells are given mesh depends (also considering diagonal connections)
+! -------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_GET_CELL_DEPENDENCIES_GALERKIN(GC, GF, PF, NLEN)
+TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: GC, GF
+TYPE (SCARC_CMATRIX_TYPE), POINTER, INTENT(IN) :: PF
+INTEGER, INTENT(IN) :: NLEN
+INTEGER :: IZL, IZG, IP, ICOL, IC, IFOUND1, IFOUND2, IFOUND3
+
+IP = 1
+PROLONGATION_CELLS_LOOP: DO IC = 1, GF%NCE
+
+   ! Check if zone number used in given row of prolongation matrix is already accounted for
+   DO ICOL = PF%ROW(IC), PF%ROW(IC+1) - 1
+
+      IZL = PF%COL(ICOL)
+      IZG = PF%COLG(ICOL)
+
+      IFOUND1 = FINDLOC (GC%CELLS_GLOBAL(1:NLEN),  VALUE = IZG, DIM = 1)
+      IFOUND2 = FINDLOC (GF%ZONES_GLOBAL(1:GF%NC), VALUE = IZG, DIM = 1)
+      IFOUND3 = FINDLOC (GC%LOCAL_TO_GLOBAL(1:GC%NCE2), VALUE = IZG, DIM = 1)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'GLOBAL:  IC, ICOL, IZL, IZG, IFOUND, IP, CELLS_GLOBAL=', IC, ICOL, IZL, IZG, IFOUND1, IFOUND2
+#endif
+      IF (IFOUND1 <= 0 .AND. IFOUND2 <= 0) THEN  
+         GC%CELLS_LOCAL(IP)  = IFOUND3
+         GC%CELLS_GLOBAL(IP) = IZG
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '        -----> IP, CELLS_LOCAL, CELLS_GLOBAL=', IP, GC%CELLS_LOCAL(IP), GC%CELLS_GLOBAL(IP)
+WRITE(MSG%LU_DEBUG,*) 
+#endif
+         IP = IP + 1
+      ENDIF
+   ENDDO
+
+ENDDO PROLONGATION_CELLS_LOOP
+GC%NC_GALERKIN = IP - 1
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'GET_CELL_DEPENDENCIES: GC%NC=',GC%NC
+WRITE(MSG%LU_DEBUG,*) 'GET_CELL_DEPENDENCIES: GC%NCE=',GC%NCE
+WRITE(MSG%LU_DEBUG,*) 'GET_CELL_DEPENDENCIES: GC%NCE2=',GC%NCE2
+WRITE(MSG%LU_DEBUG,*) 'GET_CELL_DEPENDENCIES: GC%NC_GALERKIN=', GC%NC_GALERKIN
+WRITE(MSG%LU_DEBUG,*) 'GET_CELL_DEPENDENCIES: GC%CELLS_LOCAL'
+WRITE(MSG%LU_DEBUG,'(10I6)') GC%CELLS_LOCAL(1:NLEN)
+WRITE(MSG%LU_DEBUG,*) 'GET_CELL_DEPENDENCIES: GC%CELLS_GLOBAL'
+WRITE(MSG%LU_DEBUG,'(10I6)') GC%CELLS_GLOBAL(1:NLEN)
+#endif
+END SUBROUTINE SCARC_GET_CELL_DEPENDENCIES_GALERKIN
 
 
 ! ------------------------------------------------------------------------------------------------------
@@ -16369,7 +16465,7 @@ END SUBROUTINE SCARC_SETUP_NULLSPACE_COARSE
 !> \brief Determine which columns of system matrix are involved in multiplication with tentative prolongator
 ! ------------------------------------------------------------------------------------------------------
 INTEGER FUNCTION SCARC_MATCH_MATRIX_COLUMN(A, IC, JC)
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: A
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: A
 INTEGER, INTENT(IN) :: IC, JC
 INTEGER :: ICOL
 SCARC_MATCH_MATRIX_COLUMN = -1
@@ -16474,17 +16570,17 @@ END SUBROUTINE SCARC_SETUP_RESTRICTION
 ! ------------------------------------------------------------------------------------------------------
 !> \brief Find matching column index during matrix-matrix multiplication of compact matrices
 ! ------------------------------------------------------------------------------------------------------
-INTEGER FUNCTION SCARC_FIND_MATCHING_COLUMN(A, JC, ICCG)
-TYPE (SCARC_MATRIX_COMPACT_TYPE), POINTER :: A
+INTEGER FUNCTION SCARC_FIND_MATCHING_COLUMN(P, JC, ICCG)
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: P
 INTEGER, INTENT(IN) :: JC, ICCG
 INTEGER :: IPCOL
 
 SCARC_FIND_MATCHING_COLUMN = -1
-DO IPCOL = A%ROW(JC), A%ROW(JC+1)-1
-   IF (A%COLG(IPCOL) == ICCG) THEN
+DO IPCOL = P%ROW(JC), P%ROW(JC+1)-1
+   IF (P%COLG(IPCOL) == ICCG) THEN
       SCARC_FIND_MATCHING_COLUMN = IPCOL
 #ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) ' -----------> JC, IPCOL, ICCG, VAL:', JC, IPCOL, ICCG, A%VAL(IPCOL)
+WRITE(MSG%LU_DEBUG,*) ' -----------> JC, IPCOL, ICCG, VAL:', JC, IPCOL, ICCG, P%VAL(IPCOL)
 #endif
    ENDIF
 ENDDO
@@ -16494,16 +16590,53 @@ END FUNCTION SCARC_FIND_MATCHING_COLUMN
 
 
 ! ------------------------------------------------------------------------------------------------------
+!> \brief Find matching components to multiply row of Poisson matrix with column of prolongation matrix
+! ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_MULTIPLY_POISSON_PROL(A, P, AP, ICC, IP, IC)
+TYPE (SCARC_CMATRIX_TYPE), POINTER, INTENT(IN) :: A, P, AP
+INTEGER, INTENT(IN) :: ICC, IC
+INTEGER, INTENT(INOUT) :: IP
+REAL(EB) :: DSUM, TOL = 1E-12_EB
+INTEGER :: IACOL, IPCOL, JC
+
+DSUM = 0.0_EB
+DO IACOL = A%ROW(IC), A%ROW(IC+1)-1
+   JC = A%COL(IACOL)
+   IPCOL = SCARC_FIND_MATCHING_COLUMN(P, JC, ICC)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,5I6)') '       MULTIPLY_ROW_BY_COLUMN: ICC, IP, IC, JC, IPCOL:', ICC, IP, IC, JC, IPCOL
+#endif
+   IF (JC < 0 .OR. IPCOL <= 0) CYCLE
+!IF (MYID == 0 .AND. MOD(IC,100) == 1) WRITE(*,*) '      ICC, IACOL, JC, IPCOL=',ICC, IACOL, JC, IPCOL
+   DSUM = DSUM + A%VAL(IACOL) * P%VAL(IPCOL)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,2I6,3E12.4)') '       MULTIPLY_ROW_BY_COLUMN:,JC,P%COL(IPCOL),A%VAL(IACOL),P%VAL(IPCOL),DSUM:', &
+                                      JC, P%COL(IPCOL), A%VAL(IACOL), P%VAL(IPCOL), DSUM
+#endif
+ENDDO
+
+IF (ABS(DSUM) > TOL) THEN
+   AP%COL(IP)  = ICC
+   AP%COLG(IP) = ICC
+   AP%VAL(IP)  = DSUM
+#ifdef WITH_SCARC_DEBUG2
+WRITE(MSG%LU_DEBUG,'(A,2I6,E12.4)') '      bingo: IP, COL, VAL :', IP, ICC, DSUM
+#endif
+   IP = IP + 1
+ENDIF
+
+END SUBROUTINE SCARC_MULTIPLY_POISSON_PROL
+
+! ------------------------------------------------------------------------------------------------------
 !> \brief Perform matrix multiplication between fine Poisson matrix and prolongation matrix 
 ! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_POISSON_TIMES_PROL(NL)
-USE SCARC_POINTERS, ONLY: GC, GF, AF, PF, APF, OA, OAP
+SUBROUTINE SCARC_SETUP_POISSON_PROL(NL)
+USE SCARC_POINTERS, ONLY: GC, GF, AF, PF, PPF, OA, OAP
 INTEGER, INTENT(IN) :: NL
-INTEGER  :: NM, NOM, IC, JC, IACOL, IPCOL, IP, ICCG, INBR, IFOUND
-REAL(EB) :: DSUM, TOL = 1E-12_EB
+INTEGER  :: NM, NOM, IC, IP, ICC, INBR
 REAL(EB) :: TNOW, TSUM = 0.0_EB
 
-CROUTINE = 'SCARC_SETUP_POISSON_TIMES_PROL'
+CROUTINE = 'SCARC_SETUP_POISSON_PROL'
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -16511,19 +16644,11 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    AF  => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_POISSON)          
    PF  => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_PROLONGATION)     
-   APF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_POISSON_PROL)         
+   PPF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_POISSON_PROL)         
 
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
-   CALL SCARC_DEBUG_CMATRIX (AF, 'POISSON-FINE', 'START OF SETUP_POISSON_TIMES_PROL')
-   WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
-   CALL SCARC_DEBUG_CMATRIX (PF, 'PROLONGATION-FINE', 'START OF SETUP_POISSON_TIMES_PROL')
-#endif
-
-   ! TODO  Reduce size of AP
-   APF%N_ROW = AF%N_ROW
-   APF%N_VAL = APF%N_ROW*20            ! TODO: only temporarily
-   CALL SCARC_ALLOCATE_CMATRIX(APF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%APF', CROUTINE)
+   PPF%N_ROW = AF%N_ROW
+   PPF%N_VAL = PPF%N_ROW*20            ! TODO: only temporarily
+   CALL SCARC_ALLOCATE_CMATRIX(PPF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%PPF', CROUTINE)
 
    DO INBR = 1, SCARC(NM)%N_NEIGHBORS
 
@@ -16534,70 +16659,64 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       OAP => SCARC_POINT_TO_OTHER_CMATRIX(OGF, NSCARC_MATRIX_POISSON_PROL)
 
       OAP%N_VAL = AF%N_VAL              ! TODO : CHECK : MUCH TOO BIG !!!
-      OAP%N_ROW = GF%NCE + 1            ! TODO : CHECK : MUCH TOO BIG !!!
+      OAP%N_ROW = GF%NCE + 1            
       CALL SCARC_ALLOCATE_CMATRIX(OAP, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OGF%AP', CROUTINE)
 
    ENDDO
 
    IP = 1
-   APF%ROW(1) = IP
+   PPF%ROW(1) = IP
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'START OF PPF LOOP'
+WRITE(MSG%LU_DEBUG,*) '  GF%NC=',GF%NC
+WRITE(MSG%LU_DEBUG,*) '  GC%NC=',GC%NC
+WRITE(MSG%LU_DEBUG,*) '  GC%NCE2=',GC%NCE2
+WRITE(MSG%LU_DEBUG,*) '  GC%NC_GALERKIN=',GC%NC_GALERKIN
+WRITE(MSG%LU_DEBUG,*) '  GC%LOCAL_TO_GLOBAL=',GC%LOCAL_TO_GLOBAL
+WRITE(MSG%LU_DEBUG,*) '  GC%CELLS_EXTERNAL  =',GC%CELLS_EXTERNAL(GC%NC+1:GC%NCE2)
+WRITE(MSG%LU_DEBUG,*) '  GC%CELLS_GLOBAL=',GC%CELLS_GLOBAL(1:GC%NC_GALERKIN)
+#endif
 
    FINE_CELLS_LOOP: DO IC = 1, GF%NC
 
-!IF (MYID == 0) WRITE(*,*) '=========================== POISSON_TIMES_PROL: IC=',IC
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'NM=',NM,'=================== IC = ', IC ,' ======================='
+WRITE(MSG%LU_DEBUG,*) '=================== IC = ', IC ,' =======================', GC%NC, GC%NCE2
 #endif
 
 TNOW = CURRENT_TIME()
-
 IF (MYID == 0 .AND. MOD(IC,1000) == 1) WRITE(*,*) 'IC=',IC
-      GLOBAL_COARSE_CELLS_LOOP: DO ICCG = 1, GC%NC_GLOBAL
-         IFOUND = -1
-         IFOUND = FINDLOC(PF%COLG, VALUE=ICCG, DIM=1)
-         IF (IFOUND <= 0) CYCLE
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) 'NM=',NM,'------------------- ICCG = ', ICCG,' IFOUND =',IFOUND
-#endif
 
-      
-         DSUM = 0.0_EB
-         DO IACOL = AF%ROW(IC), AF%ROW(IC+1)-1
-            JC = AF%COL(IACOL)
-            IPCOL = SCARC_FIND_MATCHING_COLUMN(PF, JC, ICCG)
-            IF (JC < 0 .OR. IPCOL <= 0) CYCLE
-!IF (MYID == 0 .AND. MOD(IC,100) == 1) WRITE(*,*) '      ICCG, IACOL, JC, IPCOL=',ICCG, IACOL, JC, IPCOL
-            DSUM = DSUM + AF%VAL(IACOL) * PF%VAL(IPCOL)
+      INTERNAL_COARSE_CELLS_LOOP: DO ICC = 1, GC%NC
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,I6,A,2I6,3E12.4)') 'NM=',NM,&
-                              ':SETUP_POISSON_TIMES_PROL:,JC,PF%COL(IPCOL),AF%VAL(IACOL),PF%VAL(IPCOL),DSUM:', &
-                              JC, PF%COL(IPCOL), AF%VAL(IACOL), PF%VAL(IPCOL), DSUM
+WRITE(MSG%LU_DEBUG,*) '        ------------> Int: Processing  ICC = ', ICC
 #endif
-         ENDDO
+         CALL SCARC_MULTIPLY_POISSON_PROL(AF, PF, PPF, GC%LOCAL_TO_GLOBAL(ICC), IP, IC)
+      ENDDO INTERNAL_COARSE_CELLS_LOOP
 
-         IF (ABS(DSUM) > TOL) THEN
-            APF%COL(IP)  = ICCG
-            APF%COLG(IP) = ICCG
-            APF%VAL(IP)  = DSUM
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,'(A,I6,A,2I6,E12.4)') 'NM=',NM,'      bingo: IP, COL, VAL :', IP, ICCG, DSUM
+      !EXTERNAL_COARSE_CELLS_LOOP: DO ICC = GC%NC + 1, GC%NCE2
+      EXTERNAL_COARSE_CELLS_LOOP: DO ICC = 1, GC%NC_GALERKIN
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '        ------------> Ext: Processing  ICC_GALERKIN = ', ICC, GC%CELLS_GLOBAL(ICC)
 #endif
-            IP = IP + 1
-         ENDIF
+         !CALL SCARC_MULTIPLY_POISSON_PROL(AF, PF, PPF, GC%CELLS_EXTERNAL(ICC), IP, IC)
+         CALL SCARC_MULTIPLY_POISSON_PROL(AF, PF, PPF, GC%CELLS_GLOBAL(ICC), IP, IC)
+      ENDDO EXTERNAL_COARSE_CELLS_LOOP
 
-      ENDDO GLOBAL_COARSE_CELLS_LOOP
-      APF%ROW(IC+1) = IP
+      PPF%ROW(IC+1) = IP
 
 CPU(MYID)%AMG =CPU(MYID)%AMG+CURRENT_TIME()-TNOW
 TSUM = TSUM + CPU(MYID)%AMG
 
    ENDDO FINE_CELLS_LOOP
 
+#ifdef WITH_SCARC_DEBUG2
 WRITE(*,*) 'Poisson_Times_Prol: T_single = ', CPU(MYID)%AMG,': T_sum = ',TSUM
+#endif
 
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
-   CALL SCARC_DEBUG_CMATRIX (APF, 'AP-FINE','SUSISUSISUSI')
+   CALL SCARC_DEBUG_CMATRIX (PPF, 'AP-FINE','SUSISUSISUSI')
 #endif
 
 ENDDO
@@ -16621,21 +16740,27 @@ ENDIF
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)
-   APF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_POISSON_PROL)         
+   PPF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_POISSON_PROL)         
 
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
-   CALL SCARC_DEBUG_CMATRIX (APF, 'AP-FINE','END SETUP_POISSON_TIMES_PROL')
+   CALL SCARC_DEBUG_CMATRIX (PPF, 'AP-FINE','END SETUP_POISSON_PROL')
 #endif
 
-   CALL SCARC_REDUCE_CMATRIX (APF, 'POISSON-PROL', CROUTINE)
+   CALL SCARC_REDUCE_CMATRIX (PPF, 'GF%POISSON-PROL', CROUTINE)
+   DO INBR = 1, SCARC(NM)%N_NEIGHBORS
+      NOM = SCARC(NM)%NEIGHBORS(INBR)
+      CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
+      OAP => SCARC_POINT_TO_OTHER_CMATRIX(OGF, NSCARC_MATRIX_POISSON_PROL)
+      CALL SCARC_REDUCE_CMATRIX(OAP, 'OGF%POISSON_PROL', CROUTINE)
+   ENDDO
 
 ENDDO
 
 #ifdef WITH_SCARC_VERBOSE
    WRITE(MSG%LU_VERBOSE,*) '--------------> NM=',NM,': FINISH POISSON_PROL'
 #endif
-END SUBROUTINE SCARC_SETUP_POISSON_TIMES_PROL
+END SUBROUTINE SCARC_SETUP_POISSON_PROL
 
 
 ! ------------------------------------------------------------------------------------------------------
@@ -16669,14 +16794,45 @@ ENDIF
 END FUNCTION SCARC_MAP_GLOBAL_TO_LOCAL
 
 ! ------------------------------------------------------------------------------------------------------
+!> \brief Find matching components to multiply row of restriction matrix with column of Poisson-Prol matrix
+! ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_MULTIPLY_GALERKIN(PPF, RF, AC, ICCL, JCCL, JCCG, IP)
+TYPE (SCARC_CMATRIX_TYPE), POINTER, INTENT(IN) :: PPF, RF, AC
+INTEGER, INTENT(IN) :: ICCL, JCCL, JCCG
+INTEGER, INTENT(INOUT) :: IP
+INTEGER :: IAPCOL, IRCOL, JC
+REAL(EB) :: DSUM, TOL = 1E-12_EB
+
+DSUM = 0.0_EB
+DO IRCOL = RF%ROW(ICCL), RF%ROW(ICCL+1)-1
+   JC = RF%COLG(IRCOL)
+   IAPCOL = SCARC_FIND_MATCHING_COLUMN(PPF, JC, JCCG) 
+   IF (IAPCOL > 0) DSUM = DSUM + RF%VAL(IRCOL) * PPF%VAL(IAPCOL)
+#ifdef WITH_SCARC_DEBUG
+IF (IAPCOL > 0) WRITE(MSG%LU_DEBUG,'(A,3I6,E12.4)') '   IRCOL, JC, IAPCOL, DSUM =', IRCOL, JC, IAPCOL, DSUM
+#endif
+ENDDO
+
+IF (ABS(DSUM) > TOL) THEN
+   AC%COL(IP)  = JCCL
+   AC%COLG(IP) = JCCG
+   AC%VAL(IP) = DSUM
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,3I6,E12.4)') ' -------- bingo: IP, COL, VAL :', IP, JCCL, JCCG, DSUM
+#endif
+   IP = IP + 1
+ENDIF
+
+END SUBROUTINE SCARC_MULTIPLY_GALERKIN
+
+! ------------------------------------------------------------------------------------------------------
 !> \brief Setup Galerkin matrix on coarser grid level (AMG only)
 ! Note: Matrix POISPROL corresponds to POISSON x PROLONGATION  ~ AP
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_GALERKIN(NL)
-USE SCARC_POINTERS, ONLY: GF, GC, AP, RF, AC, OAC
+USE SCARC_POINTERS, ONLY: GF, GC, PPF, RF, AC, OAC
 INTEGER, INTENT(IN) :: NL
-INTEGER  :: NM, ICCL, ICCG, JCCL, JCCG, IRCOL, IAPCOL, JC, IP, INBR, NOM, IFOUND
-REAL(EB) :: DSUM, TOL = 1E-12_EB
+INTEGER  :: NM, ICCL, ICCG, JCC, JCCL, JCCG, IP, INBR, NOM, NLEN
 REAL(EB) :: TNOW, TSUM = 0.0_EB
 
 CROUTINE = 'SCARC_SETUP_GALERKIN'
@@ -16685,15 +16841,15 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)
 
-   RF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_RESTRICTION)         
-   AP => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_POISSON_PROL)         
-   AC => SCARC_POINT_TO_CMATRIX (GC, NSCARC_MATRIX_POISSON)         
+   PPF => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_POISSON_PROL)         
+   RF  => SCARC_POINT_TO_CMATRIX (GF, NSCARC_MATRIX_RESTRICTION)         
+   AC  => SCARC_POINT_TO_CMATRIX (GC, NSCARC_MATRIX_POISSON)         
 
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
    CALL SCARC_DEBUG_CMATRIX (RF, 'RESTRICTION-FINE', 'START OF SETUP_GALERKIN')
    WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
-   CALL SCARC_DEBUG_CMATRIX (AP, 'AP-FINE', 'START OF SETUP_GALERKIN')
+   CALL SCARC_DEBUG_CMATRIX (PPF, 'PPF-FINE', 'START OF SETUP_GALERKIN')
 #endif
 
    IF (.NOT.ALLOCATED (AC%VAL)) THEN
@@ -16718,10 +16874,26 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    ENDDO
 
+   CALL SCARC_DEALLOCATE_INT1(GC%CELLS_LOCAL,  'GC%CELLS_LOCAL',  CROUTINE)
+   CALL SCARC_DEALLOCATE_INT1(GC%CELLS_GLOBAL, 'GC%CELLS_GLOBAL', CROUTINE)
+
+   NLEN = 4 * (GC%NCE2 - GC%NC + 1)
+   CALL SCARC_ALLOCATE_INT1 (GC%CELLS_LOCAL, 1, NLEN, NSCARC_INIT_ZERO, 'GC%CELLS_LOCAL', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1 (GC%CELLS_GLOBAL, 1, NLEN, NSCARC_INIT_ZERO, 'GC%CELLS_GLOBAL', CROUTINE)
+
+   CALL SCARC_GET_CELL_DEPENDENCIES_GALERKIN(GC, GF, PPF, NLEN)
+
+   CALL SCARC_REDUCE_INT1(GC%CELLS_LOCAL, GC%NC_GALERKIN, 'GC%CELLS_LOCAL', CROUTINE)
+   CALL SCARC_REDUCE_INT1(GC%CELLS_GLOBAL, GC%NC_GALERKIN, 'GC%CELLS_GLOBAL', CROUTINE)
+
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) '--------------> NM=',NM
 CALL SCARC_DEBUG_CMATRIX (SCARC(MYID+1)%LEVEL(1)%STRUCTURED%POISSONC, 'AF', 'A in SETUP_GALERKIN 1')
 #endif
+
+ENDDO
+
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    IP = 1
    AC%ROW(1) = IP
@@ -16731,49 +16903,32 @@ CALL SCARC_DEBUG_CMATRIX (SCARC(MYID+1)%LEVEL(1)%STRUCTURED%POISSONC, 'AF', 'A i
 TNOW = CURRENT_TIME()
       ICCG = GC%LOCAL_TO_GLOBAL(ICCL)               ! corresponding global coarse cell
 
-       GLOBAL_COARSE_CELLS_LOOP: DO JCCG = 1, GC%NC_GLOBAL                    
-
-          IF (NMESHES == 1) THEN
-             JCCL = JCCG
-          ELSE
-             IFOUND = FINDLOC (GC%LOCAL_TO_GLOBAL, VALUE = JCCG, DIM = 1)
-             IF (IFOUND /= 0) THEN
-                JCCL = IFOUND
-             ELSE
-                JCCL = 0
-             ENDIF
-          ENDIF
-
+      INTERNAL_COARSE_CELLS_LOOP: DO JCCL = 1, GC%NC
+         JCCG = GC%LOCAL_TO_GLOBAL(JCCL)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,I6,A,4I6)') 'NM=',NM,'--------------- ICCL, ICCG, JCCL, JCCG = ', ICCL, ICCG, JCCL, JCCG 
+   WRITE(MSG%LU_DEBUG,*) '--------------> Galerkin: INT: ICCL, ICCG, JCCL, JCCG =', ICCL, ICCG, JCCL, JCCG
 #endif
-         DSUM = 0.0_EB
-         DO IRCOL = RF%ROW(ICCL), RF%ROW(ICCL+1)-1
-            JC = RF%COLG(IRCOL)
-            IAPCOL = SCARC_FIND_MATCHING_COLUMN(AP, JC, JCCG) 
-            IF (IAPCOL > 0) DSUM = DSUM + RF%VAL(IRCOL) * AP%VAL(IAPCOL)
-#ifdef WITH_SCARC_DEBUG
-IF (IAPCOL > 0) WRITE(MSG%LU_DEBUG,'(A,I6,2E12.4)') 'SETUP_GALERKIN:, JC, AP%VAL(IAPCOL), DSUM:', JC, AP%VAL(IAPCOL), DSUM
-#endif
-         ENDDO
+         CALL SCARC_MULTIPLY_GALERKIN(PPF, RF, AC, ICCL, JCCL, JCCG, IP)
+      ENDDO INTERNAL_COARSE_CELLS_LOOP
 
-         IF (ABS(DSUM) > TOL) THEN
-            AC%COL(IP)  = JCCL
-            AC%COLG(IP) = JCCG
-            AC%VAL(IP) = DSUM
+      !EXTERNAL_COARSE_CELLS_LOOP: DO JCCL = GC%NC + 1, GC%NCE2
+      EXTERNAL_COARSE_CELLS_LOOP: DO JCC = 1, GC%NC_GALERKIN
+         JCCL = GC%CELLS_LOCAL(JCC)
+         JCCG = GC%CELLS_GLOBAL(JCC)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,I6,A,3I6,E12.4)') 'NM=',NM,' -------- bingo: IP, COL, VAL :', IP, JCCL, JCCG, DSUM
+   WRITE(MSG%LU_DEBUG,*) '--------------> Galerkin: EXT: ICCL, ICCG, JCCL, JCCG =', ICCL, ICCG, JCCL, JCCG
 #endif
-            IP = IP + 1
-         ENDIF
-      ENDDO GLOBAL_COARSE_CELLS_LOOP
+         CALL SCARC_MULTIPLY_GALERKIN(PPF, RF, AC, ICCL, JCCL, JCCG, IP)
+      ENDDO EXTERNAL_COARSE_CELLS_LOOP
 
       AC%ROW(ICCL + 1) = IP
 
 CPU(MYID)%AMG =CPU(MYID)%AMG+CURRENT_TIME()-TNOW
 TSUM = TSUM + CPU(MYID)%AMG
 
+#ifdef WITH_SCARC_DEBUG2
 WRITE(*,*) 'Galerkin: T_single = ', CPU(MYID)%AMG,': T_sum = ',TSUM
+#endif
 
    ENDDO LOCAL_COARSE_CELLS_LOOP
    AC%N_ROW = ICCL 
@@ -17174,11 +17329,13 @@ SELECT CASE (NSTATE)
       CSTATE = ' '
 END SELECT
 
+#ifdef WITH_SCARC_VERBOSE
 IF (MYID == 0) THEN
    WRITE(MSG%LU_MEM,1000) MEMORY%N_ARRAYS, MEMORY%IP, TRIM(AL%CNAME), TRIM(AL%CSCOPE), TRIM(CSTATE), TRIM(CTYPE), TRIM(CDIM), &
                           AL%LBND(1), AL%RBND(1), AL%LBND(2), AL%RBND(2), AL%LBND(3), AL%RBND(3), &
                           NWORK, MEMORY%NWORK_LOG, MEMORY%NWORK_INT, MEMORY%NWORK_REAL_EB, MEMORY%NWORK_REAL_FB 
 ENDIF
+#endif
 
 1000 FORMAT(I8,',',I8,',',A30,',',A40,',',A10,',',A10,',',A10,',',I10,',',&
             I10,',',I10,',',I10,',',I10,',',I10,',',I15,',',I15,',',I15,',',I15,',',I15)
@@ -17943,7 +18100,7 @@ END SUBROUTINE SCARC_REDUCE_REAL1
 !    NTYPE == NSCARC_MATRIX_MINIMAL :  ALLOCATE COL 
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_ALLOCATE_CMATRIX(A, NL, NPREC, NTYPE, CNAME, CSCOPE)
-TYPE (SCARC_MATRIX_COMPACT_TYPE), INTENT(INOUT) :: A
+TYPE (SCARC_CMATRIX_TYPE), INTENT(INOUT) :: A
 INTEGER, INTENT(IN) :: NPREC, NTYPE, NL
 CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 INTEGER :: NDUMMY
@@ -17975,7 +18132,7 @@ END SUBROUTINE SCARC_ALLOCATE_CMATRIX
 !> \brief Dellocate matrix in compact storage format
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEALLOCATE_CMATRIX(A, CNAME, CSCOPE)
-TYPE (SCARC_MATRIX_COMPACT_TYPE), INTENT(INOUT) :: A
+TYPE (SCARC_CMATRIX_TYPE), INTENT(INOUT) :: A
 CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 
 A%N_STENCIL   = 0
@@ -18000,7 +18157,7 @@ END SUBROUTINE SCARC_DEALLOCATE_CMATRIX
 !> \brief Reduce size of matrix in compact storage format
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_REDUCE_CMATRIX(A, CNAME, CSCOPE)
-TYPE (SCARC_MATRIX_COMPACT_TYPE), INTENT(INOUT) :: A
+TYPE (SCARC_CMATRIX_TYPE), INTENT(INOUT) :: A
 CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 REAL(EB), ALLOCATABLE, DIMENSION(:) :: VAL
 INTEGER , ALLOCATABLE, DIMENSION(:) :: COL, COLG
@@ -18066,7 +18223,7 @@ END SUBROUTINE SCARC_REDUCE_CMATRIX
 !> \brief Allocate matrix in bandwise storage format
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_ALLOCATE_BMATRIX(A, NL, CNAME, CSCOPE)
-TYPE (SCARC_MATRIX_BANDWISE_TYPE), INTENT(INOUT) :: A
+TYPE (SCARC_BMATRIX_TYPE), INTENT(INOUT) :: A
 CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 INTEGER, INTENT(IN) :: NL
 CHARACTER(40) :: CINFO
@@ -18087,7 +18244,7 @@ END SUBROUTINE SCARC_ALLOCATE_BMATRIX
 !> \brief Deallocate matrix in bandwise storage format
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEALLOCATE_BMATRIX(A, CNAME, CSCOPE)
-TYPE (SCARC_MATRIX_BANDWISE_TYPE), INTENT(INOUT) :: A
+TYPE (SCARC_BMATRIX_TYPE), INTENT(INOUT) :: A
 CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 
 A%N_STENCIL   = 0
@@ -18790,7 +18947,7 @@ END SUBROUTINE SCARC_DEBUG_ZONES
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_CMATRIX(A, CNAME, CTEXT)
 CHARACTER(*), INTENT(IN) :: CNAME, CTEXT
-TYPE (SCARC_MATRIX_COMPACT_TYPE), INTENT(INOUT) :: A      
+TYPE (SCARC_CMATRIX_TYPE), INTENT(INOUT) :: A      
 INTEGER :: IC, ICOL
 CHARACTER(40) :: CFORM
 
