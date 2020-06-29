@@ -1,0 +1,3340 @@
+
+ Fire Dynamics Simulator
+
+ Current Date     : June 26, 2020  16:19:14
+ Revision         : -AMG
+ Revision Date    : Fri Jun 26 15:19:14 2020 +0200
+ Compiler         : Intel ifort 19.0.5.281
+ Compilation Date : Jun 26, 2020 15:25:32
+
+ MPI Enabled;    Number of MPI Processes:       1
+ OpenMP Enabled; Number of OpenMP Threads:      4
+
+ MPI version: 3.1
+ MPI library version: Intel(R) MPI Library 2018 Update 1 for Linux* OS
+
+
+ Job TITLE        : Ribbed channel flow at Re_D=40,000
+ Job ID string    : ribbed_channel_80
+
+
+ Grid Dimensions, Mesh     1
+
+   Cells in the X Direction            80
+   Cells in the Y Direction            24
+   Cells in the Z Direction            24
+   Number of Grid Cells             46080
+
+
+ Physical Dimensions, Mesh     1
+
+   Length (m)                       1.000
+   Width  (m)                       0.300
+   Height (m)                       0.300
+   Initial Time Step (s)            0.012
+
+Total Number of Grid Cells         46080
+
+
+ Miscellaneous Parameters
+
+   Simulation Start Time (s)          0.0
+   Simulation End Time (s)          100.0
+   LES Calculation
+   Eddy Viscosity:           Deardorff Model (C_DEARDORFF = 0.10)
+   Near-wall Eddy Viscosity: Smagorinsky with Van Driest damping (C_SMAGORINSKY = 0.20)
+   Turbulent Prandtl Number:         0.50
+   Turbulent Schmidt Number:         0.50
+   Ambient Temperature (C):         20.00
+
+
+ Mass Fraction Transformation Matrix to Convert Species Mixtures (Columns) to Primitive Species (Rows)
+
+                         AIR     
+   AIR                   1.000000
+
+
+ Primitive Species Information
+
+   AIR
+   Gas Species
+   Molecular Weight (g/mol)            28.01340
+   Ambient Density (kg/m^3)            1.165
+   Enthalpy of Formation (J/kg)        0.00E+00
+
+
+ Tracked (Lumped) Species Information
+
+   AIR
+   Molecular Weight (g/mol)            28.01340
+   Ambient Density (kg/m^3)            1.165
+   Initial Mass Fraction               1.000
+   Enthalpy of Formation (J/kg)      0.00E+00
+
+   Sub Species                    Mass Fraction     Mole Fraction
+   AIR                            1.000000E+00      1.000000E+00
+ 
+     Viscosity (kg/m/s) Ambient,  293 K:  1.20E-05
+                                  500 K:  1.20E-05
+                                 1000 K:  1.20E-05
+                                 1500 K:  1.20E-05
+   Therm. Cond. (W/m/K) Ambient,  293 K:  1.76E-02
+                                  500 K:  1.76E-02
+                                 1000 K:  1.76E-02
+                                 1500 K:  1.76E-02
+        Enthalpy (J/kg) Ambient,  293 K:  3.05E+05
+                                  500 K:  5.19E+05
+                                 1000 K:  1.04E+06
+                                 1500 K:  1.56E+06
+    Spec. Heat (J/kg/K) Ambient,  293 K:  1.04E+03
+                                  500 K:  1.04E+03
+                                 1000 K:  1.04E+03
+                                 1500 K:  1.04E+03
+   Diff. Coeff. (m^2/s) Ambient,  293 K:  1.99E-05
+                                  500 K:  4.93E-05
+                                 1000 K:  1.57E-04
+                                 1500 K:  3.07E-04
+
+
+ Material Information
+
+
+ Surface Conditions
+
+   0 INERT
+
+   1 wall (DEFAULT)
+
+   2 OPEN
+     Passive Vent to Atmosphere
+
+   3 MIRROR
+     Symmetry Plane
+
+   4 INTERPOLATED
+
+   5 PERIODIC
+
+   6 HVAC
+
+   7 MASSLESS TRACER
+
+   8 DROPLET
+
+   9 EVACUATION_OUTFLOW
+     Normal Velocity (m/s)         0.000
+
+  10 MASSLESS TARGET
+
+  11 PERIODIC WIND
+
+
+ Device Coordinates
+
+     1 Coords:     -0.393750      0.000000      0.150000, Make: null, ID: Ub, Quantity: U-VELOCITY
+     2 Coords:     -0.393750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+     3 Coords:     -0.381250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+     4 Coords:     -0.368750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+     5 Coords:     -0.356250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+     6 Coords:     -0.343750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+     7 Coords:     -0.331250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+     8 Coords:     -0.318750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+     9 Coords:     -0.306250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    10 Coords:     -0.293750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    11 Coords:     -0.281250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    12 Coords:     -0.268750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    13 Coords:     -0.256250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    14 Coords:     -0.243750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    15 Coords:     -0.231250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    16 Coords:     -0.218750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    17 Coords:     -0.206250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    18 Coords:     -0.193750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    19 Coords:     -0.181250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    20 Coords:     -0.168750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    21 Coords:     -0.156250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    22 Coords:     -0.143750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    23 Coords:     -0.131250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    24 Coords:     -0.118750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    25 Coords:     -0.106250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    26 Coords:     -0.093750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    27 Coords:     -0.081250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    28 Coords:     -0.068750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    29 Coords:     -0.056250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    30 Coords:     -0.043750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    31 Coords:     -0.031250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    32 Coords:     -0.018750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    33 Coords:     -0.006250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    34 Coords:      0.006250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    35 Coords:      0.018750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    36 Coords:      0.031250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    37 Coords:      0.043750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    38 Coords:      0.056250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    39 Coords:      0.068750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    40 Coords:      0.081250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    41 Coords:      0.093750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    42 Coords:      0.106250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    43 Coords:      0.118750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    44 Coords:      0.131250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    45 Coords:      0.143750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    46 Coords:      0.156250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    47 Coords:      0.168750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    48 Coords:      0.181250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    49 Coords:      0.193750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    50 Coords:      0.206250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    51 Coords:      0.218750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    52 Coords:      0.231250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    53 Coords:      0.243750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    54 Coords:      0.256250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    55 Coords:      0.268750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    56 Coords:      0.281250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    57 Coords:      0.293750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    58 Coords:      0.306250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    59 Coords:      0.318750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    60 Coords:      0.331250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    61 Coords:      0.343750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    62 Coords:      0.356250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    63 Coords:      0.368750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    64 Coords:      0.381250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    65 Coords:      0.393750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    66 Coords:      0.406250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    67 Coords:      0.418750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    68 Coords:      0.431250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    69 Coords:      0.443750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    70 Coords:      0.456250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    71 Coords:      0.468750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    72 Coords:      0.481250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    73 Coords:      0.493750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    74 Coords:      0.506250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    75 Coords:      0.518750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    76 Coords:      0.531250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    77 Coords:      0.543750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    78 Coords:      0.556250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    79 Coords:      0.568750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    80 Coords:      0.581250      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    81 Coords:      0.593750      0.000000      0.006250, Make: null, ID: u_strm_bot, Quantity: U-VELOCITY
+    82 Coords:     -0.043750      0.000000      0.106250, Make: null, ID: u_strm_rib, Quantity: U-VELOCITY
+    83 Coords:     -0.031250      0.000000      0.106250, Make: null, ID: u_strm_rib, Quantity: U-VELOCITY
+    84 Coords:     -0.018750      0.000000      0.106250, Make: null, ID: u_strm_rib, Quantity: U-VELOCITY
+    85 Coords:     -0.006250      0.000000      0.106250, Make: null, ID: u_strm_rib, Quantity: U-VELOCITY
+    86 Coords:      0.006250      0.000000      0.106250, Make: null, ID: u_strm_rib, Quantity: U-VELOCITY
+    87 Coords:      0.018750      0.000000      0.106250, Make: null, ID: u_strm_rib, Quantity: U-VELOCITY
+    88 Coords:      0.031250      0.000000      0.106250, Make: null, ID: u_strm_rib, Quantity: U-VELOCITY
+    89 Coords:      0.043750      0.000000      0.106250, Make: null, ID: u_strm_rib, Quantity: U-VELOCITY
+    90 Coords:     -0.393750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+    91 Coords:     -0.381250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+    92 Coords:     -0.368750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+    93 Coords:     -0.356250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+    94 Coords:     -0.343750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+    95 Coords:     -0.331250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+    96 Coords:     -0.318750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+    97 Coords:     -0.306250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+    98 Coords:     -0.293750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+    99 Coords:     -0.281250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   100 Coords:     -0.268750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   101 Coords:     -0.256250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   102 Coords:     -0.243750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   103 Coords:     -0.231250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   104 Coords:     -0.218750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   105 Coords:     -0.206250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   106 Coords:     -0.193750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   107 Coords:     -0.181250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   108 Coords:     -0.168750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   109 Coords:     -0.156250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   110 Coords:     -0.143750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   111 Coords:     -0.131250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   112 Coords:     -0.118750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   113 Coords:     -0.106250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   114 Coords:     -0.093750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   115 Coords:     -0.081250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   116 Coords:     -0.068750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   117 Coords:     -0.056250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   118 Coords:     -0.043750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   119 Coords:     -0.031250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   120 Coords:     -0.018750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   121 Coords:     -0.006250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   122 Coords:      0.006250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   123 Coords:      0.018750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   124 Coords:      0.031250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   125 Coords:      0.043750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   126 Coords:      0.056250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   127 Coords:      0.068750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   128 Coords:      0.081250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   129 Coords:      0.093750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   130 Coords:      0.106250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   131 Coords:      0.118750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   132 Coords:      0.131250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   133 Coords:      0.143750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   134 Coords:      0.156250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   135 Coords:      0.168750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   136 Coords:      0.181250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   137 Coords:      0.193750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   138 Coords:      0.206250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   139 Coords:      0.218750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   140 Coords:      0.231250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   141 Coords:      0.243750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   142 Coords:      0.256250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   143 Coords:      0.268750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   144 Coords:      0.281250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   145 Coords:      0.293750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   146 Coords:      0.306250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   147 Coords:      0.318750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   148 Coords:      0.331250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   149 Coords:      0.343750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   150 Coords:      0.356250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   151 Coords:      0.368750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   152 Coords:      0.381250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   153 Coords:      0.393750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   154 Coords:      0.406250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   155 Coords:      0.418750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   156 Coords:      0.431250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   157 Coords:      0.443750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   158 Coords:      0.456250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   159 Coords:      0.468750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   160 Coords:      0.481250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   161 Coords:      0.493750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   162 Coords:      0.506250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   163 Coords:      0.518750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   164 Coords:      0.531250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   165 Coords:      0.543750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   166 Coords:      0.556250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   167 Coords:      0.568750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   168 Coords:      0.581250      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   169 Coords:      0.593750      0.000000      0.006250, Make: null, ID: mu_strm_bot, Quantity: VISCOSITY
+   170 Coords:     -0.393750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   171 Coords:     -0.381250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   172 Coords:     -0.368750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   173 Coords:     -0.356250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   174 Coords:     -0.343750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   175 Coords:     -0.331250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   176 Coords:     -0.318750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   177 Coords:     -0.306250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   178 Coords:     -0.293750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   179 Coords:     -0.281250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   180 Coords:     -0.268750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   181 Coords:     -0.256250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   182 Coords:     -0.243750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   183 Coords:     -0.231250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   184 Coords:     -0.218750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   185 Coords:     -0.206250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   186 Coords:     -0.193750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   187 Coords:     -0.181250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   188 Coords:     -0.168750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   189 Coords:     -0.156250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   190 Coords:     -0.143750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   191 Coords:     -0.131250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   192 Coords:     -0.118750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   193 Coords:     -0.106250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   194 Coords:     -0.093750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   195 Coords:     -0.081250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   196 Coords:     -0.068750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   197 Coords:     -0.056250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   198 Coords:     -0.043750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   199 Coords:     -0.031250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   200 Coords:     -0.018750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   201 Coords:     -0.006250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   202 Coords:      0.006250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   203 Coords:      0.018750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   204 Coords:      0.031250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   205 Coords:      0.043750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   206 Coords:      0.056250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   207 Coords:      0.068750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   208 Coords:      0.081250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   209 Coords:      0.093750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   210 Coords:      0.106250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   211 Coords:      0.118750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   212 Coords:      0.131250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   213 Coords:      0.143750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   214 Coords:      0.156250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   215 Coords:      0.168750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   216 Coords:      0.181250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   217 Coords:      0.193750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   218 Coords:      0.206250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   219 Coords:      0.218750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   220 Coords:      0.231250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   221 Coords:      0.243750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   222 Coords:      0.256250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   223 Coords:      0.268750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   224 Coords:      0.281250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   225 Coords:      0.293750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   226 Coords:      0.306250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   227 Coords:      0.318750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   228 Coords:      0.331250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   229 Coords:      0.343750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   230 Coords:      0.356250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   231 Coords:      0.368750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   232 Coords:      0.381250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   233 Coords:      0.393750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   234 Coords:      0.406250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   235 Coords:      0.418750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   236 Coords:      0.431250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   237 Coords:      0.443750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   238 Coords:      0.456250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   239 Coords:      0.468750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   240 Coords:      0.481250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   241 Coords:      0.493750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   242 Coords:      0.506250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   243 Coords:      0.518750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   244 Coords:      0.531250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   245 Coords:      0.543750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   246 Coords:      0.556250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   247 Coords:      0.568750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   248 Coords:      0.581250      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   249 Coords:      0.593750      0.000000      0.006250, Make: null, ID: urms_strm_bot, Quantity: U-VELOCITY
+   250 Coords:     -0.043750      0.000000      0.106250, Make: null, ID: urms_strm_rib, Quantity: U-VELOCITY
+   251 Coords:     -0.031250      0.000000      0.106250, Make: null, ID: urms_strm_rib, Quantity: U-VELOCITY
+   252 Coords:     -0.018750      0.000000      0.106250, Make: null, ID: urms_strm_rib, Quantity: U-VELOCITY
+   253 Coords:     -0.006250      0.000000      0.106250, Make: null, ID: urms_strm_rib, Quantity: U-VELOCITY
+   254 Coords:      0.006250      0.000000      0.106250, Make: null, ID: urms_strm_rib, Quantity: U-VELOCITY
+   255 Coords:      0.018750      0.000000      0.106250, Make: null, ID: urms_strm_rib, Quantity: U-VELOCITY
+   256 Coords:      0.031250      0.000000      0.106250, Make: null, ID: urms_strm_rib, Quantity: U-VELOCITY
+   257 Coords:      0.043750      0.000000      0.106250, Make: null, ID: urms_strm_rib, Quantity: U-VELOCITY
+   258 Coords:      0.000000      0.000000      0.106250, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   259 Coords:      0.000000      0.000000      0.118750, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   260 Coords:      0.000000      0.000000      0.131250, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   261 Coords:      0.000000      0.000000      0.143750, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   262 Coords:      0.000000      0.000000      0.156250, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   263 Coords:      0.000000      0.000000      0.168750, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   264 Coords:      0.000000      0.000000      0.181250, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   265 Coords:      0.000000      0.000000      0.193750, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   266 Coords:      0.000000      0.000000      0.206250, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   267 Coords:      0.000000      0.000000      0.218750, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   268 Coords:      0.000000      0.000000      0.231250, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   269 Coords:      0.000000      0.000000      0.243750, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   270 Coords:      0.000000      0.000000      0.256250, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   271 Coords:      0.000000      0.000000      0.268750, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   272 Coords:      0.000000      0.000000      0.281250, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   273 Coords:      0.000000      0.000000      0.293750, Make: null, ID: u_prof_rib, Quantity: U-VELOCITY
+   274 Coords:      0.000000      0.000000      0.106250, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   275 Coords:      0.000000      0.000000      0.118750, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   276 Coords:      0.000000      0.000000      0.131250, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   277 Coords:      0.000000      0.000000      0.143750, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   278 Coords:      0.000000      0.000000      0.156250, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   279 Coords:      0.000000      0.000000      0.168750, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   280 Coords:      0.000000      0.000000      0.181250, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   281 Coords:      0.000000      0.000000      0.193750, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   282 Coords:      0.000000      0.000000      0.206250, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   283 Coords:      0.000000      0.000000      0.218750, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   284 Coords:      0.000000      0.000000      0.231250, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   285 Coords:      0.000000      0.000000      0.243750, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   286 Coords:      0.000000      0.000000      0.256250, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   287 Coords:      0.000000      0.000000      0.268750, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   288 Coords:      0.000000      0.000000      0.281250, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   289 Coords:      0.000000      0.000000      0.293750, Make: null, ID: urms_prof_rib, Quantity: U-VELOCITY
+   290 Coords:      0.000000      0.000000      0.106250, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   291 Coords:      0.000000      0.000000      0.118750, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   292 Coords:      0.000000      0.000000      0.131250, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   293 Coords:      0.000000      0.000000      0.143750, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   294 Coords:      0.000000      0.000000      0.156250, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   295 Coords:      0.000000      0.000000      0.168750, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   296 Coords:      0.000000      0.000000      0.181250, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   297 Coords:      0.000000      0.000000      0.193750, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   298 Coords:      0.000000      0.000000      0.206250, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   299 Coords:      0.000000      0.000000      0.218750, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   300 Coords:      0.000000      0.000000      0.231250, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   301 Coords:      0.000000      0.000000      0.243750, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   302 Coords:      0.000000      0.000000      0.256250, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   303 Coords:      0.000000      0.000000      0.268750, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   304 Coords:      0.000000      0.000000      0.281250, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+   305 Coords:      0.000000      0.000000      0.293750, Make: null, ID: mu_prof_rib, Quantity: VISCOSITY
+
+
+ Slice File Information, Mesh     1
+
+   Sampling Interval (s)             0.100
+
+   1 Nodes:   0  80  13  13   0  24, Quantity: PRESSURE
+   2 Nodes:   0  80  13  13   0  24, Quantity: VISCOSITY
+   3 Nodes:   0  80  12  12   0  24, Quantity: VELOCITY
+   4 Nodes:   0  80  12  12   0  24, Quantity: U-VELOCITY
+   5 Nodes:   0  80  12  12   0  24, Quantity: V-VELOCITY
+   6 Nodes:   0  80  12  12   0  24, Quantity: W-VELOCITY
+
+
+ Boundary File Information
+
+   Sampling Interval (s)             0.200
+
+   1 Quantity: VISCOUS WALL UNITS
+   2 Quantity: FRICTION VELOCITY
+ 
+ 
+
+ Run Time Diagnostics
+
+       Time Step       1   June 26, 2020  16:19:14
+       Step Size:    0.941E-02 s, Total Time:      0.009 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.48E-02 on Mesh   1 at (  36  18   8)
+       Maximum Pressure Error:  0.15E-10 on Mesh   1 at (   1  13   6)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  28,  10,   8)
+       Max divergence:  0.88E-13 at (  80,  18,  12)
+       Min divergence: -0.81E-13 at (   1,   5,   8)
+       Max VN number:   0.11E+00 at (  65,  24,   1)
+ 
+       Time Step       2   June 26, 2020  16:19:15
+       Step Size:    0.839E-02 s, Total Time:       0.02 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.50E-02 on Mesh   1 at (  36  16   1)
+       Maximum Pressure Error:  0.20E-10 on Mesh   1 at (  27  18   2)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  28,  10,   8)
+       Max divergence:  0.94E-13 at (  37,  13,   4)
+       Min divergence: -0.91E-13 at (  28,  18,   4)
+       Max VN number:   0.94E-01 at (  37,   1,  24)
+ 
+       Time Step       3   June 26, 2020  16:19:15
+       Step Size:    0.839E-02 s, Total Time:       0.03 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.57E-02 on Mesh   1 at (  36   3   1)
+       Maximum Pressure Error:  0.31E-10 on Mesh   1 at (  37  11   4)
+       ---------------------------------------------------------------
+       Max CFL number:  0.96E+00 at (  28,  14,   8)
+       Max divergence:  0.64E-13 at (   1,  17,   1)
+       Min divergence: -0.64E-13 at (  28,   9,   9)
+       Max VN number:   0.11E+00 at (  28,  24,   9)
+ 
+       Time Step       4   June 26, 2020  16:19:15
+       Step Size:    0.839E-02 s, Total Time:       0.03 s
+       Pressure Iterations:      3
+       Maximum Velocity Error:  0.41E-02 on Mesh   1 at (  36  16   1)
+       Maximum Pressure Error:  0.18E-10 on Mesh   1 at (  28   3   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.10E+01 at (  28,  16,   8)
+       Max divergence:  0.68E-13 at (   1,  19,  11)
+       Min divergence: -0.85E-13 at (  28,  10,   9)
+       Max VN number:   0.13E+00 at (  27,   1,   8)
+ 
+       Time Step       5   June 26, 2020  16:19:15
+       Step Size:    0.839E-02 s, Total Time:       0.04 s
+       Pressure Iterations:      2
+       Maximum Velocity Error:  0.53E-02 on Mesh   1 at (   0   4  20)
+       Maximum Pressure Error:  0.16E-10 on Mesh   1 at (   1   1  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.99E+00 at (  28,  16,   8)
+       Max divergence:  0.91E-13 at (   1,   6,   2)
+       Min divergence: -0.78E-13 at (  25,   1,   9)
+       Max VN number:   0.14E+00 at (  27,   1,   8)
+ 
+       Time Step       6   June 26, 2020  16:19:15
+       Step Size:    0.839E-02 s, Total Time:       0.05 s
+       Pressure Iterations:      2
+       Maximum Velocity Error:  0.38E-02 on Mesh   1 at (   0   9   4)
+       Maximum Pressure Error:  0.16E-10 on Mesh   1 at (  34   9  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.96E+00 at (  27,  23,   8)
+       Max divergence:  0.80E-13 at (  80,   7,   6)
+       Min divergence: -0.81E-13 at (  78,  15,   2)
+       Max VN number:   0.15E+00 at (  27,  19,   9)
+ 
+       Time Step       7   June 26, 2020  16:19:15
+       Step Size:    0.839E-02 s, Total Time:       0.06 s
+       Pressure Iterations:      2
+       Maximum Velocity Error:  0.60E-02 on Mesh   1 at (  29   7   8)
+       Maximum Pressure Error:  0.18E-10 on Mesh   1 at (  80   3   3)
+       ---------------------------------------------------------------
+       Max CFL number:  0.94E+00 at (  28,  22,   8)
+       Max divergence:  0.80E-13 at (  80,   6,  13)
+       Min divergence: -0.74E-13 at (   1,  20,   2)
+       Max VN number:   0.16E+00 at (  27,  13,   9)
+ 
+       Time Step       8   June 26, 2020  16:19:15
+       Step Size:    0.839E-02 s, Total Time:       0.07 s
+       Pressure Iterations:      2
+       Maximum Velocity Error:  0.47E-02 on Mesh   1 at (  29  21   8)
+       Maximum Pressure Error:  0.18E-10 on Mesh   1 at (  80  18  24)
+       ---------------------------------------------------------------
+       Max CFL number:  0.94E+00 at (  27,  22,   8)
+       Max divergence:  0.77E-13 at (  80,   2,  24)
+       Min divergence: -0.75E-13 at (  22,   3,  14)
+       Max VN number:   0.16E+00 at (  27,  13,   9)
+ 
+       Time Step       9   June 26, 2020  16:19:15
+       Step Size:    0.839E-02 s, Total Time:       0.08 s
+       Pressure Iterations:      2
+       Maximum Velocity Error:  0.35E-02 on Mesh   1 at (   0   3   8)
+       Maximum Pressure Error:  0.15E-10 on Mesh   1 at (  80  24   4)
+       ---------------------------------------------------------------
+       Max CFL number:  0.95E+00 at (  27,  22,   8)
+       Max divergence:  0.85E-13 at (  27,  23,   9)
+       Min divergence: -0.82E-13 at (  28,   9,   9)
+       Max VN number:   0.15E+00 at (  27,  14,   9)
+ 
+       Time Step      10   June 26, 2020  16:19:15
+       Step Size:    0.839E-02 s, Total Time:       0.08 s
+       Pressure Iterations:      2
+       Maximum Velocity Error:  0.48E-02 on Mesh   1 at (   0   3   8)
+       Maximum Pressure Error:  0.17E-10 on Mesh   1 at (  28   7   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.96E+00 at (  27,  22,   8)
+       Max divergence:  0.85E-13 at (  27,  16,   9)
+       Min divergence: -0.10E-12 at (  28,  16,   9)
+       Max VN number:   0.14E+00 at (  27,  16,   9)
+ 
+       Time Step      20   June 26, 2020  16:19:16
+       Step Size:    0.839E-02 s, Total Time:       0.17 s
+       Pressure Iterations:      2
+       Maximum Velocity Error:  0.36E-02 on Mesh   1 at (   0   5   4)
+       Maximum Pressure Error:  0.19E-10 on Mesh   1 at (  28  15   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.93E+00 at (  27,  22,   8)
+       Max divergence:  0.17E-12 at (  28,  15,   9)
+       Min divergence: -0.28E-12 at (  28,  16,   9)
+       Max VN number:   0.15E+00 at (  27,  11,   9)
+ 
+       Time Step      30   June 26, 2020  16:19:17
+       Step Size:    0.839E-02 s, Total Time:       0.25 s
+       Pressure Iterations:      2
+       Maximum Velocity Error:  0.40E-02 on Mesh   1 at (   0  16  14)
+       Maximum Pressure Error:  0.30E-10 on Mesh   1 at (  29  20  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.93E+00 at (  28,  23,   8)
+       Max divergence:  0.13E-11 at (  28,  21,   9)
+       Min divergence: -0.16E-11 at (  28,  20,   9)
+       Max VN number:   0.17E+00 at (  27,  12,   9)
+ 
+       Time Step      40   June 26, 2020  16:19:18
+       Step Size:    0.839E-02 s, Total Time:       0.34 s
+       Pressure Iterations:      2
+       Maximum Velocity Error:  0.52E-02 on Mesh   1 at (   0   8  12)
+       Maximum Pressure Error:  0.30E-09 on Mesh   1 at (  29  20  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.96E+00 at (  30,  10,  11)
+       Max divergence:  0.11E-10 at (  28,  21,   9)
+       Min divergence: -0.13E-10 at (  28,  20,   9)
+       Max VN number:   0.19E+00 at (  27,   9,   9)
+ 
+       Time Step      50   June 26, 2020  16:19:19
+       Step Size:    0.748E-02 s, Total Time:       0.41 s
+       Pressure Iterations:      2
+       Maximum Velocity Error:  0.56E-02 on Mesh   1 at (  29   7   8)
+       Maximum Pressure Error:  0.21E-08 on Mesh   1 at (  29  15  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.93E+00 at (  31,  11,  11)
+       Max divergence:  0.37E-10 at (  28,  15,   9)
+       Min divergence: -0.34E-10 at (  28,  14,   9)
+       Max VN number:   0.17E+00 at (  27,  12,   9)
+ 
+       Time Step      60   June 26, 2020  16:19:20
+       Step Size:    0.748E-02 s, Total Time:       0.49 s
+       Pressure Iterations:      3
+       Maximum Velocity Error:  0.35E-02 on Mesh   1 at (   0   8  13)
+       Maximum Pressure Error:  0.14E-07 on Mesh   1 at (  30  14  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.10E+01 at (  29,   8,  11)
+       Max divergence:  0.20E-09 at (  28,  15,   9)
+       Min divergence: -0.18E-09 at (  28,  14,   9)
+       Max VN number:   0.18E+00 at (  27,   9,   9)
+ 
+       Time Step      70   June 26, 2020  16:19:20
+       Step Size:    0.665E-02 s, Total Time:       0.56 s
+       Pressure Iterations:      3
+       Maximum Velocity Error:  0.36E-02 on Mesh   1 at (   0   7  14)
+       Maximum Pressure Error:  0.18E-07 on Mesh   1 at (  29  14  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.95E+00 at (  29,   8,  10)
+       Max divergence:  0.17E-09 at (  28,  15,   9)
+       Min divergence: -0.16E-09 at (  28,  14,   9)
+       Max VN number:   0.17E+00 at (  28,   8,   9)
+ 
+       Time Step      80   June 26, 2020  16:19:21
+       Step Size:    0.595E-02 s, Total Time:       0.62 s
+       Pressure Iterations:      3
+       Maximum Velocity Error:  0.38E-02 on Mesh   1 at (  29  10   8)
+       Maximum Pressure Error:  0.22E-07 on Mesh   1 at (  29  15  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  30,  10,  11)
+       Max divergence:  0.16E-09 at (  28,  15,   9)
+       Min divergence: -0.16E-09 at (  28,  14,   9)
+       Max VN number:   0.16E+00 at (  28,  17,   9)
+ 
+       Time Step      90   June 26, 2020  16:19:22
+       Step Size:    0.595E-02 s, Total Time:       0.68 s
+       Pressure Iterations:      3
+       Maximum Velocity Error:  0.35E-02 on Mesh   1 at (   0  19  12)
+       Maximum Pressure Error:  0.59E-08 on Mesh   1 at (  29  15  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  30,  10,  11)
+       Max divergence:  0.33E-10 at (  28,  15,   9)
+       Min divergence: -0.32E-10 at (  28,  16,   9)
+       Max VN number:   0.15E+00 at (  27,  23,   9)
+ 
+       Time Step     100   June 26, 2020  16:19:23
+       Step Size:    0.595E-02 s, Total Time:       0.74 s
+       Pressure Iterations:      3
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0  11  12)
+       Maximum Pressure Error:  0.29E-08 on Mesh   1 at (  30  16  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  30,  10,  10)
+       Max divergence:  0.11E-10 at (  29,  15,  10)
+       Min divergence: -0.11E-10 at (  29,  16,  10)
+       Max VN number:   0.17E+00 at (  28,  11,   9)
+ 
+       Time Step     200   June 26, 2020  16:19:32
+       Step Size:    0.471E-02 s, Total Time:       1.23 s
+       Pressure Iterations:      2
+       Maximum Velocity Error:  0.34E-02 on Mesh   1 at (   0   8  17)
+       Maximum Pressure Error:  0.43E-10 on Mesh   1 at (  35  10  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  32,  16,  13)
+       Max divergence:  0.79E-13 at (  35,  17,  13)
+       Min divergence: -0.92E-13 at (  35,   9,  15)
+       Max VN number:   0.13E+00 at (  28,   2,   8)
+ 
+       Time Step     300   June 26, 2020  16:19:40
+       Step Size:    0.471E-02 s, Total Time:       1.71 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.50E-02 on Mesh   1 at (   0  18   8)
+       Maximum Pressure Error:  0.61E-10 on Mesh   1 at (  68  14  17)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  70,  17,  15)
+       Max divergence:  0.10E-12 at (  50,  15,  11)
+       Min divergence: -0.11E-12 at (  68,  14,  17)
+       Max VN number:   0.16E+00 at (  28,   3,   8)
+ 
+       Time Step     400   June 26, 2020  16:19:50
+       Step Size:    0.464E-02 s, Total Time:       2.16 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.58E-02 on Mesh   1 at (  81   5  16)
+       Maximum Pressure Error:  0.64E-10 on Mesh   1 at (  41   9  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  47,  11,  16)
+       Max divergence:  0.12E-12 at (  50,  11,  15)
+       Min divergence: -0.15E-12 at (  41,   9,  16)
+       Max VN number:   0.14E+00 at (  65,   1,   7)
+ 
+       Time Step     500   June 26, 2020  16:19:59
+       Step Size:    0.464E-02 s, Total Time:       2.63 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0  20  17)
+       Maximum Pressure Error:  0.53E-10 on Mesh   1 at (  49  13  20)
+       ---------------------------------------------------------------
+       Max CFL number:  0.96E+00 at (  52,  20,  12)
+       Max divergence:  0.12E-12 at (  59,   7,  13)
+       Min divergence: -0.11E-12 at (  46,  19,  15)
+       Max VN number:   0.15E+00 at (  28,   5,   8)
+ 
+       Time Step     600   June 26, 2020  16:20:08
+       Step Size:    0.453E-02 s, Total Time:       3.05 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.60E-02 on Mesh   1 at (   0  18  12)
+       Maximum Pressure Error:  0.77E-10 on Mesh   1 at (  71  17  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  67,   4,  13)
+       Max divergence:  0.13E-12 at (  70,   4,  18)
+       Min divergence: -0.12E-12 at (  71,  17,  12)
+       Max VN number:   0.13E+00 at (  28,   4,   8)
+ 
+       Time Step     700   June 26, 2020  16:20:18
+       Step Size:    0.453E-02 s, Total Time:       3.50 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.54E-02 on Mesh   1 at (   0  19  18)
+       Maximum Pressure Error:  0.71E-10 on Mesh   1 at (  80  18  22)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  45,   4,  16)
+       Max divergence:  0.14E-12 at (  64,   9,  13)
+       Min divergence: -0.13E-12 at (  80,  14,  10)
+       Max VN number:   0.15E+00 at (  33,  20,  10)
+ 
+       Time Step     800   June 26, 2020  16:20:27
+       Step Size:    0.453E-02 s, Total Time:       3.95 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.56E-02 on Mesh   1 at (   0  16   8)
+       Maximum Pressure Error:  0.62E-10 on Mesh   1 at (  80  19  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  33,  18,  15)
+       Max divergence:  0.11E-12 at (  80,  19,  13)
+       Min divergence: -0.12E-12 at (  73,   8,  12)
+       Max VN number:   0.14E+00 at (  28,  19,   8)
+ 
+       Time Step     900   June 26, 2020  16:20:37
+       Step Size:    0.444E-02 s, Total Time:       4.40 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.41E-02 on Mesh   1 at (   0  19  16)
+       Maximum Pressure Error:  0.69E-10 on Mesh   1 at (  35  20  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  40,   8,  13)
+       Max divergence:  0.14E-12 at (  35,  20,  18)
+       Min divergence: -0.12E-12 at (  42,  18,  13)
+       Max VN number:   0.16E+00 at (  28,  21,   8)
+ 
+       Time Step    1000   June 26, 2020  16:20:46
+       Step Size:    0.444E-02 s, Total Time:       4.85 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.42E-02 on Mesh   1 at (   0   9  17)
+       Maximum Pressure Error:  0.79E-10 on Mesh   1 at (  74  15  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.98E+00 at (  77,  15,  13)
+       Max divergence:  0.17E-12 at (  77,  15,  13)
+       Min divergence: -0.14E-12 at (  74,  15,  13)
+       Max VN number:   0.13E+00 at (  28,  16,   8)
+ 
+       Time Step    1100   June 26, 2020  16:20:56
+       Step Size:    0.444E-02 s, Total Time:       5.29 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.37E-02 on Mesh   1 at (   0   5  11)
+       Maximum Pressure Error:  0.65E-10 on Mesh   1 at (  58  17  17)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  55,   4,  10)
+       Max divergence:  0.14E-12 at (  59,  13,  15)
+       Min divergence: -0.13E-12 at (  46,  23,  16)
+       Max VN number:   0.14E+00 at (  37,  15,  10)
+ 
+       Time Step    1200   June 26, 2020  16:21:05
+       Step Size:    0.444E-02 s, Total Time:       5.73 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.41E-02 on Mesh   1 at (   0  21  16)
+       Maximum Pressure Error:  0.74E-10 on Mesh   1 at (  58   5  23)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  52,  16,  13)
+       Max divergence:  0.14E-12 at (  40,  15,  10)
+       Min divergence: -0.12E-12 at (  25,  19,  10)
+       Max VN number:   0.17E+00 at (  28,  15,   8)
+ 
+       Time Step    1300   June 26, 2020  16:21:15
+       Step Size:    0.407E-02 s, Total Time:       6.15 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.42E-02 on Mesh   1 at (   0  16  15)
+       Maximum Pressure Error:  0.71E-10 on Mesh   1 at (  61  17  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.82E+00 at (  62,  17,  12)
+       Max divergence:  0.17E-12 at (  50,   4,  10)
+       Min divergence: -0.15E-12 at (  61,  17,  12)
+       Max VN number:   0.16E+00 at (  28,  14,   8)
+ 
+       Time Step    1400   June 26, 2020  16:21:24
+       Step Size:    0.397E-02 s, Total Time:       6.56 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0  16   7)
+       Maximum Pressure Error:  0.80E-10 on Mesh   1 at (  44  16  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  35,   4,  13)
+       Max divergence:  0.15E-12 at (  35,   4,  13)
+       Min divergence: -0.12E-12 at (  41,  16,  12)
+       Max VN number:   0.15E+00 at (  28,  22,   8)
+ 
+       Time Step    1500   June 26, 2020  16:21:34
+       Step Size:    0.397E-02 s, Total Time:       6.96 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.34E-02 on Mesh   1 at (   0  14   9)
+       Maximum Pressure Error:  0.88E-10 on Mesh   1 at (  59  18  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  60,   6,  13)
+       Max divergence:  0.17E-12 at (  65,   2,  14)
+       Min divergence: -0.11E-12 at (  28,  13,   9)
+       Max VN number:   0.17E+00 at (  28,  10,   8)
+ 
+       Time Step    1600   June 26, 2020  16:21:43
+       Step Size:    0.392E-02 s, Total Time:       7.38 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.38E-02 on Mesh   1 at (   0  18  11)
+       Maximum Pressure Error:  0.89E-10 on Mesh   1 at (  61  17  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  55,  22,  18)
+       Max divergence:  0.14E-12 at (  65,  20,  15)
+       Min divergence: -0.16E-12 at (  61,  17,  15)
+       Max VN number:   0.16E+00 at (  28,  12,   8)
+ 
+       Time Step    1700   June 26, 2020  16:21:52
+       Step Size:    0.421E-02 s, Total Time:       7.80 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.46E-02 on Mesh   1 at (   0  13  13)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  59  18  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  50,  17,  12)
+       Max divergence:  0.12E-12 at (  48,  16,  11)
+       Min divergence: -0.12E-12 at (  66,  16,   8)
+       Max VN number:   0.14E+00 at (  28,   7,   8)
+ 
+       Time Step    1800   June 26, 2020  16:22:02
+       Step Size:    0.421E-02 s, Total Time:       8.22 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (  81  17   9)
+       Maximum Pressure Error:  0.63E-10 on Mesh   1 at (  25  18  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  62,  16,  18)
+       Max divergence:  0.12E-12 at (  59,  18,  15)
+       Min divergence: -0.14E-12 at (  56,  17,  16)
+       Max VN number:   0.15E+00 at (  28,  13,   8)
+ 
+       Time Step    1900   June 26, 2020  16:22:11
+       Step Size:    0.421E-02 s, Total Time:       8.64 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.35E-02 on Mesh   1 at (   0  11  13)
+       Maximum Pressure Error:  0.11E-09 on Mesh   1 at (  80   6  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  55,   8,  12)
+       Max divergence:  0.18E-12 at (  80,   6,  11)
+       Min divergence: -0.16E-12 at (  51,  14,  16)
+       Max VN number:   0.17E+00 at (  28,  16,   8)
+ 
+       Time Step    2000   June 26, 2020  16:22:21
+       Step Size:    0.411E-02 s, Total Time:       9.05 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.43E-02 on Mesh   1 at (   0   6  19)
+       Maximum Pressure Error:  0.78E-10 on Mesh   1 at (  71  22  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.84E+00 at (  59,   7,  14)
+       Max divergence:  0.11E-12 at (  59,   4,   7)
+       Min divergence: -0.16E-12 at (  71,  22,  12)
+       Max VN number:   0.15E+00 at (  28,  13,   8)
+ 
+       Time Step    2100   June 26, 2020  16:22:30
+       Step Size:    0.411E-02 s, Total Time:       9.46 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.40E-02 on Mesh   1 at (   0  20  14)
+       Maximum Pressure Error:  0.91E-10 on Mesh   1 at (  55  13  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  47,   4,  15)
+       Max divergence:  0.15E-12 at (  55,  13,  13)
+       Min divergence: -0.19E-12 at (  63,  22,  16)
+       Max VN number:   0.16E+00 at (  28,   5,   8)
+ 
+       Time Step    2200   June 26, 2020  16:22:40
+       Step Size:    0.440E-02 s, Total Time:       9.85 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0   4  19)
+       Maximum Pressure Error:  0.73E-10 on Mesh   1 at (  80   4  19)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  74,   5,  15)
+       Max divergence:  0.15E-12 at (  55,  13,  13)
+       Min divergence: -0.13E-12 at (  71,   5,  16)
+       Max VN number:   0.15E+00 at (  28,  21,   8)
+ 
+       Time Step    2300   June 26, 2020  16:22:50
+       Step Size:    0.431E-02 s, Total Time:      10.29 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.41E-02 on Mesh   1 at (   0  15  10)
+       Maximum Pressure Error:  0.59E-10 on Mesh   1 at (  80  18  20)
+       ---------------------------------------------------------------
+       Max CFL number:  0.95E+00 at (  62,  11,  13)
+       Max divergence:  0.14E-12 at (  60,  13,  13)
+       Min divergence: -0.13E-12 at (  66,  10,  12)
+       Max VN number:   0.14E+00 at (  28,   4,   8)
+ 
+       Time Step    2400   June 26, 2020  16:23:00
+       Step Size:    0.421E-02 s, Total Time:      10.72 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.56E-02 on Mesh   1 at (   0  15  21)
+       Maximum Pressure Error:  0.74E-10 on Mesh   1 at (  80  15   7)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  54,  10,  16)
+       Max divergence:  0.13E-12 at (  48,  12,  15)
+       Min divergence: -0.11E-12 at (  46,  11,  17)
+       Max VN number:   0.17E+00 at (  28,   9,   8)
+ 
+       Time Step    2500   June 26, 2020  16:23:11
+       Step Size:    0.421E-02 s, Total Time:      11.14 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.52E-02 on Mesh   1 at (   0  19  12)
+       Maximum Pressure Error:  0.87E-10 on Mesh   1 at (  70  15  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  54,  17,  20)
+       Max divergence:  0.14E-12 at (  40,  20,  18)
+       Min divergence: -0.16E-12 at (  44,   5,  23)
+       Max VN number:   0.15E+00 at (  28,   8,   8)
+ 
+       Time Step    2600   June 26, 2020  16:23:20
+       Step Size:    0.421E-02 s, Total Time:      11.56 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.59E-02 on Mesh   1 at (   0  15  10)
+       Maximum Pressure Error:  0.69E-10 on Mesh   1 at (  50   8  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  42,  13,  16)
+       Max divergence:  0.13E-12 at (  49,   7,  11)
+       Min divergence: -0.12E-12 at (  56,  14,  17)
+       Max VN number:   0.15E+00 at (  28,   5,   8)
+ 
+       Time Step    2700   June 26, 2020  16:23:30
+       Step Size:    0.421E-02 s, Total Time:      11.98 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.42E-02 on Mesh   1 at (  81  11  16)
+       Maximum Pressure Error:  0.10E-09 on Mesh   1 at (  55  18  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  37,  20,  13)
+       Max divergence:  0.16E-12 at (  55,  18,  11)
+       Min divergence: -0.16E-12 at (  53,  17,  12)
+       Max VN number:   0.16E+00 at (  28,  17,   8)
+ 
+       Time Step    2800   June 26, 2020  16:23:39
+       Step Size:    0.376E-02 s, Total Time:      12.39 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.54E-02 on Mesh   1 at (   0  14  13)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  55  13  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  52,  15,  14)
+       Max divergence:  0.14E-12 at (  50,  15,  15)
+       Min divergence: -0.11E-12 at (  61,  22,   8)
+       Max VN number:   0.11E+00 at (  36,  15,   9)
+ 
+       Time Step    2900   June 26, 2020  16:23:48
+       Step Size:    0.414E-02 s, Total Time:      12.78 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.49E-02 on Mesh   1 at (   0  18   6)
+       Maximum Pressure Error:  0.87E-10 on Mesh   1 at (  28  21  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  39,  16,  12)
+       Max divergence:  0.77E-12 at (  29,  20,  10)
+       Min divergence: -0.86E-12 at (  28,  20,  10)
+       Max VN number:   0.19E+00 at (  28,  16,   8)
+ 
+       Time Step    3000   June 26, 2020  16:23:58
+       Step Size:    0.406E-02 s, Total Time:      13.17 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.62E-02 on Mesh   1 at (   0  18  16)
+       Maximum Pressure Error:  0.83E-10 on Mesh   1 at (  55   2  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  52,  20,  16)
+       Max divergence:  0.17E-12 at (  69,  21,  18)
+       Min divergence: -0.14E-12 at (  71,  12,  16)
+       Max VN number:   0.16E+00 at (  28,  12,   8)
+ 
+       Time Step    3100   June 26, 2020  16:24:07
+       Step Size:    0.364E-02 s, Total Time:      13.57 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.55E-02 on Mesh   1 at (   0  18  14)
+       Maximum Pressure Error:  0.89E-10 on Mesh   1 at (  49  18  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.83E+00 at (  52,   8,  17)
+       Max divergence:  0.14E-12 at (  54,  13,  15)
+       Min divergence: -0.14E-12 at (  49,  18,  13)
+       Max VN number:   0.13E+00 at (  29,  12,   9)
+ 
+       Time Step    3200   June 26, 2020  16:24:16
+       Step Size:    0.401E-02 s, Total Time:      13.96 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.38E-02 on Mesh   1 at (   0   5  12)
+       Maximum Pressure Error:  0.76E-10 on Mesh   1 at (  48   8   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.82E+00 at (  77,  12,  19)
+       Max divergence:  0.13E-12 at (   3,  18,   5)
+       Min divergence: -0.11E-12 at (  60,  16,  20)
+       Max VN number:   0.14E+00 at (  34,  22,  10)
+ 
+       Time Step    3300   June 26, 2020  16:24:26
+       Step Size:    0.395E-02 s, Total Time:      14.38 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.62E-02 on Mesh   1 at (   0  23  14)
+       Maximum Pressure Error:  0.76E-10 on Mesh   1 at (  53  23  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  50,  10,  15)
+       Max divergence:  0.40E-12 at (  56,  24,  22)
+       Min divergence: -0.40E-12 at (  56,  24,  21)
+       Max VN number:   0.11E+00 at (  50,  24,  24)
+ 
+       Time Step    3400   June 26, 2020  16:24:35
+       Step Size:    0.395E-02 s, Total Time:      14.78 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.53E-02 on Mesh   1 at (   0  21  11)
+       Maximum Pressure Error:  0.84E-10 on Mesh   1 at (  80  13  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  49,  13,  12)
+       Max divergence:  0.14E-12 at (  54,  21,  13)
+       Min divergence: -0.14E-12 at (  80,  20,  11)
+       Max VN number:   0.14E+00 at (  75,   4,   5)
+ 
+       Time Step    3500   June 26, 2020  16:24:45
+       Step Size:    0.427E-02 s, Total Time:      15.19 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.45E-02 on Mesh   1 at (   0  21  15)
+       Maximum Pressure Error:  0.70E-10 on Mesh   1 at (  44  17  17)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  50,  22,  14)
+       Max divergence:  0.13E-12 at (  43,   2,  11)
+       Min divergence: -0.10E-12 at (  49,  22,  18)
+       Max VN number:   0.15E+00 at (  28,   4,   8)
+ 
+       Time Step    3600   June 26, 2020  16:24:54
+       Step Size:    0.427E-02 s, Total Time:      15.61 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0   5  10)
+       Maximum Pressure Error:  0.86E-10 on Mesh   1 at (  59  13   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  30,  11,  10)
+       Max divergence:  0.19E-12 at (  59,  13,   9)
+       Min divergence: -0.13E-12 at (  42,  15,  21)
+       Max VN number:   0.13E+00 at (  28,  11,   8)
+ 
+       Time Step    3700   June 26, 2020  16:25:03
+       Step Size:    0.427E-02 s, Total Time:      16.04 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.56E-02 on Mesh   1 at (   0  14  17)
+       Maximum Pressure Error:  0.66E-10 on Mesh   1 at (  64  20  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.83E+00 at (  54,   8,  11)
+       Max divergence:  0.10E-12 at (  80,  12,  19)
+       Min divergence: -0.12E-12 at (  64,  20,  15)
+       Max VN number:   0.13E+00 at (  28,  10,   8)
+ 
+       Time Step    3800   June 26, 2020  16:25:13
+       Step Size:    0.427E-02 s, Total Time:      16.47 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0   8  12)
+       Maximum Pressure Error:  0.61E-10 on Mesh   1 at (  69  10  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  75,   5,  12)
+       Max divergence:  0.15E-12 at (  69,  10,  13)
+       Min divergence: -0.14E-12 at (  51,   5,  12)
+       Max VN number:   0.13E+00 at (  29,   6,   9)
+ 
+       Time Step    3900   June 26, 2020  16:25:22
+       Step Size:    0.423E-02 s, Total Time:      16.92 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.35E-02 on Mesh   1 at (   0   9  10)
+       Maximum Pressure Error:  0.73E-10 on Mesh   1 at (  55  11  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  55,  11,  10)
+       Max divergence:  0.18E-12 at (  42,   7,  15)
+       Min divergence: -0.15E-12 at (  43,   6,  15)
+       Max VN number:   0.18E+00 at (  28,   9,   8)
+ 
+       Time Step    4000   June 26, 2020  16:25:32
+       Step Size:    0.423E-02 s, Total Time:      17.34 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.34E-02 on Mesh   1 at (   0  10  15)
+       Maximum Pressure Error:  0.77E-10 on Mesh   1 at (  44   5  17)
+       ---------------------------------------------------------------
+       Max CFL number:  0.97E+00 at (  43,   5,  16)
+       Max divergence:  0.14E-12 at (  42,   7,  13)
+       Min divergence: -0.19E-12 at (  46,   1,  19)
+       Max VN number:   0.14E+00 at (   1,   1,  14)
+ 
+       Time Step    4100   June 26, 2020  16:25:42
+       Step Size:    0.455E-02 s, Total Time:      17.73 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.45E-02 on Mesh   1 at (   0  16  15)
+       Maximum Pressure Error:  0.83E-10 on Mesh   1 at (  80   6  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  35,  15,  12)
+       Max divergence:  0.14E-12 at (  80,   6,  13)
+       Min divergence: -0.15E-12 at (  66,   5,   8)
+       Max VN number:   0.19E+00 at (  28,   8,   8)
+ 
+       Time Step    4200   June 26, 2020  16:25:51
+       Step Size:    0.450E-02 s, Total Time:      18.18 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.61E-02 on Mesh   1 at (   0  15   6)
+       Maximum Pressure Error:  0.91E-10 on Mesh   1 at (  43  21  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.95E+00 at (  38,   6,  12)
+       Max divergence:  0.20E-12 at (  43,  21,  11)
+       Min divergence: -0.18E-12 at (  44,   5,  14)
+       Max VN number:   0.13E+00 at (  28,   7,   8)
+ 
+       Time Step    4300   June 26, 2020  16:26:01
+       Step Size:    0.438E-02 s, Total Time:      18.62 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.43E-02 on Mesh   1 at (   0   5  11)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  58   5  14)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  60,  20,  11)
+       Max divergence:  0.16E-12 at (  51,   5,  12)
+       Min divergence: -0.11E-12 at (  28,   9,   9)
+       Max VN number:   0.17E+00 at (  31,  12,  10)
+ 
+       Time Step    4400   June 26, 2020  16:26:10
+       Step Size:    0.394E-02 s, Total Time:      19.02 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.42E-02 on Mesh   1 at (   0  18   7)
+       Maximum Pressure Error:  0.80E-10 on Mesh   1 at (  48  22  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.80E+00 at (  49,  22,  16)
+       Max divergence:  0.11E-12 at (  50,  20,  12)
+       Min divergence: -0.13E-12 at (  48,  22,  16)
+       Max VN number:   0.15E+00 at (  32,   5,   9)
+ 
+       Time Step    4500   June 26, 2020  16:26:20
+       Step Size:    0.419E-02 s, Total Time:      19.45 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.46E-02 on Mesh   1 at (   0   6  13)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  80   6  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.94E+00 at (  57,  14,  11)
+       Max divergence:  0.17E-12 at (  49,  15,  13)
+       Min divergence: -0.16E-12 at (  61,  14,  12)
+       Max VN number:   0.17E+00 at (  28,  10,   8)
+ 
+       Time Step    4600   June 26, 2020  16:26:30
+       Step Size:    0.405E-02 s, Total Time:      19.85 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.37E-02 on Mesh   1 at (   0  13   9)
+       Maximum Pressure Error:  0.85E-10 on Mesh   1 at (  41  16  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  40,  16,  13)
+       Max divergence:  0.13E-12 at (  45,  18,  21)
+       Min divergence: -0.15E-12 at (  41,  16,  11)
+       Max VN number:   0.15E+00 at (  28,  12,   8)
+ 
+       Time Step    4700   June 26, 2020  16:26:40
+       Step Size:    0.405E-02 s, Total Time:      20.25 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.54E-02 on Mesh   1 at (   0  19   7)
+       Maximum Pressure Error:  0.80E-10 on Mesh   1 at (  70  20  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  54,  20,  11)
+       Max divergence:  0.14E-12 at (  55,  18,  13)
+       Min divergence: -0.13E-12 at (  41,  20,  16)
+       Max VN number:   0.14E+00 at (  28,   9,   8)
+ 
+       Time Step    4800   June 26, 2020  16:26:50
+       Step Size:    0.361E-02 s, Total Time:      20.65 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0   6   8)
+       Maximum Pressure Error:  0.79E-09 on Mesh   1 at (  33  22  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  33,  22,  14)
+       Max divergence:  0.24E-11 at (  33,  22,  15)
+       Min divergence: -0.21E-11 at (  33,  23,  15)
+       Max VN number:   0.15E+00 at (  28,  17,   8)
+ 
+       Time Step    4900   June 26, 2020  16:26:59
+       Step Size:    0.407E-02 s, Total Time:      21.03 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.62E-02 on Mesh   1 at (   0   5  15)
+       Maximum Pressure Error:  0.10E-09 on Mesh   1 at (  60  20  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  65,  19,  14)
+       Max divergence:  0.17E-12 at (  60,  20,  13)
+       Min divergence: -0.13E-12 at (  44,  16,  11)
+       Max VN number:   0.16E+00 at (  28,   6,   8)
+ 
+       Time Step    5000   June 26, 2020  16:27:09
+       Step Size:    0.407E-02 s, Total Time:      21.43 s
+       Pressure Iterations:      7
+       Maximum Velocity Error:  0.49E-02 on Mesh   1 at (   0  18  17)
+       Maximum Pressure Error:  0.17E-09 on Mesh   1 at (  79  10   8)
+       ---------------------------------------------------------------
+       Max CFL number:  0.95E+00 at (  79,  17,  14)
+       Max divergence:  0.77E-12 at (  78,   9,   7)
+       Min divergence: -0.81E-12 at (  78,  10,   7)
+       Max VN number:   0.11E+00 at (  52,  17,  10)
+ 
+       Time Step    5100   June 26, 2020  16:27:19
+       Step Size:    0.419E-02 s, Total Time:      21.84 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.58E-02 on Mesh   1 at (   0  17  17)
+       Maximum Pressure Error:  0.10E-09 on Mesh   1 at (  80  18  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  40,   6,  11)
+       Max divergence:  0.18E-12 at (  80,  18,  15)
+       Min divergence: -0.15E-12 at (  73,  17,  14)
+       Max VN number:   0.16E+00 at (  28,  21,   9)
+ 
+       Time Step    5200   June 26, 2020  16:27:28
+       Step Size:    0.419E-02 s, Total Time:      22.26 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.42E-02 on Mesh   1 at (   0   6   5)
+       Maximum Pressure Error:  0.11E-09 on Mesh   1 at (  46  14  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  45,  14,  12)
+       Max divergence:  0.15E-12 at (  35,  20,  20)
+       Min divergence: -0.24E-12 at (  46,  14,  12)
+       Max VN number:   0.14E+00 at (  28,  17,   8)
+ 
+       Time Step    5300   June 26, 2020  16:27:37
+       Step Size:    0.371E-02 s, Total Time:      22.67 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0  10  11)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  41  17  14)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  52,  11,  15)
+       Max divergence:  0.16E-12 at (  50,  13,  11)
+       Min divergence: -0.14E-12 at (  53,   5,  17)
+       Max VN number:   0.14E+00 at (  28,   4,   8)
+ 
+       Time Step    5400   June 26, 2020  16:27:47
+       Step Size:    0.366E-02 s, Total Time:      23.06 s
+       Pressure Iterations:      7
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0   7  17)
+       Maximum Pressure Error:  0.92E-10 on Mesh   1 at (  30  18   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (   2,   6,  17)
+       Max divergence:  0.15E-12 at (  79,  15,  15)
+       Min divergence: -0.11E-12 at (  30,  18,   9)
+       Max VN number:   0.15E+00 at (  32,  17,  10)
+ 
+       Time Step    5500   June 26, 2020  16:27:56
+       Step Size:    0.402E-02 s, Total Time:      23.46 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0  13   9)
+       Maximum Pressure Error:  0.93E-10 on Mesh   1 at (  55  20  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.83E+00 at (  35,   5,  18)
+       Max divergence:  0.12E-12 at (  65,  21,  18)
+       Min divergence: -0.12E-12 at (  46,  12,  17)
+       Max VN number:   0.13E+00 at (  28,  15,   8)
+ 
+       Time Step    5600   June 26, 2020  16:28:06
+       Step Size:    0.394E-02 s, Total Time:      23.88 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.48E-02 on Mesh   1 at (   0  11   7)
+       Maximum Pressure Error:  0.84E-10 on Mesh   1 at (  54  13  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.78E+00 at (  59,  16,  10)
+       Max divergence:  0.12E-12 at (  49,  20,  11)
+       Min divergence: -0.13E-12 at (  28,   3,  10)
+       Max VN number:   0.15E+00 at (  28,  15,   8)
+ 
+       Time Step    5700   June 26, 2020  16:28:15
+       Step Size:    0.383E-02 s, Total Time:      24.28 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.43E-02 on Mesh   1 at (   0  13  13)
+       Maximum Pressure Error:  0.86E-10 on Mesh   1 at (  60   4  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  42,  17,  14)
+       Max divergence:  0.14E-12 at (  63,   5,  17)
+       Min divergence: -0.11E-12 at (  69,  15,  15)
+       Max VN number:   0.13E+00 at (  28,  10,   8)
+ 
+       Time Step    5800   June 26, 2020  16:28:25
+       Step Size:    0.422E-02 s, Total Time:      24.70 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.40E-02 on Mesh   1 at (   0  11   9)
+       Maximum Pressure Error:  0.78E-10 on Mesh   1 at (  44  17  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.94E+00 at (  45,  17,  10)
+       Max divergence:  0.20E-12 at (  44,  17,  10)
+       Min divergence: -0.14E-12 at (  56,  17,  17)
+       Max VN number:   0.15E+00 at (  28,   5,   8)
+ 
+       Time Step    5900   June 26, 2020  16:28:34
+       Step Size:    0.409E-02 s, Total Time:      25.14 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.46E-02 on Mesh   1 at (   0  13   8)
+       Maximum Pressure Error:  0.87E-10 on Mesh   1 at (  46  16  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  47,  15,  16)
+       Max divergence:  0.15E-12 at (  43,  13,  13)
+       Min divergence: -0.15E-12 at (  46,  16,  16)
+       Max VN number:   0.13E+00 at (  28,  23,   8)
+ 
+       Time Step    6000   June 26, 2020  16:28:44
+       Step Size:    0.367E-02 s, Total Time:      25.53 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.49E-02 on Mesh   1 at (   0   9  13)
+       Maximum Pressure Error:  0.10E-09 on Mesh   1 at (  63   3  17)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  64,   4,  17)
+       Max divergence:  0.13E-12 at (  60,   6,  18)
+       Min divergence: -0.12E-12 at (  63,  19,  12)
+       Max VN number:   0.11E+00 at (  31,  17,  10)
+ 
+       Time Step    6100   June 26, 2020  16:28:53
+       Step Size:    0.394E-02 s, Total Time:      25.95 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.40E-02 on Mesh   1 at (   0   7   9)
+       Maximum Pressure Error:  0.73E-10 on Mesh   1 at (  72  13  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  45,   5,  13)
+       Max divergence:  0.13E-12 at (  54,   8,  13)
+       Min divergence: -0.13E-12 at (  44,   7,  12)
+       Max VN number:   0.14E+00 at (  28,   7,   8)
+ 
+       Time Step    6200   June 26, 2020  16:29:03
+       Step Size:    0.390E-02 s, Total Time:      26.35 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.62E-02 on Mesh   1 at (   0  19  14)
+       Maximum Pressure Error:  0.73E-10 on Mesh   1 at (  55  15   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.81E+00 at (  33,  15,  12)
+       Max divergence:  0.12E-12 at (  55,  15,   9)
+       Min divergence: -0.13E-12 at (  28,  21,   9)
+       Max VN number:   0.16E+00 at (  28,  15,   8)
+ 
+       Time Step    6300   June 26, 2020  16:29:12
+       Step Size:    0.380E-02 s, Total Time:      26.74 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.45E-02 on Mesh   1 at (   0  12   8)
+       Maximum Pressure Error:  0.82E-10 on Mesh   1 at (  51   5  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.78E+00 at (  69,  17,  12)
+       Max divergence:  0.12E-12 at (  69,  15,  15)
+       Min divergence: -0.12E-12 at (  61,  17,  10)
+       Max VN number:   0.12E+00 at (  28,   9,   8)
+ 
+       Time Step    6400   June 26, 2020  16:29:21
+       Step Size:    0.369E-02 s, Total Time:      27.15 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.54E-02 on Mesh   1 at (   0   3  22)
+       Maximum Pressure Error:  0.86E-10 on Mesh   1 at (  46  14  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  35,   6,  12)
+       Max divergence:  0.18E-12 at (  42,   5,  13)
+       Min divergence: -0.21E-12 at (  41,   6,  14)
+       Max VN number:   0.17E+00 at (  28,   8,   8)
+ 
+       Time Step    6500   June 26, 2020  16:29:30
+       Step Size:    0.406E-02 s, Total Time:      27.55 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0   6   3)
+       Maximum Pressure Error:  0.95E-08 on Mesh   1 at (  35   1  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.96E+00 at (  39,   6,  14)
+       Max divergence:  0.51E-10 at (  35,   1,  16)
+       Min divergence: -0.53E-10 at (  37,   1,  17)
+       Max VN number:   0.18E+00 at (  35,   1,  15)
+ 
+       Time Step    6600   June 26, 2020  16:29:40
+       Step Size:    0.358E-02 s, Total Time:      27.93 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.40E-02 on Mesh   1 at (   0   6  13)
+       Maximum Pressure Error:  0.95E-10 on Mesh   1 at (  55  15  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  57,  16,  15)
+       Max divergence:  0.16E-12 at (  55,  15,  15)
+       Min divergence: -0.17E-12 at (  51,  16,  16)
+       Max VN number:   0.13E+00 at (  55,   1,  16)
+ 
+       Time Step    6700   June 26, 2020  16:29:50
+       Step Size:    0.433E-02 s, Total Time:      28.34 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.54E-02 on Mesh   1 at (   0  17   6)
+       Maximum Pressure Error:  0.76E-10 on Mesh   1 at (  41  12  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.98E+00 at (  43,  12,  16)
+       Max divergence:  0.16E-12 at (  42,  13,  13)
+       Min divergence: -0.20E-12 at (  44,  12,  16)
+       Max VN number:   0.14E+00 at (  28,  17,   8)
+ 
+       Time Step    6800   June 26, 2020  16:29:59
+       Step Size:    0.380E-02 s, Total Time:      28.74 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.52E-02 on Mesh   1 at (   0  13  17)
+       Maximum Pressure Error:  0.11E-09 on Mesh   1 at (  58   5  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.82E+00 at (  79,   9,   9)
+       Max divergence:  0.52E-12 at (   1,  12,   6)
+       Min divergence: -0.54E-12 at (   2,  12,   6)
+       Max VN number:   0.16E+00 at (  28,  20,   8)
+ 
+       Time Step    6900   June 26, 2020  16:30:09
+       Step Size:    0.369E-02 s, Total Time:      29.15 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.30E-02 on Mesh   1 at (   0  22  12)
+       Maximum Pressure Error:  0.15E-08 on Mesh   1 at (  38   6  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  37,   6,  12)
+       Max divergence:  0.46E-11 at (  37,   6,  12)
+       Min divergence: -0.45E-11 at (  38,   6,  12)
+       Max VN number:   0.17E+00 at (  28,  10,   8)
+ 
+       Time Step    7000   June 26, 2020  16:30:19
+       Step Size:    0.393E-02 s, Total Time:      29.54 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.56E-02 on Mesh   1 at (   0  11  11)
+       Maximum Pressure Error:  0.68E-10 on Mesh   1 at (  30  20  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.82E+00 at (  57,  14,  12)
+       Max divergence:  0.14E-12 at (  67,  13,  10)
+       Min divergence: -0.13E-12 at (  61,  14,  10)
+       Max VN number:   0.17E+00 at (  28,   9,   8)
+ 
+       Time Step    7100   June 26, 2020  16:30:29
+       Step Size:    0.420E-02 s, Total Time:      29.95 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0   9  16)
+       Maximum Pressure Error:  0.82E-10 on Mesh   1 at (  54  20   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  52,  13,  12)
+       Max divergence:  0.17E-12 at (  60,   6,   7)
+       Min divergence: -0.12E-12 at (  61,   4,   8)
+       Max VN number:   0.15E+00 at (  28,  12,   8)
+ 
+       Time Step    7200   June 26, 2020  16:30:39
+       Step Size:    0.413E-02 s, Total Time:      30.38 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.34E-02 on Mesh   1 at (  81   5  22)
+       Maximum Pressure Error:  0.86E-10 on Mesh   1 at (  50  15  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  40,  11,  13)
+       Max divergence:  0.16E-12 at (  55,  18,  13)
+       Min divergence: -0.18E-12 at (  44,   9,  17)
+       Max VN number:   0.14E+00 at (  28,  21,   8)
+ 
+       Time Step    7300   June 26, 2020  16:30:48
+       Step Size:    0.429E-02 s, Total Time:      30.77 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.58E-02 on Mesh   1 at (   0   6  11)
+       Maximum Pressure Error:  0.72E-10 on Mesh   1 at (  60   4  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  67,  18,  18)
+       Max divergence:  0.15E-12 at (  60,   4,  18)
+       Min divergence: -0.17E-12 at (  68,  17,  14)
+       Max VN number:   0.14E+00 at (  28,   8,   8)
+ 
+       Time Step    7400   June 26, 2020  16:30:58
+       Step Size:    0.384E-02 s, Total Time:      31.17 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0  11  16)
+       Maximum Pressure Error:  0.96E-10 on Mesh   1 at (  59  18  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  60,  12,  12)
+       Max divergence:  0.17E-12 at (  59,   8,  15)
+       Min divergence: -0.11E-12 at (  58,  14,  12)
+       Max VN number:   0.13E+00 at (  28,   9,   8)
+ 
+       Time Step    7500   June 26, 2020  16:31:09
+       Step Size:    0.422E-02 s, Total Time:      31.59 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.31E-02 on Mesh   1 at (   0   5  13)
+       Maximum Pressure Error:  0.70E-10 on Mesh   1 at (   3   8  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.98E+00 at (  40,   4,  14)
+       Max divergence:  0.18E-12 at (  42,  18,  13)
+       Min divergence: -0.15E-12 at (  53,   4,  12)
+       Max VN number:   0.14E+00 at (  28,  11,   8)
+ 
+       Time Step    7600   June 26, 2020  16:31:18
+       Step Size:    0.422E-02 s, Total Time:      32.01 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.33E-02 on Mesh   1 at (   0   8  12)
+       Maximum Pressure Error:  0.89E-10 on Mesh   1 at (  53  19  17)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  57,  14,  12)
+       Max divergence:  0.12E-12 at (  55,   9,  11)
+       Min divergence: -0.16E-12 at (  53,  19,  17)
+       Max VN number:   0.16E+00 at (  28,  11,   8)
+ 
+       Time Step    7700   June 26, 2020  16:31:27
+       Step Size:    0.417E-02 s, Total Time:      32.43 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.35E-02 on Mesh   1 at (   0  20  14)
+       Maximum Pressure Error:  0.71E-10 on Mesh   1 at (  41  17  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  47,  16,  16)
+       Max divergence:  0.14E-12 at (  45,   7,  11)
+       Min divergence: -0.14E-12 at (  48,  16,  16)
+       Max VN number:   0.16E+00 at (  28,  20,   8)
+ 
+       Time Step    7800   June 26, 2020  16:31:37
+       Step Size:    0.374E-02 s, Total Time:      32.84 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.47E-02 on Mesh   1 at (   0  18  16)
+       Maximum Pressure Error:  0.83E-10 on Mesh   1 at (  55  10  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.82E+00 at (  52,  10,  14)
+       Max divergence:  0.14E-12 at (  55,  10,  13)
+       Min divergence: -0.16E-12 at (  66,  17,  12)
+       Max VN number:   0.13E+00 at (  28,   6,   8)
+ 
+       Time Step    7900   June 26, 2020  16:31:47
+       Step Size:    0.412E-02 s, Total Time:      33.25 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.46E-02 on Mesh   1 at (   0  13  12)
+       Maximum Pressure Error:  0.95E-10 on Mesh   1 at (  43  20  20)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  64,  15,  15)
+       Max divergence:  0.19E-12 at (  43,  20,  20)
+       Min divergence: -0.14E-12 at (  55,  13,  15)
+       Max VN number:   0.15E+00 at (  28,   9,   8)
+ 
+       Time Step    8000   June 26, 2020  16:31:56
+       Step Size:    0.453E-02 s, Total Time:      33.68 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0  11  10)
+       Maximum Pressure Error:  0.78E-10 on Mesh   1 at (  69  13  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  50,  15,  11)
+       Max divergence:  0.16E-12 at (  69,  13,  13)
+       Min divergence: -0.15E-12 at (  28,   8,   9)
+       Max VN number:   0.16E+00 at (  28,  12,   8)
+ 
+       Time Step    8100   June 26, 2020  16:32:06
+       Step Size:    0.397E-02 s, Total Time:      34.10 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.41E-02 on Mesh   1 at (   0   3   9)
+       Maximum Pressure Error:  0.70E-10 on Mesh   1 at (  40   2  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.81E+00 at (  62,  11,  14)
+       Max divergence:  0.14E-12 at (  40,   2,  18)
+       Min divergence: -0.11E-12 at (  58,   8,  19)
+       Max VN number:   0.13E+00 at (  28,  21,   8)
+ 
+       Time Step    8200   June 26, 2020  16:32:15
+       Step Size:    0.436E-02 s, Total Time:      34.53 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.61E-02 on Mesh   1 at (   0  13  12)
+       Maximum Pressure Error:  0.82E-10 on Mesh   1 at (  30  21  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.96E+00 at (  34,  15,  11)
+       Max divergence:  0.16E-12 at (  30,  21,  12)
+       Min divergence: -0.13E-12 at (  29,  24,  13)
+       Max VN number:   0.17E+00 at (  28,  14,   8)
+ 
+       Time Step    8300   June 26, 2020  16:32:25
+       Step Size:    0.421E-02 s, Total Time:      34.93 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.55E-02 on Mesh   1 at (   0  18  11)
+       Maximum Pressure Error:  0.64E-10 on Mesh   1 at (  68  17  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  32,  20,  12)
+       Max divergence:  0.13E-12 at (  43,  20,  21)
+       Min divergence: -0.14E-12 at (  68,  17,  12)
+       Max VN number:   0.18E+00 at (  28,  14,   8)
+ 
+       Time Step    8400   June 26, 2020  16:32:34
+       Step Size:    0.421E-02 s, Total Time:      35.35 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.62E-02 on Mesh   1 at (   0  21   7)
+       Maximum Pressure Error:  0.80E-10 on Mesh   1 at (  56  11  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  43,  17,  11)
+       Max divergence:  0.13E-12 at (  56,  17,  17)
+       Min divergence: -0.18E-12 at (  56,  11,  12)
+       Max VN number:   0.16E+00 at (  28,  16,   8)
+ 
+       Time Step    8500   June 26, 2020  16:32:44
+       Step Size:    0.416E-02 s, Total Time:      35.77 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.34E-02 on Mesh   1 at (   0   9  12)
+       Maximum Pressure Error:  0.93E-10 on Mesh   1 at (  35  21  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.84E+00 at (  30,  17,  10)
+       Max divergence:  0.17E-12 at (  35,  21,  13)
+       Min divergence: -0.11E-12 at (  44,  12,  16)
+       Max VN number:   0.16E+00 at (  28,  17,   8)
+ 
+       Time Step    8600   June 26, 2020  16:32:53
+       Step Size:    0.391E-02 s, Total Time:      36.16 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.56E-02 on Mesh   1 at (   0  21  12)
+       Maximum Pressure Error:  0.85E-10 on Mesh   1 at (  25   2  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  34,   7,  11)
+       Max divergence:  0.15E-12 at (  40,   9,  15)
+       Min divergence: -0.13E-12 at (  30,   6,   9)
+       Max VN number:   0.16E+00 at (  28,  10,   8)
+ 
+       Time Step    8700   June 26, 2020  16:33:03
+       Step Size:    0.391E-02 s, Total Time:      36.55 s
+       Pressure Iterations:      7
+       Maximum Velocity Error:  0.37E-02 on Mesh   1 at (   0   4  13)
+       Maximum Pressure Error:  0.11E-09 on Mesh   1 at (  51   1   4)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  62,  17,  13)
+       Max divergence:  0.14E-12 at (  42,  21,  13)
+       Min divergence: -0.19E-12 at (  51,  16,  12)
+       Max VN number:   0.16E+00 at (  28,  15,   8)
+ 
+       Time Step    8800   June 26, 2020  16:33:13
+       Step Size:    0.430E-02 s, Total Time:      36.97 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.56E-02 on Mesh   1 at (   0  17  10)
+       Maximum Pressure Error:  0.80E-10 on Mesh   1 at (  28  14   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.99E+00 at (  52,  10,  18)
+       Max divergence:  0.29E-12 at (  30,  13,  11)
+       Min divergence: -0.17E-12 at (  31,  13,  11)
+       Max VN number:   0.20E+00 at (  28,  12,   8)
+ 
+       Time Step    8900   June 26, 2020  16:33:22
+       Step Size:    0.387E-02 s, Total Time:      37.36 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.55E-02 on Mesh   1 at (   0  10  12)
+       Maximum Pressure Error:  0.71E-10 on Mesh   1 at (  59  13  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.83E+00 at (  60,  12,  15)
+       Max divergence:  0.12E-12 at (  54,  18,  13)
+       Min divergence: -0.13E-12 at (  61,  17,  17)
+       Max VN number:   0.14E+00 at (  28,  11,   8)
+ 
+       Time Step    9000   June 26, 2020  16:33:31
+       Step Size:    0.425E-02 s, Total Time:      37.78 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0  16  13)
+       Maximum Pressure Error:  0.83E-10 on Mesh   1 at (  43  20  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.93E+00 at (  60,   8,  13)
+       Max divergence:  0.12E-12 at (  49,   4,  19)
+       Min divergence: -0.18E-12 at (  28,  17,   9)
+       Max VN number:   0.20E+00 at (  28,  11,   8)
+ 
+       Time Step    9100   June 26, 2020  16:33:41
+       Step Size:    0.395E-02 s, Total Time:      38.19 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.50E-02 on Mesh   1 at (   0  17   5)
+       Maximum Pressure Error:  0.90E-10 on Mesh   1 at (  60  13  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  40,   3,  16)
+       Max divergence:  0.28E-12 at (  37,   1,  19)
+       Min divergence: -0.29E-12 at (  37,   1,  18)
+       Max VN number:   0.15E+00 at (  34,   1,  12)
+ 
+       Time Step    9200   June 26, 2020  16:33:50
+       Step Size:    0.366E-02 s, Total Time:      38.57 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.53E-02 on Mesh   1 at (   0   4  11)
+       Maximum Pressure Error:  0.18E-06 on Mesh   1 at (  54  22  20)
+       ---------------------------------------------------------------
+       Max CFL number:  0.81E+00 at (  50,   5,  14)
+       Max divergence:  0.17E-08 at (  56,  24,  23)
+       Min divergence: -0.16E-08 at (  56,  24,  22)
+       Max VN number:   0.12E+00 at (  46,  24,  15)
+ 
+       Time Step    9300   June 26, 2020  16:34:00
+       Step Size:    0.355E-02 s, Total Time:      38.96 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.55E-02 on Mesh   1 at (   0   9  21)
+       Maximum Pressure Error:  0.13E-09 on Mesh   1 at (  35   6  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  33,   6,  12)
+       Max divergence:  0.52E-12 at (  37,   2,  13)
+       Min divergence: -0.49E-12 at (  37,   2,  14)
+       Max VN number:   0.11E+00 at (  42,   1,  18)
+ 
+       Time Step    9400   June 26, 2020  16:34:09
+       Step Size:    0.411E-02 s, Total Time:      39.35 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.45E-02 on Mesh   1 at (   0  15  11)
+       Maximum Pressure Error:  0.13E-09 on Mesh   1 at (  80  15  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  45,  20,  15)
+       Max divergence:  0.22E-12 at (  80,  15,  10)
+       Min divergence: -0.17E-12 at (  75,  20,  11)
+       Max VN number:   0.15E+00 at (  28,  21,   8)
+ 
+       Time Step    9500   June 26, 2020  16:34:19
+       Step Size:    0.400E-02 s, Total Time:      39.74 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.55E-02 on Mesh   1 at (   0  12  14)
+       Maximum Pressure Error:  0.93E-10 on Mesh   1 at (  80  13  14)
+       ---------------------------------------------------------------
+       Max CFL number:  0.81E+00 at (  50,   5,  18)
+       Max divergence:  0.14E-12 at (  80,  13,  14)
+       Min divergence: -0.13E-12 at (  51,  19,  12)
+       Max VN number:   0.15E+00 at (  33,   5,  10)
+ 
+       Time Step    9600   June 26, 2020  16:34:28
+       Step Size:    0.440E-02 s, Total Time:      40.18 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.53E-02 on Mesh   1 at (   0  12  14)
+       Maximum Pressure Error:  0.96E-10 on Mesh   1 at (  47   9  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  47,   9,  13)
+       Max divergence:  0.18E-12 at (  58,  17,  14)
+       Min divergence: -0.15E-12 at (  58,  21,  14)
+       Max VN number:   0.15E+00 at (  28,  20,   8)
+ 
+       Time Step    9700   June 26, 2020  16:34:38
+       Step Size:    0.435E-02 s, Total Time:      40.61 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.43E-02 on Mesh   1 at (   0  15  14)
+       Maximum Pressure Error:  0.95E-10 on Mesh   1 at (  61  16  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  62,  16,  12)
+       Max divergence:  0.13E-12 at (  80,  19,  14)
+       Min divergence: -0.14E-12 at (  61,  12,  17)
+       Max VN number:   0.14E+00 at (  28,  13,   8)
+ 
+       Time Step    9800   June 26, 2020  16:34:47
+       Step Size:    0.431E-02 s, Total Time:      41.03 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.58E-02 on Mesh   1 at (  81  18  17)
+       Maximum Pressure Error:  0.82E-10 on Mesh   1 at (  41  19  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  47,  19,  16)
+       Max divergence:  0.13E-12 at (  59,  20,  15)
+       Min divergence: -0.14E-12 at (  48,  19,  16)
+       Max VN number:   0.16E+00 at (  28,   5,   8)
+ 
+       Time Step    9900   June 26, 2020  16:34:57
+       Step Size:    0.431E-02 s, Total Time:      41.46 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.36E-02 on Mesh   1 at (   0  14   9)
+       Maximum Pressure Error:  0.90E-10 on Mesh   1 at (  80  18  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  59,  12,  14)
+       Max divergence:  0.14E-12 at (  75,  18,  18)
+       Min divergence: -0.16E-12 at (  58,  16,  17)
+       Max VN number:   0.15E+00 at (  41,   5,  10)
+ 
+       Time Step   10000   June 26, 2020  16:35:07
+       Step Size:    0.418E-02 s, Total Time:      41.90 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0  18  14)
+       Maximum Pressure Error:  0.53E-08 on Mesh   1 at (  29  22  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  49,  21,  12)
+       Max divergence:  0.90E-10 at (  28,  23,  11)
+       Min divergence: -0.80E-10 at (  28,  23,  10)
+       Max VN number:   0.20E+00 at (  28,  17,   8)
+ 
+       Time Step   10100   June 26, 2020  16:35:16
+       Step Size:    0.403E-02 s, Total Time:      42.31 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.41E-02 on Mesh   1 at (   0  19  14)
+       Maximum Pressure Error:  0.66E-10 on Mesh   1 at (  41  21  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  45,  21,  11)
+       Max divergence:  0.13E-12 at (  49,  18,  15)
+       Min divergence: -0.14E-12 at (  28,  11,   9)
+       Max VN number:   0.17E+00 at (  28,  11,   8)
+ 
+       Time Step   10200   June 26, 2020  16:35:26
+       Step Size:    0.443E-02 s, Total Time:      42.73 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.36E-02 on Mesh   1 at (  81  20  11)
+       Maximum Pressure Error:  0.65E-10 on Mesh   1 at (  58   5  17)
+       ---------------------------------------------------------------
+       Max CFL number:  0.98E+00 at (  45,   7,  21)
+       Max divergence:  0.14E-12 at (  50,   7,  21)
+       Min divergence: -0.14E-12 at (  58,   5,  17)
+       Max VN number:   0.15E+00 at (  27,  10,   9)
+ 
+       Time Step   10300   June 26, 2020  16:35:35
+       Step Size:    0.394E-02 s, Total Time:      43.12 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.36E-02 on Mesh   1 at (   0   6   8)
+       Maximum Pressure Error:  0.11E-09 on Mesh   1 at (  48  23  14)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  52,  23,  16)
+       Max divergence:  0.13E-12 at (  48,  22,  16)
+       Min divergence: -0.14E-12 at (  42,  21,  13)
+       Max VN number:   0.15E+00 at (  33,  20,  11)
+ 
+       Time Step   10400   June 26, 2020  16:35:44
+       Step Size:    0.394E-02 s, Total Time:      43.52 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.57E-02 on Mesh   1 at (   0  21   9)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  71  17  17)
+       ---------------------------------------------------------------
+       Max CFL number:  0.84E+00 at (  50,   7,  12)
+       Max divergence:  0.13E-12 at (  50,   7,  12)
+       Min divergence: -0.12E-12 at (  71,  22,  16)
+       Max VN number:   0.14E+00 at (  28,  19,   8)
+ 
+       Time Step   10500   June 26, 2020  16:35:54
+       Step Size:    0.434E-02 s, Total Time:      43.95 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0  18  14)
+       Maximum Pressure Error:  0.14E-09 on Mesh   1 at (  35  11  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  49,  21,  15)
+       Max divergence:  0.21E-12 at (  35,  11,  14)
+       Min divergence: -0.18E-12 at (  56,  17,  15)
+       Max VN number:   0.16E+00 at (  28,  15,   8)
+ 
+       Time Step   10600   June 26, 2020  16:36:03
+       Step Size:    0.360E-02 s, Total Time:      44.36 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.59E-02 on Mesh   1 at (   0  19  12)
+       Maximum Pressure Error:  0.10E-09 on Mesh   1 at (  52  20   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.76E+00 at (  33,  13,  12)
+       Max divergence:  0.11E-12 at (  53,  19,  10)
+       Min divergence: -0.12E-12 at (  58,   4,  16)
+       Max VN number:   0.17E+00 at (  28,  11,   8)
+ 
+       Time Step   10700   June 26, 2020  16:36:13
+       Step Size:    0.436E-02 s, Total Time:      44.77 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0   8   4)
+       Maximum Pressure Error:  0.82E-10 on Mesh   1 at (  51  12  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  33,  12,  17)
+       Max divergence:  0.14E-12 at (  65,  18,  13)
+       Min divergence: -0.15E-12 at (  66,  17,  12)
+       Max VN number:   0.13E+00 at (  51,  13,  10)
+ 
+       Time Step   10800   June 26, 2020  16:36:23
+       Step Size:    0.385E-02 s, Total Time:      45.20 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.35E-02 on Mesh   1 at (   0  17   7)
+       Maximum Pressure Error:  0.39E-08 on Mesh   1 at (  38  24  20)
+       ---------------------------------------------------------------
+       Max CFL number:  0.83E+00 at (  43,  12,  12)
+       Max divergence:  0.45E-10 at (  38,  24,  19)
+       Min divergence: -0.47E-10 at (  38,  24,  20)
+       Max VN number:   0.15E+00 at (  29,   9,   9)
+ 
+       Time Step   10900   June 26, 2020  16:36:31
+       Step Size:    0.395E-02 s, Total Time:      45.55 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.45E-02 on Mesh   1 at (   0  23   7)
+       Maximum Pressure Error:  0.93E-10 on Mesh   1 at (  58  17  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  59,  17,  16)
+       Max divergence:  0.15E-12 at (  57,   4,  15)
+       Min divergence: -0.15E-12 at (  58,  17,  16)
+       Max VN number:   0.18E+00 at (  28,  20,   8)
+ 
+       Time Step   11000   June 26, 2020  16:36:41
+       Step Size:    0.435E-02 s, Total Time:      45.96 s
+       Pressure Iterations:      7
+       Maximum Velocity Error:  0.48E-02 on Mesh   1 at (   0  13  10)
+       Maximum Pressure Error:  0.14E-09 on Mesh   1 at (  28  10   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  79,  13,  13)
+       Max divergence:  0.18E-11 at (  28,  10,  10)
+       Min divergence: -0.27E-11 at (  28,   9,  10)
+       Max VN number:   0.19E+00 at (  28,  12,   8)
+ 
+       Time Step   11100   June 26, 2020  16:36:51
+       Step Size:    0.435E-02 s, Total Time:      46.39 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0  13  15)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  56  19  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  40,  17,  17)
+       Max divergence:  0.17E-12 at (  55,  19,  15)
+       Min divergence: -0.19E-12 at (  56,  19,  16)
+       Max VN number:   0.18E+00 at (  28,   5,   8)
+ 
+       Time Step   11200   June 26, 2020  16:37:00
+       Step Size:    0.426E-02 s, Total Time:      46.80 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.46E-02 on Mesh   1 at (   0  20  12)
+       Maximum Pressure Error:  0.11E-09 on Mesh   1 at (  43  20  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  65,  10,  14)
+       Max divergence:  0.22E-12 at (  43,  20,  13)
+       Min divergence: -0.15E-12 at (  44,   8,  16)
+       Max VN number:   0.17E+00 at (  29,  18,   9)
+ 
+       Time Step   11300   June 26, 2020  16:37:09
+       Step Size:    0.370E-02 s, Total Time:      47.20 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.58E-02 on Mesh   1 at (   0  20   8)
+       Maximum Pressure Error:  0.11E-09 on Mesh   1 at (  51  12  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.84E+00 at (  52,  13,  15)
+       Max divergence:  0.13E-12 at (  54,  19,  13)
+       Min divergence: -0.14E-12 at (  51,  12,  15)
+       Max VN number:   0.13E+00 at (  28,  19,   8)
+ 
+       Time Step   11400   June 26, 2020  16:37:19
+       Step Size:    0.448E-02 s, Total Time:      47.59 s
+       Pressure Iterations:      7
+       Maximum Velocity Error:  0.38E-02 on Mesh   1 at (   0  18   9)
+       Maximum Pressure Error:  0.95E-10 on Mesh   1 at (  79  20  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  57,   3,  11)
+       Max divergence:  0.21E-12 at (  79,  20,  13)
+       Min divergence: -0.16E-12 at (  56,   3,  11)
+       Max VN number:   0.16E+00 at (  28,  12,   8)
+ 
+       Time Step   11500   June 26, 2020  16:37:28
+       Step Size:    0.435E-02 s, Total Time:      48.02 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0  18   7)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  57  15  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  47,  12,  18)
+       Max divergence:  0.16E-12 at (  57,  15,  13)
+       Min divergence: -0.14E-12 at (  40,  13,  15)
+       Max VN number:   0.14E+00 at (  36,  19,   9)
+ 
+       Time Step   11600   June 26, 2020  16:37:38
+       Step Size:    0.368E-02 s, Total Time:      48.43 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.60E-02 on Mesh   1 at (   0   8  12)
+       Maximum Pressure Error:  0.91E-10 on Mesh   1 at (  56  14  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.84E+00 at (  62,   6,  16)
+       Max divergence:  0.12E-12 at (  49,  15,  13)
+       Min divergence: -0.19E-12 at (  56,  14,  12)
+       Max VN number:   0.16E+00 at (  28,   4,   8)
+ 
+       Time Step   11700   June 26, 2020  16:37:48
+       Step Size:    0.362E-02 s, Total Time:      48.83 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.47E-02 on Mesh   1 at (   0  14   9)
+       Maximum Pressure Error:  0.80E-10 on Mesh   1 at (  49   1  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.83E+00 at (  54,   5,  12)
+       Max divergence:  0.11E-12 at (  80,   2,  14)
+       Min divergence: -0.11E-12 at (  28,  21,   9)
+       Max VN number:   0.15E+00 at (  28,  18,   8)
+ 
+       Time Step   11800   June 26, 2020  16:37:59
+       Step Size:    0.439E-02 s, Total Time:      49.26 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.52E-02 on Mesh   1 at (   0  16  13)
+       Maximum Pressure Error:  0.65E-10 on Mesh   1 at (  64  15  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  47,  20,  15)
+       Max divergence:  0.12E-12 at (  49,  12,  20)
+       Min divergence: -0.13E-12 at (  58,  16,  11)
+       Max VN number:   0.15E+00 at (  28,   9,   8)
+ 
+       Time Step   11900   June 26, 2020  16:38:09
+       Step Size:    0.389E-02 s, Total Time:      49.69 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.48E-02 on Mesh   1 at (   0  12  19)
+       Maximum Pressure Error:  0.68E-10 on Mesh   1 at (  28  23  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.83E+00 at (  55,  11,  22)
+       Max divergence:  0.14E-12 at (  55,  11,  18)
+       Min divergence: -0.15E-12 at (  28,  23,  10)
+       Max VN number:   0.15E+00 at (  28,  10,   8)
+ 
+       Time Step   12000   June 26, 2020  16:38:19
+       Step Size:    0.381E-02 s, Total Time:      50.09 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.38E-02 on Mesh   1 at (   0  17   5)
+       Maximum Pressure Error:  0.91E-10 on Mesh   1 at (  55  24  17)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  55,  22,  20)
+       Max divergence:  0.14E-12 at (  49,  20,  18)
+       Min divergence: -0.14E-12 at (  55,  22,  18)
+       Max VN number:   0.13E+00 at (  28,  14,   8)
+ 
+       Time Step   12100   June 26, 2020  16:38:29
+       Step Size:    0.419E-02 s, Total Time:      50.49 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0  10   8)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  30  15  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  43,  20,  13)
+       Max divergence:  0.14E-12 at (  30,  15,   9)
+       Min divergence: -0.13E-12 at (  28,   7,   9)
+       Max VN number:   0.16E+00 at (  28,  10,   8)
+ 
+       Time Step   12200   June 26, 2020  16:38:38
+       Step Size:    0.419E-02 s, Total Time:      50.91 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.43E-02 on Mesh   1 at (   0  23  13)
+       Maximum Pressure Error:  0.65E-10 on Mesh   1 at (  80  23  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  50,   9,  12)
+       Max divergence:  0.12E-12 at (  54,   2,  15)
+       Min divergence: -0.14E-12 at (  48,  12,  12)
+       Max VN number:   0.17E+00 at (  28,  12,   8)
+ 
+       Time Step   12300   June 26, 2020  16:38:48
+       Step Size:    0.414E-02 s, Total Time:      51.32 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.50E-02 on Mesh   1 at (   0  13   7)
+       Maximum Pressure Error:  0.76E-10 on Mesh   1 at (  63  16  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  32,  16,  12)
+       Max divergence:  0.12E-12 at (  50,   3,   8)
+       Min divergence: -0.13E-12 at (  31,  23,  12)
+       Max VN number:   0.15E+00 at (  28,  11,   8)
+ 
+       Time Step   12400   June 26, 2020  16:38:57
+       Step Size:    0.408E-02 s, Total Time:      51.71 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.53E-02 on Mesh   1 at (   0  17   8)
+       Maximum Pressure Error:  0.99E-10 on Mesh   1 at (  60  20  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  59,  15,  14)
+       Max divergence:  0.19E-12 at (  50,  15,  11)
+       Min divergence: -0.14E-12 at (  58,   8,  14)
+       Max VN number:   0.17E+00 at (  31,  20,  10)
+ 
+       Time Step   12500   June 26, 2020  16:39:06
+       Step Size:    0.425E-02 s, Total Time:      52.11 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.47E-02 on Mesh   1 at (   0  14   3)
+       Maximum Pressure Error:  0.15E-09 on Mesh   1 at (  63  19   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  57,  20,  12)
+       Max divergence:  0.76E-12 at (  65,  19,   9)
+       Min divergence: -0.74E-12 at (  64,  19,   9)
+       Max VN number:   0.15E+00 at (  28,  13,   8)
+ 
+       Time Step   12600   June 26, 2020  16:39:16
+       Step Size:    0.419E-02 s, Total Time:      52.53 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.47E-02 on Mesh   1 at (   0  12  10)
+       Maximum Pressure Error:  0.93E-10 on Mesh   1 at (  35   2  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.97E+00 at (  43,   8,  12)
+       Max divergence:  0.23E-12 at (  31,   1,  13)
+       Min divergence: -0.20E-12 at (  30,   1,  13)
+       Max VN number:   0.15E+00 at (  28,  24,  11)
+ 
+       Time Step   12700   June 26, 2020  16:39:26
+       Step Size:    0.419E-02 s, Total Time:      52.95 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.42E-02 on Mesh   1 at (   0   8  14)
+       Maximum Pressure Error:  0.77E-10 on Mesh   1 at (  49  20  14)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  33,  11,  12)
+       Max divergence:  0.14E-12 at (  57,  15,  13)
+       Min divergence: -0.19E-12 at (  28,   6,  10)
+       Max VN number:   0.19E+00 at (  28,  14,   8)
+ 
+       Time Step   12800   June 26, 2020  16:39:35
+       Step Size:    0.407E-02 s, Total Time:      53.35 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0  15   7)
+       Maximum Pressure Error:  0.89E-10 on Mesh   1 at (  58  17   8)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  57,  13,  13)
+       Max divergence:  0.19E-12 at (   3,  15,   7)
+       Min divergence: -0.17E-12 at (  58,  17,   8)
+       Max VN number:   0.13E+00 at (  28,  21,   8)
+ 
+       Time Step   12900   June 26, 2020  16:39:45
+       Step Size:    0.407E-02 s, Total Time:      53.76 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.54E-02 on Mesh   1 at (   0  18  14)
+       Maximum Pressure Error:  0.82E-10 on Mesh   1 at (  28   9   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  62,  15,  16)
+       Max divergence:  0.12E-12 at (  45,  13,  11)
+       Min divergence: -0.14E-12 at (  28,   5,   9)
+       Max VN number:   0.20E+00 at (  28,  15,   8)
+ 
+       Time Step   13000   June 26, 2020  16:39:54
+       Step Size:    0.407E-02 s, Total Time:      54.16 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0   4   4)
+       Maximum Pressure Error:  0.80E-10 on Mesh   1 at (  60  24  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.94E+00 at (  60,  19,  11)
+       Max divergence:  0.14E-12 at (  61,  19,  11)
+       Min divergence: -0.16E-12 at (  60,  19,  13)
+       Max VN number:   0.14E+00 at (  28,   1,  10)
+ 
+       Time Step   13100   June 26, 2020  16:40:03
+       Step Size:    0.448E-02 s, Total Time:      54.58 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0  12  12)
+       Maximum Pressure Error:  0.69E-10 on Mesh   1 at (  75  15  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  35,   4,  16)
+       Max divergence:  0.14E-12 at (  54,  15,   8)
+       Min divergence: -0.12E-12 at (  46,  17,  19)
+       Max VN number:   0.16E+00 at (  31,  18,  10)
+ 
+       Time Step   13200   June 26, 2020  16:40:13
+       Step Size:    0.437E-02 s, Total Time:      55.00 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.62E-02 on Mesh   1 at (   0   5   8)
+       Maximum Pressure Error:  0.78E-10 on Mesh   1 at (  59  21  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  49,   6,  11)
+       Max divergence:  0.15E-12 at (  44,   6,  12)
+       Min divergence: -0.14E-12 at (  71,  16,  16)
+       Max VN number:   0.13E+00 at (  28,  16,   8)
+ 
+       Time Step   13300   June 26, 2020  16:40:22
+       Step Size:    0.358E-02 s, Total Time:      55.39 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.37E-02 on Mesh   1 at (   0  20  12)
+       Maximum Pressure Error:  0.12E-09 on Mesh   1 at (  35  21  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  35,  21,  14)
+       Max divergence:  0.16E-12 at (  30,  21,  13)
+       Min divergence: -0.14E-12 at (  41,  23,  11)
+       Max VN number:   0.14E+00 at (  28,  14,   8)
+ 
+       Time Step   13400   June 26, 2020  16:40:32
+       Step Size:    0.394E-02 s, Total Time:      55.77 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0   2  17)
+       Maximum Pressure Error:  0.79E-10 on Mesh   1 at (  54  15  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.82E+00 at (  57,  15,  18)
+       Max divergence:  0.14E-12 at (  51,  12,  17)
+       Min divergence: -0.14E-12 at (  51,  14,  16)
+       Max VN number:   0.13E+00 at (  33,   8,  10)
+ 
+       Time Step   13500   June 26, 2020  16:40:41
+       Step Size:    0.385E-02 s, Total Time:      56.17 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.35E-02 on Mesh   1 at (   0  18  10)
+       Maximum Pressure Error:  0.91E-10 on Mesh   1 at (  61   6  14)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  62,   6,  14)
+       Max divergence:  0.17E-12 at (  60,   6,  15)
+       Min divergence: -0.17E-12 at (  61,   6,  14)
+       Max VN number:   0.16E+00 at (  32,   8,  10)
+ 
+       Time Step   13600   June 26, 2020  16:40:51
+       Step Size:    0.279E-02 s, Total Time:      56.55 s
+       Pressure Iterations:      3
+       Maximum Velocity Error:  0.61E-02 on Mesh   1 at (   0  21   8)
+       Maximum Pressure Error:  0.17E-09 on Mesh   1 at (  35   6  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.82E+00 at (  35,   6,  13)
+       Max divergence:  0.57E-12 at (  33,   1,  18)
+       Min divergence: -0.58E-12 at (  34,   1,  18)
+       Max VN number:   0.11E+00 at (  29,   1,  13)
+ 
+       Time Step   13700   June 26, 2020  16:41:00
+       Step Size:    0.408E-02 s, Total Time:      56.93 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.59E-02 on Mesh   1 at (  81  20   9)
+       Maximum Pressure Error:  0.84E-10 on Mesh   1 at (  65  18  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.94E+00 at (  49,  12,  13)
+       Max divergence:  0.18E-12 at (  49,  12,  13)
+       Min divergence: -0.14E-12 at (  50,  12,  13)
+       Max VN number:   0.15E+00 at (  28,  15,   8)
+ 
+       Time Step   13800   June 26, 2020  16:41:09
+       Step Size:    0.379E-02 s, Total Time:      57.31 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.53E-02 on Mesh   1 at (   0   2  17)
+       Maximum Pressure Error:  0.87E-10 on Mesh   1 at (  71  17   7)
+       ---------------------------------------------------------------
+       Max CFL number:  0.82E+00 at (  52,  12,  14)
+       Max divergence:  0.15E-12 at (  47,  18,  18)
+       Min divergence: -0.18E-12 at (  48,  14,  17)
+       Max VN number:   0.13E+00 at (  28,  23,   8)
+ 
+       Time Step   13900   June 26, 2020  16:41:19
+       Step Size:    0.372E-02 s, Total Time:      57.70 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.55E-02 on Mesh   1 at (  81  10  15)
+       Maximum Pressure Error:  0.86E-10 on Mesh   1 at (  75  18  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.81E+00 at (  57,   3,  18)
+       Max divergence:  0.12E-12 at (  70,  18,  13)
+       Min divergence: -0.13E-12 at (  58,   4,  17)
+       Max VN number:   0.13E+00 at (  28,  10,   8)
+ 
+       Time Step   14000   June 26, 2020  16:41:29
+       Step Size:    0.409E-02 s, Total Time:      58.11 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.32E-02 on Mesh   1 at (   0   7   6)
+       Maximum Pressure Error:  0.84E-10 on Mesh   1 at (  49  20  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.82E+00 at (  52,  18,  16)
+       Max divergence:  0.15E-12 at (  59,   6,  13)
+       Min divergence: -0.18E-12 at (  44,  17,  11)
+       Max VN number:   0.12E+00 at (  60,  24,  10)
+ 
+       Time Step   14100   June 26, 2020  16:41:39
+       Step Size:    0.450E-02 s, Total Time:      58.55 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.51E-02 on Mesh   1 at (   0   4  11)
+       Maximum Pressure Error:  0.68E-10 on Mesh   1 at (  30  15   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  42,   9,  11)
+       Max divergence:  0.18E-12 at (  39,   1,  16)
+       Min divergence: -0.15E-12 at (  40,   1,  16)
+       Max VN number:   0.18E+00 at (  29,  10,   9)
+ 
+       Time Step   14200   June 26, 2020  16:41:49
+       Step Size:    0.436E-02 s, Total Time:      58.95 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.38E-02 on Mesh   1 at (   0  10  12)
+       Maximum Pressure Error:  0.76E-10 on Mesh   1 at (  68   1   8)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  67,  11,  13)
+       Max divergence:  0.15E-12 at (  69,  15,  10)
+       Min divergence: -0.17E-12 at (  68,   1,   5)
+       Max VN number:   0.15E+00 at (  68,   1,   4)
+ 
+       Time Step   14300   June 26, 2020  16:41:59
+       Step Size:    0.436E-02 s, Total Time:      59.39 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.45E-02 on Mesh   1 at (   0   6  17)
+       Maximum Pressure Error:  0.45E-08 on Mesh   1 at (  48   1  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.96E+00 at (  45,  17,  14)
+       Max divergence:  0.15E-10 at (  48,   1,  16)
+       Min divergence: -0.16E-10 at (  47,   1,  16)
+       Max VN number:   0.16E+00 at (  28,   7,   8)
+ 
+       Time Step   14400   June 26, 2020  16:42:08
+       Step Size:    0.421E-02 s, Total Time:      59.78 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0  19  16)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  80  20  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.83E+00 at (  50,  16,  13)
+       Max divergence:  0.18E-12 at (  80,  20,  15)
+       Min divergence: -0.13E-12 at (  51,  17,  13)
+       Max VN number:   0.13E+00 at (  28,  20,   8)
+ 
+       Time Step   14500   June 26, 2020  16:42:18
+       Step Size:    0.412E-02 s, Total Time:      60.19 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.58E-02 on Mesh   1 at (   0   6  14)
+       Maximum Pressure Error:  0.78E-10 on Mesh   1 at (  75  18  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  39,  20,  13)
+       Max divergence:  0.14E-12 at (  75,  18,  14)
+       Min divergence: -0.14E-12 at (  54,  20,   9)
+       Max VN number:   0.13E+00 at (  28,   3,   8)
+ 
+       Time Step   14600   June 26, 2020  16:42:27
+       Step Size:    0.412E-02 s, Total Time:      60.60 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.58E-02 on Mesh   1 at (   0  13   6)
+       Maximum Pressure Error:  0.94E-10 on Mesh   1 at (  46  17  14)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  43,  20,  17)
+       Max divergence:  0.15E-12 at (  54,  13,  10)
+       Min divergence: -0.15E-12 at (  42,  18,  18)
+       Max VN number:   0.15E+00 at (  28,   9,   8)
+ 
+       Time Step   14700   June 26, 2020  16:42:36
+       Step Size:    0.406E-02 s, Total Time:      61.02 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.48E-02 on Mesh   1 at (   0  13  10)
+       Maximum Pressure Error:  0.92E-10 on Mesh   1 at (  69  20  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  33,   5,  12)
+       Max divergence:  0.48E-12 at (  28,   2,  11)
+       Min divergence: -0.53E-12 at (  28,   1,  11)
+       Max VN number:   0.16E+00 at (  28,   5,   8)
+ 
+       Time Step   14800   June 26, 2020  16:42:46
+       Step Size:    0.406E-02 s, Total Time:      61.42 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.37E-02 on Mesh   1 at (   0  10  15)
+       Maximum Pressure Error:  0.90E-10 on Mesh   1 at (  43  15  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.81E+00 at (  47,  18,  14)
+       Max divergence:  0.12E-12 at (  43,  15,  13)
+       Min divergence: -0.13E-12 at (  61,   5,  16)
+       Max VN number:   0.12E+00 at (  28,  22,   8)
+ 
+       Time Step   14900   June 26, 2020  16:42:55
+       Step Size:    0.385E-02 s, Total Time:      61.82 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.58E-02 on Mesh   1 at (  81  21  17)
+       Maximum Pressure Error:  0.93E-10 on Mesh   1 at (  49  13  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.96E+00 at (  49,  13,  15)
+       Max divergence:  0.23E-12 at (  49,  13,  15)
+       Min divergence: -0.16E-12 at (  55,  23,  10)
+       Max VN number:   0.15E+00 at (  52,  24,  10)
+ 
+       Time Step   15000   June 26, 2020  16:43:05
+       Step Size:    0.423E-02 s, Total Time:      62.23 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0  16  14)
+       Maximum Pressure Error:  0.80E-10 on Mesh   1 at (  80  20  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  80,  20,  13)
+       Max divergence:  0.17E-12 at (  80,  24,  16)
+       Min divergence: -0.12E-12 at (  42,  14,  10)
+       Max VN number:   0.16E+00 at (  28,   9,   8)
+ 
+       Time Step   15100   June 26, 2020  16:43:14
+       Step Size:    0.423E-02 s, Total Time:      62.66 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.51E-02 on Mesh   1 at (   0  13  12)
+       Maximum Pressure Error:  0.59E-10 on Mesh   1 at (  60  20  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  30,  17,  22)
+       Max divergence:  0.10E-12 at (  49,  18,  13)
+       Min divergence: -0.11E-12 at (  63,  14,  14)
+       Max VN number:   0.13E+00 at (  60,   1,   9)
+ 
+       Time Step   15200   June 26, 2020  16:43:24
+       Step Size:    0.423E-02 s, Total Time:      63.08 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.41E-02 on Mesh   1 at (   0  20   9)
+       Maximum Pressure Error:  0.65E-10 on Mesh   1 at (  51  11  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  62,  13,  16)
+       Max divergence:  0.16E-12 at (  55,   7,  13)
+       Min divergence: -0.14E-12 at (  61,  13,  16)
+       Max VN number:   0.16E+00 at (  28,  16,   8)
+ 
+       Time Step   15300   June 26, 2020  16:43:33
+       Step Size:    0.423E-02 s, Total Time:      63.50 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (  81  21  18)
+       Maximum Pressure Error:  0.95E-10 on Mesh   1 at (  58  16  17)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  59,  16,  13)
+       Max divergence:  0.13E-12 at (  51,  22,  12)
+       Min divergence: -0.15E-12 at (  62,  20,   9)
+       Max VN number:   0.15E+00 at (  30,  21,   9)
+ 
+       Time Step   15400   June 26, 2020  16:43:42
+       Step Size:    0.405E-02 s, Total Time:      63.92 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.36E-02 on Mesh   1 at (   0   4  15)
+       Maximum Pressure Error:  0.95E-10 on Mesh   1 at (  65  15  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.93E+00 at (  43,  19,  11)
+       Max divergence:  0.18E-12 at (  65,  15,  13)
+       Min divergence: -0.12E-12 at (  68,  18,  14)
+       Max VN number:   0.13E+00 at (  28,  16,   8)
+ 
+       Time Step   15500   June 26, 2020  16:43:52
+       Step Size:    0.405E-02 s, Total Time:      64.33 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.51E-02 on Mesh   1 at (   0  12   6)
+       Maximum Pressure Error:  0.11E-09 on Mesh   1 at (  42  15  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  33,  19,  12)
+       Max divergence:  0.35E-12 at (  40,  24,  21)
+       Min divergence: -0.34E-12 at (  39,  24,  21)
+       Max VN number:   0.15E+00 at (  29,  12,   9)
+ 
+       Time Step   15600   June 26, 2020  16:44:01
+       Step Size:    0.399E-02 s, Total Time:      64.72 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.49E-02 on Mesh   1 at (   0  19  13)
+       Maximum Pressure Error:  0.11E-09 on Mesh   1 at (  59  23  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  69,  17,  18)
+       Max divergence:  0.23E-12 at (  59,  23,  10)
+       Min divergence: -0.17E-12 at (  61,  11,  17)
+       Max VN number:   0.18E+00 at (  28,  18,   8)
+ 
+       Time Step   15700   June 26, 2020  16:44:11
+       Step Size:    0.359E-02 s, Total Time:      65.12 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.52E-02 on Mesh   1 at (   0  11  11)
+       Maximum Pressure Error:  0.91E-10 on Mesh   1 at (  61  17  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  62,  11,  14)
+       Max divergence:  0.11E-12 at (  60,  18,  12)
+       Min divergence: -0.15E-12 at (  61,  14,  16)
+       Max VN number:   0.13E+00 at (  33,  16,  10)
+ 
+       Time Step   15800   June 26, 2020  16:44:20
+       Step Size:    0.395E-02 s, Total Time:      65.51 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.50E-02 on Mesh   1 at (   0  12  22)
+       Maximum Pressure Error:  0.10E-09 on Mesh   1 at (  58  11  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  57,   8,  14)
+       Max divergence:  0.19E-12 at (  60,  11,  13)
+       Min divergence: -0.17E-12 at (  37,  24,  21)
+       Max VN number:   0.16E+00 at (  28,  21,   8)
+ 
+       Time Step   15900   June 26, 2020  16:44:30
+       Step Size:    0.385E-02 s, Total Time:      65.91 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.51E-02 on Mesh   1 at (   0  14  17)
+       Maximum Pressure Error:  0.90E-10 on Mesh   1 at (  60   7  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.83E+00 at (  57,   9,  17)
+       Max divergence:  0.15E-12 at (  60,   7,  18)
+       Min divergence: -0.13E-12 at (  61,   9,  17)
+       Max VN number:   0.12E+00 at (  44,  14,  14)
+ 
+       Time Step   16000   June 26, 2020  16:44:39
+       Step Size:    0.423E-02 s, Total Time:      66.32 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.43E-02 on Mesh   1 at (   0   4  11)
+       Maximum Pressure Error:  0.64E-10 on Mesh   1 at (  70  13  20)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  69,  15,  22)
+       Max divergence:  0.21E-12 at (  55,   9,  18)
+       Min divergence: -0.15E-12 at (  66,   8,  14)
+       Max VN number:   0.15E+00 at (  28,  20,   8)
+ 
+       Time Step   16100   June 26, 2020  16:44:49
+       Step Size:    0.379E-02 s, Total Time:      66.73 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0  20  20)
+       Maximum Pressure Error:  0.95E-10 on Mesh   1 at (  46   5  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  57,   7,  18)
+       Max divergence:  0.17E-12 at (  43,  20,  15)
+       Min divergence: -0.14E-12 at (  46,   5,  10)
+       Max VN number:   0.14E+00 at (  28,  18,   8)
+ 
+       Time Step   16200   June 26, 2020  16:44:59
+       Step Size:    0.383E-02 s, Total Time:      67.14 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.61E-02 on Mesh   1 at (  81  13  18)
+       Maximum Pressure Error:  0.11E-09 on Mesh   1 at (  67  18  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.81E+00 at (  67,  18,  13)
+       Max divergence:  0.18E-12 at (  67,  18,  13)
+       Min divergence: -0.13E-12 at (  70,  15,  15)
+       Max VN number:   0.15E+00 at (  28,  18,   8)
+ 
+       Time Step   16300   June 26, 2020  16:45:10
+       Step Size:    0.392E-02 s, Total Time:      67.57 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0   9  10)
+       Maximum Pressure Error:  0.10E-09 on Mesh   1 at (  49   4  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.93E+00 at (  52,   4,  18)
+       Max divergence:  0.16E-12 at (  52,   4,  18)
+       Min divergence: -0.15E-12 at (  51,  16,  11)
+       Max VN number:   0.15E+00 at (  28,  18,   8)
+ 
+       Time Step   16400   June 26, 2020  16:45:20
+       Step Size:    0.383E-02 s, Total Time:      67.98 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.34E-02 on Mesh   1 at (   0  18  11)
+       Maximum Pressure Error:  0.13E-09 on Mesh   1 at (  30  18  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.84E+00 at (  49,   3,  17)
+       Max divergence:  0.14E-12 at (  30,  18,  11)
+       Min divergence: -0.14E-12 at (  51,  10,  10)
+       Max VN number:   0.18E+00 at (  28,  10,   8)
+ 
+       Time Step   16500   June 26, 2020  16:45:29
+       Step Size:    0.412E-02 s, Total Time:      68.38 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.52E-02 on Mesh   1 at (   0  13  13)
+       Maximum Pressure Error:  0.12E-09 on Mesh   1 at (  46   3   3)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  35,  10,  14)
+       Max divergence:  0.15E-12 at (  46,   1,   4)
+       Min divergence: -0.15E-12 at (  55,  18,  14)
+       Max VN number:   0.15E+00 at (  28,  18,   8)
+ 
+       Time Step   16600   June 26, 2020  16:45:39
+       Step Size:    0.454E-02 s, Total Time:      68.80 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.34E-02 on Mesh   1 at (  81  10   7)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  70   7  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  45,   8,  13)
+       Max divergence:  0.13E-12 at (  80,   9,   7)
+       Min divergence: -0.14E-12 at (  42,  18,  11)
+       Max VN number:   0.15E+00 at (  28,  20,   8)
+ 
+       Time Step   16700   June 26, 2020  16:45:48
+       Step Size:    0.449E-02 s, Total Time:      69.24 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.57E-02 on Mesh   1 at (   0  19  16)
+       Maximum Pressure Error:  0.93E-10 on Mesh   1 at (  30   7   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.93E+00 at (  47,   6,  16)
+       Max divergence:  0.18E-12 at (  30,  13,  11)
+       Min divergence: -0.14E-12 at (  30,   6,   9)
+       Max VN number:   0.15E+00 at (  28,   9,   8)
+ 
+       Time Step   16800   June 26, 2020  16:45:58
+       Step Size:    0.397E-02 s, Total Time:      69.64 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.47E-02 on Mesh   1 at (   0  16  10)
+       Maximum Pressure Error:  0.10E-09 on Mesh   1 at (  55  15  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  55,  15,  11)
+       Max divergence:  0.16E-12 at (  55,  15,  11)
+       Min divergence: -0.14E-12 at (  51,   8,   8)
+       Max VN number:   0.15E+00 at (  28,   7,   8)
+ 
+       Time Step   16900   June 26, 2020  16:46:07
+       Step Size:    0.388E-02 s, Total Time:      70.06 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.51E-02 on Mesh   1 at (   0  13  11)
+       Maximum Pressure Error:  0.79E-10 on Mesh   1 at (  70   3  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  60,  19,  14)
+       Max divergence:  0.12E-12 at (  41,  12,  10)
+       Min divergence: -0.12E-12 at (  53,  11,  12)
+       Max VN number:   0.13E+00 at (  28,   5,   8)
+ 
+       Time Step   17000   June 26, 2020  16:46:17
+       Step Size:    0.368E-02 s, Total Time:      70.47 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.41E-02 on Mesh   1 at (   0  13   9)
+       Maximum Pressure Error:  0.73E-10 on Mesh   1 at (  25  21  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  47,  13,  11)
+       Max divergence:  0.12E-12 at (  65,  15,   9)
+       Min divergence: -0.14E-12 at (  30,  16,   9)
+       Max VN number:   0.16E+00 at (  28,  12,   8)
+ 
+       Time Step   17100   June 26, 2020  16:46:26
+       Step Size:    0.405E-02 s, Total Time:      70.84 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.34E-02 on Mesh   1 at (   0  19  11)
+       Maximum Pressure Error:  0.93E-10 on Mesh   1 at (  58  16  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  57,  16,  12)
+       Max divergence:  0.15E-12 at (  51,  14,  11)
+       Min divergence: -0.19E-12 at (  58,  16,  12)
+       Max VN number:   0.14E+00 at (  28,   7,   8)
+ 
+       Time Step   17200   June 26, 2020  16:46:35
+       Step Size:    0.376E-02 s, Total Time:      71.26 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.52E-02 on Mesh   1 at (   0  17  10)
+       Maximum Pressure Error:  0.14E-09 on Mesh   1 at (  30   1  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.78E+00 at (  49,  17,  11)
+       Max divergence:  0.21E-11 at (  31,   1,  13)
+       Min divergence: -0.18E-11 at (  32,   1,  13)
+       Max VN number:   0.19E+00 at (  28,   1,  10)
+ 
+       Time Step   17300   June 26, 2020  16:46:45
+       Step Size:    0.406E-02 s, Total Time:      71.66 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.54E-02 on Mesh   1 at (   0  20  15)
+       Maximum Pressure Error:  0.96E-10 on Mesh   1 at (  63  22  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  62,  14,  19)
+       Max divergence:  0.15E-12 at (  60,   7,  14)
+       Min divergence: -0.17E-12 at (  63,  14,  19)
+       Max VN number:   0.16E+00 at (  28,   4,   8)
+ 
+       Time Step   17400   June 26, 2020  16:46:55
+       Step Size:    0.389E-02 s, Total Time:      72.06 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.58E-02 on Mesh   1 at (  81  14  18)
+       Maximum Pressure Error:  0.11E-09 on Mesh   1 at (  35  21  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  43,  21,  19)
+       Max divergence:  0.28E-12 at (  32,   1,  13)
+       Min divergence: -0.31E-12 at (  31,   1,  13)
+       Max VN number:   0.16E+00 at (  32,  16,  10)
+ 
+       Time Step   17500   June 26, 2020  16:47:04
+       Step Size:    0.377E-02 s, Total Time:      72.44 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.58E-02 on Mesh   1 at (   0  19  11)
+       Maximum Pressure Error:  0.82E-10 on Mesh   1 at (  64   6  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  64,   7,  11)
+       Max divergence:  0.12E-12 at (  75,  20,  11)
+       Min divergence: -0.12E-12 at (  65,   9,  15)
+       Max VN number:   0.13E+00 at (  28,  23,   8)
+ 
+       Time Step   17600   June 26, 2020  16:47:13
+       Step Size:    0.371E-02 s, Total Time:      72.83 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.31E-02 on Mesh   1 at (   0  20  20)
+       Maximum Pressure Error:  0.11E-09 on Mesh   1 at (  43  21  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  60,   9,  16)
+       Max divergence:  0.16E-12 at (  43,  15,  10)
+       Min divergence: -0.14E-12 at (  44,  17,  10)
+       Max VN number:   0.11E+00 at (  31,   6,  10)
+ 
+       Time Step   17700   June 26, 2020  16:47:23
+       Step Size:    0.400E-02 s, Total Time:      73.25 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.41E-02 on Mesh   1 at (   0   9  10)
+       Maximum Pressure Error:  0.54E-08 on Mesh   1 at (  33  15  14)
+       ---------------------------------------------------------------
+       Max CFL number:  0.96E+00 at (  37,   7,  12)
+       Max divergence:  0.24E-10 at (  29,  17,  13)
+       Min divergence: -0.24E-10 at (  29,  17,  12)
+       Max VN number:   0.19E+00 at (  29,   6,   9)
+ 
+       Time Step   17800   June 26, 2020  16:47:33
+       Step Size:    0.369E-02 s, Total Time:      73.61 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0  19   5)
+       Maximum Pressure Error:  0.12E-09 on Mesh   1 at (  64  16  24)
+       ---------------------------------------------------------------
+       Max CFL number:  0.80E+00 at (  67,  11,  13)
+       Max divergence:  0.41E-12 at (  66,  16,  24)
+       Min divergence: -0.34E-12 at (  67,  12,  24)
+       Max VN number:   0.12E+00 at (  28,  20,   8)
+ 
+       Time Step   17900   June 26, 2020  16:47:42
+       Step Size:    0.406E-02 s, Total Time:      74.01 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.58E-02 on Mesh   1 at (   0  15  18)
+       Maximum Pressure Error:  0.55E-08 on Mesh   1 at (  31   7  14)
+       ---------------------------------------------------------------
+       Max CFL number:  0.94E+00 at (  30,   7,  14)
+       Max divergence:  0.30E-10 at (  32,   7,  15)
+       Min divergence: -0.34E-10 at (  32,   6,  15)
+       Max VN number:   0.18E+00 at (  28,  14,   8)
+ 
+       Time Step   18000   June 26, 2020  16:47:52
+       Step Size:    0.383E-02 s, Total Time:      74.35 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.60E-02 on Mesh   1 at (   0  11   6)
+       Maximum Pressure Error:  0.82E-10 on Mesh   1 at (  70   6  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  42,  20,  12)
+       Max divergence:  0.13E-12 at (  43,   3,  13)
+       Min divergence: -0.15E-12 at (  56,   4,  17)
+       Max VN number:   0.14E+00 at (  28,   5,   8)
+ 
+       Time Step   18100   June 26, 2020  16:48:02
+       Step Size:    0.378E-02 s, Total Time:      74.73 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.40E-02 on Mesh   1 at (   0   9  12)
+       Maximum Pressure Error:  0.80E-10 on Mesh   1 at (  64  21  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  65,  21,  16)
+       Max divergence:  0.14E-12 at (  60,  21,  13)
+       Min divergence: -0.14E-12 at (  28,  15,   9)
+       Max VN number:   0.17E+00 at (  28,  15,   8)
+ 
+       Time Step   18200   June 26, 2020  16:48:12
+       Step Size:    0.374E-02 s, Total Time:      75.12 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.47E-02 on Mesh   1 at (   0   5  10)
+       Maximum Pressure Error:  0.80E-10 on Mesh   1 at (  25   6  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.83E+00 at (  60,  11,  12)
+       Max divergence:  0.14E-12 at (  49,  20,  15)
+       Min divergence: -0.14E-12 at (  59,  11,  12)
+       Max VN number:   0.12E+00 at (  31,  20,  10)
+ 
+       Time Step   18300   June 26, 2020  16:48:22
+       Step Size:    0.411E-02 s, Total Time:      75.54 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.43E-02 on Mesh   1 at (   0   6  13)
+       Maximum Pressure Error:  0.74E-10 on Mesh   1 at (  55  10  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  54,   7,  12)
+       Max divergence:  0.16E-12 at (  75,  13,  18)
+       Min divergence: -0.12E-12 at (  28,  22,  10)
+       Max VN number:   0.16E+00 at (  30,   6,  10)
+ 
+       Time Step   18400   June 26, 2020  16:48:32
+       Step Size:    0.387E-02 s, Total Time:      75.93 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.32E-02 on Mesh   1 at (   0   7  18)
+       Maximum Pressure Error:  0.96E-10 on Mesh   1 at (  46  17  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  62,  14,  15)
+       Max divergence:  0.19E-12 at (  62,  13,  15)
+       Min divergence: -0.17E-12 at (  61,  14,  14)
+       Max VN number:   0.11E+00 at (  49,  20,  12)
+ 
+       Time Step   18500   June 26, 2020  16:48:42
+       Step Size:    0.426E-02 s, Total Time:      76.34 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.33E-02 on Mesh   1 at (   0  15  14)
+       Maximum Pressure Error:  0.74E-10 on Mesh   1 at (  55  13  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  42,   9,  16)
+       Max divergence:  0.14E-12 at (  35,   2,  13)
+       Min divergence: -0.15E-12 at (  56,   5,  14)
+       Max VN number:   0.14E+00 at (  32,  12,  10)
+ 
+       Time Step   18600   June 26, 2020  16:48:51
+       Step Size:    0.414E-02 s, Total Time:      76.73 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.57E-02 on Mesh   1 at (   0   8  17)
+       Maximum Pressure Error:  0.87E-10 on Mesh   1 at (  80  18   7)
+       ---------------------------------------------------------------
+       Max CFL number:  0.83E+00 at (  54,  17,  17)
+       Max divergence:  0.15E-12 at (  80,  18,   7)
+       Min divergence: -0.17E-12 at (  68,  24,   9)
+       Max VN number:   0.17E+00 at (  28,  12,   8)
+ 
+       Time Step   18700   June 26, 2020  16:49:01
+       Step Size:    0.414E-02 s, Total Time:      77.14 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.38E-02 on Mesh   1 at (   0   9   6)
+       Maximum Pressure Error:  0.64E-10 on Mesh   1 at (  46  23  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.84E+00 at (  43,   5,  14)
+       Max divergence:  0.11E-12 at (  54,   4,  20)
+       Min divergence: -0.14E-12 at (  51,  22,  14)
+       Max VN number:   0.15E+00 at (  28,  11,   8)
+ 
+       Time Step   18800   June 26, 2020  16:49:11
+       Step Size:    0.414E-02 s, Total Time:      77.56 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.41E-02 on Mesh   1 at (   0   4  21)
+       Maximum Pressure Error:  0.77E-10 on Mesh   1 at (  30   4  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  77,   8,  11)
+       Max divergence:  0.13E-12 at (  61,  12,  12)
+       Min divergence: -0.16E-12 at (  28,  10,   9)
+       Max VN number:   0.19E+00 at (  28,   6,   8)
+ 
+       Time Step   18900   June 26, 2020  16:49:20
+       Step Size:    0.397E-02 s, Total Time:      77.96 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.61E-02 on Mesh   1 at (   0  19  11)
+       Maximum Pressure Error:  0.78E-10 on Mesh   1 at (  43  18  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.84E+00 at (  43,  13,  12)
+       Max divergence:  0.14E-12 at (  43,  13,  12)
+       Min divergence: -0.13E-12 at (  48,  11,  17)
+       Max VN number:   0.13E+00 at (  36,   3,  14)
+ 
+       Time Step   19000   June 26, 2020  16:49:30
+       Step Size:    0.436E-02 s, Total Time:      78.37 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.35E-02 on Mesh   1 at (   0   9  10)
+       Maximum Pressure Error:  0.85E-10 on Mesh   1 at (  53  16  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.97E+00 at (  55,  13,  12)
+       Max divergence:  0.17E-12 at (  51,  16,  12)
+       Min divergence: -0.15E-12 at (  44,  23,  14)
+       Max VN number:   0.18E+00 at (  28,   5,   8)
+ 
+       Time Step   19100   June 26, 2020  16:49:39
+       Step Size:    0.377E-02 s, Total Time:      78.77 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.40E-02 on Mesh   1 at (   0  14  20)
+       Maximum Pressure Error:  0.76E-10 on Mesh   1 at (  52  18  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  69,   6,  10)
+       Max divergence:  0.12E-12 at (  52,  18,  13)
+       Min divergence: -0.12E-12 at (  78,  10,  16)
+       Max VN number:   0.11E+00 at (  28,  12,   8)
+ 
+       Time Step   19200   June 26, 2020  16:49:49
+       Step Size:    0.414E-02 s, Total Time:      79.18 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.43E-02 on Mesh   1 at (   0   9   8)
+       Maximum Pressure Error:  0.68E-10 on Mesh   1 at (  80   9   8)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  43,   8,  14)
+       Max divergence:  0.12E-12 at (  80,  18,  15)
+       Min divergence: -0.12E-12 at (  41,  14,  13)
+       Max VN number:   0.16E+00 at (  33,  11,  10)
+ 
+       Time Step   19300   June 26, 2020  16:49:58
+       Step Size:    0.414E-02 s, Total Time:      79.60 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.35E-02 on Mesh   1 at (   0   5  15)
+       Maximum Pressure Error:  0.89E-10 on Mesh   1 at (  70   6  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  57,   2,  12)
+       Max divergence:  0.13E-12 at (  69,  10,  11)
+       Min divergence: -0.13E-12 at (  53,   5,  14)
+       Max VN number:   0.13E+00 at (  67,   3,  13)
+ 
+       Time Step   19400   June 26, 2020  16:50:08
+       Step Size:    0.414E-02 s, Total Time:      80.01 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.38E-02 on Mesh   1 at (   0  13  20)
+       Maximum Pressure Error:  0.68E-10 on Mesh   1 at (  51  16  14)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  47,  15,  14)
+       Max divergence:  0.15E-12 at (  74,  14,  15)
+       Min divergence: -0.17E-12 at (  51,  16,  14)
+       Max VN number:   0.15E+00 at (  28,  15,   8)
+ 
+       Time Step   19500   June 26, 2020  16:50:17
+       Step Size:    0.406E-02 s, Total Time:      80.42 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.48E-02 on Mesh   1 at (   0  11  16)
+       Maximum Pressure Error:  0.73E-10 on Mesh   1 at (  80   6  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  64,   8,  11)
+       Max divergence:  0.12E-12 at (  80,   6,  13)
+       Min divergence: -0.13E-12 at (  28,  12,   9)
+       Max VN number:   0.15E+00 at (  28,  10,   8)
+ 
+       Time Step   19600   June 26, 2020  16:50:27
+       Step Size:    0.383E-02 s, Total Time:      80.84 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.42E-02 on Mesh   1 at (   0  18  14)
+       Maximum Pressure Error:  0.74E-10 on Mesh   1 at (  65   5  21)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  54,  13,  12)
+       Max divergence:  0.14E-12 at (  59,   7,  15)
+       Min divergence: -0.13E-12 at (  65,   5,  21)
+       Max VN number:   0.16E+00 at (  28,  11,   8)
+ 
+       Time Step   19700   June 26, 2020  16:50:36
+       Step Size:    0.372E-02 s, Total Time:      81.22 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.62E-02 on Mesh   1 at (   0  19  11)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  55  13  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.80E+00 at (  40,   5,  12)
+       Max divergence:  0.15E-12 at (  55,  13,  13)
+       Min divergence: -0.14E-12 at (  55,  21,  16)
+       Max VN number:   0.15E+00 at (  28,   7,   8)
+ 
+       Time Step   19800   June 26, 2020  16:50:46
+       Step Size:    0.399E-02 s, Total Time:      81.62 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.31E-02 on Mesh   1 at (   0  12  23)
+       Maximum Pressure Error:  0.84E-10 on Mesh   1 at (  75   4   7)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  59,  18,   9)
+       Max divergence:  0.17E-12 at (  59,  18,   9)
+       Min divergence: -0.13E-12 at (  56,  12,  11)
+       Max VN number:   0.15E+00 at (  28,  14,   8)
+ 
+       Time Step   19900   June 26, 2020  16:50:56
+       Step Size:    0.389E-02 s, Total Time:      82.04 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.62E-02 on Mesh   1 at (   0  19  12)
+       Maximum Pressure Error:  0.77E-09 on Mesh   1 at (  47  20  14)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  47,  13,  16)
+       Max divergence:  0.28E-11 at (  46,  21,  13)
+       Min divergence: -0.24E-11 at (  45,  21,  13)
+       Max VN number:   0.13E+00 at (  28,  15,   8)
+ 
+       Time Step   20000   June 26, 2020  16:51:07
+       Step Size:    0.389E-02 s, Total Time:      82.43 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.52E-02 on Mesh   1 at (   0   9  17)
+       Maximum Pressure Error:  0.82E-10 on Mesh   1 at (  78  11  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.82E+00 at (  77,  11,  16)
+       Max divergence:  0.14E-12 at (  65,  13,  11)
+       Min divergence: -0.16E-12 at (  78,  11,  16)
+       Max VN number:   0.12E+00 at (  28,   2,   8)
+ 
+       Time Step   20100   June 26, 2020  16:51:18
+       Step Size:    0.428E-02 s, Total Time:      82.85 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.47E-02 on Mesh   1 at (   0  15  14)
+       Maximum Pressure Error:  0.68E-10 on Mesh   1 at (  50  14  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.93E+00 at (  45,  22,  18)
+       Max divergence:  0.15E-12 at (  42,  15,  10)
+       Min divergence: -0.12E-12 at (  50,  21,  10)
+       Max VN number:   0.13E+00 at (  28,  12,   9)
+ 
+       Time Step   20200   June 26, 2020  16:51:28
+       Step Size:    0.374E-02 s, Total Time:      83.25 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.59E-02 on Mesh   1 at (   0  20  11)
+       Maximum Pressure Error:  0.11E-08 on Mesh   1 at (  47  13  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  45,  13,  13)
+       Max divergence:  0.20E-11 at (  46,  13,  15)
+       Min divergence: -0.17E-11 at (  44,  12,  15)
+       Max VN number:   0.13E+00 at (  28,  12,   8)
+ 
+       Time Step   20300   June 26, 2020  16:51:37
+       Step Size:    0.405E-02 s, Total Time:      83.64 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.41E-02 on Mesh   1 at (   0  10  11)
+       Maximum Pressure Error:  0.85E-10 on Mesh   1 at (  35  20  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  52,  18,  14)
+       Max divergence:  0.14E-12 at (  54,  11,  13)
+       Min divergence: -0.16E-12 at (  28,  20,   9)
+       Max VN number:   0.17E+00 at (  28,  21,   8)
+ 
+       Time Step   20400   June 26, 2020  16:51:47
+       Step Size:    0.405E-02 s, Total Time:      84.04 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.56E-02 on Mesh   1 at (   0  10   3)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  28  10   9)
+       ---------------------------------------------------------------
+       Max CFL number:  0.81E+00 at (  57,  11,  13)
+       Max divergence:  0.15E-12 at (  80,  10,   3)
+       Min divergence: -0.14E-12 at (  51,  22,  10)
+       Max VN number:   0.16E+00 at (  28,  13,   8)
+ 
+       Time Step   20500   June 26, 2020  16:51:56
+       Step Size:    0.399E-02 s, Total Time:      84.43 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.45E-02 on Mesh   1 at (   0  14  11)
+       Maximum Pressure Error:  0.12E-09 on Mesh   1 at (  56  16  17)
+       ---------------------------------------------------------------
+       Max CFL number:  0.95E+00 at (  55,  15,  14)
+       Max divergence:  0.19E-12 at (  49,   9,  15)
+       Min divergence: -0.21E-12 at (  56,  16,  17)
+       Max VN number:   0.15E+00 at (  28,  17,   8)
+ 
+       Time Step   20600   June 26, 2020  16:52:06
+       Step Size:    0.403E-02 s, Total Time:      84.83 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.41E-02 on Mesh   1 at (   0  20  14)
+       Maximum Pressure Error:  0.60E-08 on Mesh   1 at (  45  23  20)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  54,  12,  12)
+       Max divergence:  0.27E-10 at (  44,  23,  20)
+       Min divergence: -0.39E-10 at (  45,  23,  20)
+       Max VN number:   0.15E+00 at (  28,   4,   8)
+ 
+       Time Step   20700   June 26, 2020  16:52:16
+       Step Size:    0.436E-02 s, Total Time:      85.24 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.62E-02 on Mesh   1 at (   0  10  14)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  50  21  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  77,  13,  11)
+       Max divergence:  0.15E-12 at (  49,  14,  13)
+       Min divergence: -0.16E-12 at (  76,  12,  12)
+       Max VN number:   0.17E+00 at (  28,  13,   8)
+ 
+       Time Step   20800   June 26, 2020  16:52:26
+       Step Size:    0.429E-02 s, Total Time:      85.66 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.35E-02 on Mesh   1 at (   0  11   8)
+       Maximum Pressure Error:  0.84E-10 on Mesh   1 at (  60  10  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  59,  15,  11)
+       Max divergence:  0.16E-12 at (  57,  18,  15)
+       Min divergence: -0.15E-12 at (  53,   5,  16)
+       Max VN number:   0.13E+00 at (  73,  11,   5)
+ 
+       Time Step   20900   June 26, 2020  16:52:35
+       Step Size:    0.383E-02 s, Total Time:      86.06 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.33E-02 on Mesh   1 at (   0  11  19)
+       Maximum Pressure Error:  0.75E-10 on Mesh   1 at (  30  15  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.88E+00 at (  39,  16,  11)
+       Max divergence:  0.12E-12 at (  44,  15,  11)
+       Min divergence: -0.12E-12 at (  30,  21,  10)
+       Max VN number:   0.15E+00 at (  28,  13,   8)
+ 
+       Time Step   21000   June 26, 2020  16:52:44
+       Step Size:    0.422E-02 s, Total Time:      86.47 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.60E-02 on Mesh   1 at (   0  15  14)
+       Maximum Pressure Error:  0.69E-10 on Mesh   1 at (  63  17  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  60,  14,  14)
+       Max divergence:  0.12E-12 at (  35,  13,  10)
+       Min divergence: -0.14E-12 at (  58,   9,  12)
+       Max VN number:   0.13E+00 at (  28,  18,   8)
+ 
+       Time Step   21100   June 26, 2020  16:52:54
+       Step Size:    0.422E-02 s, Total Time:      86.89 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.47E-02 on Mesh   1 at (  81  17  16)
+       Maximum Pressure Error:  0.84E-10 on Mesh   1 at (  43  13  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  60,  11,  16)
+       Max divergence:  0.14E-12 at (  43,  13,  11)
+       Min divergence: -0.12E-12 at (  66,  17,  17)
+       Max VN number:   0.14E+00 at (  28,  12,   8)
+ 
+       Time Step   21200   June 26, 2020  16:53:03
+       Step Size:    0.422E-02 s, Total Time:      87.31 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.43E-02 on Mesh   1 at (   0  22  17)
+       Maximum Pressure Error:  0.80E-10 on Mesh   1 at (  49   4  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.94E+00 at (  50,   5,  17)
+       Max divergence:  0.18E-12 at (  49,   4,  18)
+       Min divergence: -0.14E-12 at (  56,   9,  12)
+       Max VN number:   0.19E+00 at (  28,  10,   8)
+ 
+       Time Step   21300   June 26, 2020  16:53:13
+       Step Size:    0.415E-02 s, Total Time:      87.72 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.42E-02 on Mesh   1 at (   0  12  12)
+       Maximum Pressure Error:  0.71E-10 on Mesh   1 at (  59  15  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  64,  12,  15)
+       Max divergence:  0.12E-12 at (  59,  12,  15)
+       Min divergence: -0.12E-12 at (  61,  11,  16)
+       Max VN number:   0.14E+00 at (  28,   6,   8)
+ 
+       Time Step   21400   June 26, 2020  16:53:22
+       Step Size:    0.456E-02 s, Total Time:      88.15 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.37E-02 on Mesh   1 at (   0  12   6)
+       Maximum Pressure Error:  0.57E-10 on Mesh   1 at (  35  10  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.93E+00 at (  45,  12,  15)
+       Max divergence:  0.12E-12 at (   4,  20,  18)
+       Min divergence: -0.13E-12 at (  48,  11,  17)
+       Max VN number:   0.18E+00 at (  28,  20,   8)
+ 
+       Time Step   21500   June 26, 2020  16:53:32
+       Step Size:    0.408E-02 s, Total Time:      88.57 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.48E-02 on Mesh   1 at (   0  16  10)
+       Maximum Pressure Error:  0.13E-09 on Mesh   1 at (  61   5  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  57,  18,  15)
+       Max divergence:  0.19E-12 at (  55,  20,  18)
+       Min divergence: -0.24E-12 at (  58,  19,  14)
+       Max VN number:   0.14E+00 at (  28,  14,   8)
+ 
+       Time Step   21600   June 26, 2020  16:53:41
+       Step Size:    0.449E-02 s, Total Time:      89.00 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.28E-02 on Mesh   1 at (   0  18  10)
+       Maximum Pressure Error:  0.10E-09 on Mesh   1 at (  43  10  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.98E+00 at (  43,  10,  10)
+       Max divergence:  0.13E-12 at (  50,   7,  15)
+       Min divergence: -0.18E-12 at (  41,  14,  17)
+       Max VN number:   0.16E+00 at (  31,   2,  10)
+ 
+       Time Step   21700   June 26, 2020  16:53:51
+       Step Size:    0.404E-02 s, Total Time:      89.40 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0  21  18)
+       Maximum Pressure Error:  0.81E-10 on Mesh   1 at (  60  21  19)
+       ---------------------------------------------------------------
+       Max CFL number:  0.83E+00 at (  47,  20,  10)
+       Max divergence:  0.15E-12 at (  60,  21,  19)
+       Min divergence: -0.11E-12 at (  53,  16,  12)
+       Max VN number:   0.15E+00 at (  28,  15,   8)
+ 
+       Time Step   21800   June 26, 2020  16:54:00
+       Step Size:    0.444E-02 s, Total Time:      89.84 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0  20   4)
+       Maximum Pressure Error:  0.65E-10 on Mesh   1 at (  46  12  23)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  50,  21,  19)
+       Max divergence:  0.17E-12 at (  55,  21,  13)
+       Min divergence: -0.13E-12 at (  46,  12,  23)
+       Max VN number:   0.14E+00 at (  28,  14,   9)
+ 
+       Time Step   21900   June 26, 2020  16:54:10
+       Step Size:    0.444E-02 s, Total Time:      90.29 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.32E-02 on Mesh   1 at (   0   7  12)
+       Maximum Pressure Error:  0.64E-10 on Mesh   1 at (  80  13  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  50,  19,  19)
+       Max divergence:  0.13E-12 at (  80,   7,  12)
+       Min divergence: -0.15E-12 at (  73,  17,  14)
+       Max VN number:   0.17E+00 at (  28,  10,   8)
+ 
+       Time Step   22000   June 26, 2020  16:54:19
+       Step Size:    0.444E-02 s, Total Time:      90.73 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.38E-02 on Mesh   1 at (   0  17  13)
+       Maximum Pressure Error:  0.63E-10 on Mesh   1 at (  42  15  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.83E+00 at (  47,  16,  17)
+       Max divergence:  0.13E-12 at (  80,  15,  12)
+       Min divergence: -0.13E-12 at (  76,  17,  19)
+       Max VN number:   0.13E+00 at (  43,   5,   9)
+ 
+       Time Step   22100   June 26, 2020  16:54:29
+       Step Size:    0.444E-02 s, Total Time:      91.17 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.58E-02 on Mesh   1 at (   0  18  12)
+       Maximum Pressure Error:  0.65E-10 on Mesh   1 at (  65  21  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  38,   8,  13)
+       Max divergence:  0.14E-12 at (  43,  16,  20)
+       Min divergence: -0.13E-12 at (  56,  17,  17)
+       Max VN number:   0.17E+00 at (  28,  19,   8)
+ 
+       Time Step   22200   June 26, 2020  16:54:40
+       Step Size:    0.444E-02 s, Total Time:      91.62 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.42E-02 on Mesh   1 at (   0  14  12)
+       Maximum Pressure Error:  0.10E-09 on Mesh   1 at (  63  14  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.95E+00 at (  62,  15,  14)
+       Max divergence:  0.14E-12 at (  46,  16,  11)
+       Min divergence: -0.13E-12 at (  51,  17,  10)
+       Max VN number:   0.19E+00 at (  28,   9,   8)
+ 
+       Time Step   22300   June 26, 2020  16:54:51
+       Step Size:    0.444E-02 s, Total Time:      92.06 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.59E-02 on Mesh   1 at (   0  16  17)
+       Maximum Pressure Error:  0.98E-10 on Mesh   1 at (  35  18  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.10E+01 at (  35,  18,  11)
+       Max divergence:  0.19E-12 at (  70,   6,  13)
+       Min divergence: -0.17E-12 at (  61,   5,  11)
+       Max VN number:   0.16E+00 at (  33,  18,  10)
+ 
+       Time Step   22400   June 26, 2020  16:55:01
+       Step Size:    0.416E-02 s, Total Time:      92.50 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.40E-02 on Mesh   1 at (   0  22  13)
+       Maximum Pressure Error:  0.83E-08 on Mesh   1 at (  37  19  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  52,   4,  12)
+       Max divergence:  0.87E-10 at (  33,  20,  10)
+       Min divergence: -0.82E-10 at (  34,  20,  10)
+       Max VN number:   0.14E+00 at (  28,   1,   9)
+ 
+       Time Step   22500   June 26, 2020  16:55:11
+       Step Size:    0.410E-02 s, Total Time:      92.92 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.54E-02 on Mesh   1 at (   0   9  10)
+       Maximum Pressure Error:  0.74E-10 on Mesh   1 at (  43  21  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  54,  18,  14)
+       Max divergence:  0.17E-12 at (  59,  20,   7)
+       Min divergence: -0.12E-12 at (  61,  17,  15)
+       Max VN number:   0.12E+00 at (  28,  17,   8)
+ 
+       Time Step   22600   June 26, 2020  16:55:20
+       Step Size:    0.451E-02 s, Total Time:      93.37 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.45E-02 on Mesh   1 at (   0  10  19)
+       Maximum Pressure Error:  0.67E-10 on Mesh   1 at (  30  18  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.89E+00 at (  33,  18,  17)
+       Max divergence:  0.15E-12 at (  42,  18,  15)
+       Min divergence: -0.13E-12 at (  30,  18,  11)
+       Max VN number:   0.15E+00 at (  32,  17,  10)
+ 
+       Time Step   22700   June 26, 2020  16:55:30
+       Step Size:    0.407E-02 s, Total Time:      93.77 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.41E-02 on Mesh   1 at (   0  17  12)
+       Maximum Pressure Error:  0.67E-10 on Mesh   1 at (  65  21  18)
+       ---------------------------------------------------------------
+       Max CFL number:  0.90E+00 at (  62,  20,  14)
+       Max divergence:  0.12E-12 at (  75,  20,  15)
+       Min divergence: -0.15E-12 at (  61,  19,  16)
+       Max VN number:   0.14E+00 at (  28,  15,   8)
+ 
+       Time Step   22800   June 26, 2020  16:55:40
+       Step Size:    0.402E-02 s, Total Time:      94.20 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.36E-02 on Mesh   1 at (   0   6  10)
+       Maximum Pressure Error:  0.66E-10 on Mesh   1 at (  21  18  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.82E+00 at (  49,   7,  16)
+       Max divergence:  0.11E-12 at (  55,  19,  15)
+       Min divergence: -0.13E-12 at (  58,  17,  12)
+       Max VN number:   0.12E+00 at (  37,  18,  11)
+ 
+       Time Step   22900   June 26, 2020  16:55:50
+       Step Size:    0.443E-02 s, Total Time:      94.62 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.47E-02 on Mesh   1 at (  81  15  14)
+       Maximum Pressure Error:  0.78E-10 on Mesh   1 at (  79  20  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  62,  16,  18)
+       Max divergence:  0.15E-12 at (  79,  20,  10)
+       Min divergence: -0.20E-12 at (  28,  11,   9)
+       Max VN number:   0.19E+00 at (  28,   6,   8)
+ 
+       Time Step   23000   June 26, 2020  16:56:00
+       Step Size:    0.398E-02 s, Total Time:      95.06 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.59E-02 on Mesh   1 at (   0   7   3)
+       Maximum Pressure Error:  0.85E-10 on Mesh   1 at (  49  20  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.80E+00 at (  62,  17,  13)
+       Max divergence:  0.16E-12 at (  55,  13,  10)
+       Min divergence: -0.14E-12 at (  49,  13,  10)
+       Max VN number:   0.13E+00 at (  28,   4,   8)
+ 
+       Time Step   23100   June 26, 2020  16:56:09
+       Step Size:    0.387E-02 s, Total Time:      95.46 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.37E-02 on Mesh   1 at (   0   7  18)
+       Maximum Pressure Error:  0.13E-08 on Mesh   1 at (  45   4  24)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  40,  22,  14)
+       Max divergence:  0.87E-11 at (  44,   4,  24)
+       Min divergence: -0.90E-11 at (  44,   3,  24)
+       Max VN number:   0.16E+00 at (  28,  19,   8)
+ 
+       Time Step   23200   June 26, 2020  16:56:19
+       Step Size:    0.340E-02 s, Total Time:      95.82 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.62E-02 on Mesh   1 at (   0  20  10)
+       Maximum Pressure Error:  0.21E-09 on Mesh   1 at (  75  18   7)
+       ---------------------------------------------------------------
+       Max CFL number:  0.95E+00 at (  75,  18,   7)
+       Max divergence:  0.38E-12 at (  75,  18,   7)
+       Min divergence: -0.22E-12 at (  74,  18,   7)
+       Max VN number:   0.12E+00 at (  75,  18,   7)
+ 
+       Time Step   23300   June 26, 2020  16:56:29
+       Step Size:    0.411E-02 s, Total Time:      96.23 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.54E-02 on Mesh   1 at (   0  23  12)
+       Maximum Pressure Error:  0.85E-10 on Mesh   1 at (  30   6  10)
+       ---------------------------------------------------------------
+       Max CFL number:  0.96E+00 at (  62,   8,  18)
+       Max divergence:  0.25E-12 at (  43,  24,  21)
+       Min divergence: -0.24E-12 at (  43,  24,  22)
+       Max VN number:   0.14E+00 at (  38,  24,  24)
+ 
+       Time Step   23400   June 26, 2020  16:56:39
+       Step Size:    0.356E-02 s, Total Time:      96.63 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.49E-02 on Mesh   1 at (   0  15  17)
+       Maximum Pressure Error:  0.13E-09 on Mesh   1 at (  42  18  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.86E+00 at (  40,  20,  15)
+       Max divergence:  0.18E-12 at (  42,  18,  15)
+       Min divergence: -0.14E-12 at (  55,  20,  11)
+       Max VN number:   0.16E+00 at (  28,  19,   8)
+ 
+       Time Step   23500   June 26, 2020  16:56:49
+       Step Size:    0.421E-02 s, Total Time:      97.02 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0  13  22)
+       Maximum Pressure Error:  0.11E-09 on Mesh   1 at (  41   5  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.97E+00 at (  52,   8,  11)
+       Max divergence:  0.18E-12 at (  36,   2,  19)
+       Min divergence: -0.24E-12 at (  41,   5,  12)
+       Max VN number:   0.17E+00 at (  28,  14,   8)
+ 
+       Time Step   23600   June 26, 2020  16:56:59
+       Step Size:    0.410E-02 s, Total Time:      97.42 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.28E-02 on Mesh   1 at (   0  18  11)
+       Maximum Pressure Error:  0.78E-10 on Mesh   1 at (  64  13  14)
+       ---------------------------------------------------------------
+       Max CFL number:  0.87E+00 at (  57,  10,  21)
+       Max divergence:  0.12E-12 at (  43,   5,  20)
+       Min divergence: -0.12E-12 at (  66,  12,  16)
+       Max VN number:   0.16E+00 at (  28,  24,  10)
+ 
+       Time Step   23700   June 26, 2020  16:57:08
+       Step Size:    0.410E-02 s, Total Time:      97.83 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.39E-02 on Mesh   1 at (   0   4   7)
+       Maximum Pressure Error:  0.90E-10 on Mesh   1 at (  56  14  16)
+       ---------------------------------------------------------------
+       Max CFL number:  0.83E+00 at (  60,  18,  17)
+       Max divergence:  0.13E-12 at (  43,  18,  10)
+       Min divergence: -0.13E-12 at (  44,  17,  16)
+       Max VN number:   0.14E+00 at (  29,  12,   9)
+ 
+       Time Step   23800   June 26, 2020  16:57:18
+       Step Size:    0.451E-02 s, Total Time:      98.26 s
+       Pressure Iterations:      6
+       Maximum Velocity Error:  0.42E-02 on Mesh   1 at (   0   3  13)
+       Maximum Pressure Error:  0.76E-10 on Mesh   1 at (  56  14  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.92E+00 at (  62,   7,  15)
+       Max divergence:  0.42E-12 at (  29,  16,  10)
+       Min divergence: -0.43E-12 at (  28,  16,  10)
+       Max VN number:   0.19E+00 at (  31,   7,  10)
+ 
+       Time Step   23900   June 26, 2020  16:57:28
+       Step Size:    0.445E-02 s, Total Time:      98.67 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.58E-02 on Mesh   1 at (   0  12  10)
+       Maximum Pressure Error:  0.68E-10 on Mesh   1 at (  65  18  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.85E+00 at (  43,   4,  21)
+       Max divergence:  0.12E-12 at (  49,  18,   9)
+       Min divergence: -0.14E-12 at (  58,  16,  11)
+       Max VN number:   0.13E+00 at (  44,   8,   9)
+ 
+       Time Step   24000   June 26, 2020  16:57:38
+       Step Size:    0.424E-02 s, Total Time:      99.10 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.40E-02 on Mesh   1 at (   0   5  21)
+       Maximum Pressure Error:  0.81E-10 on Mesh   1 at (  50   7  13)
+       ---------------------------------------------------------------
+       Max CFL number:  0.93E+00 at (  45,  14,  14)
+       Max divergence:  0.15E-12 at (  49,  14,  18)
+       Min divergence: -0.14E-12 at (  44,  11,  12)
+       Max VN number:   0.11E+00 at (  28,   7,   9)
+ 
+       Time Step   24100   June 26, 2020  16:57:48
+       Step Size:    0.384E-02 s, Total Time:      99.51 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.44E-02 on Mesh   1 at (   0   9  10)
+       Maximum Pressure Error:  0.89E-10 on Mesh   1 at (  66  14  12)
+       ---------------------------------------------------------------
+       Max CFL number:  0.81E+00 at (  45,  17,  12)
+       Max divergence:  0.14E-12 at (  43,  13,  10)
+       Min divergence: -0.23E-12 at (  28,  11,  10)
+       Max VN number:   0.22E+00 at (  28,  14,   8)
+ 
+       Time Step   24200   June 26, 2020  16:57:59
+       Step Size:    0.422E-02 s, Total Time:      99.90 s
+       Pressure Iterations:      5
+       Maximum Velocity Error:  0.38E-02 on Mesh   1 at (   0   3  17)
+       Maximum Pressure Error:  0.10E-09 on Mesh   1 at (  53  10  11)
+       ---------------------------------------------------------------
+       Max CFL number:  0.91E+00 at (  54,   9,  11)
+       Max divergence:  0.14E-12 at (  69,  21,  14)
+       Min divergence: -0.14E-12 at (  54,   8,  10)
+       Max VN number:   0.13E+00 at (  35,  12,  11)
+ 
+       Time Step   24223   June 26, 2020  16:58:01
+       Step Size:    0.253E-02 s, Total Time:     100.00 s
+       Pressure Iterations:      4
+       Maximum Velocity Error:  0.51E-02 on Mesh   1 at (   0   7   5)
+       Maximum Pressure Error:  0.70E-10 on Mesh   1 at (  60   2  15)
+       ---------------------------------------------------------------
+       Max CFL number:  0.54E+00 at (  42,   6,  18)
+       Max divergence:  0.11E-12 at (  60,   2,  15)
+       Min divergence: -0.92E-13 at (  56,  24,   9)
+       Max VN number:   0.86E-01 at (  28,   9,   8)
+ 
+
+
+ Time Stepping Wall Clock Time (s):     2326.615
+ Total Elapsed Wall Clock Time (s):     2327.152
+
+STOP: FDS completed successfully (CHID: ribbed_channel_80)
