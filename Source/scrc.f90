@@ -10,7 +10,7 @@
 ! ================================================================================================================
 !#undef WITH_MKL
 #define WITH_SCARC_VERBOSE
-#undef WITH_SCARC_DEBUG
+#define WITH_SCARC_DEBUG
 #undef WITH_SCARC_MGM
 #undef WITH_SCARC_POSTPROCESSING
 
@@ -16063,7 +16063,8 @@ SUBROUTINE SCARC_SETUP_PROLONGATION(NL)
 USE SCARC_POINTERS, ONLY:  G, A, OA, P, OP, GF, PF
 INTEGER, INTENT(IN) :: NL
 REAL(EB):: DSUM, SCAL, PSAVE !, TOL = 1.0E-12_EB
-INTEGER :: NM, NOM, IC, JC, ICC, ICOL, ICCOL, JCCOL, IP, JCC, IQ, INBR, NLEN
+INTEGER :: NM, NOM, IC, JC, ICC, ICOL, ICCOL, JCCOL, IP0, IP, JCC, IQ, INBR, NLEN
+LOGICAL :: BFIRST
 
 CROUTINE = 'SCARC_SETUP_PROLONGATION'
 
@@ -16233,6 +16234,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 #endif
    
    IP = 1
+   IP0 = IP
    P%ROW(1) = IP
    DO IC = 1, G%NC
       DO ICC = 1, Z%N_ROW-1
@@ -16243,7 +16245,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             ICOL = SCARC_MATCH_MATRIX_COLUMN(A, IC, JC)
             IF (ICOL /= -1) THEN
                DSUM = DSUM - SCAL * G%DIAG(IC) * A%VAL(ICOL) * G%QQ(ICCOL)
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I6,4E12.4)') 'RELAX: IC, ICC, ICCOL, JC, ICOL, DSUM:', &
                               IC, ICC, ICCOL, JC, ICOL, DSUM, G%DIAG(IC), A%VAL(ICOL), G%QQ(ICCOL)
 #endif
@@ -16253,13 +16255,25 @@ WRITE(MSG%LU_DEBUG,'(A,5I6,4E12.4)') 'RELAX: IC, ICC, ICCOL, JC, ICOL, DSUM:', &
          IF (ABS(DSUM) /= 0.0_EB) THEN
             P%VAL(IP) = DSUM
             P%COL(IP) = ICC
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':-----------------> IP, VAL, COL,:', IP, DSUM, ICC
 #endif
             IP = IP + 1
          ENDIF
    
       ENDDO
+ 
+      ! take care that at least one entry per fine cell is generated
+      IF (IP0 == IP) THEN
+         P%VAL(IP) = DSUM
+         P%COL(IP) = ICC
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':-----------------> IP, VAL, COL,:', IP, DSUM, ICC
+#endif
+         IP = IP + 1
+      ENDIF
+      IP0 = IP
+
       P%ROW(IC+1) = IP
    ENDDO
    P%N_VAL = IP - 1
