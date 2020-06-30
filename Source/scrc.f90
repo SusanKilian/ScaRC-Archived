@@ -16266,9 +16266,9 @@ WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':-----------------> IP, VAL, COL,:', IP, DSUM, I
       ! take care that at least one entry per fine cell is generated
       IF (IP0 == IP) THEN
          P%VAL(IP) = DSUM
-         P%COL(IP) = ICC
+         P%COL(IP) = IC
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':-----------------> IP, VAL, COL,:', IP, DSUM, ICC
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':-----------------> IP, VAL, COL,:', IP, DSUM, IC
 #endif
          IP = IP + 1
       ENDIF
