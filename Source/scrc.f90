@@ -9,8 +9,8 @@
 !  - WITH_SCARC_POSTPROCESSING   : dump environment for ScaRC POSTPROCESSING version
 ! ================================================================================================================
 !#undef WITH_MKL
-#undef WITH_SCARC_VERBOSE
-#undef WITH_SCARC_DEBUG
+#define WITH_SCARC_VERBOSE
+#define WITH_SCARC_DEBUG
 #undef WITH_SCARC_MGM
 #undef WITH_SCARC_POSTPROCESSING
 
@@ -16263,11 +16263,11 @@ WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':-----------------> IP, VAL, COL,:', IP, DSUM, I
       ENDDO
  
       ! take care that at least one entry per fine cell is generated
-      IF (IP0 == IP) THEN
-         P%VAL(IP) = DSUM
+      IF (IP == IP0) THEN
+         P%VAL(IP) = 0.0_EB
          P%COL(IP) = IC
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':-----------------> IP, VAL, COL,:', IP, DSUM, IC
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':-----------------> IP, VAL, COL,:', IP, IC
 #endif
          IP = IP + 1
       ENDIF
@@ -16333,14 +16333,18 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)                
    PF => SCARC_POINT_TO_CMATRIX(GF, NSCARC_MATRIX_PROLONGATION)
 
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) 'LOCAL_TO_GLOBAL', GC%NC, GC%NCE, GC%NCE2
+   WRITE(MSG%LU_DEBUG,'(8I8)') GC%LOCAL_TO_GLOBAL
+#endif
    DO IC = 1, GF%NC
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'PROL: ------------ IC =', IC
 #endif
       DO JCCOL = PF%ROW(IC), PF%ROW(IC+1) - 1
          JCC = PF%COL(JCCOL)
          PF%COLG(JCCOL) = GC%LOCAL_TO_GLOBAL(JCC)
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'PROL: LOCAL_TO_GLOBAL: IC, JCCOL, JCC, RES:', IC, JCCOL, JCC, PF%COLG(JCCOL)
 #endif
       ENDDO
