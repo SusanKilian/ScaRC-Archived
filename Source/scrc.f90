@@ -736,6 +736,7 @@ TYPE SCARC_CMATRIX_TYPE
    INTEGER :: N_STENCIL = 0                                   !< Number of points in matrix stencil
    INTEGER :: N_STENCIL_MAX = 0                               !< Max stencil size (AMG only)
    INTEGER :: NTYPE = 0                                       !< Matrix type
+   INTEGER :: NPREC = 0                                       !< Precision type
 
    CHARACTER(40) :: CNAME                                     !< Name of matrix
 
@@ -5914,7 +5915,7 @@ INTEGER :: ICOL, JCOL, IAS
 INTEGER :: ISYM, JSYM, NSYM
 REAL(EB) :: VAL = 0.0_EB, VALS = 0.0_EB, DIFF
 LOGICAL  :: BSYM, BCHECK_SYMMETRY = .FALSE.
-INTEGER, DIMENSION(:), ALLOCATABLE :: AUX_ICOL, AUX_IC
+INTEGER, DIMENSION(:), ALLOCATABLE :: ICOL_AUX, IC_AUX
 
 CROUTINE = 'SCARC_SETUP_POISSON_MKL'
 
@@ -5981,24 +5982,21 @@ ELSE
    AS%N_VAL = A%N_VAL
 ENDIF
 
- 
 ! Allocate storage for symmetric matrix and its column and row pointers
   
 CALL SCARC_GET_MATRIX_STENCIL_MAX(A, G%NC)
 AS%N_ROW = G%NC+1
 AS%N_VAL = A%N_STENCIL_MAX * G%NC
-CALL SCARC_ALLOCATE_CMATRIX (AS, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'G%AS', CROUTINE)
-
+CALL SCARC_ALLOCATE_CMATRIX (AS, NL, TYPE_MKL_PRECISION, NSCARC_MATRIX_FULL, 'G%AS', CROUTINE)
 
 ! If global MKL method is used, also allocate auxiliary space for computation of global numbering
 
 IF (IS_MKL_LEVEL(NL)) THEN
-   CALL SCARC_ALLOCATE_INT1(AUX_ICOL, 1, A%N_STENCIL_MAX, NSCARC_HUGE_INT, 'AUX_ICOL', CROUTINE)
-   CALL SCARC_ALLOCATE_INT1(AUX_IC  , 1, A%N_STENCIL_MAX, NSCARC_HUGE_INT, 'AUX_IC', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1(ICOL_AUX, 1, A%N_STENCIL_MAX, NSCARC_HUGE_INT, 'ICOL_AUX', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1(IC_AUX  , 1, A%N_STENCIL_MAX, NSCARC_HUGE_INT, 'IC_AUX', CROUTINE)
 ENDIF
-
   
-! Sutract symmetric matrix part from usual system matrix
+! Subtract symmetric matrix part from usual system matrix
   
 IAS = 1
 DO IC = 1, AS%N_ROW - 1
@@ -6032,21 +6030,21 @@ DO IC = 1, AS%N_ROW - 1
 
          ! Store indices of all diagonal and upper-diagonal entries
 
-         AUX_ICOL = 0
-         AUX_IC   = NSCARC_HUGE_INT
+         ICOL_AUX = 0
+         IC_AUX   = NSCARC_HUGE_INT
          ISYM = 1
          JC0 = A%COLG(A%ROW(IC))
          DO ICOL = A%ROW(IC), A%ROW(IC+1)-1
              JC = A%COLG(ICOL)
             IF (SCARC_MKL_MTYPE == 'SYMMETRIC') THEN
                IF (JC >= JC0) THEN
-                  AUX_ICOL(ISYM) = ICOL
-                  AUX_IC(ISYM) = JC
+                  ICOL_AUX(ISYM) = ICOL
+                  IC_AUX(ISYM) = JC
                   ISYM  = ISYM  + 1
                ENDIF
             ELSE
-               AUX_ICOL(ISYM) = ICOL
-               AUX_IC(ISYM) = JC
+               ICOL_AUX(ISYM) = ICOL
+               IC_AUX(ISYM) = JC
                ISYM  = ISYM  + 1
             ENDIF
          ENDDO
@@ -6059,10 +6057,10 @@ DO IC = 1, AS%N_ROW - 1
 
          SORT_LOOP: DO WHILE (JSYM <= NSYM)
             DO ISYM = 1, NSYM
-               JC = AUX_IC(ISYM)
+               JC = IC_AUX(ISYM)
                IF (JC == NSCARC_HUGE_INT) CYCLE
-               IF (JC <= MINVAL(ABS(AUX_IC(1:NSYM)))) THEN
-                  ICOL = AUX_ICOL(ISYM)
+               IF (JC <= MINVAL(ABS(IC_AUX(1:NSYM)))) THEN
+                  ICOL = ICOL_AUX(ISYM)
                   SELECT CASE (TYPE_MKL_PRECISION)
                      CASE (NSCARC_PRECISION_DOUBLE)
                         AS%VAL(IAS) = A%VAL(ICOL)
@@ -6070,7 +6068,7 @@ DO IC = 1, AS%N_ROW - 1
                         AS%VAL_FB(IAS) = REAL(A%VAL(ICOL), FB)
                   END SELECT
                   AS%COL(IAS) = A%COLG(ICOL)
-                  AUX_IC(ISYM) = NSCARC_HUGE_INT            ! mark entry as already used
+                  IC_AUX(ISYM) = NSCARC_HUGE_INT            ! mark entry as already used
                   IAS  = IAS  + 1
                ENDIF
             ENDDO
@@ -6083,8 +6081,8 @@ ENDDO
 AS%ROW(AS%N_ROW) = IAS
 
 IF (IS_MKL_LEVEL(NL)) THEN
-   CALL SCARC_DEALLOCATE_INT1 (AUX_ICOL, 'AUX_COL', CROUTINE)
-   CALL SCARC_DEALLOCATE_INT1 (AUX_IC,  'AUX_IC', CROUTINE)
+   CALL SCARC_DEALLOCATE_INT1 (ICOL_AUX, 'AUX_COL', CROUTINE)
+   CALL SCARC_DEALLOCATE_INT1 (IC_AUX,  'IC_AUX', CROUTINE)
 ENDIF
 
 CALL SCARC_REDUCE_CMATRIX (AS, 'POISSON_SYM', CROUTINE)
@@ -17235,6 +17233,7 @@ INTEGER :: NDUMMY
 
 A%CNAME = TRIM(CNAME)
 A%NTYPE = NTYPE
+A%NPREC = NPREC
 NDUMMY = NL
 
 CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_CMATRIX, NSCARC_MEMORY_CREATE, -1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
@@ -17267,6 +17266,8 @@ A%N_STENCIL   = 0
 A%N_CONDENSED = 0
 A%N_ROW       = 0
 A%N_VAL       = 0
+A%NTYPE       = 0
+A%NPREC       = 0
 A%STENCIL     = 0
 A%POS         = 0
 
@@ -17288,6 +17289,7 @@ SUBROUTINE SCARC_REDUCE_CMATRIX(A, CNAME, CSCOPE)
 TYPE (SCARC_CMATRIX_TYPE), INTENT(INOUT) :: A
 CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 REAL(EB), ALLOCATABLE, DIMENSION(:) :: VAL
+REAL(FB), ALLOCATABLE, DIMENSION(:) :: VAL_FB
 INTEGER , ALLOCATABLE, DIMENSION(:) :: COL, COLG
 INTEGER :: NVAL_CURRENT, NVAL_ALLOCATED
 
@@ -17333,12 +17335,22 @@ IF (NVAL_CURRENT < SIZE(A%COL)) THEN
    ENDIF
 
    IF (A%NTYPE /= NSCARC_MATRIX_MINIMAL) THEN
-      ALLOCATE(VAL(1: NVAL_CURRENT), STAT = IERROR)
-      VAL(1:NVAL_CURRENT) = A%VAL(1:NVAL_CURRENT)
-      CALL SCARC_DEALLOCATE_REAL1 (A%VAL, 'A%VAL', CSCOPE)
-      CALL SCARC_ALLOCATE_REAL1(A%VAL, 1, NVAL_CURRENT, NSCARC_INIT_NONE, 'A%VAL', CSCOPE)
-      A%VAL(1:NVAL_CURRENT) = VAL(1:NVAL_CURRENT)
-      DEALLOCATE(VAL)
+      SELECT CASE (A%NPREC)
+         CASE (NSCARC_PRECISION_SINGLE)
+            ALLOCATE(VAL_FB(1: NVAL_CURRENT), STAT = IERROR)
+            VAL_FB(1:NVAL_CURRENT) = A%VAL_FB(1:NVAL_CURRENT)
+            CALL SCARC_DEALLOCATE_REAL1_FB(A%VAL_FB, 'A%VAL_FB', CSCOPE)
+            CALL SCARC_ALLOCATE_REAL1_FB(A%VAL_FB, 1, NVAL_CURRENT, NSCARC_INIT_NONE, 'A%VAL_FB', CSCOPE)
+            A%VAL_FB(1:NVAL_CURRENT) = VAL_FB(1:NVAL_CURRENT)
+            DEALLOCATE(VAL_FB)
+         CASE (NSCARC_PRECISION_DOUBLE)
+            ALLOCATE(VAL(1: NVAL_CURRENT), STAT = IERROR)
+            VAL(1:NVAL_CURRENT) = A%VAL(1:NVAL_CURRENT)
+            CALL SCARC_DEALLOCATE_REAL1 (A%VAL, 'A%VAL', CSCOPE)
+            CALL SCARC_ALLOCATE_REAL1(A%VAL, 1, NVAL_CURRENT, NSCARC_INIT_NONE, 'A%VAL', CSCOPE)
+            A%VAL(1:NVAL_CURRENT) = VAL(1:NVAL_CURRENT)
+            DEALLOCATE(VAL)
+         END SELECT
    ENDIF
    A%N_VAL = NVAL_CURRENT
 
