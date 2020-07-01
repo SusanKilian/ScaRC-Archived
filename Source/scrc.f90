@@ -16238,9 +16238,6 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    DO IC = 1, G%NC
       DO ICC = 1, Z%N_ROW-1
    
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':==================== ICC =',ICC
-#endif
          DSUM = 0.0_EB
          DO ICCOL = Z%ROW(ICC), Z%ROW(ICC+1)-1
             JC = Z%COL(ICCOL)
@@ -17099,7 +17096,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       ENDDO
       NCOL = JCOL - 1
 
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '================= IC =',IC
 WRITE(MSG%LU_DEBUG,*) '     AUX_COL =', AUX_COL(1:NCOL)
 WRITE(MSG%LU_DEBUG,*) '     AUX_COLG=', AUX_COLG(1:NCOL)
@@ -17112,7 +17109,7 @@ WRITE(MSG%LU_DEBUG,*) '     NCOL    = ', NCOL
         JCOL = JCOL + 1
         IF (AUX_COL(JCOL) == IC) EXIT
       ENDDO
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '    -----> diag entry:', JCOL
 #endif
 
@@ -17131,7 +17128,7 @@ WRITE(MSG%LU_DEBUG,*) '    -----> diag entry:', JCOL
          JCOL = MINLOC(AUX_COL(1:NCOL), DIM=1)
       ENDIF
       KCOL = 1
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '    ------------->A'
 WRITE(MSG%LU_DEBUG,*) '    A%COL(',ICOL,')=',A%COL(ICOL),'  : A%VAL(',ICOL,')=', A%VAL(ICOL)
 WRITE(MSG%LU_DEBUG,*) '    A%COLG(',ICOL,')=',A%COLG(ICOL),'  : A%VAL(',ICOL,')=', A%VAL(ICOL)
@@ -17152,7 +17149,7 @@ WRITE(MSG%LU_DEBUG,*) '    KCOL =', KCOL
             JCOL = MINLOC(AUX_COL(1:NCOL), DIM=1)
          ENDIF
          KCOL = KCOL + 1
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '    ------------->B'
 WRITE(MSG%LU_DEBUG,*) '    A%COL(',ICOL,')=',A%COL(ICOL),'  : A%VAL(',ICOL,')=', A%VAL(ICOL)
 WRITE(MSG%LU_DEBUG,*) '    A%COLG(',ICOL,')=',A%COLG(ICOL),'  : A%VAL(',ICOL,')=', A%VAL(ICOL)
