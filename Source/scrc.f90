@@ -16251,7 +16251,7 @@ WRITE(MSG%LU_DEBUG,'(A,5I6,4E12.4)') 'RELAX: IC, ICC, ICCOL, JC, ICOL, DSUM:', &
             ENDIF
          ENDDO
    
-         IF (ABS(DSUM) > 1.0E-20_EB) THEN
+         IF (ABS(DSUM) /= 0.0_EB) THEN
             P%VAL(IP) = DSUM
             P%COL(IP) = ICC
 #ifdef WITH_SCARC_DEBUG
@@ -16263,10 +16263,9 @@ WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':-----------------> IP, VAL, COL,:', IP, DSUM, I
       ENDDO
  
       ! take care that at least one entry per fine cell is generated
-      !IF (IP == IP0) THEN
-      IF (IP == -12345) THEN
+      IF (IP == IP0) THEN
          P%VAL(IP) = 0.0_EB
-         P%COL(IP) = IC
+         P%COL(IP) = ICC
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':-----------------> IP, VAL, COL,:', IP, IC
 #endif
