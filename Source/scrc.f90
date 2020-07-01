@@ -16063,7 +16063,7 @@ SUBROUTINE SCARC_SETUP_PROLONGATION(NL)
 USE SCARC_POINTERS, ONLY:  G, A, OA, P, OP, GF, PF
 INTEGER, INTENT(IN) :: NL
 REAL(EB):: DSUM, SCAL, PSAVE !, TOL = 1.0E-12_EB
-INTEGER :: NM, NOM, IC, JC, ICC, ICOL, ICCOL, JCCOL, IP0, IP, JCC, IQ, INBR, NLEN
+INTEGER :: NM, NOM, IC, JC, ICC, ICC0, ICOL, ICCOL, JCCOL, IP0, IP, JCC, IQ, INBR, NLEN
 
 CROUTINE = 'SCARC_SETUP_PROLONGATION'
 
@@ -16238,11 +16238,15 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    DO IC = 1, G%NC
       DO ICC = 1, Z%N_ROW-1
    
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':==================== ICC =',ICC
+#endif
          DSUM = 0.0_EB
          DO ICCOL = Z%ROW(ICC), Z%ROW(ICC+1)-1
             JC = Z%COL(ICCOL)
             ICOL = SCARC_MATCH_MATRIX_COLUMN(A, IC, JC)
             IF (ICOL /= -1) THEN
+               ICC0 = ICC
                DSUM = DSUM - SCAL * G%DIAG(IC) * A%VAL(ICOL) * G%QQ(ICCOL)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,5I6,4E12.4)') 'RELAX: IC, ICC, ICCOL, JC, ICOL, DSUM:', &
@@ -16265,9 +16269,9 @@ WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':-----------------> IP, VAL, COL,:', IP, DSUM, I
       ! take care that at least one entry per fine cell is generated
       IF (IP == IP0) THEN
          P%VAL(IP) = 0.0_EB
-         P%COL(IP) = ICC
+         P%COL(IP) = ICC0
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':-----------------> IP, VAL, COL,:', IP, IC
+WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':-----------------> IP, VAL, COL,:', IP, ICC0
 #endif
          IP = IP + 1
       ENDIF
