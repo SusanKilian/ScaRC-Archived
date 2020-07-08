@@ -15322,17 +15322,22 @@ WRITE(MSG%LU_DEBUG,*) '-----------------------------------------', G%NC, G%NCE, 
                G%AUX2(IC) =  G%AUX2(IC) + A%VAL(ICOL) * G%AUX1(JC)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,4I6, E12.4)') &
-   'RELAXING NULLSPACE:A: IC, IDIAG, ICOL, JC,  AUX2:', IC, IDIAG, ICOL, JC, G%AUX2(IC)
+   'RELAXING NULLSPACE:A: IC, IDIAG, ICOL, JC, AUX2:', IC, IDIAG, ICOL, JC, G%AUX2(IC)
 #endif
             ELSE IF (NL > NLEVEL_MIN) THEN
                JCG = A%COLG(ICOL)
                GF => SCARC(NM)%LEVEL(NL-1)%STRUCTURED
-               JC = FINDLOC (GF%LOCAL_TO_GLOBAL(1:G%NCE2), VALUE = JCG, DIM = 1)
-               IF (JC /= 0) G%AUX2(IC) = G%AUX2(IC) + A%VAL(ICOL) * G%AUX1(JC)
+               JC = FINDLOC (G%LOCAL_TO_GLOBAL(1:G%NCE2), VALUE = JCG, DIM = 1)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SEARCHING ', JCG,' FOUND ', JC
+#endif
+               IF (JC /= 0) THEN
+                  G%AUX2(IC) = G%AUX2(IC) + A%VAL(ICOL) * G%AUX1(JC)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,4I6, E12.4, I6, E12.4)') &
-   'RELAXING NULLSPACE:B: IC, IDIAG, ICOL, JC, AUX2:', IC, IDIAG, ICOL, JC, G%AUX2(IC), JCG, A%VAL(ICOL)
+   'RELAXING NULLSPACE:B: IC, IDIAG, ICOL, JC, AUX2:', IC, IDIAG, ICOL, JC, G%AUX2(IC), JCG, A%VAL(ICOL), G%AUX1(JC)
 #endif
+               ENDIF
             ENDIF
          ENDDO
    

@@ -546,14 +546,15 @@ SF%ONE_D_REALS_ARRAY_SIZE(13) = N_TRACKED_SPECIES            ! RHO_D_DZDN_F
 SF%ONE_D_REALS_ARRAY_SIZE(14) = N_LP_ARRAY_INDICES           ! A_LP_MPUA
 SF%ONE_D_REALS_ARRAY_SIZE(15) = N_LP_ARRAY_INDICES           ! LP_CPUA
 SF%ONE_D_REALS_ARRAY_SIZE(16) = N_LP_ARRAY_INDICES           ! LP_MPUA
-SF%ONE_D_REALS_ARRAY_SIZE(17) = SF%N_CELLS_MAX               ! RHO_C_S
-SF%ONE_D_REALS_ARRAY_SIZE(18) = SF%N_CELLS_MAX+2             ! K_S
-SF%ONE_D_REALS_ARRAY_SIZE(19) = N_SURFACE_DENSITY_SPECIES    ! AWM_AEROSOL
-SF%ONE_D_REALS_ARRAY_SIZE(20) = (SF%N_CELLS_MAX+2)*SF%N_MATL ! RHO_DOT
+SF%ONE_D_REALS_ARRAY_SIZE(17) = N_LP_ARRAY_INDICES           ! LP_TEMP
+SF%ONE_D_REALS_ARRAY_SIZE(18) = SF%N_CELLS_MAX               ! RHO_C_S
+SF%ONE_D_REALS_ARRAY_SIZE(19) = SF%N_CELLS_MAX+2             ! K_S
+SF%ONE_D_REALS_ARRAY_SIZE(20) = N_SURFACE_DENSITY_SPECIES    ! AWM_AEROSOL
+SF%ONE_D_REALS_ARRAY_SIZE(21) = (SF%N_CELLS_MAX+2)*SF%N_MATL ! RHO_DOT
 
 SF%ONE_D_INTEGERS_ARRAY_SIZE(1) = SF%N_LAYERS           ! N_LAYER_CELLS
 
-SF%N_ONE_D_STORAGE_REALS    = N_ONE_D_SCALAR_REALS    + SUM(SF%ONE_D_REALS_ARRAY_SIZE(1:20))
+SF%N_ONE_D_STORAGE_REALS    = N_ONE_D_SCALAR_REALS    + SUM(SF%ONE_D_REALS_ARRAY_SIZE(1:21))
 SF%N_ONE_D_STORAGE_INTEGERS = N_ONE_D_SCALAR_INTEGERS + SUM(SF%ONE_D_INTEGERS_ARRAY_SIZE(1:1))
 SF%N_ONE_D_STORAGE_LOGICALS = N_ONE_D_SCALAR_LOGICALS
 
@@ -977,6 +978,8 @@ ONE_D%Q_CONDENSE      => OS%REALS(RC+30,STORAGE_INDEX) ; IF (NEW) ONE_D%Q_CONDEN
 ONE_D%TMP_F_OLD       => OS%REALS(RC+31,STORAGE_INDEX) ; IF (NEW) ONE_D%TMP_F_OLD       = SF%TMP_FRONT
 ONE_D%K_SUPPRESSION   => OS%REALS(RC+32,STORAGE_INDEX) ; IF (NEW) ONE_D%K_SUPPRESSION   = 0._EB
 ONE_D%BURN_DURATION   => OS%REALS(RC+33,STORAGE_INDEX) ; IF (NEW) ONE_D%BURN_DURATION   = SF%BURN_DURATION
+ONE_D%T_SCALE         => OS%REALS(RC+34,STORAGE_INDEX) ; IF (NEW) ONE_D%T_SCALE         = 0._EB
+ONE_D%Q_SCALE         => OS%REALS(RC+35,STORAGE_INDEX) ; IF (NEW) ONE_D%Q_SCALE         = 0._EB
 
 I1 = RC+1+N_ONE_D_SCALAR_REALS ; I2 = I1 + SF%ONE_D_REALS_ARRAY_SIZE(1) - 1
 ONE_D%M_DOT_G_PP_ACTUAL(1:I2-I1+1) => OS%REALS(I1:I2,STORAGE_INDEX)
@@ -1075,14 +1078,18 @@ ONE_D%LP_MPUA(1:I2-I1+1) => OS%REALS(I1:I2,STORAGE_INDEX)
 IF (NEW) ONE_D%LP_MPUA(1:I2-I1+1) = 0._EB
 
 I1 = I2+1 ; I2 = I1 + SF%ONE_D_REALS_ARRAY_SIZE(17) - 1
+ONE_D%LP_TEMP(1:I2-I1+1) => OS%REALS(I1:I2,STORAGE_INDEX)
+IF (NEW) ONE_D%LP_TEMP(1:I2-I1+1) = TMPA
+
+I1 = I2+1 ; I2 = I1 + SF%ONE_D_REALS_ARRAY_SIZE(18) - 1
 ONE_D%RHO_C_S(1:I2-I1+1) => OS%REALS(I1:I2,STORAGE_INDEX)
 IF (NEW) ONE_D%RHO_C_S(1:I2-I1+1) = 1.E6_EB
 
-I1 = I2+1 ; I2 = I1 + SF%ONE_D_REALS_ARRAY_SIZE(18) - 1
+I1 = I2+1 ; I2 = I1 + SF%ONE_D_REALS_ARRAY_SIZE(19) - 1
 ONE_D%K_S(0:SF%N_CELLS_INI+1) => OS%REALS(I1:I2,STORAGE_INDEX)
 IF (NEW) ONE_D%K_S(0:SF%N_CELLS_INI+1) = 0._EB
 
-I1 = I2+1 ; I2 = I1 + SF%ONE_D_REALS_ARRAY_SIZE(19) - 1
+I1 = I2+1 ; I2 = I1 + SF%ONE_D_REALS_ARRAY_SIZE(20) - 1
 ONE_D%AWM_AEROSOL(1:I2-I1+1) => OS%REALS(I1:I2,STORAGE_INDEX)
 IF (NEW) ONE_D%AWM_AEROSOL(1:I2-I1+1) = 0._EB
 
@@ -1296,69 +1303,65 @@ OBST_LOOP: DO N=1,M%N_OBST
                IF (.NOT.M%SOLID(IC)) CYCLE I_LOOP
                M%WALL_INDEX_HT3D(IC,:) = 0
                CELL_COUNT = 0
-               CELL_COUNT(0) = 1000000
 
                MARCH_RIGHT: DO II=I+1,M%IBAR
                   ICN = M%CELL_INDEX(II,J,K)
-                  CELL_COUNT(1) = CELL_COUNT(1) + 1
                   IF (.NOT.M%SOLID(ICN)) THEN
+                     CELL_COUNT(1) = II-I
                      M%WALL_INDEX_HT3D(IC,1) = M%WALL_INDEX(ICN,-1)
                      EXIT MARCH_RIGHT
                   ENDIF
-                  IF (II==M%IBAR) CELL_COUNT(1) = 1000000
                ENDDO MARCH_RIGHT
 
                MARCH_LEFT: DO II=I-1,1,-1
                   ICN = M%CELL_INDEX(II,J,K)
-                  CELL_COUNT(-1) = CELL_COUNT(-1) + 1
                   IF (.NOT.M%SOLID(ICN)) THEN
+                     CELL_COUNT(-1) = I-II
                      M%WALL_INDEX_HT3D(IC,-1) = M%WALL_INDEX(ICN,1)
                      EXIT MARCH_LEFT
                   ENDIF
-                  IF (II==1) CELL_COUNT(-1) = 1000000
                ENDDO MARCH_LEFT
 
                MARCH_FORWARD: DO JJ=J+1,M%JBAR
                   ICN = M%CELL_INDEX(I,JJ,K)
-                  CELL_COUNT(2) = CELL_COUNT(2) + 1
                   IF (.NOT.M%SOLID(ICN)) THEN
+                     CELL_COUNT(2) = JJ-J
                      M%WALL_INDEX_HT3D(IC,2) = M%WALL_INDEX(ICN,-2)
                      EXIT MARCH_FORWARD
                   ENDIF
-                  IF (JJ==M%JBAR) CELL_COUNT(2) = 1000000
                ENDDO MARCH_FORWARD
 
                MARCH_BACK: DO JJ=J-1,1,-1
                   ICN = M%CELL_INDEX(I,JJ,K)
-                  CELL_COUNT(-2) = CELL_COUNT(-2) + 1
                   IF (.NOT.M%SOLID(ICN)) THEN
+                     CELL_COUNT(-2) = J-JJ
                      M%WALL_INDEX_HT3D(IC,-2) = M%WALL_INDEX(ICN,2)
                      EXIT MARCH_BACK
                   ENDIF
-                  IF (JJ==1) CELL_COUNT(-2) = 1000000
                ENDDO MARCH_BACK
 
                MARCH_UP: DO KK=K+1,M%KBAR
                   ICN = M%CELL_INDEX(I,J,KK)
-                  CELL_COUNT(3) = CELL_COUNT(3) + 1
                   IF (.NOT.M%SOLID(ICN)) THEN
+                     CELL_COUNT(3) = KK-K
                      M%WALL_INDEX_HT3D(IC,3) = M%WALL_INDEX(ICN,-3)
                      EXIT MARCH_UP
                   ENDIF
-                  IF (KK==M%KBAR) CELL_COUNT(3) = 1000000
                ENDDO MARCH_UP
 
                MARCH_DOWN: DO KK=K-1,1,-1
                   ICN = M%CELL_INDEX(I,J,KK)
-                  CELL_COUNT(-3) = CELL_COUNT(-3) + 1
                   IF (.NOT.M%SOLID(ICN)) THEN
+                     CELL_COUNT(-3) = K-KK
                      M%WALL_INDEX_HT3D(IC,-3) = M%WALL_INDEX(ICN,3)
                      EXIT MARCH_DOWN
                   ENDIF
-                  IF (KK==1) CELL_COUNT(-3) = 1000000
                ENDDO MARCH_DOWN
 
-               M%WALL_INDEX_HT3D(IC,0) = M%WALL_INDEX_HT3D(IC,MINLOC(CELL_COUNT,DIM=1)-4)
+               ! Note: If multiple elements in the CELL_COUNT array have the same value, which will happen at a corner
+               ! for example, then BACK=.TRUE. selects the last element.  This has the effect of giving precendence to +3
+               ! at a (+1,+3) corner, for example.
+               M%WALL_INDEX_HT3D(IC,0) = M%WALL_INDEX_HT3D(IC,MINLOC(CELL_COUNT,DIM=1,MASK=CELL_COUNT>0,BACK=.TRUE.)-4)
 
             ENDDO I_LOOP
          ENDDO J_LOOP
@@ -1769,7 +1772,7 @@ XUP_NEW = X_S_NEW(I_NEW)
       IF (XUP >= XUP_NEW .OR. I_OLD==NWP) EXIT OLD_POINT_LOOP
       I_OLD = I_OLD+1
    ENDDO OLD_POINT_LOOP
-   
+
 ENDDO POINT_LOOP
 
 END SUBROUTINE GET_INTERPOLATION_WEIGHTS
