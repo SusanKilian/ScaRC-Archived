@@ -82,7 +82,6 @@
 		<File RelativePath="..\..\Source\hvac.f90"/>
 		<File RelativePath="..\..\Source\ieva.f90"/>
 		<File RelativePath="..\..\Source\init.f90"/>
-		<File RelativePath="..\..\Source\irad.f90"/>
 		<File RelativePath="..\..\Source\main.f90"/>
 		<File RelativePath="..\..\Source\mass.f90"/>
 		<File RelativePath="..\..\Source\mesh.f90"/>
@@ -91,6 +90,7 @@
 		<File RelativePath="..\..\Source\prec.f90"/>
 		<File RelativePath="..\..\Source\pres.f90"/>
 		<File RelativePath="..\..\Source\radi.f90"/>
+		<File RelativePath="..\..\Source\rcal.f90"/>
 		<File RelativePath="..\..\Source\read.f90"/>
 		<File RelativePath="..\..\Source\samr.f90"/>
 		<File RelativePath="..\..\Source\scrc.f90"/>
