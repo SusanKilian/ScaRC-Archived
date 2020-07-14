@@ -10,9 +10,10 @@
 ! ================================================================================================================
 !#undef WITH_MKL
 #define WITH_SCARC_VERBOSE
-#define WITH_SCARC_DEBUG
+#undef WITH_SCARC_DEBUG
 #undef WITH_SCARC_MGM
 #undef WITH_SCARC_POSTPROCESSING
+
 
 ! ================================================================================================================
 !> \brief Global constants and parameters 
@@ -67,7 +68,6 @@ INTEGER, PARAMETER :: NSCARC_DEBUG_PRESSURE          =  4         !< Type of deb
 INTEGER, PARAMETER :: NSCARC_DEBUG_STACK             =  5         !< Type of debugging message: show matrix
 INTEGER, PARAMETER :: NSCARC_DEBUG_WALL              =  6         !< Type of debugging message: show wall information
 
-INTEGER, PARAMETER :: NSCARC_ERROR_BICG_DISABLED     =  2         !< Type of error message: BICG temporarily disabled
 INTEGER, PARAMETER :: NSCARC_ERROR_BOUNDARY_SUM      =  3         !< Type of error message: wrong sum of boundary elements
 INTEGER, PARAMETER :: NSCARC_ERROR_BOUNDARY_TYPE     =  4         !< Type of error message: wrong boundary type
 INTEGER, PARAMETER :: NSCARC_ERROR_DIRECT_NOMKL      =  5         !< Type of error message: MKL for direct solver missing
@@ -311,7 +311,7 @@ IMPLICIT NONE
 ! ---------- Basic definitions
  
 CHARACTER(40) :: SCARC_GRID              = 'STRUCTURED'         !< Type of discretization (STRUCTURED/UNSTRUCTURED)
-CHARACTER(40) :: SCARC_METHOD            = 'NONE'               !< Type of global ScaRC solver (KRYLOV/MULTIGRID)
+CHARACTER(40) :: SCARC_METHOD            = 'NONE'               !< Type of global ScaRC solver (Krylov/MULTIGRID)
 CHARACTER(40) :: SCARC_MATRIX            = 'NONE'               !< Type of matrix storage (COMPACT/BANDWISE)
 CHARACTER(40) :: SCARC_STENCIL           = 'VARIABLE'           !< Type of matrix stencil (CONSTANT/VARIABLE)
 CHARACTER(40) :: SCARC_TWOLEVEL          = 'NONE'               !< Type of two-level method (NONE/ADDITIVE/MULTIPLICATIVE)
@@ -333,7 +333,7 @@ REAL (EB)     :: SCARC_COARSE_OMEGA      = 0.80E+0_EB           !< Relaxation pa
 
 CHARACTER(40) :: SCARC_COARSENING = 'DOUBLED'                   !< Coarsening strategy (DOUBLED/CUBIC/AGGREGATED)
 
-! ---------- Parameters for Krylov-type methods
+! ---------- Parameters for Krylov type methods
  
 REAL (EB)     :: SCARC_KRYLOV_ACCURACY   = 1.E-8_EB             !< Requested accuracy for convergence
 CHARACTER(40) :: SCARC_KRYLOV_INTERPOL   = 'CONSTANT'           !< Twolevel-interpolation (CONSTANT/BILINEAR)
@@ -341,7 +341,7 @@ INTEGER       :: SCARC_KRYLOV_ITERATIONS = 1000                 !< Max number of
 
 ! ---------- Parameters for multigrid-type methods
  
-CHARACTER(40) :: SCARC_MULTIGRID            = 'GEOMETRIC'       !< Type of MG-method (GEOMETRIC/ALGEBRAIC)
+CHARACTER(40) :: SCARC_MULTIGRID            = 'GEOMETRIC'       !< Type of MG method (GEOMETRIC/ALGEBRAIC)
 REAL (EB)     :: SCARC_MULTIGRID_ACCURACY   = 1.E-8_EB          !< Requested accuracy for convergence
 CHARACTER(3)  :: SCARC_MULTIGRID_CYCLE      = 'V'               !< Cycling type  (F/V/W/FULL)
 CHARACTER(40) :: SCARC_MULTIGRID_INTERPOL   = 'CONSTANT'        !< Interpolation strategy (CONSTANT/BILINEAR)
@@ -360,9 +360,9 @@ INTEGER       :: SCARC_SMOOTH_ITERATIONS = 4                    !< Max number of
 REAL (EB)     :: SCARC_SMOOTH_OMEGA      = 0.80E+0_EB           !< Relaxation parameter
 CHARACTER(40) :: SCARC_SMOOTH_SCOPE      = 'GLOBAL'             !< Scope of action (LOCAL/GLOBAL)
 
-! ---------- Parameters for preconditioning method (used in Krylov-methods)
+! ---------- Parameters for preconditioning method (used in Krylov methods)
  
-CHARACTER(40) :: SCARC_PRECON            = 'NONE'               !< Preconditioner for CG/BICG (JACOBI/SSOR/FFT/PARDISO/MG)
+CHARACTER(40) :: SCARC_PRECON            = 'NONE'               !< Preconditioner for CG (JACOBI/SSOR/FFT/PARDISO/MG)
 REAL (EB)     :: SCARC_PRECON_ACCURACY   = 1.E-10_EB            !< Requested accuracy for convergence
 INTEGER       :: SCARC_PRECON_ITERATIONS = 100                  !< Max number of iterations
 REAL (EB)     :: SCARC_PRECON_OMEGA      = 1.50E+0_EB           !< Relaxation parameter
@@ -391,15 +391,15 @@ LOGICAL :: IS_PURE_NEUMANN      = .FALSE.                       !< Flag for pure
 LOGICAL :: IS_MG                = .FALSE.                       !< Flag for Multigrid-method
 LOGICAL :: IS_AMG               = .FALSE.                       !< Flag for Algebraic Multigrid-method
 LOGICAL :: IS_GMG               = .FALSE.                       !< Flag for Geometric Multigrid-method
-LOGICAL :: IS_CG                = .FALSE.                       !< Flag for Krylov-method
-LOGICAL :: IS_CG_ADD            = .FALSE.                       !< Flag for additive twolevel-Krylov-method
-LOGICAL :: IS_CG_AMG            = .FALSE.                       !< Flag for Krylov-method with AMG-preconditioning
-LOGICAL :: IS_CG_GMG            = .FALSE.                       !< Flag for Krylov-method with GMG-preconditioning
+LOGICAL :: IS_CG                = .FALSE.                       !< Flag for Krylov method
+LOGICAL :: IS_CG_ADD            = .FALSE.                       !< Flag for additive twolevel-Krylov method
+LOGICAL :: IS_CG_AMG            = .FALSE.                       !< Flag for Krylov method with AMG-preconditioning
+LOGICAL :: IS_CG_GMG            = .FALSE.                       !< Flag for Krylov method with GMG-preconditioning
 LOGICAL :: IS_CG_COARSE         = .FALSE.                       !< Flag for only coarse grid solver
 LOGICAL :: IS_CG_MACRO          = .FALSE.                       !< Flag for macro coarse grid solver
-LOGICAL :: IS_CG_MG             = .FALSE.                       !< Flag for Krylov-method with MG-preconditioning
-LOGICAL :: IS_CG_MUL            = .FALSE.                       !< Flag for multiplicative Twolevel-Krylov-method
-LOGICAL :: IS_CG_MUL2           = .FALSE.                       !< Flag for multiplicative-type2 Twolevel-Krylov-method
+LOGICAL :: IS_CG_MG             = .FALSE.                       !< Flag for Krylov method with MG-preconditioning
+LOGICAL :: IS_CG_MUL            = .FALSE.                       !< Flag for multiplicative Twolevel-Krylov method
+LOGICAL :: IS_CG_MUL2           = .FALSE.                       !< Flag for multiplicative-type2 Twolevel-Krylov method
 LOGICAL :: IS_COARSE_AMG        = .FALSE.                       !< Flag for AMG-based coarse grid solver
 LOGICAL :: IS_COARSE_GMG        = .FALSE.                       !< Flag for AMG-based coarse grid solver
 LOGICAL :: IS_COARSE_AGGREGATED = .FALSE.                       !< Flag for aggregation-based coarse grid solver
@@ -468,7 +468,6 @@ REAL(EB) :: GLOBAL_REAL, RANK_REAL
 
 INTEGER :: FACE_ORIENTATION(6) = (/1,-1,2,-2,3,-3/)         !< Coordinate direction related order of mesh faces
 
-CHARACTER(10) :: CFORM_INT, CFORM_REAL
 CHARACTER(60) :: CNAME, CROUTINE
 
 ! ---------- Structures to which is currently pointed
@@ -575,17 +574,17 @@ TYPE SCARC_MEMORY_TYPE
    INTEGER :: NSUM_REAL_FB = NSCARC_INIT_ZERO              !< Total sum of all allocated single precision data
 
    INTEGER :: N_ARRAYS  = NSCARC_INIT_ZERO                 !< Number of allocated arrays
+   INTEGER :: N_BMATRIX = NSCARC_INIT_ZERO                 !< Number of allocated bandwise stored matrices
+   INTEGER :: N_CMATRIX = NSCARC_INIT_ZERO                 !< Number of allocated compactly stored matrices
    INTEGER :: N_INT     = NSCARC_INIT_ZERO                 !< Number of allocated integer data
+   INTEGER :: N_LOG     = NSCARC_INIT_ZERO                 !< Number of allocated logical data
    INTEGER :: N_REAL_EB = NSCARC_INIT_ZERO                 !< Number of allocated double precision data
    INTEGER :: N_REAL_FB = NSCARC_INIT_ZERO                 !< Number of allocated single precision data
-   INTEGER :: N_LOG     = NSCARC_INIT_ZERO                 !< Number of allocated logical data
-   INTEGER :: N_CMATRIX = NSCARC_INIT_ZERO                 !< Number of allocated compactly stored matrices
-   INTEGER :: N_BMATRIX = NSCARC_INIT_ZERO                 !< Number of allocated bandwise stored matrices
 
    INTEGER :: NWORK_INT     = NSCARC_INIT_ZERO             !< Workspace occupied by integer arrays
+   INTEGER :: NWORK_LOG     = NSCARC_INIT_ZERO             !< Workspace occupied by logical arrays
    INTEGER :: NWORK_REAL_EB = NSCARC_INIT_ZERO             !< Workspace occupied by double precision arrays
    INTEGER :: NWORK_REAL_FB = NSCARC_INIT_ZERO             !< Workspace occupied by single precision arrays
-   INTEGER :: NWORK_LOG     = NSCARC_INIT_ZERO             !< Workspace occupied by logical arrays
 
 END TYPE SCARC_MEMORY_TYPE
 
@@ -593,12 +592,12 @@ END TYPE SCARC_MEMORY_TYPE
  
 TYPE SCARC_MESSAGE_TYPE
 
-   CHARACTER(60) :: FILE_STAT                     !< Output file name for convergence statistcis
    CHARACTER(60) :: FILE_CPU                      !< Output file name for CPU measurements
    CHARACTER(60) :: FILE_MEM                      !< Output file name for memory management information
-   INTEGER :: LU_STAT                             !< Logical unit for convergence statistics
+   CHARACTER(60) :: FILE_STAT                     !< Output file name for convergence statistcis
    INTEGER :: LU_CPU                              !< Logical unit for CPU measurements
    INTEGER :: LU_MEM                              !< Logical unit for memory management information
+   INTEGER :: LU_STAT                             !< Logical unit for convergence statistics
 
 #ifdef WITH_SCARC_DEBUG
    CHARACTER(60) :: FILE_DEBUG                    !< Output file name for debugging information
@@ -625,11 +624,11 @@ END TYPE SCARC_MESSAGE_TYPE
  
 TYPE SCARC_SUBDIVISION_TYPE
 
-   INTEGER, ALLOCATABLE, DIMENSION (:,:) :: ORDER            !< Order of meshes during aggregation process
-   INTEGER, ALLOCATABLE, DIMENSION (:,:) :: NEIGHBORS        !< Global neighborship structure between meshes
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: N_NEIGHBORS      !< Number of meshes for in complete subdivision
-   INTEGER :: N_NEIGHBORS_TOTAL                              !< Sum of all neighbors
+   INTEGER, ALLOCATABLE, DIMENSION (:,:) :: NEIGHBORS        !< Global neighborship structure between meshes
+   INTEGER, ALLOCATABLE, DIMENSION (:,:) :: ORDER            !< Order of meshes during aggregation process
    INTEGER :: N_CYCLES                                       !< Number of needed cycles during aggregation process
+   INTEGER :: N_NEIGHBORS_TOTAL                              !< Sum of all neighbors
 
 END TYPE SCARC_SUBDIVISION_TYPE
 
@@ -639,9 +638,9 @@ END TYPE SCARC_SUBDIVISION_TYPE
 TYPE SCARC_FACE_TYPE
 
    REAL(EB), POINTER, DIMENSION(:) :: DH              !< Step size vector between adjacent faces
+   REAL(EB) :: SCAL_BOUNDARY                          !< Increments for boundary conditions
    REAL(EB) :: SCAL_FACE                              !< Increments for matrix subdiagonal for cells right face
    REAL(EB) :: SCAL_INSIDE                            !< Increments for matrix subdiagonal for cells between opposite faces
-   REAL(EB) :: SCAL_BOUNDARY                          !< Increments for boundary conditions
    REAL(EB) :: SCAL_DIRICHLET                         !< Scaling factors for Dirichlet BC's
    REAL(EB) :: SCAL_NEUMANN                           !< Scaling factors for Neumann BC's
 
@@ -704,8 +703,8 @@ TYPE SCARC_MATRIX_BANDWISE_CONDENSED_TYPE
 
    REAL(EB) :: VAL1(NSCARC_MAX_STENCIL) = 0.0_EB         !< Original values (double precision)
    REAL(EB) :: VAL2(NSCARC_MAX_STENCIL) = 0.0_EB         !< Condensed values (double precision)
-   INTEGER :: IOR0 = 0                                   !< position pointer
-   INTEGER :: ICO = 0                                    !< Cell pointer
+   INTEGER  :: IOR0 = 0                                  !< Position pointer
+   INTEGER  :: ICO = 0                                   !< Cell pointer
 
 END TYPE SCARC_MATRIX_BANDWISE_CONDENSED_TYPE
 
@@ -718,19 +717,20 @@ END TYPE SCARC_MATRIX_BANDWISE_CONDENSED_TYPE
  
 TYPE SCARC_CMATRIX_TYPE
 
-   REAL(EB), ALLOCATABLE, DIMENSION (:) :: VAL                !< values of matrix (real precision)
+   REAL(EB), ALLOCATABLE, DIMENSION (:) :: VAL                !< Values of matrix (real precision)
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: ILU                !< ILU-decomposition
-   REAL(EB), ALLOCATABLE, DIMENSION (:) :: RELAX              !< workspace for relaxation
+   REAL(EB), ALLOCATABLE, DIMENSION (:) :: RELAX              !< Workspace for relaxation
    REAL(EB), DIMENSION (-3:3)           :: STENCIL            !< Store basic stencil information in single precision
 
-   REAL(FB), ALLOCATABLE, DIMENSION (:) :: VAL_FB             !< values of matrix (single precision)
-   REAL(FB), ALLOCATABLE, DIMENSION (:) :: RELAX_FB           !< workspace for relaxation
+   REAL(FB), ALLOCATABLE, DIMENSION (:) :: VAL_FB             !< Values of matrix (single precision)
+   REAL(FB), ALLOCATABLE, DIMENSION (:) :: RELAX_FB           !< Workspace for relaxation
    REAL(FB), DIMENSION (-3:3)           :: STENCIL_FB         !< Store basic stencil information in single precision
 
    TYPE (SCARC_MATRIX_COMPACT_CONDENSED_TYPE) :: CONDENSED(NSCARC_MAX_STENCIL)
 
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: ROW                !< Row pointer
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: COL, COLG    !< Column pointers and global column pointers
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: COL                !< Local column pointers 
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: COLG               !< Global column pointers 
 
    INTEGER :: POS(-3:3) = 0                                   !< Position of IOR's in STENCIL
    INTEGER :: N_CONDENSED = 0                                 !< Number of condensed entries in matrix
@@ -754,14 +754,14 @@ END TYPE SCARC_CMATRIX_TYPE
 TYPE SCARC_BMATRIX_TYPE
 
    REAL(EB), ALLOCATABLE, DIMENSION (:)   :: AUX           !< Auxiliary vector (double precision)
-   REAL(EB), ALLOCATABLE, DIMENSION (:,:) :: VAL           !< values of matrix (double precision)
-   REAL(EB), ALLOCATABLE, DIMENSION (:,:) :: RELAX         !< workspace for relaxation
-   REAL(EB), ALLOCATABLE, DIMENSION (:)   :: RELAXD        !< workspace for relaxation - only for diagonal scaling
+   REAL(EB), ALLOCATABLE, DIMENSION (:,:) :: VAL           !< Values of matrix (double precision)
+   REAL(EB), ALLOCATABLE, DIMENSION (:,:) :: RELAX         !< Workspace for relaxation
+   REAL(EB), ALLOCATABLE, DIMENSION (:)   :: RELAXD        !< Workspace for relaxation - only for diagonal scaling
    REAL(EB), DIMENSION (-3:3)             :: STENCIL       !< Store basic stencil information (double precision)
 
    REAL(FB), ALLOCATABLE, DIMENSION (:)   :: AUX_FB        !< Auxiliary vector (single precision)
-   REAL(FB), ALLOCATABLE, DIMENSION (:,:) :: VAL_FB        !< values of matrix (single precision)
-   REAL(FB), ALLOCATABLE, DIMENSION (:,:) :: RELAX_FB      !< workspace for relaxation
+   REAL(FB), ALLOCATABLE, DIMENSION (:,:) :: VAL_FB        !< Values of matrix (single precision)
+   REAL(FB), ALLOCATABLE, DIMENSION (:,:) :: RELAX_FB      !< Workspace for relaxation
    REAL(FB), DIMENSION (-3:3)             :: STENCIL_FB    !< Store basic stencil information (single precision)
 
    TYPE (SCARC_MATRIX_BANDWISE_CONDENSED_TYPE) :: CONDENSED(NSCARC_MAX_STENCIL)
@@ -847,11 +847,11 @@ END TYPE SCARC_FFT_TYPE
   
 TYPE SCARC_MKL_TYPE
 
-   CHARACTER(40) :: CNAME                                  !< Name of matrix
+   CHARACTER(40) :: CNAME                                                     !< Name of matrix
 
-   INTEGER, ALLOCATABLE :: IPARM(:)                                   !< Parameter vector
-   INTEGER :: MAXFCT, MNUM, MTYPE, PHASE, NRHS, ERROR, MSGLVL         !< Various settings 
-   INTEGER :: PERM(1)                                                 !< Permutation parameter 
+   INTEGER, ALLOCATABLE :: IPARM(:)                                           !< Parameter vector
+   INTEGER :: MAXFCT, MNUM, MTYPE, PHASE, NRHS, ERROR, MSGLVL                 !< Various MKL specific settings 
+   INTEGER :: PERM(1)                                                         !< Permutation parameter 
 
    TYPE (MKL_PARDISO_HANDLE),               ALLOCATABLE :: PT_H(:), PT(:)     !< Handles for PARDISO 
    TYPE (MKL_CLUSTER_SPARSE_SOLVER_HANDLE), ALLOCATABLE :: CT_H(:), CT(:)     !< Handles for CLUSTER_SPARSE_SOLVER 
@@ -863,21 +863,21 @@ END TYPE SCARC_MKL_TYPE
   
 TYPE SCARC_STAGE_TYPE
 
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: X          !< Solution vector in double precision
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: B          !< Right hand side vector in double precision
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: R          !< Residual vector in double precision
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: D          !< Auxiliary vector in double precision
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: V          !< Auxiliary vector in double precision
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: Y          !< Auxiliary vector in double precision
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: Z          !< Auxiliary vector in double precision
+   REAL (EB), ALLOCATABLE, DIMENSION (:) :: X               !< Solution vector in double precision
+   REAL (EB), ALLOCATABLE, DIMENSION (:) :: B               !< Right hand side vector in double precision
+   REAL (EB), ALLOCATABLE, DIMENSION (:) :: R               !< Residual vector in double precision
+   REAL (EB), ALLOCATABLE, DIMENSION (:) :: D               !< Auxiliary vector in double precision
+   REAL (EB), ALLOCATABLE, DIMENSION (:) :: V               !< Auxiliary vector in double precision
+   REAL (EB), ALLOCATABLE, DIMENSION (:) :: Y               !< Auxiliary vector in double precision
+   REAL (EB), ALLOCATABLE, DIMENSION (:) :: Z               !< Auxiliary vector in double precision
 
-   REAL (FB), ALLOCATABLE, DIMENSION (:) :: X_FB       !< Solution vector vector in single precision
-   REAL (FB), ALLOCATABLE, DIMENSION (:) :: B_FB       !< Right hand side vector in single precision
-   REAL (FB), ALLOCATABLE, DIMENSION (:) :: R_FB       !< Residual vector in single precision
-   REAL (FB), ALLOCATABLE, DIMENSION (:) :: V_FB       !< Auxiliary vector in single precision
+   REAL (FB), ALLOCATABLE, DIMENSION (:) :: X_FB            !< Solution vector vector in single precision
+   REAL (FB), ALLOCATABLE, DIMENSION (:) :: B_FB            !< Right hand side vector in single precision
+   REAL (FB), ALLOCATABLE, DIMENSION (:) :: R_FB            !< Residual vector in single precision
+   REAL (FB), ALLOCATABLE, DIMENSION (:) :: V_FB            !< Auxiliary vector in single precision
 
 #ifdef WITH_SCARC_DEBUG
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: E          !< Error vector double precision
+   REAL (EB), ALLOCATABLE, DIMENSION (:) :: E               !< Error vector double precision
 #endif
 
 END TYPE SCARC_STAGE_TYPE
@@ -904,36 +904,37 @@ TYPE SCARC_GRID_TYPE
    TYPE (SCARC_WALL_TYPE), ALLOCATABLE, DIMENSION(:) :: WALL   !< wall information
 
    ! Matrices in different storage types
-   TYPE (SCARC_BMATRIX_TYPE):: POISSONB                        !< Poisson matrix in bandwise storage technique
-   TYPE (SCARC_CMATRIX_TYPE) :: POISSONC                       !< Poisson matrix in compact storage technique (default)
+   TYPE (SCARC_BMATRIX_TYPE) :: POISSONB                       !< Poisson matrix in bandwise storage technique
+   TYPE (SCARC_CMATRIX_TYPE) :: POISSON                        !< Poisson matrix in compact storage technique (default)
    TYPE (SCARC_CMATRIX_TYPE) :: GALERKIN                       !< Galerkin matrix (AMG only)
 #ifdef WITH_MKL
-   TYPE (SCARC_CMATRIX_TYPE) :: POISSONC_SYM                   !< Symmetric part of compact Poisson matrix (only for MKL)
+   TYPE (SCARC_CMATRIX_TYPE) :: POISSON_SYM                   !< Symmetric part of compact Poisson matrix (only for MKL)
    TYPE (SCARC_CMATRIX_TYPE) :: GALERKIN_SYM                   !< Galerkin matrix symmetric version (AMG only)
 #endif
 
-   TYPE (SCARC_CMATRIX_TYPE) :: PROLONGATION                   !< prolongation matrix
+   TYPE (SCARC_CMATRIX_TYPE) :: PROLONGATION                   !< Prolongation matrix
    TYPE (SCARC_CMATRIX_TYPE) :: RESTRICTION                    !< Restriction matrix
    TYPE (SCARC_CMATRIX_TYPE) :: CONNECTION                     !< Strength of connection matrix
-   TYPE (SCARC_CMATRIX_TYPE) :: ZONES                          !< Aggregation zones matrix
-   TYPE (SCARC_CMATRIX_TYPE) :: AP                             !< A*P matrix - only temporarily (AMG only)
+   TYPE (SCARC_CMATRIX_TYPE) :: ZONES                          !< Aggregation Zones matrix
+   TYPE (SCARC_CMATRIX_TYPE) :: POISSON_PROL                   !< Poisson times Prolongation matrix (AMG only)
 
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: MEASURES            !< Measure for grid coarsening (AMG only)
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: NULLSPACE           !< Nullspace vector (AMG only)
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: AUX1, AUX2          !< Auxiliary vectors (AMG only)
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: DIAG                !< Matrix diagonal, possible inverted (AMG only)
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: QQ, RR              !< workspace for QR-decompostion (AMG only)
-   REAL(EB), ALLOCATABLE, DIMENSION (:) :: ELAYER2_VALS        !< Values of cells in external second layer(AMG only)
-   REAL(EB), ALLOCATABLE, DIMENSION (:) :: ILAYER2_VALS        !< Values of cells in internal second layer(AMG only)
 
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: CELLS_LOCAL         !< Local coarse cells which influence Galerkin matrix (AMG only)
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: CELLS_GLOBAL        !< Global coarse cells which influence Galerkin matrix (AMG only)
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: LOCAL_TO_GLOBAL     !< Mapping from local to global numbering 
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: ORDER               !< Search order for aggregation
+
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: ZONES_GLOBAL        !< Global zone numbers (AMG only)
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: ZONES_LOCAL         !< Local  zone numbers (AMG only)
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: CELLTYPES           !< Celltype for grid coarsening (AMG only)
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: CPOINTS             !< ZONES for grid coarsening (AMG only)
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: ORDER               !< Search order for aggregation
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: LOCAL_TO_GLOBAL     !< Mapping from local to global numbering 
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: ZONE_CENTRES        !< Zone centres for grid coarsening (AMG only)
+
+   REAL(EB), ALLOCATABLE, DIMENSION (:) :: ELAYER2_VALS        !< Values of cells in external second layer(AMG only)
+   REAL(EB), ALLOCATABLE, DIMENSION (:) :: ILAYER2_VALS        !< Values of cells in internal second layer(AMG only)
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: ELAYER2_NUMS        !< Number of cells in external second layer (AMG only)
    INTEGER,  ALLOCATABLE, DIMENSION (:) :: ILAYER2_NUMS        !< Number of cells in internal second layer (AMG only)
 
@@ -987,10 +988,12 @@ TYPE SCARC_GRID_TYPE
    INTEGER :: N_FINE   = NSCARC_ZERO_INT                       !< Number of fine cells (AMG only)
    INTEGER :: N_COARSE = NSCARC_ZERO_INT                       !< Number of coarse cells (AMG only)
    INTEGER :: N_ZONES  = NSCARC_ZERO_INT                       !< Number of zones (AMG only)
-   INTEGER :: N_STENCIL_MAX  = 20                              !< Max stencil size (AMG only)
+   INTEGER :: N_STENCIL_MAX  = 25                              !< Max stencil size (AMG only)
 
    ! Pointer variables and arrays for data exchange with neighbors
-   INTEGER :: ICG = 0, ICG2 = 0, ICE = 0                       !< Ghost cell and extended cell pointers
+   INTEGER :: ICG = 0                                          !< Ghost cell pointer for first layer
+   INTEGER :: ICG2 = 0                                         !< Ghost cell pointer for second layer
+   INTEGER :: ICE = 0                                          !< Ghost cell pointer for extended cells
 
    INTEGER :: NLEN_BUFFER_LAYER1                               !< Length for single layer length exchange on that level
    INTEGER :: NLEN_BUFFER_LAYER2                               !< Length for double layer length exchange on that level
@@ -1052,8 +1055,8 @@ TYPE SCARC_LEVEL_TYPE
    !    - on the finest level, the original arrays from FDS are used
    !    - separate arrays will only be allocated for coarser levels
    !    - to address them on all levels, corresponding pointers are used
-   INTEGER, POINTER, DIMENSION (:,:,:)     :: CELL_INDEX_PTR   !< Pointer to CELL_INDEX
-   INTEGER, POINTER, DIMENSION (:,:)       :: WALL_INDEX_PTR   !< Pointer to WALL_INDEX
+   INTEGER, POINTER, DIMENSION (:,:,:)     :: CELL_INDEX_PTR   !< Pointer to cell index array
+   INTEGER, POINTER, DIMENSION (:,:)       :: WALL_INDEX_PTR   !< Pointer to wall index array
    INTEGER, ALLOCATABLE, DIMENSION (:,:,:) :: CELL_INDEX       !< Cell index list (only allocated for coarser levels)
    INTEGER, ALLOCATABLE, DIMENSION (:,:)   :: WALL_INDEX       !< Wall index list (only allocated for coarser levels)
 
@@ -1074,8 +1077,8 @@ TYPE SCARC_LEVEL_TYPE
    INTEGER :: N_CELL_INDEX = 0                                 !< Number of entries in CELL_INDEX array
    INTEGER :: N_CELLS = 0                                      !< Number of cells in structured discretization
    INTEGER :: N_GHOST_ZONES = 0                                !< Number of adjacent ghost zones
-   INTEGER :: N_LAYER2 = 0                                     !< Number of cells in second external layer to neighbor (AMG only)
-   INTEGER :: N_LAYER2_TOTAL = 0                               !< Total number of cells in external second layer (AMG only) 
+   INTEGER :: N_LAYER2 = 0                                     !< Number of cells in second layer to neighbor (AMG only)
+   INTEGER :: N_LAYER2_TOTAL = 0                               !< Total number of cells in second layer (AMG only) 
 
    ! Different wall related lengths
    INTEGER :: N_WALL_CELLS = 0                                 !< Number of wall cells
@@ -1188,7 +1191,7 @@ TYPE SCARC_CPU_TYPE
    REAL(EB) :: AMG              = 0.0_EB                           !< Time for algebraic multigrid solver
    REAL(EB) :: COARSE           = 0.0_EB                           !< Time for coarse grid solver
    REAL(EB) :: EXCHANGE         = 0.0_EB                           !< Time for data exchange
-   REAL(EB) :: ITERATION        = 0.0_EB                           !< Time for krylov solver
+   REAL(EB) :: ITERATION        = 0.0_EB                           !< Time for Krylov solver
    REAL(EB) :: L2NORM           = 0.0_EB                           !< Time for l2-norm
    REAL(EB) :: MATVEC_PRODUCT   = 0.0_EB                           !< Time for matrix vector multiplication
    REAL(EB) :: OVERALL          = 0.0_EB                           !< Complete time for ScaRC
@@ -1259,6 +1262,9 @@ TYPE (SCARC_FACE_TYPE), POINTER :: FF=>NULL()           !< Pointer to specified 
 TYPE (SCARC_FACE_TYPE), POINTER :: FC=>NULL()           !< Pointer to specified face of coarse grid level
 
 TYPE (SCARC_OBST_TYPE), POINTER :: OB=>NULL()           !< Pointer to specified obstruction
+TYPE (SCARC_OBST_TYPE), POINTER :: OBF=>NULL()          !< Pointer to specified obstruction of fine grid level
+TYPE (SCARC_OBST_TYPE), POINTER :: OBC=>NULL()          !< Pointer to specified obstruction of coarse grid level
+
 TYPE (SCARC_WALL_TYPE), POINTER :: GWC=>NULL()          !< Pointer to specified wall cell
 
 TYPE (SCARC_WALL_TYPE), DIMENSION(:), POINTER :: W=>NULL()    !< Pointer to complete wall structure
@@ -1288,19 +1294,19 @@ TYPE (SCARC_CMATRIX_TYPE), POINTER :: OA=>NULL()       !< Pointer to compactly s
 TYPE (SCARC_CMATRIX_TYPE), POINTER :: OAC=>NULL()      !< Pointer to compactly stored coarse neighboring matrix 
 TYPE (SCARC_CMATRIX_TYPE), POINTER :: OAF=>NULL()      !< Pointer to compactly stored fine neighboring matrix 
 
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: P=>NULL()        !< Pointer to compactly stored prolongation matrix 
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: PC=>NULL()       !< Pointer to compactly stored coarse prolongation matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: P=>NULL()        !< Pointer to compactly stored Prolongation matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: PC=>NULL()       !< Pointer to compactly stored coarse Prolongation matrix 
 TYPE (SCARC_CMATRIX_TYPE), POINTER :: PF=>NULL()       !< Pointer to compactly stored fine matrix on coarse grid
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: OP=>NULL()       !< Pointer to compactly stored neighboring prolongation matrix 
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: OPC=>NULL()      !< Pointer to compactly stored coarse neighboring prolongation matrix
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: OPF=>NULL()      !< Pointer to compactly stored fine neighboring prolongation matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OP=>NULL()       !< Pointer to compactly stored neighboring Prolongation matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OPC=>NULL()      !< Pointer to compactly stored coarse neighboring Prolongation matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OPF=>NULL()      !< Pointer to compactly stored fine neighboring Prolongation matrix 
 
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: R=>NULL()        !< Pointer to compactly stored restriction matrix 
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: RC=>NULL()       !< Pointer to compactly stored fine restriction matrix 
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: RF=>NULL()       !< Pointer to compactly stored coarse restriction matrix 
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: OR=>NULL()       !< Pointer to compactly stored neighboring restriction matrix 
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: ORC=>NULL()      !< Pointer to compactly stored coarse neighboring restriction matrix
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: ORF=>NULL()      !< Pointer to compactly stored fine neighboring restriction matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: R=>NULL()        !< Pointer to compactly stored Restriction matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: RC=>NULL()       !< Pointer to compactly stored fine Restriction matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: RF=>NULL()       !< Pointer to compactly stored coarse Restriction matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OR=>NULL()       !< Pointer to compactly stored neighboring Restriction matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: ORC=>NULL()      !< Pointer to compactly stored coarse neighboring Restriction matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: ORF=>NULL()      !< Pointer to compactly stored fine neighboring Restriction matrix
 
 TYPE (SCARC_CMATRIX_TYPE), POINTER :: C=>NULL()        !< Pointer to compactly stored connection matrix 
 TYPE (SCARC_CMATRIX_TYPE), POINTER :: CC=>NULL()       !< Pointer to compactly stored coarse connection matrix 
@@ -1309,12 +1315,12 @@ TYPE (SCARC_CMATRIX_TYPE), POINTER :: OC=>NULL()       !< Pointer to compactly s
 TYPE (SCARC_CMATRIX_TYPE), POINTER :: OCC=>NULL()      !< Pointer to compactly stored coarse neighboring connection matrix
 TYPE (SCARC_CMATRIX_TYPE), POINTER :: OCF=>NULL()      !< Pointer to compactly stored fine neighboring connection matrix
 
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: Z=>NULL()        !< Pointer to compactly stored zones matrix 
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: ZC=>NULL()       !< Pointer to compactly stored coarse zones matrix 
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: ZF=>NULL()       !< Pointer to compactly stored fine zones matrix 
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: OZ=>NULL()       !< Pointer to compactly stored neighboring zones matrix 
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: OZC=>NULL()      !< Pointer to compactly stored neighboring coarse zones matrix
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: OZF=>NULL()      !< Pointer to compactly stored neighboring fine zones matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: Z=>NULL()        !< Pointer to compactly stored Zones matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: ZC=>NULL()       !< Pointer to compactly stored coarse Zones matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: ZF=>NULL()       !< Pointer to compactly stored fine Zones matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OZ=>NULL()       !< Pointer to compactly stored neighboring Zones matrix 
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OZC=>NULL()      !< Pointer to compactly stored neighboring coarse Zones matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OZF=>NULL()      !< Pointer to compactly stored neighboring fine Zones matrix 
 
 TYPE (SCARC_CMATRIX_TYPE), POINTER :: PP=>NULL()       !< Pointer to compactly stored Poisson-times-Prolongation matrix
 TYPE (SCARC_CMATRIX_TYPE), POINTER :: PPF=>NULL()      !< Pointer to compactly stored fine Poisson-times-Prolongation matrix
@@ -1326,38 +1332,38 @@ TYPE (SCARC_MATRIX_BANDWISE_CONDENSED_TYPE), POINTER :: ABCO=>NULL()    !< Point
 
 TYPE (SCARC_MULTIGRID_TYPE), POINTER :: MG =>NULL()                     !< Pointer to multigrid type
 
-REAL(EB), POINTER, DIMENSION(:) :: XCOR=>NULL()                         !< Pointer to vector of node coordinates in x-direction
-REAL(EB), POINTER, DIMENSION(:) :: YCOR=>NULL()                         !< Pointer to vector of node coordinates in x-direction
-REAL(EB), POINTER, DIMENSION(:) :: ZCOR=>NULL()                         !< Pointer to vector of node coordinates in x-direction
+REAL(EB), POINTER, DIMENSION(:) :: XCOR=>NULL()        !< Pointer to vector of node coordinates in x-direction
+REAL(EB), POINTER, DIMENSION(:) :: YCOR=>NULL()        !< Pointer to vector of node coordinates in x-direction
+REAL(EB), POINTER, DIMENSION(:) :: ZCOR=>NULL()        !< Pointer to vector of node coordinates in x-direction
 
-REAL(EB), POINTER, DIMENSION(:) :: XMID=>NULL()                         !< Pointer to vector of cell midpoints in x-direction
-REAL(EB), POINTER, DIMENSION(:) :: YMID=>NULL()                         !< Pointer to vector of cell midpoints in y-direction
-REAL(EB), POINTER, DIMENSION(:) :: ZMID=>NULL()                         !< Pointer to vector of cell midpoints in z-direction
+REAL(EB), POINTER, DIMENSION(:) :: XMID=>NULL()        !< Pointer to vector of cell midpoints in x-direction
+REAL(EB), POINTER, DIMENSION(:) :: YMID=>NULL()        !< Pointer to vector of cell midpoints in y-direction
+REAL(EB), POINTER, DIMENSION(:) :: ZMID=>NULL()        !< Pointer to vector of cell midpoints in z-direction
 
-REAL(EB), POINTER, DIMENSION(:) :: VC=>NULL()                           !< Pointer to vector on coarse grid level
-REAL(EB), POINTER, DIMENSION(:) :: VF=>NULL()                           !< Pointer to vector on fine grid level
-REAL(EB), POINTER, DIMENSION(:) :: V1=>NULL()                           !< Pointer to first vector 
-REAL(EB), POINTER, DIMENSION(:) :: V2=>NULL()                           !< Pointer to second vector 
+REAL(EB), POINTER, DIMENSION(:) :: VC=>NULL()          !< Pointer to vector on coarse grid level
+REAL(EB), POINTER, DIMENSION(:) :: VF=>NULL()          !< Pointer to vector on fine grid level
+REAL(EB), POINTER, DIMENSION(:) :: V1=>NULL()          !< Pointer to first vector 
+REAL(EB), POINTER, DIMENSION(:) :: V2=>NULL()          !< Pointer to second vector 
 
-REAL(EB), POINTER, DIMENSION(:,:,:) :: HP=>NULL()                       !< Pointer to pressure vector 
-REAL(EB), POINTER, DIMENSION(:,:,:) :: PRHS=>NULL()                     !< Pointer to right hand side vector
-REAL(EB), POINTER, DIMENSION(:,:,:) :: UU=>NULL()                       !< Pointer to u-velocity vector
-REAL(EB), POINTER, DIMENSION(:,:,:) :: VV=>NULL()                       !< Pointer to v-velocity vector
-REAL(EB), POINTER, DIMENSION(:,:,:) :: WW=>NULL()                       !< Pointer to w-velocity vector
+REAL(EB), POINTER, DIMENSION(:,:,:) :: HP=>NULL()      !< Pointer to pressure vector 
+REAL(EB), POINTER, DIMENSION(:,:,:) :: PRHS=>NULL()    !< Pointer to right hand side vector
+REAL(EB), POINTER, DIMENSION(:,:,:) :: UU=>NULL()      !< Pointer to u-velocity vector
+REAL(EB), POINTER, DIMENSION(:,:,:) :: VV=>NULL()      !< Pointer to v-velocity vector
+REAL(EB), POINTER, DIMENSION(:,:,:) :: WW=>NULL()      !< Pointer to w-velocity vector
 
-REAL(EB), POINTER, DIMENSION(:) ::  RECV_BUFFER_REAL                    !< Pointer to double precision receive vector 
-INTEGER,  POINTER, DIMENSION(:) ::  RECV_BUFFER_INT                     !< Pointer to inter receive vector 
+REAL(EB), POINTER, DIMENSION(:) ::  RECV_BUFFER_REAL   !< Pointer to double precision receive vector 
+INTEGER,  POINTER, DIMENSION(:) ::  RECV_BUFFER_INT    !< Pointer to inter receive vector 
 
 #ifdef WITH_MKL
-TYPE (SCARC_MKL_TYPE), POINTER :: MKL=>NULL()                           !< Pointer to MKL type
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: AS=>NULL()                        !< Pointer to symmetric Poisson matrix
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: ACS=>NULL()                       !< Pointer to coarse symmetric Poisson matrix
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: AFS=>NULL()                       !< Pointer to fine symmetric Poisson matrix
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: OAS=>NULL()                       !< Pointer to neighboring symmetric Poisson matrix
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: OACS=>NULL()                      !< Pointer to coarse neighboring symmetric Poisson matrix
-TYPE (SCARC_CMATRIX_TYPE), POINTER :: OAFS=>NULL()                      !< Pointer to fine neighboring symmetric Poisson matrix
-REAL(FB), DIMENSION(:), POINTER :: V1_FB=>NULL()                        !< Pointer to first single precision vector
-REAL(FB), DIMENSION(:), POINTER :: V2_FB=>NULL()                        !< Pointer to second single precision vector
+TYPE (SCARC_MKL_TYPE), POINTER :: MKL=>NULL()          !< Pointer to MKL type
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: AS=>NULL()       !< Pointer to symmetric Poisson matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: ACS=>NULL()      !< Pointer to coarse symmetric Poisson matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: AFS=>NULL()      !< Pointer to fine symmetric Poisson matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OAS=>NULL()      !< Pointer to neighboring symmetric Poisson matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OACS=>NULL()     !< Pointer to coarse neighboring symmetric Poisson matrix
+TYPE (SCARC_CMATRIX_TYPE), POINTER :: OAFS=>NULL()     !< Pointer to fine neighboring symmetric Poisson matrix
+REAL(FB), DIMENSION(:), POINTER :: V1_FB=>NULL()       !< Pointer to first single precision vector
+REAL(FB), DIMENSION(:), POINTER :: V2_FB=>NULL()       !< Pointer to second single precision vector
 #endif
 
 #ifdef WITH_SCARC_POSTPROCESSING
@@ -1574,6 +1580,7 @@ ALLOCATE (MEMORY%ALLOCATION_LIST(NSCARC_MEMORY_MAX), STAT = IERROR)
 CALL CHKMEMERR ('SCARC_SETUP_MEMORY_MANAGMENT', 'ALLOCATION_LIST', IERROR)
 END SUBROUTINE SCARC_SETUP_MEMORY_MANAGEMENT
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Setup time measurements
 ! ------------------------------------------------------------------------------------------------
@@ -1593,28 +1600,6 @@ INTEGER :: NM, LASTID
 
 IF (SCARC_ERROR_FILE) HAS_CSV_DUMP = .TRUE.
 
-IF (NMESHES == 1) THEN
-   CFORM_INT  = "(6I8)"
-   CFORM_REAL = "(6E12.4)"
-ELSE IF (NMESHES == 2) THEN
-   IF (MYID == 0) THEN
-      CFORM_INT = "(3I8)"
-      CFORM_REAL = "(3E12.4)"
-   ELSE
-      CFORM_INT = "(3I8)"
-      CFORM_REAL = "(3E12.4)"
-   ENDIF
-ELSE IF (NMESHES == 4) THEN
-   IF (MYID == 0 .OR. MYID == 2) THEN
-      CFORM_INT = "(7I8)"
-      CFORM_REAL = "(7E12.4)"
-   ELSE IF (MYID == 1 .OR. MYID == 3) THEN
-      CFORM_INT = "(6I8)"
-      CFORM_REAL = "(6E12.4)"
-   ENDIF
-ENDIF
-
- 
 ! If requested, open file for CSV-information about convergence of different solvers
  
 IF (HAS_CSV_DUMP) THEN
@@ -1673,7 +1658,6 @@ SUBROUTINE SCARC_SHUTDOWN(NERROR, CPARAM, NPARAM)
 CHARACTER(*), INTENT(IN) :: CPARAM
 INTEGER, INTENT(IN) :: NERROR, NPARAM
 CHARACTER(80) :: CERROR
-
  
 ! Assign error message according to specified error
  
@@ -1732,8 +1716,6 @@ SELECT CASE (NERROR)
       CERROR = 'Wrong index for J'
    CASE (NSCARC_ERROR_VECTOR_LENGTH)
       CERROR = 'Inconsistent length for vector allocation'
-   CASE (NSCARC_ERROR_BICG_DISABLED)
-      CERROR = 'Krylov solver BICG temporarily disabled'
    CASE (NSCARC_ERROR_EXCHANGE_RECV)
       CERROR = 'Wrong receive exchange structure'
    CASE (NSCARC_ERROR_EXCHANGE_SEND)
@@ -2670,12 +2652,11 @@ ENDDO MESHES_LOOP1
  
 MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   !CALL SCARC_POINT_TO_LEVEL(NM, NLEVEL_MIN)
-   CALL SCARC_POINT_TO_GRID(NM, NLEVEL_MIN)
+   CALL SCARC_POINT_TO_GRID(NM, NLEVEL_MIN)               ! sets pointers M, L and G
 
-   ! Set pointers to already existing CELL_INDEX WALL_INDEX arrays from main program (on finest level)
-   CALL SCARC_SETUP_CELL_INDEX(NM, NLEVEL_MIN)
-   CALL SCARC_SETUP_WALL_INDEX(NM, NLEVEL_MIN)
+   ! Set pointers to already existing cell and wall index arrays from main program (on finest level)
+   CALL SCARC_SETUP_CELL_INDEX(L, M, NLEVEL_MIN)
+   CALL SCARC_SETUP_WALL_INDEX(L, G, M, NLEVEL_MIN)
 
    ! Allocate and initialize IS_SOLID array which indicates the state of a cell (gasphase/solid)
 
@@ -3038,7 +3019,6 @@ CROUTINE = 'SCARC_SETUP_FACES'
 
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   !CALL SCARC_POINT_TO_LEVEL(NM, NLEVEL_MIN)             ! consider only finest grid level
    CALL SCARC_POINT_TO_GRID(NM, NLEVEL_MIN)             ! consider only finest grid level
 
    ! Allocate FACE arrays on different grid levels
@@ -3060,8 +3040,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    N_FACE_NEIGHBORS = 0
    N_MESH_NEIGHBORS = 0
 
-   CALL SCARC_SETUP_FACE_BASICS(NM, NLEVEL_MIN)
-
+   CALL SCARC_SETUP_FACE_BASICS(L)
  
    ! Store first wall cell number for each face
  
@@ -3073,7 +3052,6 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       ICW = ICW + F%NCW
    ENDDO FACE_ORDER_LOOP
 
- 
    ! Loop over external wall cells:
    ! store basic data and determine number of adajacent neighbors to each face
  
@@ -3149,6 +3127,7 @@ ENDDO MESHES_LOOP
 
 END SUBROUTINE SCARC_SETUP_FACES
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Setup subdivision information 
 ! ------------------------------------------------------------------------------------------------
@@ -3212,26 +3191,23 @@ CALL SCARC_DEALLOCATE_INT1(BUFFER_INT, 'BUFFER_INT', CROUTINE)
 
 END SUBROUTINE SCARC_SETUP_SUBDIVISION
 
+
 ! ----------------------------------------------------------------------------------------------------
 !> \brief Determine basic data for single faces (orientation, dimensions, numbers)
 ! ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_FACE_BASICS(NM, NL)
-USE SCARC_POINTERS, ONLY: L, F
-INTEGER, INTENT(IN) :: NM, NL
+SUBROUTINE SCARC_SETUP_FACE_BASICS(L)
+USE SCARC_POINTERS, ONLY: F
+TYPE (SCARC_LEVEL_TYPE), POINTER, INTENT(IN) :: L
 INTEGER:: IOR0
-
-L => SCARC(NM)%LEVEL(NL)
 
 FACES_OF_MESH_LOOP: DO IOR0 = -3, 3
 
    IF (IOR0 == 0) CYCLE FACES_OF_MESH_LOOP
 
-   
    F => L%FACE(IOR0)
    
    SELECT CASE (ABS(IOR0))
 
- 
       ! ---------- Faces in x-direction
  
       CASE (1)
@@ -3261,7 +3237,6 @@ FACES_OF_MESH_LOOP: DO IOR0 = -3, 3
             F%SCAL_INSIDE  = 2.0_EB/(F%DH(F%NOP-1)*(F%DH(F%NOP-2)+F%DH(F%NOP-1)))
             F%NOFFX = -1
          ENDIF     
-
  
       ! ---------- Faces in y-direction
  
@@ -3298,7 +3273,6 @@ FACES_OF_MESH_LOOP: DO IOR0 = -3, 3
             ENDIF
          ENDIF
 
- 
       ! ---------- Faces in z-direction
  
       CASE (3)
@@ -3340,9 +3314,9 @@ END SUBROUTINE SCARC_SETUP_FACE_BASICS
 !> \brief Setup wall related structures and boundary conditions
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_WALLS
-USE SCARC_POINTERS, ONLY: M, L, LF, LC, FF, FC, WF, WC, OL, OLF, OLC, G, GC, GF, OGC, OGF, GWC, MWC, EWC
+USE SCARC_POINTERS, ONLY: M, L, LF, LC, FF, FC, OL, OLF, OLC, G, GC, GF, OGC, OGF, GWC, MWC, EWC
 INTEGER :: NL, NM, NOM
-INTEGER :: IREFINE, IFACE, IOR0, JOR0, INBR, IWG, IWC, ICW
+INTEGER :: IREFINE, IFACE, IOR0, JOR0, INBR, IWG, IWC, ICW, IW
 LOGICAL :: IS_KNOWN(-3:3), IS_DIRIC, IS_OPEN
 
 CROUTINE = 'SCARC_SETUP_WALLS'
@@ -3460,8 +3434,8 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    G%ICE = G%NC
    WALL_CELLS_LOOP2: DO IWG = 1, L%N_WALL_CELLS_EXT
 
-      NOM  = G%WALL(IWG)%NOM
       IOR0 = G%WALL(IWG)%IOR
+      NOM  = G%WALL(IWG)%NOM
 
       MWC => M%WALL(IWG)
       EWC => M%EXTERNAL_WALL(IWG)
@@ -3500,12 +3474,11 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       GWC%IZW = MWC%ONE_D%KKG
 
       ! If there exists a neighbor for that wall cell, setup corresponding neighborship information
-      IF (NOM /= 0) THEN
-         CALL SCARC_SETUP_WALL_NEIGHBOR(EWC%IIO_MIN, EWC%IIO_MAX, &
-                                        EWC%JJO_MIN, EWC%JJO_MAX, &
-                                        EWC%KKO_MIN, EWC%KKO_MAX, &
-                                        IWG, NM, NOM, NLEVEL_MIN)
-      ENDIF
+      IF (NOM /= 0) CALL SCARC_SETUP_WALL_NEIGHBOR(G, OG, &
+                                                   EWC%IIO_MIN, EWC%IIO_MAX, &
+                                                   EWC%JJO_MIN, EWC%JJO_MAX, &
+                                                   EWC%KKO_MIN, EWC%KKO_MAX, &
+                                                   IWG, NM, NOM, NLEVEL_MIN)
 
    ENDDO WALL_CELLS_LOOP2
 
@@ -3547,41 +3520,28 @@ IS_PURE_NEUMANN = N_DIRIC_GLOBAL(NLEVEL_MIN) == 0 .AND. &
 
  
 ! -------- Only for multi-level variants 
-! (twolevel-CG or GMG-method as main solver or preconditioner):
+! (twolevel-CG or GMG method as main solver or preconditioner):
 ! Determine WALL, FACE and OSCARC types for coarser levels
  
 MULTI_LEVEL_IF: IF (HAS_LEVELS_GMG) THEN
 
    MESHES_LOOP3: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-      CALL SCARC_POINT_TO_MESH(NM)
-
       IREFINE=1
-      LEVEL_GMG_LEVEL_LOOP: DO NL = NLEVEL_MIN+1, NLEVEL_MAX
+      MULTI_LEVELS_LOOP: DO NL = NLEVEL_MIN+1, NLEVEL_MAX
 
-         LF => SCARC(NM)%LEVEL(NL-1)                 ! LF points to finer level
-         LC => SCARC(NM)%LEVEL(NL)                   ! LC points to coarser level
-
-         SELECT CASE(TYPE_GRID)
-            CASE (NSCARC_GRID_STRUCTURED)
-               GF => LF%STRUCTURED
-               GC => LC%STRUCTURED
-            CASE (NSCARC_GRID_UNSTRUCTURED)
-               GF => LF%UNSTRUCTURED
-               GC => LC%UNSTRUCTURED
-         END SELECT
+         CALL SCARC_POINT_TO_MULTIGRID(NM, NL-1, NL)
 
          IREFINE=IREFINE*2
          IF (IS_GMG) CALL SCARC_CHECK_DIVISIBILITY(GF%NCE-GF%NC, 'GF%NCE')
 
- 
          ! Initialize counts for overlapping and wall cells
  
          GC%NCE = GC%NC + (GF%NCE-GF%NC)/2
          GC%ICE = GC%NC
 
-         LC%N_WALL_CELLS_EXT = SCARC_COUNT_EXTERNAL_WALL_CELLS(NM, NL)
-         LC%N_WALL_CELLS_INT = SCARC_COUNT_INTERNAL_WALL_CELLS(NM, NL)
+         LC%N_WALL_CELLS_EXT = SCARC_COUNT_EXTERNAL_WALL_CELLS(LF, LC, GF)
+         LC%N_WALL_CELLS_INT = SCARC_COUNT_INTERNAL_WALL_CELLS(LF, LC, GC)
          LC%N_WALL_CELLS     = LC%N_WALL_CELLS_EXT + LC%N_WALL_CELLS_INT
 
          SELECT CASE(TYPE_GRID)
@@ -3603,15 +3563,12 @@ MULTI_LEVEL_IF: IF (HAS_LEVELS_GMG) THEN
 
          ! Set basic and wall information for all faces of coarser level
  
-         CALL SCARC_SETUP_FACE_BASICS(NM, NL)
-
-         WC => GC%WALL
-         WF => GF%WALL
+         CALL SCARC_SETUP_FACE_BASICS(LC)
 
          IWC = 1
          IWG = 1
          ICW = 1
-         DO IFACE = 1, 6
+         FACES_LOOP: DO IFACE = 1, 6
 
             IOR0 = FACE_ORIENTATION(IFACE)
 
@@ -3637,18 +3594,7 @@ MULTI_LEVEL_IF: IF (HAS_LEVELS_GMG) THEN
                DO INBR = 1, LF%FACE(IOR0)%N_NEIGHBORS
 
                   NOM = LF%FACE(IOR0)%NEIGHBORS(INBR)
-
-                  OLF => SCARC(NM)%OSCARC(NOM)%LEVEL(NL-1)
-                  OLC => SCARC(NM)%OSCARC(NOM)%LEVEL(NL)
-
-                  SELECT CASE(TYPE_GRID)
-                     CASE (NSCARC_GRID_STRUCTURED)
-                        OGF => OLF%STRUCTURED
-                        OGC => OLC%STRUCTURED
-                     CASE (NSCARC_GRID_UNSTRUCTURED)
-                        OGF => OLF%UNSTRUCTURED
-                        OGC => OLC%UNSTRUCTURED
-                  END SELECT
+                  CALL SCARC_POINT_TO_OTHER_MULTIGRID(NM, NOM, NL-1, NL)
 
                   IF (IS_GMG) THEN
                      CALL SCARC_CHECK_DIVISIBILITY(OLF%N_WALL_CELLS_LOCAL, 'OLF%N_WALL_CELLS_LOCAL')
@@ -3663,7 +3609,7 @@ MULTI_LEVEL_IF: IF (HAS_LEVELS_GMG) THEN
                      OGC%NCG = OGF%NCG/2
                   ENDIF
 
-                  CALL SCARC_SETUP_EXCHANGE_DIMENSIONS(IREFINE, NM, NOM, NL)
+                  CALL SCARC_SETUP_EXCHANGE_DIMENSIONS(GC, OGC, NOM, IREFINE)
 
                   CALL SCARC_ALLOCATE_INT1(OGC%ICG_TO_IWG, 1, OGC%NCG, NSCARC_INIT_ZERO, 'OGC%ICG_TO_IWG', CROUTINE)
                   CALL SCARC_ALLOCATE_INT2(OGC%ICG_TO_ICW, 1, OGC%NCG, 1, 1, NSCARC_INIT_ZERO, 'OGC%ICG_TO_ICW', CROUTINE)
@@ -3674,17 +3620,30 @@ MULTI_LEVEL_IF: IF (HAS_LEVELS_GMG) THEN
 
             ! Setup complete face information for coarser mesh
 
-            CALL SCARC_SETUP_WALL_LEVEL(IOR0, IWC, IREFINE, NM, NL)
+            CALL SCARC_SETUP_WALL_LEVEL(LF, LC, GF, GC, IOR0, IWC, IREFINE, NM, NL)
 
-         ENDDO
+         ENDDO FACES_LOOP
 
-         CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-         CALL SCARC_SETUP_CELL_INDEX (NM, NL)
-         CALL SCARC_SETUP_WALL_COORDS(NM, NL)
-         CALL SCARC_SETUP_WALL_INDEX (NM, NL)
-         CALL SCARC_SETUP_WALL_GHOSTS(NM, NL)
+         CALL SCARC_SETUP_CELL_INDEX (LC, M, NL)
+         CALL SCARC_SETUP_WALL_COORDS(LC, GC)
+         CALL SCARC_SETUP_WALL_INDEX (LC, GC, M, NL)
 
-      ENDDO LEVEL_GMG_LEVEL_LOOP
+         ! Setup order in which ghost cells are processed during data exchanges
+         WALLCELLS_LOOP: DO IW = 1, LC%N_WALL_CELLS
+         
+           NOM = GC%WALL(IW)%NOM
+           IF (NOM /= 0) THEN
+              IOR0 = GC%WALL(IW)%IOR
+              CALL SCARC_POINT_TO_OTHER_MULTIGRID(NM, NOM, NL-1, NL)
+              OGC%ICG2 = OGC%ICG2 + 1
+              IF (OLC%GHOST_FIRSTW(IOR0) == 0) OLC%GHOST_FIRSTW(IOR0) = OGC%ICG2
+              IF (OLC%GHOST_FIRSTE(IOR0) == 0) OLC%GHOST_FIRSTE(IOR0) = OGC%ICG2
+              OLC%GHOST_LASTE(IOR0) = OGC%ICG2
+           ENDIF
+         
+         ENDDO WALLCELLS_LOOP
+
+      ENDDO MULTI_LEVELS_LOOP
    ENDDO MESHES_LOOP3
 ENDIF MULTI_LEVEL_IF
 
@@ -3692,11 +3651,12 @@ ENDIF MULTI_LEVEL_IF
 ! Correct boundary types for cells adjacent to obstructions on ghost cells
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   CALL SCARC_POINT_TO_GRID(NM, NLEVEL_MIN)                  ! sets level and grid pointers L and G
    IF (IS_UNSTRUCTURED) THEN
-      CALL SCARC_IDENTIFY_INTERNAL_NEUMANNS(NM, NLEVEL_MIN)
+      CALL SCARC_IDENTIFY_INTERNAL_NEUMANNS(L, G)
       IF (.NOT.HAS_LEVELS_AMG) THEN
          DO NL = NLEVEL_MIN+1, NLEVEL_MAX
-            CALL SCARC_IDENTIFY_INTERNAL_NEUMANNS(NM, NL)
+            CALL SCARC_IDENTIFY_INTERNAL_NEUMANNS(L, G)
          ENDDO
       ENDIF
    ENDIF
@@ -3823,21 +3783,22 @@ END SUBROUTINE SCARC_STORE_NEIGHBOR
 
 
 ! -----------------------------------------------------------------------------------------
-!> \brief Setup cells indexing array on coarser grid levels in case of MG-method
+!> \brief Setup cells indexing array on coarser grid levels in case of MG method
 ! -----------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_CELL_INDEX(NM, NL)
-USE SCARC_POINTERS, ONLY: M, L, OB
-INTEGER, INTENT(IN) :: NM, NL
+SUBROUTINE SCARC_SETUP_CELL_INDEX(L, M, NL)
+USE SCARC_POINTERS, ONLY: OB
+TYPE (MESH_TYPE), POINTER, INTENT(IN) :: M
+TYPE (SCARC_LEVEL_TYPE), POINTER, INTENT(IN) :: L
+INTEGER, INTENT(IN) :: NL
 INTEGER :: I, J, K, NOBST
 
 CROUTINE = 'SCARC_SETUP_CELL_INDEX'
-
-CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
 
 ! If finest level, the corresponding CELL_INDEX array is already available by surrounding routines
 ! on coarser levels, it must still be computed
 
 IF (NL == NLEVEL_MIN) THEN
+
    L%CELL_INDEX_PTR => M%CELL_INDEX
 
 ELSE
@@ -3846,7 +3807,6 @@ ELSE
    L%CELL_INDEX_PTR => L%CELL_INDEX
    L%N_CELL_INDEX = 0
 
- 
    ! Preset it for all grid cells
  
    DO K=0,L%NZ+1
@@ -3904,7 +3864,7 @@ ELSE
    ! Consider cells in obstructions
  
    DO NOBST=1,L%N_OBST
-      OB => SCARC(NM)%LEVEL(NL)%OBST(NOBST)
+      OB => L%OBST(NOBST)
       DO K=OB%K1,OB%K2+1
          DO J=OB%J1,OB%J2+1
             DO I=OB%I1,OB%I2+1
@@ -3925,14 +3885,14 @@ END SUBROUTINE SCARC_SETUP_CELL_INDEX
 ! -----------------------------------------------------------------------------------------
 !> \brief Setup wall cells indexing array on coarser grid levels
 ! -----------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_WALL_INDEX(NM, NL)
-USE SCARC_POINTERS, ONLY: M, L, G
-INTEGER, INTENT(IN) :: NM, NL
+SUBROUTINE SCARC_SETUP_WALL_INDEX(L, G, M, NL)
+TYPE (MESH_TYPE), POINTER, INTENT(IN) :: M
+TYPE (SCARC_LEVEL_TYPE), POINTER, INTENT(IN) :: L
+TYPE (SCARC_GRID_TYPE),  POINTER, INTENT(IN) :: G
+INTEGER, INTENT(IN) :: NL
 INTEGER :: I, J, K, ICG, IW, IOR0
 
 CROUTINE = 'SCARC_SETUP_WALL_INDEX'
-
-CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
 
 ! if on finest level, the array WALL_INDEX is already available by surrounding routines
 IF (NL == NLEVEL_MIN) THEN
@@ -3962,47 +3922,20 @@ ENDIF
 
 END SUBROUTINE SCARC_SETUP_WALL_INDEX
 
-! -----------------------------------------------------------------------------------------
-!> \brief Setup order in which ghost cells are processed during data exchanges
-! -----------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_WALL_GHOSTS(NM, NL)
-USE SCARC_POINTERS, ONLY: OL, OG, GWC
-INTEGER, INTENT(IN) :: NM, NL
-INTEGER :: IW, IOR0, NOM
-
-CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-DO IW = 1, L%N_WALL_CELLS
-
-  GWC => G%WALL(IW)
-  NOM  = GWC%NOM
-  IF (NOM == 0) CYCLE
-
-  IOR0 = GWC%IOR
-  CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
-
-  OG%ICG2 = OG%ICG2 + 1
-  IF (OL%GHOST_FIRSTW(IOR0) == 0) OL%GHOST_FIRSTW(IOR0) = OG%ICG2
-  IF (OL%GHOST_FIRSTE(IOR0) == 0) OL%GHOST_FIRSTE(IOR0) = OG%ICG2
-  OL%GHOST_LASTE(IOR0) = OG%ICG2
-
-ENDDO
-
-END SUBROUTINE SCARC_SETUP_WALL_GHOSTS
 
 ! -------------------------------------------------------------------------------------------------
-!> \brief Setup all necessary information for a wall cell with neighbor in case of MG-method
+!> \brief Setup all necessary information for a wall cell with neighbor in case of MG method
 ! Number of obstructions on coarse level is the same as on fine level
 ! TODO: Only works for special cases which run for GMG, must still be extended!!
 ! -------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_WALL_COORDS(NM, NL)
-USE SCARC_POINTERS, ONLY: L, G, OB
-INTEGER, INTENT(IN) :: NM, NL
+SUBROUTINE SCARC_SETUP_WALL_COORDS(L, G)
+USE SCARC_POINTERS, ONLY: OB
+TYPE (SCARC_LEVEL_TYPE), POINTER, INTENT(IN) :: L
+TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN)  :: G
 INTEGER :: IC, IO, IWC
 INTEGER :: I, J, K
 
-CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
 IWC = L%N_WALL_CELLS_EXT + 1
-
 DO IO = 1, L%N_OBST
 
    OB => L%OBST(IO)
@@ -4116,13 +4049,12 @@ END SUBROUTINE SCARC_SETUP_WALL_COORDS
 ! -------------------------------------------------------------------------------------------------
 !> \brief Correct boundary type array related to internal obstructions on ghost cells
 ! -------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_IDENTIFY_INTERNAL_NEUMANNS(NM, NL)
-USE SCARC_POINTERS, ONLY: L, G, GWC
-INTEGER, INTENT(IN) :: NM, NL
+SUBROUTINE SCARC_IDENTIFY_INTERNAL_NEUMANNS(L, G) 
+USE SCARC_POINTERS, ONLY: GWC
+TYPE (SCARC_LEVEL_TYPE), POINTER, INTENT(IN) :: L
+TYPE (SCARC_GRID_TYPE),  POINTER, INTENT(IN) :: G
 INTEGER :: IWG
 INTEGER :: IX, IY, IZ, IOR0, BTYPE0
-
-CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
 
 DO IWG = 1, L%N_WALL_CELLS_EXT
 
@@ -4151,19 +4083,12 @@ END SUBROUTINE SCARC_IDENTIFY_INTERNAL_NEUMANNS
 ! -------------------------------------------------------------------------------------------------
 !> \brief Setup all necessary information for a wall cell with neighbor
 ! -------------------------------------------------------------------------------------------------
-INTEGER FUNCTION SCARC_COUNT_EXTERNAL_WALL_CELLS(NM, NL)
-USE SCARC_POINTERS, ONLY: LF, LC
-INTEGER, INTENT(IN) :: NM, NL
+INTEGER FUNCTION SCARC_COUNT_EXTERNAL_WALL_CELLS(LF, LC, GF)
+TYPE (SCARC_LEVEL_TYPE), POINTER, INTENT(IN) :: LF, LC
+TYPE (SCARC_GRID_TYPE),  POINTER, INTENT(IN) :: GF
 INTEGER :: IXC, IYC, IZC
 INTEGER :: IXF, IYF, IZF
-INTEGER :: NLF, NLC
 INTEGER :: IWC, ICF(4)=0, IWF(4)=0, IOR0
-
-NLF = NL-1
-NLC = NL
-
-LF => SCARC(NM)%LEVEL(NLF)
-LC => SCARC(NM)%LEVEL(NLC)
 
 ICF = 0
 IWC = 0
@@ -4180,7 +4105,7 @@ IF (TWO_D) THEN
       IZF = 2*IZC - 1
       ICF(1) = LF%CELL_INDEX_PTR(1  , IYF  , IZF  )
       ICF(2) = LF%CELL_INDEX_PTR(1  , IYF  , IZF+1)
-      IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 2, NM, NLF)) IWC = IWC + 1
+      IF (IS_EXTERNAL_WALLCELL(LF, GF, IOR0, ICF, 2)) IWC = IWC + 1
    ENDDO
 
    ! IOR = -1
@@ -4190,7 +4115,7 @@ IF (TWO_D) THEN
       IZF = 2*IZC - 1
       ICF(1) = LF%CELL_INDEX_PTR(LF%NX, IYF  , IZF  )
       ICF(2) = LF%CELL_INDEX_PTR(LF%NX, IYF  , IZF+1)
-      IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 2, NM, NLF)) IWC = IWC + 1
+      IF (IS_EXTERNAL_WALLCELL(LF, GF, IOR0, ICF, 2)) IWC = IWC + 1
    ENDDO
 
    ! IOR = 2
@@ -4204,7 +4129,7 @@ IF (TWO_D) THEN
          ICF(2) = LF%CELL_INDEX_PTR(IXF+1, IYF, IZF  )
          ICF(3) = LF%CELL_INDEX_PTR(IXF  , IYF, IZF+1)
          ICF(4) = LF%CELL_INDEX_PTR(IXF+1, IYF, IZF+1)
-         IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 4, NM, NLF)) IWC = IWC + 1
+         IF (IS_EXTERNAL_WALLCELL(LF, GF, IOR0, ICF, 4)) IWC = IWC + 1
       ENDDO
    ENDDO
 
@@ -4220,7 +4145,7 @@ IF (TWO_D) THEN
          ICF(2) = LF%CELL_INDEX_PTR(IXF+1  , IYF, IZF  )
          ICF(3) = LF%CELL_INDEX_PTR(IXF    , IYF, IZF+1)
          ICF(4) = LF%CELL_INDEX_PTR(IXF+1  , IYF, IZF+1)
-         IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 4, NM, NLF)) IWC = IWC + 1
+         IF (IS_EXTERNAL_WALLCELL(LF, GF, IOR0, ICF, 4)) IWC = IWC + 1
       ENDDO
    ENDDO
 
@@ -4231,7 +4156,7 @@ IF (TWO_D) THEN
       IXF = 2*IXC - 1
       ICF(1) = LF%CELL_INDEX_PTR(IXF    , IYF  , 1)
       ICF(2) = LF%CELL_INDEX_PTR(IXF+1  , IYF  , 1)
-      IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 2, NM, NLF)) IWC = IWC + 1
+      IF (IS_EXTERNAL_WALLCELL(LF, GF, IOR0, ICF, 2)) IWC = IWC + 1
    ENDDO
 
    ! IOR = -3
@@ -4241,7 +4166,7 @@ IF (TWO_D) THEN
       IXF = 2*IXC - 1
       ICF(1) = LF%CELL_INDEX_PTR(IXF  , IYF  , LF%NZ)
       ICF(2) = LF%CELL_INDEX_PTR(IXF+1, IYF  , LF%NZ)
-      IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 2, NM, NLF)) IWC = IWC + 1
+      IF (IS_EXTERNAL_WALLCELL(LF, GF, IOR0, ICF, 2)) IWC = IWC + 1
    ENDDO
 
 ELSE
@@ -4257,7 +4182,7 @@ ELSE
          ICF(2) = LF%CELL_INDEX_PTR(1  , IYF+1, IZF  )
          ICF(3) = LF%CELL_INDEX_PTR(1  , IYF  , IZF+1)
          ICF(4) = LF%CELL_INDEX_PTR(1  , IYF+1, IZF+1)
-         IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 4, NM, NLF)) IWC = IWC + 1
+         IF (IS_EXTERNAL_WALLCELL(LF, GF, IOR0, ICF, 4)) IWC = IWC + 1
       ENDDO
    ENDDO
 
@@ -4272,7 +4197,7 @@ ELSE
          ICF(2) = LF%CELL_INDEX_PTR(LF%NX, IYF+1, IZF  )
          ICF(3) = LF%CELL_INDEX_PTR(LF%NX, IYF  , IZF+1)
          ICF(4) = LF%CELL_INDEX_PTR(LF%NX, IYF+1, IZF+1)
-         IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 4, NM, NLF)) IWC = IWC + 1
+         IF (IS_EXTERNAL_WALLCELL(LF, GF, IOR0, ICF, 4)) IWC = IWC + 1
       ENDDO
    ENDDO
 
@@ -4287,7 +4212,7 @@ ELSE
          ICF(2) = LF%CELL_INDEX_PTR(IXF+1, 1, IZF  )
          ICF(3) = LF%CELL_INDEX_PTR(IXF  , 1, IZF+1)
          ICF(4) = LF%CELL_INDEX_PTR(IXF+1, 1, IZF+1)
-         IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 4, NM, NLF)) IWC = IWC + 1
+         IF (IS_EXTERNAL_WALLCELL(LF, GF, IOR0, ICF, 4)) IWC = IWC + 1
       ENDDO
    ENDDO
 
@@ -4303,7 +4228,7 @@ ELSE
          ICF(2) = LF%CELL_INDEX_PTR(IXF+1  , LF%NY, IZF  )
          ICF(3) = LF%CELL_INDEX_PTR(IXF    , LF%NY, IZF+1)
          ICF(4) = LF%CELL_INDEX_PTR(IXF+1  , LF%NY, IZF+1)
-         IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 4, NM, NLF)) IWC = IWC + 1
+         IF (IS_EXTERNAL_WALLCELL(LF, GF, IOR0, ICF, 4)) IWC = IWC + 1
       ENDDO
    ENDDO
 
@@ -4318,7 +4243,7 @@ ELSE
          ICF(2) = LF%CELL_INDEX_PTR(IXF+1  , IYF  , 1)
          ICF(3) = LF%CELL_INDEX_PTR(IXF    , IYF+1, 1)
          ICF(4) = LF%CELL_INDEX_PTR(IXF+1  , IYF+1, 1)
-         IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 4, NM, NLF)) IWC = IWC + 1
+         IF (IS_EXTERNAL_WALLCELL(LF, GF, IOR0, ICF, 4)) IWC = IWC + 1
       ENDDO
    ENDDO
 
@@ -4333,7 +4258,7 @@ ELSE
          ICF(2) = LF%CELL_INDEX_PTR(IXF+1, IYF  , LF%NZ)
          ICF(3) = LF%CELL_INDEX_PTR(IXF  , IYF+1, LF%NZ)
          ICF(4) = LF%CELL_INDEX_PTR(IXF+1, IYF+1, LF%NZ)
-         IF (IS_EXTERNAL_WALLCELL(IOR0, ICF, 4, NM, NLF)) IWC = IWC + 1
+         IF (IS_EXTERNAL_WALLCELL(LF, GF, IOR0, ICF, 4)) IWC = IWC + 1
       ENDDO
    ENDDO
 
@@ -4346,24 +4271,13 @@ END FUNCTION SCARC_COUNT_EXTERNAL_WALL_CELLS
 ! -------------------------------------------------------------------------------------------------
 !> \brief Setup all necessary information for a wall cell with neighbor
 ! -------------------------------------------------------------------------------------------------
-INTEGER FUNCTION SCARC_COUNT_INTERNAL_WALL_CELLS(NM, NL)
-USE SCARC_POINTERS, ONLY: LF, LC, GF, GC, OB
-INTEGER, INTENT(IN) :: NM, NL
+INTEGER FUNCTION SCARC_COUNT_INTERNAL_WALL_CELLS(LF, LC, GC)
+USE SCARC_POINTERS, ONLY: OBF, OBC
+TYPE (SCARC_LEVEL_TYPE), POINTER, INTENT(IN) :: LF, LC
+TYPE (SCARC_GRID_TYPE),  POINTER, INTENT(IN) :: GC
 INTEGER :: IWC, NW_INT
 INTEGER :: IC, IO
 INTEGER :: I, J, K
-
-LC => SCARC(NM)%LEVEL(NL)
-LF => SCARC(NM)%LEVEL(NL-1)
-
-SELECT CASE(TYPE_GRID)
-   CASE (NSCARC_GRID_STRUCTURED)
-      GC => LC%STRUCTURED
-      GF => LF%STRUCTURED
-   CASE (NSCARC_GRID_UNSTRUCTURED)
-      GC => LC%UNSTRUCTURED
-      GF => LF%UNSTRUCTURED
-END SELECT
 
 LC%N_OBST = LF%N_OBST                   ! Number of obstructions is the same on all levels
 
@@ -4375,27 +4289,28 @@ IWC = LC%N_WALL_CELLS_EXT + 1
 
 DO IO = 1, LF%N_OBST
 
-   OB => SCARC(NM)%LEVEL(NL)%OBST(IO)
+   OBF => LF%OBST(IO)
+   OBC => LC%OBST(IO)
 
-   OB%I1 = (LF%OBST(IO)%I1+1)/2
-   OB%I2 =  LF%OBST(IO)%I2/2
+   OBC%I1 = (OBF%I1+1)/2
+   OBC%I2 =  OBF%I2/2
 
    IF (TWO_D) THEN
-      OB%J1 = 0
-      OB%J2 = 1
+      OBC%J1 = 0
+      OBC%J2 = 1
    ELSE
-      OB%J1 = (LF%OBST(IO)%J1+1)/2
-      OB%J2 =  LF%OBST(IO)%J2/2
+      OBC%J1 = (OBF%J1+1)/2
+      OBC%J2 =  OBF%J2/2
    ENDIF
 
-   OB%K1 = (LF%OBST(IO)%K1+1)/2
-   OB%K2 =  LF%OBST(IO)%K2/2
+   OBC%K1 = (OBF%K1+1)/2
+   OBC%K2 =  OBF%K2/2
 
    ! Analyze IOR = 1
 
-   I = OB%I1
-   DO K = OB%K1+1, OB%K2
-      DO J = OB%J1+1, OB%J2
+   I = OBC%I1
+   DO K = OBC%K1+1, OBC%K2
+      DO J = OBC%J1+1, OBC%J2
          IC = GC%CELL_NUMBER(I, J, K)
          IF (IC == NSCARC_UNDEF_INT) CYCLE
          NW_INT = NW_INT + 1
@@ -4404,9 +4319,9 @@ DO IO = 1, LF%N_OBST
 
    ! Analyze IOR = -1
 
-   I = OB%I2
-   DO K = OB%K1+1, OB%K2
-      DO J = OB%J1+1, OB%J2
+   I = OBC%I2
+   DO K = OBC%K1+1, OBC%K2
+      DO J = OBC%J1+1, OBC%J2
          IC = GC%CELL_NUMBER(I+1, J, K)
          IF (IC == NSCARC_UNDEF_INT) CYCLE
          NW_INT = NW_INT + 1
@@ -4415,9 +4330,9 @@ DO IO = 1, LF%N_OBST
 
    ! Analyze IOR = 2
 
-   J = OB%J1
-   DO K = OB%K1+1, OB%K2
-      DO I = OB%I1+1, OB%I2
+   J = OBC%J1
+   DO K = OBC%K1+1, OBC%K2
+      DO I = OBC%I1+1, OBC%I2
          IC = GC%CELL_NUMBER(I, J, K)
          IF (IC == NSCARC_UNDEF_INT) CYCLE
          NW_INT = NW_INT + 1
@@ -4426,9 +4341,9 @@ DO IO = 1, LF%N_OBST
 
    ! Analyze IOR = -2
 
-   J = OB%J2
-   DO K = OB%K1+1, OB%K2
-      DO I = OB%I1+1, OB%I2
+   J = OBC%J2
+   DO K = OBC%K1+1, OBC%K2
+      DO I = OBC%I1+1, OBC%I2
          IC = GC%CELL_NUMBER(I, J+1, K)
          IF (IC == NSCARC_UNDEF_INT) CYCLE
          NW_INT = NW_INT + 1
@@ -4437,9 +4352,9 @@ DO IO = 1, LF%N_OBST
 
    ! Analyze IOR = 3
 
-   K = OB%K1
-   DO J = OB%J1+1, OB%J2
-      DO I = OB%I1+1, OB%I2
+   K = OBC%K1
+   DO J = OBC%J1+1, OBC%J2
+      DO I = OBC%I1+1, OBC%I2
          IC = GC%CELL_NUMBER(I, J, K)
          IF (IC == NSCARC_UNDEF_INT) CYCLE
          NW_INT = NW_INT + 1
@@ -4448,9 +4363,9 @@ DO IO = 1, LF%N_OBST
 
    ! Analyze IOR = -3
 
-   K = OB%K2
-   DO J = OB%J1+1, OB%J2
-      DO I = OB%I1+1, OB%I2
+   K = OBC%K2
+   DO J = OBC%J1+1, OBC%J2
+      DO I = OBC%I1+1, OBC%I2
          IC = GC%CELL_NUMBER(I, J, K+1)
          IF (IC == NSCARC_UNDEF_INT) CYCLE
          NW_INT = NW_INT + 1
@@ -4466,16 +4381,15 @@ END FUNCTION SCARC_COUNT_INTERNAL_WALL_CELLS
 ! -------------------------------------------------------------------------------------------------
 !> \brief Count external wall cells on specified face if mesh
 ! -------------------------------------------------------------------------------------------------
-LOGICAL FUNCTION IS_EXTERNAL_WALLCELL(IOR0, ICF, NCNT, NM, NL)
-USE SCARC_POINTERS, ONLY: L, G
-INTEGER, INTENT(IN) :: IOR0, NCNT, NM, NL
+LOGICAL FUNCTION IS_EXTERNAL_WALLCELL(L, G, IOR0, ICF, NCNT)
+TYPE (SCARC_LEVEL_TYPE), POINTER, INTENT(IN) :: L
+TYPE (SCARC_GRID_TYPE),  POINTER, INTENT(IN) :: G
+INTEGER, INTENT(IN) :: IOR0, NCNT
 INTEGER, DIMENSION(:), INTENT(IN) :: ICF
 INTEGER :: I, IWF_LAST, IWF(4)=0
 REAL(EB) :: BSUM
 
 IS_EXTERNAL_WALLCELL = .FALSE.
-
-CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
 
 DO I = 1, NCNT
    IWF(I) = L%WALL_INDEX_PTR(ICF(I), -IOR0)
@@ -4505,15 +4419,15 @@ END FUNCTION IS_EXTERNAL_WALLCELL
 ! -------------------------------------------------------------------------------------------------
 !> \brief Setup all necessary information for a wall cell with neighbor
 ! -------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_WALL_NEIGHBOR(NX1, NX2, NY1, NY2, NZ1, NZ2, IWG, NM, NOM, NL)
-USE SCARC_POINTERS, ONLY: G, OG
+SUBROUTINE SCARC_SETUP_WALL_NEIGHBOR(G, OG, NX1, NX2, NY1, NY2, NZ1, NZ2, IWG, NM, NOM, NL)
+USE SCARC_POINTERS, ONLY: GWC
+TYPE (SCARC_GRID_TYPE),  POINTER, INTENT(IN) :: G, OG
 INTEGER, INTENT(IN) :: NX1, NX2, NY1, NY2, NZ1, NZ2
 INTEGER, INTENT(IN) :: IWG, NM, NOM, NL
 INTEGER :: NOMX, NOMY, NOMZ
 INTEGER :: ICG, ICE, IX, IY, IZ, JL, IXW, IYW, IZW, IXG, IYG, IZG
 
-CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
+CALL SCARC_POINT_TO_OTHER_GRID (NM, NOM, NL)
 
 ICE  = G%ICE
 ICG  = OG%ICG
@@ -4591,11 +4505,12 @@ END SUBROUTINE SCARC_CHECK_DIVISIBILITY
 ! ----------------------------------------------------------------------------------------------------
 !> \brief Set wall cell information on coarse level
 ! ----------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_WALL_LEVEL(IOR0, IWC, IREFINE, NM, NL)
-USE SCARC_POINTERS, ONLY: LF, LC, FF, FC, WF, WC, OLC, OGC 
+SUBROUTINE SCARC_SETUP_WALL_LEVEL(LF, LC, GF, GC, IOR0, IWC, IREFINE, NM, NL)
+USE SCARC_POINTERS, ONLY: FF, FC, WF, WC, OGC
+TYPE (SCARC_LEVEL_TYPE), POINTER, INTENT(IN) :: LF, LC
+TYPE (SCARC_GRID_TYPE),  POINTER, INTENT(IN) :: GF, GC
 INTEGER, INTENT(INOUT) :: IWC
-INTEGER, INTENT(IN) :: NM, NL
-INTEGER, INTENT(IN) :: IOR0, IREFINE
+INTEGER, INTENT(IN) :: IOR0, IREFINE, NM, NL
 INTEGER :: IWF(4) , IBCF(4), NOMF(4)
 INTEGER :: IX,  IY,  IZ, I
 INTEGER :: NX1, NY1, NZ1
@@ -4608,6 +4523,7 @@ WC => GC%WALL
 WF => GF%WALL
 
 ! set coordinate dimensions for correspoding face
+
 SELECT CASE (ABS(IOR0))
    CASE (1)
       IF (IOR0 > 0) THEN                                           ! set dimensions for wall cell counting
@@ -4752,17 +4668,11 @@ DO IZ = NZ1, NZ2
                CALL SCARC_SHUTDOWN(NSCARC_ERROR_BOUNDARY_TYPE, SCARC_NONE, IBCF(1))
             ENDIF
 
-            ! in case of an internal boundary set neighboring WALL cells
+            ! in case of an internal boundary set neighboring wall cells
 
             IF (NOMF(1) > 0) THEN
 
-               OLC => SCARC(NM)%OSCARC(NOMF(1))%LEVEL(NL)
-               SELECT CASE(TYPE_GRID)
-                  CASE (NSCARC_GRID_STRUCTURED)
-                     OGC => OLC%STRUCTURED
-                  CASE (NSCARC_GRID_UNSTRUCTURED)
-                     OGC => OLC%UNSTRUCTURED
-               END SELECT
+               CALL SCARC_POINT_TO_OTHER_MULTIGRID (NM, NOMF(1), NL-1, NL)
 
                IY1 = 1
                IY2 = 1
@@ -4822,7 +4732,7 @@ DO IZ = NZ1, NZ2
                 
                ! Allocate and specify ICN and ICE arrays for OC
                 
-               CALL SCARC_SETUP_WALL_NEIGHBOR(IX1, IX2, 1, 1, IZ1, IZ2, IWC, NM, NOMF(1), NL)
+               CALL SCARC_SETUP_WALL_NEIGHBOR(GC, OGC, IX1, IX2, 1, 1, IZ1, IZ2, IWC, NM, NOMF(1), NL)
 
             ENDIF
 
@@ -4899,8 +4809,6 @@ DO IZ = NZ1, NZ2
             ! in case of an internal boundary set WALL(10:15,IWC)
 
             IF (NOMF(1) > 0) THEN
-
-               OLC => SCARC(NM)%OSCARC(NOMF(1))%LEVEL(NL)
 
                SELECT CASE (ABS(IOR0))
 
@@ -5000,7 +4908,7 @@ DO IZ = NZ1, NZ2
                WC(IWC)%IYN(2) = IY2
                WC(IWC)%IZN(2) = IZ2
 
-               CALL SCARC_SETUP_WALL_NEIGHBOR(IX1, IX2, IY1, IY2, IZ1, IZ2, IWC, NM, NOMF(1), NL)
+               CALL SCARC_SETUP_WALL_NEIGHBOR(GC, OGC, IX1, IX2, IY1, IY2, IZ1, IZ2, IWC, NM, NOMF(1), NL)
 
             ENDIF
          ENDIF
@@ -5015,18 +4923,15 @@ END SUBROUTINE SCARC_SETUP_WALL_LEVEL
 ! -------------------------------------------------------------------------------------------------
 !> \brief Setup dimensions for data exchanges
 ! -------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_EXCHANGE_DIMENSIONS(IREFINE, NM, NOM, NL)
-USE SCARC_POINTERS, ONLY: G, OG
-INTEGER, INTENT(IN) :: IREFINE, NM, NOM, NL
+SUBROUTINE SCARC_SETUP_EXCHANGE_DIMENSIONS(G, OG, NOM, IREFINE)
+USE SCARC_POINTERS, ONLY: GWC
+TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G, OG
+INTEGER, INTENT(IN) :: NOM, IREFINE
 INTEGER :: IMIN, IMAX, JMIN, JMAX, KMIN, KMAX, IW
 LOGICAL :: FOUND
 
-CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
-
 IMIN=0
 IMAX=MESHES(NOM)%IBAR/IREFINE+1
-
 IF (TWO_D) THEN
    JMIN=0
    JMAX=2
@@ -5034,30 +4939,29 @@ ELSE
    JMIN=0
    JMAX=MESHES(NOM)%JBAR/IREFINE+1
 ENDIF
-
 KMIN=0
 KMAX=MESHES(NOM)%KBAR/IREFINE+1
 
 FOUND = .FALSE.
 SEARCH_LOOP: DO IW=1, OG%NCG
 
-   ! neighborship structure already known from finest level
-   IF (G%WALL(IW)%NOM/=NOM) CYCLE SEARCH_LOOP
+   GWC => G%WALL(IW)
+   IF (GWC%NOM/=NOM) CYCLE SEARCH_LOOP
    FOUND = .TRUE.
 
-   SELECT CASE (G%WALL(IW)%IOR)
+   SELECT CASE (GWC%IOR)
       CASE ( 1)
-         IMIN=MAX(IMIN,G%WALL(NM)%IXN(1)-1)
+         IMIN=MAX(IMIN,GWC%IXN(1)-1)
       CASE (-1)
-         IMAX=MIN(IMAX,G%WALL(NM)%IXN(2)+1)
+         IMAX=MIN(IMAX,GWC%IXN(2)+1)
       CASE ( 2)
-         JMIN=MAX(JMIN,G%WALL(NM)%IYN(1)-1)
+         JMIN=MAX(JMIN,GWC%IYN(1)-1)
       CASE (-2)
-         JMAX=MIN(JMAX,G%WALL(NM)%IYN(2)+1)
+         JMAX=MIN(JMAX,GWC%IYN(2)+1)
       CASE ( 3)
-         KMIN=MAX(KMIN,G%WALL(NM)%IZN(1)-1)
+         KMIN=MAX(KMIN,GWC%IZN(1)-1)
       CASE (-3)
-         KMAX=MIN(KMAX,G%WALL(NM)%IZN(2)+1)
+         KMAX=MIN(KMAX,GWC%IZN(2)+1)
    END SELECT
 ENDDO SEARCH_LOOP
 
@@ -5222,15 +5126,14 @@ MESHES_POISSON_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    SELECT_SCARC_METHOD: SELECT CASE (TYPE_METHOD)
 
-      ! ---------- Krylov method (CG/BICG) as main solver, different preconditioners possible
+      ! ---------- Krylov method (CG) as main solver, different preconditioners possible
 
       CASE (NSCARC_METHOD_KRYLOV)
 
-         ! For all different possible Krylov-variants, first setup Poisson matrix on finest level including BC's 
+         ! For all different possible Krylov variants, first setup Poisson matrix on finest level including BC's 
 
          CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
          CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
-
 
          ! Depending on the requested preconditioner, also assemble the Poisson matrix with BC's on specific coarser levels
 
@@ -5323,13 +5226,11 @@ MESHES_POISSON_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 ENDDO MESHES_POISSON_LOOP
 
 
- 
 ! Setup mappings for the global numbering of vectors and the Poisson matrix (compact storage technique only)
  
-CALL SCARC_SETUP_GLOBAL_CELL_NUMBERING(NLEVEL_MIN)
-CALL SCARC_SETUP_GLOBAL_MATRIX_NUMBERING(NSCARC_MATRIX_POISSON, NLEVEL_MIN)
+CALL SCARC_SETUP_GLOBAL_NUMBERING_CELLS(NLEVEL_MIN)
+CALL SCARC_SETUP_GLOBAL_NUMBERING_MATRIX(NSCARC_MATRIX_POISSON, NLEVEL_MIN)
  
-
 ! If there is more than one mesh, exchange matrix values in overlapping parts
 ! This must be done for all multilevel methods at least at the finest grid level
 ! Furthermore also at all higher levels except for the AMG method,
@@ -5349,13 +5250,13 @@ NMESHES_IF: IF (NMESHES > 1) THEN
 
          CALL SCARC_POINT_TO_GRID (NM, NLEVEL_MIN)    
          AC => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
-         CALL SCARC_REDUCE_CMATRIX(AC, 'G%POISSONC', CROUTINE)
+         CALL SCARC_REDUCE_CMATRIX(AC, 'G%POISSON', CROUTINE)
 
          OMESHES_FINE_LOOP: DO INBR = 1, S%N_NEIGHBORS
             NOM = S%NEIGHBORS(INBR)
             CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NLEVEL_MIN)
             OAC => SCARC_POINT_TO_OTHER_CMATRIX (OG, NSCARC_MATRIX_POISSON)
-            CALL SCARC_REDUCE_CMATRIX(OAC, 'OG%POISSONC', CROUTINE)
+            CALL SCARC_REDUCE_CMATRIX(OAC, 'OG%POISSON', CROUTINE)
          ENDDO OMESHES_FINE_LOOP
 
       ENDDO MESHES_FINE_LOOP
@@ -5373,17 +5274,17 @@ NMESHES_IF: IF (NMESHES > 1) THEN
 
                CALL SCARC_POINT_TO_GRID (NM, NL)    
                AC => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
-               CALL SCARC_REDUCE_CMATRIX(AC, 'G%POISSONC', CROUTINE)
+               CALL SCARC_REDUCE_CMATRIX(AC, 'G%POISSON', CROUTINE)
 
                OMESHES_COARSE_LOOP: DO INBR = 1, S%N_NEIGHBORS
                   NOM = S%NEIGHBORS(INBR)
                   CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
                   OAC => SCARC_POINT_TO_OTHER_CMATRIX (OG, NSCARC_MATRIX_POISSON)
-                  CALL SCARC_REDUCE_CMATRIX(OAC, 'OG%POISSONC', CROUTINE)
+                  CALL SCARC_REDUCE_CMATRIX(OAC, 'OG%POISSON', CROUTINE)
                ENDDO OMESHES_COARSE_LOOP
 
 #ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_CMATRIX(AC, 'G%POISSONC', 'SETUP_SYSTEMS: AFTER EXTRAXT_MATRIX_OVERLAPS')
+CALL SCARC_DEBUG_CMATRIX(AC, 'G%POISSON', 'SETUP_SYSTEMS: AFTER EXTRAXT_MATRIX_OVERLAPS')
 #endif
 
             ENDDO MESHES_COARSE_LOOP
@@ -5421,12 +5322,12 @@ END SUBROUTINE SCARC_SETUP_SYSTEMS
 ! -------------------------------------------------------------------------------------------
 !> \brief Setup mapping vector from local to global numbering
 ! -------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_GLOBAL_CELL_NUMBERING(NL)
+SUBROUTINE SCARC_SETUP_GLOBAL_NUMBERING_CELLS(NL)
 USE SCARC_POINTERS, ONLY : G
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, NOM, IC, IW, ICE, ICN
 
-CROUTINE = 'SCARC_SETUP_GLOBAL_CELL_NUMBERING'
+CROUTINE = 'SCARC_SETUP_GLOBAL_NUMBERING_CELLS'
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -5452,25 +5353,26 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 ENDDO
 
-END SUBROUTINE SCARC_SETUP_GLOBAL_CELL_NUMBERING
+END SUBROUTINE SCARC_SETUP_GLOBAL_NUMBERING_CELLS
 
 
 ! -------------------------------------------------------------------------------------------
 !> \brief Extract overlapping matrix part and add to main matrix
 ! -------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_GLOBAL_MATRIX_NUMBERING(NMATRIX, NL)
+SUBROUTINE SCARC_SETUP_GLOBAL_NUMBERING_MATRIX(NMATRIX, NL)
 USE SCARC_POINTERS, ONLY : G
 INTEGER, INTENT(IN) :: NMATRIX, NL
 INTEGER :: NM, IC, ICOL, JC
 
 IF (NMESHES == 1) THEN
-   CALL SCARC_POINT_TO_GRID (NMESHES, NL)                                   ! Sets grid pointer G
+   CALL SCARC_POINT_TO_GRID (NMESHES, NL)                                 ! Sets grid pointer G
    A => SCARC_POINT_TO_CMATRIX (G, NMATRIX)
    A%COLG = A%COL
 ELSE
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
       A => SCARC_POINT_TO_CMATRIX (G, NMATRIX)
+WRITE(*,*) 'NM, NL, A%N_VAL, A%N_ROW:', NM, NL, A%N_VAL, A%N_ROW
       DO IC = 1, G%NC
          DO ICOL = A%ROW(IC), A%ROW(IC+1)-1
             JC = A%COL(ICOL)
@@ -5480,8 +5382,7 @@ ELSE
    ENDDO
 ENDIF
 
-END SUBROUTINE SCARC_SETUP_GLOBAL_MATRIX_NUMBERING
-
+END SUBROUTINE SCARC_SETUP_GLOBAL_NUMBERING_MATRIX
 
 
 ! ------------------------------------------------------------------------------------------------
@@ -5507,7 +5408,7 @@ END FUNCTION SCARC_CELL_WITHIN_MESH
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Allocate Poisson matrix for the usual 5-point-stencil (2D) or 7-point-stencil (3D)
-! Compact storage technique (POISSONC)
+! Compact storage technique (POISSON)
 !    Compression technique to store sparse matrices, non-zero entries are stored
 !    in a 1D-vector B(.), row after row,
 !    Each row starts with its diagonal entry followed by the other non-zero entries
@@ -5539,7 +5440,7 @@ SELECT_STORAGE_TYPE: SELECT CASE (SCARC_MATRIX_LEVEL(NL))
 
       CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
       A => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
-      CALL SCARC_ALLOCATE_CMATRIX (A, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'G%POISSONC', CROUTINE)
+      CALL SCARC_ALLOCATE_CMATRIX (A, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'G%POISSON', CROUTINE)
 
       ! For every neighbor allocate small matrix on overlapping part of mesh
 
@@ -5547,7 +5448,7 @@ SELECT_STORAGE_TYPE: SELECT CASE (SCARC_MATRIX_LEVEL(NL))
          NOM = S%NEIGHBORS(INBR)
          CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
          OA => SCARC_POINT_TO_OTHER_CMATRIX (OG, NSCARC_MATRIX_POISSON)
-         CALL SCARC_ALLOCATE_CMATRIX(OA, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OG%POISSONC', CROUTINE)
+         CALL SCARC_ALLOCATE_CMATRIX(OA, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OG%POISSON', CROUTINE)
       ENDDO
 
       IP = 1
@@ -5560,19 +5461,19 @@ SELECT_STORAGE_TYPE: SELECT CASE (SCARC_MATRIX_LEVEL(NL))
 
                ! Main diagonal 
 
-               CALL SCARC_SETUP_POISSONC_MAINDIAG (IC, IX, IY, IZ, IP)
+               CALL SCARC_SETUP_POISSON_MAINDIAG (IC, IX, IY, IZ, IP)
    
                ! Lower subdiagonals
 
-               IF (VALID_SUBDIAG(IX, IY, IZ,  3)) CALL SCARC_SETUP_POISSONC_SUBDIAG(IC, IX, IY, IZ, IX  , IY  , IZ-1, IP,  3)
-               IF (VALID_SUBDIAG(IX, IY, IZ,  2)) CALL SCARC_SETUP_POISSONC_SUBDIAG(IC, IX, IY, IZ, IX  , IY-1, IZ  , IP,  2)
-               IF (VALID_SUBDIAG(IX, IY, IZ,  1)) CALL SCARC_SETUP_POISSONC_SUBDIAG(IC, IX, IY, IZ, IX-1, IY  , IZ  , IP,  1)
+               IF (VALID_SUBDIAG(IX, IY, IZ,  3)) CALL SCARC_SETUP_POISSON_SUBDIAG(IC, IX, IY, IZ, IX  , IY  , IZ-1, IP,  3)
+               IF (VALID_SUBDIAG(IX, IY, IZ,  2)) CALL SCARC_SETUP_POISSON_SUBDIAG(IC, IX, IY, IZ, IX  , IY-1, IZ  , IP,  2)
+               IF (VALID_SUBDIAG(IX, IY, IZ,  1)) CALL SCARC_SETUP_POISSON_SUBDIAG(IC, IX, IY, IZ, IX-1, IY  , IZ  , IP,  1)
    
                ! Upper subdiagonals
 
-               IF (VALID_SUBDIAG(IX, IY, IZ, -1)) CALL SCARC_SETUP_POISSONC_SUBDIAG(IC, IX, IY, IZ, IX+1, IY  , IZ  , IP, -1)
-               IF (VALID_SUBDIAG(IX, IY, IZ, -2)) CALL SCARC_SETUP_POISSONC_SUBDIAG(IC, IX, IY, IZ, IX  , IY+1, IZ  , IP, -2)
-               IF (VALID_SUBDIAG(IX, IY, IZ, -3)) CALL SCARC_SETUP_POISSONC_SUBDIAG(IC, IX, IY, IZ, IX  , IY  , IZ+1, IP, -3)
+               IF (VALID_SUBDIAG(IX, IY, IZ, -1)) CALL SCARC_SETUP_POISSON_SUBDIAG(IC, IX, IY, IZ, IX+1, IY  , IZ  , IP, -1)
+               IF (VALID_SUBDIAG(IX, IY, IZ, -2)) CALL SCARC_SETUP_POISSON_SUBDIAG(IC, IX, IY, IZ, IX  , IY+1, IZ  , IP, -2)
+               IF (VALID_SUBDIAG(IX, IY, IZ, -3)) CALL SCARC_SETUP_POISSON_SUBDIAG(IC, IX, IY, IZ, IX  , IY  , IZ+1, IP, -3)
    
             ENDDO
          ENDDO
@@ -5680,7 +5581,7 @@ END FUNCTION VALID_SUBDIAG
 ! In case of an equidistant grid, we get the usual 5-point (2d) and 7-point (3d) stencil
 ! If two meshes with different step sizes meet, we get a weighted stencil along internal wall cells
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_POISSONC_MAINDIAG (IC, IX, IY, IZ, IP)
+SUBROUTINE SCARC_SETUP_POISSON_MAINDIAG (IC, IX, IY, IZ, IP)
 USE SCARC_POINTERS, ONLY: L, G, A
 INTEGER, INTENT(IN) :: IC, IX, IY, IZ
 INTEGER, INTENT(INOUT) :: IP
@@ -5697,13 +5598,13 @@ A%COL(IP) = IC
 A%STENCIL(0) = A%VAL(IP)
 
 IP = IP + 1
-END SUBROUTINE SCARC_SETUP_POISSONC_MAINDIAG
+END SUBROUTINE SCARC_SETUP_POISSON_MAINDIAG
 
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Set subdigonal entries for Poisson matrix in compact storage technique on specified face
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_POISSONC_SUBDIAG (IC, IX1, IY1, IZ1, IX2, IY2, IZ2, IP, IOR0)
+SUBROUTINE SCARC_SETUP_POISSON_SUBDIAG (IC, IX1, IY1, IZ1, IX2, IY2, IZ2, IP, IOR0)
 USE SCARC_POINTERS, ONLY: L, F, G, A
 INTEGER, INTENT(IN) :: IC, IX1, IY1, IZ1, IX2, IY2, IZ2, IOR0
 INTEGER, INTENT(INOUT) :: IP
@@ -5757,7 +5658,7 @@ ELSE IF (L%FACE(IOR0)%N_NEIGHBORS /= 0) THEN
 
 ENDIF
 
-END SUBROUTINE SCARC_SETUP_POISSONC_SUBDIAG
+END SUBROUTINE SCARC_SETUP_POISSON_SUBDIAG
 
 
 ! ------------------------------------------------------------------------------------------------
@@ -5890,6 +5791,7 @@ ELSE IF (L%FACE(IOR0)%N_NEIGHBORS == 123456) THEN       ! CAUTION: TO FIX AGAIN,
 ENDIF
 
 END SUBROUTINE SCARC_SETUP_POISSONB_SUBDIAG
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Get maximum stencil size in specified matrix 
@@ -6131,7 +6033,7 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
  
    CASE (NSCARC_MATRIX_COMPACT)
 
-      A => G%POISSONC
+      A => G%POISSON
 
       ! Setup condensing if there are no Dirichlet BC's 
 
@@ -6268,7 +6170,7 @@ USE SCARC_POINTERS, ONLY: L, G, A, ACO
 INTEGER, INTENT(IN) :: NM
 INTEGER :: ICO = 0, NC, NOM, IP, IC, JC, ICE, ICN, ICOL, IOR0, IW, I, J, K
 
-A => G%POISSONC
+A => G%POISSON
 LAST_CELL_IN_LAST_MESH_IF: IF (NM == NMESHES) THEN
 
    NC = G%NC_LOCAL(NMESHES)
@@ -6544,7 +6446,7 @@ IF (UPPER_MESH_INDEX == NMESHES) THEN
    SELECT CASE (SCARC_MATRIX_LEVEL(NL))
 
       CASE (NSCARC_MATRIX_COMPACT)
-         A => G%POISSONC
+         A => G%POISSON
          DO ICO = 2, A%N_CONDENSED
             ACO => A%CONDENSED(ICO)
             JC = ACO%COL(1)
@@ -6627,6 +6529,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 ENDDO
 
 END SUBROUTINE SCARC_SETUP_SYSTEM_CONDENSED
+
 
 ! --------------------------------------------------------------------------------------------------------
 !> \brief Extract overlapping matrix parts after data exchange with neighbors and add them to main matrix
@@ -6765,7 +6668,7 @@ END SUBROUTINE SCARC_EXTRACT_MATRIX_DIAGONAL
 !> \brief Extract overlapping zone information (including second layers)
 ! -------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_EXTRACT_ZONE_OVERLAPS(NL)
-USE SCARC_POINTERS, ONLY : GC, GF, LF, OLF, OGF, F
+USE SCARC_POINTERS, ONLY : GC, GF, OLF, OGF, F
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, INBR, IOR0, NOM, IZ, ICG, ICE, ICE2, IFOUND, IZL_CURRENT
 INTEGER :: IZL1, IZL2, IZG1, IZG2, IFACE
@@ -6782,10 +6685,13 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    IZL_CURRENT = GF%N_ZONES + 1
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '======================== ZONE_OVERLAPS: LEVEL ',NL, SIZE(GC%LOCAL_TO_GLOBAL)
+#endif
    DO IFACE = 1, 6                                        
 
       IOR0 = FACE_ORIENTATION(IFACE)
-      F => LF%FACE(IOR0)
+      F => SCARC(NM)%LEVEL(NLEVEL_MIN)%FACE(IOR0)
 
       DO INBR = 1, F%N_NEIGHBORS
 
@@ -6797,7 +6703,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
             ICE  = OGF%ICG_TO_ICE(ICG, 1)
 
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,6I6)') 'ZONE_OVERLAPS: NM, INBR, NOM, IOR0, ICG, ICE:', NM, INBR, NOM, IOR0, ICG, ICE
 #endif
 
@@ -6815,8 +6721,8 @@ WRITE(MSG%LU_DEBUG,'(A,6I6)') 'ZONE_OVERLAPS: NM, INBR, NOM, IOR0, ICG, ICE:', N
             GC%LOCAL_TO_GLOBAL(IZL1) = IZG1
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,8I6)') 'A: NM, ICG, IFOUND, N_ZONES IZL1, ICE,  LOCAL(ICE),  GLOBAL(ICE) :', &
-                              NM, ICG, IFOUND, GF%N_ZONES, IZL1, ICE, GF%ZONES_LOCAL(ICE), GF%ZONES_GLOBAL(ICE)
+WRITE(MSG%LU_DEBUG,'(A,9I6)') 'A: NM, ICG, IFOUND, N_ZONES IZL1, ICE,  LOCAL(ICE),  GLOBAL(ICE) :', &
+          NM, ICG, IFOUND, GF%N_ZONES, IZL1, ICE, GF%ZONES_LOCAL(ICE), GF%ZONES_GLOBAL(ICE), GC%LOCAL_TO_GLOBAL(IZL1)
 #endif
  
             IF (NL /= NLEVEL_MIN) CYCLE
@@ -6835,8 +6741,8 @@ WRITE(MSG%LU_DEBUG,'(A,8I6)') 'A: NM, ICG, IFOUND, N_ZONES IZL1, ICE,  LOCAL(ICE
             GC%LOCAL_TO_GLOBAL(IZL2) = IZG2
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,8I6)') 'B: NM, ICG, IFOUND, N_ZONES IZL2, ICE2, LOCAL(ICE2), GLOBAL(ICE2):', &
-                              NM, ICG, IFOUND, GF%N_ZONES, IZL2, ICE2, GF%ZONES_LOCAL(ICE2), GF%ZONES_GLOBAL(ICE2)
+WRITE(MSG%LU_DEBUG,'(A,9I6)') 'B: NM, ICG, IFOUND, N_ZONES IZL2, ICE2, LOCAL(ICE2), GLOBAL(ICE2):', &
+          NM, ICG, IFOUND, GF%N_ZONES, IZL2, ICE2, GF%ZONES_LOCAL(ICE2), GF%ZONES_GLOBAL(ICE2), GC%LOCAL_TO_GLOBAL(IZL2)
 #endif
 
          ENDDO
@@ -6848,11 +6754,14 @@ WRITE(MSG%LU_DEBUG,'(A,8I6)') 'B: NM, ICG, IFOUND, N_ZONES IZL2, ICE2, LOCAL(ICE
 WRITE(MSG%LU_DEBUG,*) '===================== EXTRACT_ZONE_OVERLAPS: NM=',NM
 CALL SCARC_DEBUG_ZONES(GF, -1, 1, 'AFTER EXTRACT_ZONES')
 CALL SCARC_DEBUG_ZONES(GF, -1, 2, 'AFTER EXTRAXT_ZONES')
+WRITE(MSG%LU_DEBUG,*) 'LOCAL_TO_GLOBAL'
+WRITE(MSG%LU_DEBUG,'(8I6)') GC%LOCAL_TO_GLOBAL
 #endif
 
 ENDDO MESHES_LOOP
 
 END SUBROUTINE SCARC_EXTRACT_ZONE_OVERLAPS
+
 
 ! -------------------------------------------------------------------------------------------
 !> \brief Setup pointers for overlapping zones for a pair of grid levels
@@ -6872,7 +6781,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    DO IFACE = 1, 6                                        
 
       IOR0 = FACE_ORIENTATION(IFACE)
-      F => LF%FACE(IOR0)
+      F => SCARC(NM)%LEVEL(NLEVEL_MIN)%FACE(IOR0)
 
       DO INBR = 1, F%N_NEIGHBORS
 
@@ -7105,10 +7014,10 @@ ENDDO MESHES_LOOP
 
 END SUBROUTINE SCARC_IDENTIFY_LAYER2
 
+
 ! ----------------------------------------------------------------------------------------------------
 !> \brief Setup all needed structures for a specified global ScaRC solver
 ! ----------------------------------------------------------------------------------------------------
-
 SUBROUTINE SCARC_SETUP_METHODS
 INTEGER :: NSTACK
 
@@ -7325,7 +7234,6 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
 
       ENDIF
 
-     
     ! ------------------ Global Multigrid method -------------------------------------
      
     CASE (NSCARC_METHOD_MULTIGRID)
@@ -7469,7 +7377,6 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
 
 #endif
 
- 
    ! ------------------ MKL method -------------------------------------
  
 #ifdef WITH_MKL
@@ -7687,7 +7594,6 @@ SUBROUTINE SCARC_SETUP_KRYLOV(NSOLVER, NSCOPE, NSTAGE, NSTACK, NLMIN, NLMAX)
 USE SCARC_POINTERS, ONLY: SV
 INTEGER, INTENT(IN) :: NSOLVER, NSCOPE, NSTAGE, NSTACK, NLMIN, NLMAX
 
- 
 ! Basic setup of stack information and types for Krylov method
  
 CALL SCARC_SETUP_STACK(NSTACK)
@@ -7701,7 +7607,6 @@ SV%TYPE_LEVEL(1) = NLMIN
 SV%TYPE_LEVEL(2) = NLMAX
 SV%TYPE_MATRIX   = TYPE_MATRIX
 
- 
 ! Preset iteration parameters for Krylov method
  
 SELECT CASE(NSOLVER)
@@ -7777,7 +7682,7 @@ SELECT CASE(NSOLVER)
    CASE (NSCARC_SOLVER_MAIN)
       SV%CNAME = 'SCARC_MAIN_MG'
 
-   ! -------------- Multigrid method is only used as preconditioner for global Krylov-method
+   ! -------------- Multigrid method is only used as preconditioner for global Krylov method
    CASE (NSCARC_SOLVER_PRECON)
       SV%CNAME = 'SCARC_PRECON_MG'
 
@@ -8230,6 +8135,7 @@ ENDDO MESHES_LOOP
 
 END SUBROUTINE SCARC_SETUP_FFT
 
+
 ! ----------------------------------------------------------------------------------------------------
 !> \brief Allocate and initialize vectors for blockwise FFT methods with overlap
 ! New here: Perform own initialization of FFT based on H2CZIS/H3CZIS and use own SAVE and WORK arrays
@@ -8384,14 +8290,14 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       SELECT CASE(TYPE_MATRIX)
          CASE (NSCARC_MATRIX_COMPACT)
-            A => G%POISSONC
-            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, G%NC, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX', CROUTINE)
+            A => G%POISSON
+            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, G%NC, NSCARC_INIT_ZERO, 'G%POISSON%RELAX', CROUTINE)
             DO IC = 1, G%NC
                A%RELAX(IC) = 1.0_EB/A%VAL(A%ROW(IC))
             ENDDO 
          CASE (NSCARC_MATRIX_BANDWISE)
             AB => G%POISSONB
-            CALL SCARC_ALLOCATE_REAL1(AB%RELAXD, 1, AB%N_DIAG,  NSCARC_INIT_ZERO, 'G%POISSONC%RELAXD', CROUTINE)
+            CALL SCARC_ALLOCATE_REAL1(AB%RELAXD, 1, AB%N_DIAG,  NSCARC_INIT_ZERO, 'G%POISSON%RELAXD', CROUTINE)
             DO IC = 1, G%NC
                AB%RELAXD(IC) = 1.0_EB/AB%VAL(IC, AB%POS(0))
             ENDDO 
@@ -8430,8 +8336,8 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
  
          CASE (NSCARC_MATRIX_COMPACT)
 
-            A => G%POISSONC
-            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX', CROUTINE)
+            A => G%POISSON
+            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSON%RELAX', CROUTINE)
 
             DO IC = 1, G%NC
                DO IPTR = A%ROW(IC), A%ROW(IC+1)-1
@@ -8479,14 +8385,13 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
 
       SELECT CASE(TYPE_MATRIX)
-
  
          ! ---------- Matrix in compact storage technique
  
          CASE (NSCARC_MATRIX_COMPACT)
 
-            A => G%POISSONC
-            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX', CROUTINE)
+            A => G%POISSON
+            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSON%RELAX', CROUTINE)
             A%RELAX = A%VAL
 
             DO IC = 1, G%NC
@@ -8546,13 +8451,12 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       SELECT CASE(TYPE_MATRIX)
 
- 
          ! ---------- Matrix in compact storage technique
  
          CASE (NSCARC_MATRIX_COMPACT)
 
-            A => G%POISSONC
-            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX', CROUTINE)
+            A => G%POISSON
+            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSON%RELAX', CROUTINE)
       
             DO IC = 1, G%NC
       
@@ -8632,8 +8536,8 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
  
          CASE (NSCARC_MATRIX_COMPACT)
 
-            A => G%POISSONC
-            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX', CROUTINE)
+            A => G%POISSON
+            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSON%RELAX', CROUTINE)
       
             DO IC = 1, G%NC
       
@@ -8726,8 +8630,8 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
  
          CASE (NSCARC_MATRIX_COMPACT)
 
-            A => G%POISSONC
-            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSONC%RELAX', CROUTINE)
+            A => G%POISSON
+            CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSON%RELAX', CROUTINE)
             A%RELAX = A%VAL
       
             CELL_LOOP: DO IC = 2, G%NC
@@ -8835,7 +8739,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
 
       MKL => L%MKL
-      AS  => G%POISSONC_SYM
+      AS  => G%POISSON_SYM
 
       ! Allocate workspace for parameters and pointers needed in MKL-routine
  
@@ -8956,7 +8860,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
       MKL => L%MKL
-      AS  => G%POISSONC_SYM
+      AS  => G%POISSON_SYM
 
       ! Allocate workspace for parameters nnd pointers eeded in MKL-routine
  
@@ -9191,8 +9095,7 @@ ITE_GLOBAL = ICYC
 
 SELECT_METHOD: SELECT CASE (TYPE_METHOD)
 
- 
-   ! ---------------- Krylov method (CG/BICG) --------------------------------
+   ! ---------------- Krylov method (CG) -------------------------------------
    CASE (NSCARC_METHOD_KRYLOV)
  
       CALL SCARC_METHOD_KRYLOV (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
@@ -9229,7 +9132,6 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
 
 #endif
    
- 
    ! ---------------- MKL method ---------------------------------------------
  
 #ifdef WITH_MKL
@@ -9794,7 +9696,7 @@ ITYPE = STACK(NS-1)%SOLVER%TYPE_RELAX
 WRITE(MSG%LU_DEBUG,*) 'CALLING RELAXATION, NV1, NV2, NS, NP, NL:', NV1, NV2, NS, NP, NL, ITYPE
 #endif
 
-IF (IS_AMG .OR. IS_CG_AMG .AND. (ITYPE == NSCARC_RELAX_FFT .AND. NL /= NLEVEL_MIN)) ITYPE = NSCARC_RELAX_SSOR
+IF ((IS_AMG .OR. IS_CG_AMG) .AND. NL > NLEVEL_MIN .AND. ITYPE == NSCARC_RELAX_FFT) ITYPE = NSCARC_RELAX_SSOR
 
 SELECT CASE (ITYPE)
 
@@ -10794,14 +10696,12 @@ INTEGER :: IL
 
 SELECT_PRECON_TYPE: SELECT CASE (TYPE_TWOLEVEL)
 
- 
    ! ---------- Classical one-level preconditioning
  
    CASE (NSCARC_TWOLEVEL_NONE)
 
       CALL SCARC_VECTOR_COPY (R, V, 1.0_EB, NL)                   !  v := r
       CALL SCARC_RELAXATION (R, V, NS+1, NP, NL)                  !  v := Relax(r)
-
  
    ! ---------- Additive two-level preconditioning
  
@@ -10821,7 +10721,6 @@ SELECT_PRECON_TYPE: SELECT CASE (TYPE_TWOLEVEL)
       CALL SCARC_RELAXATION (R, V, NS+1, NP, NL)                  !  v^l := Relax(r^l)
       CALL SCARC_VECTOR_SUM (Z, V, 1.0_EB, 1.0_EB, NL)            !  v^l := z^l + v^l
 
- 
    ! ---------- Multiplicative two-level preconditioning (coarse first, fine second)
  
    CASE (NSCARC_TWOLEVEL_MUL)
@@ -10845,7 +10744,6 @@ SELECT_PRECON_TYPE: SELECT CASE (TYPE_TWOLEVEL)
       CALL SCARC_RELAXATION (Z, V, NS+1, NP, NL)                  !  v^l := Relax(z^l)
       CALL SCARC_VECTOR_SUM (Y, V, 1.0_EB, 1.0_EB, NL)            !  v^l := y^l - z^l
 
- 
    ! ---------- Multiplicative two-level preconditioning (fine first, coarse second):
    ! coarse level is one level away from finest one (one coarsening step)
  
@@ -10861,7 +10759,6 @@ SELECT_PRECON_TYPE: SELECT CASE (TYPE_TWOLEVEL)
       CALL SCARC_METHOD_COARSE(NS+2, NS, NLEVEL_MAX)              !  x^{l+1} := A^{l+1}^{-1}(b^{l+1})
       CALL SCARC_PROLONGATION (X, Z, NL+1, NL)                    !  v^l := Prolongation(x^{l+1})
       CALL SCARC_VECTOR_SUM (Z, V, 1.0_EB, 1.0_EB, NL)            !  z^l := r^l - z^l
-
  
    ! ---------- Only coarse grid preconditioner
  
@@ -11058,7 +10955,7 @@ ENDDO MULTIGRID_LOOP
 CALL SCARC_CONVERGENCE_RATE(NSTATE, NS, NL)
 
 #ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_LEVEL (X, 'MG-METHOD: FINAL X', NL)
+CALL SCARC_DEBUG_LEVEL (X, 'MG method: FINAL X', NL)
 #endif
 
 SELECT CASE (TYPE_SOLVER)
@@ -11088,7 +10985,6 @@ INTEGER :: NM, IL, ICYCLE
 
 SELECT CASE (NTYPE)
 
- 
    ! Initialize cycle counts at beginning of multigrid method
  
    CASE (NSCARC_CYCLING_SETUP)
@@ -11171,7 +11067,6 @@ INTEGER, INTENT(IN) :: NTYPE, NSTACK, NPARENT, NLEVEL
 INTEGER :: NSTATE=0, NS, NP, NL
 REAL(EB) :: TNOW
 LOGICAL :: BMATVEC, BL2NORM, BVERBOSE
-
  
 ! ---------- Initialization
  
@@ -11182,7 +11077,6 @@ NP = NPARENT
 NL = NLEVEL
 
 CALL SCARC_SETUP_SOLVER(NS, NP)
-
  
 ! Calculate initial defect on l2-norm on level NL (only if BMATVEC and Bl2NORM are set to .TRUE.)
 ! Because initial vector in MG is set to zero, this defect corresponds to F
@@ -11262,7 +11156,6 @@ SUBROUTINE SCARC_SETUP_SOLVER(NS, NP)
 USE SCARC_ITERATION_ENVIRONMENT
 USE SCARC_POINTERS, ONLY: SV, SVP
 INTEGER, INTENT(IN) :: NS, NP                          ! references to current stack and parent
-
  
 ! If not first solver in stack, store last iteration parameters of parent solver NP
  
@@ -11273,7 +11166,6 @@ IF (NP > 0) THEN
    SVP%RESIN = RESIN
    SVP%CAPPA = CAPPA
 ENDIF
-
  
 ! Set new environment for solver on stack position NS
  
@@ -11340,7 +11232,6 @@ INTEGER, INTENT(IN)  :: NS, NP                            ! references to curren
 
 SV  => STACK(NS)%SOLVER
 
- 
 ! Store convergence information of preceding solver for FDS dump routine
  
 IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) THEN
@@ -11355,7 +11246,6 @@ SV%RES   = RES
 SV%ITE   = ITE
 SV%CAPPA = CAPPA
 
- 
 ! If not first solver in stack, reset environment of parent (calling) routine
  
 IF (NP > 0) THEN
@@ -11431,7 +11321,6 @@ SV  => STACK(NS)%SOLVER
 
 SELECT_SOLVER_TYPE: SELECT CASE (SV%TYPE_SOLVER)
 
- 
    ! ---------- If used as main solver use values from pressure-routine as initialization
  
    CASE (NSCARC_SOLVER_MAIN)
@@ -11652,7 +11541,7 @@ SELECT_SOLVER_TYPE: SELECT CASE (SV%TYPE_SOLVER)
       ENDIF
    
  
-   ! ---------- If MG is used as Krylov-preconditioner, vector G of main Krylov is the RHS for MG
+   ! ---------- If MG is used as Krylov preconditioner, vector G of main Krylov is the RHS for MG
  
    CASE (NSCARC_SOLVER_PRECON)
    
@@ -12203,7 +12092,7 @@ IF (IS_GMG) THEN
       ENDDO
    ENDIF
    
-! ---------- Use prolongation matrix based on smoothed aggregation method
+! ---------- Use Prolongation matrix based on smoothed aggregation method
 ELSE
 
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -12320,7 +12209,6 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       HP => M%HS
    ENDIF
 
- 
    ! Compute ghost cell values
  
    !$OMP PARALLEL DO SHARED(HP, M, L, G) PRIVATE(IW, IXG, IYG, IZG, IXW, IYW, IZW, IOR0, GWC) SCHEDULE(STATIC)
@@ -12661,7 +12549,7 @@ SEND_UNPACK_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             CALL SCARC_UNPACK_PRESSURE (NM, NOM)
 
          CASE (NSCARC_EXCHANGE_LAYER2_NUMS)
-            CALL SCARC_UNPACK_LAYER2_NUMS (NM, NOM, NL)
+            CALL SCARC_UNPACK_LAYER2_NUMS (NM, NOM)
 
          CASE (NSCARC_EXCHANGE_LAYER2_VALS)
             CALL SCARC_UNPACK_LAYER2_VALS (NM, NOM)
@@ -12907,6 +12795,7 @@ DO IOR0 = -3, 3
 ENDDO
 END SUBROUTINE SCARC_PACK_CELL_NUMBERS
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Unpack numbers of cells which are overlapped by neighbor
 ! ------------------------------------------------------------------------------------------------
@@ -13091,8 +12980,8 @@ DO IOR0 = -3, 3
    ENDDO
 ENDDO
 
-
 END SUBROUTINE SCARC_PACK_AUXILIARY
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Unpack overlapping auxiliary vector 
@@ -13157,7 +13046,6 @@ DO IOR0 = -3, 3
 
    ENDDO
 ENDDO
-
 
 END SUBROUTINE SCARC_PACK_NULLSPACE
 
@@ -13558,9 +13446,9 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
       OS%SEND_BUFFER_INT0(2) = OG%POISSONB%N_DIAG
       OS%SEND_BUFFER_INT0(3) = OG%POISSONB%N_STENCIL
    CASE (NSCARC_MATRIX_COMPACT)
-      OS%SEND_BUFFER_INT0(1) = OG%POISSONC%N_VAL
-      OS%SEND_BUFFER_INT0(2) = OG%POISSONC%N_ROW
-      OS%SEND_BUFFER_INT0(3) = OG%POISSONC%N_STENCIL
+      OS%SEND_BUFFER_INT0(1) = OG%POISSON%N_VAL
+      OS%SEND_BUFFER_INT0(2) = OG%POISSON%N_ROW
+      OS%SEND_BUFFER_INT0(3) = OG%POISSON%N_STENCIL
 END SELECT
 
 END SUBROUTINE SCARC_PACK_MATRIX_SIZES
@@ -13580,9 +13468,9 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
       OG%POISSONB%N_DIAG    = RECV_BUFFER_INT(2)
       OG%POISSONB%N_STENCIL = RECV_BUFFER_INT(3)
    CASE (NSCARC_MATRIX_COMPACT)
-      OG%POISSONC%N_VAL     = RECV_BUFFER_INT(1)
-      OG%POISSONC%N_ROW     = RECV_BUFFER_INT(2)
-      OG%POISSONC%N_STENCIL = RECV_BUFFER_INT(3)
+      OG%POISSON%N_VAL     = RECV_BUFFER_INT(1)
+      OG%POISSON%N_ROW     = RECV_BUFFER_INT(2)
+      OG%POISSON%N_STENCIL = RECV_BUFFER_INT(3)
 END SELECT
 
 END SUBROUTINE SCARC_UNPACK_MATRIX_SIZES
@@ -13836,12 +13724,13 @@ ENDDO
 
 END SUBROUTINE SCARC_PACK_LAYER2_NUMS
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Unpack zones numbers along interfaces
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_UNPACK_LAYER2_NUMS(NM, NOM, NL)
-USE SCARC_POINTERS, ONLY: OL, OG, G, RECV_BUFFER_INT
-INTEGER, INTENT(IN) :: NM, NOM, NL
+SUBROUTINE SCARC_UNPACK_LAYER2_NUMS(NM, NOM)
+USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_INT
+INTEGER, INTENT(IN) :: NM, NOM
 INTEGER :: ICG, IOR0
 
 CROUTINE = 'SCARC_UNPACK_LAYER2_NUMS'
@@ -13859,6 +13748,7 @@ WRITE(MSG%LU_DEBUG,*) 'UNPACK_LAYER2_NUMS: ICG, LAYER2_NUMS:', ICG, RECV_BUFFER_
    ENDDO
 ENDDO
 END SUBROUTINE SCARC_UNPACK_LAYER2_NUMS
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Pack zones numbers along interfaces
@@ -13990,6 +13880,7 @@ DO ICG = ICG1, ICG2
 ENDDO
 END FUNCTION SCARC_FORBIDDEN_ZONE
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Check if difference of two values is less than a given tolerance
 ! ------------------------------------------------------------------------------------------------
@@ -14059,7 +13950,6 @@ VC(S%NC) = S%RHS_END
 END SUBROUTINE SCARC_RESTORE_LAST_CELL
 
 
-
 ! ================================================================================================
 ! ================================================================================================
 !  Bundle of different pointer routines returning pointers to specified structures
@@ -14076,6 +13966,7 @@ M => MESHES(NM)
 S => SCARC(NM)
 CURRENT_MESH = NM
 END SUBROUTINE SCARC_POINT_TO_MESH
+
 
 ! -----------------------------------------------------------------------------
 !> \brief Point to specified combination of mesh and grid level
@@ -14127,6 +14018,7 @@ CURRENT_BUFFER_REAL   = NSCARC_INIT_UNDEF
 
 END SUBROUTINE SCARC_POINT_TO_NONE
 
+
 ! ----------------------------------------------------------------------------------------------------
 !> \brief Point to specified combination of a mesh level and discretization type
 ! ----------------------------------------------------------------------------------------------------
@@ -14153,6 +14045,7 @@ CURRENT_MESH = NM
 CURRENT_LEVEL = NL
 END SUBROUTINE SCARC_POINT_TO_GRID
 
+
 ! ----------------------------------------------------------------------------------------------------
 !> \brief Point to specified pairing of mesh levels and discretization types
 ! ----------------------------------------------------------------------------------------------------
@@ -14178,11 +14071,14 @@ SELECT CASE(TYPE_GRID)
       GF%NW = LF%N_WALL_CELLS_EXT + LF%N_WALL_CELLS_INT
       GC%NW = LC%N_WALL_CELLS_EXT + LC%N_WALL_CELLS_INT
 END SELECT
+WC => GC%WALL
+WF => GF%WALL
 
 CURRENT_MESH = NM
 CURRENT_LEVEL = NL1
 CURRENT_LEVELP = NL2
 END SUBROUTINE SCARC_POINT_TO_MULTIGRID
+
 
 ! ---------------------------------------------------------------------------------------------------
 !> \brief Point to specified combination of a neighboring mesh level and discretization type
@@ -14248,14 +14144,14 @@ INTEGER, INTENT(IN) :: NTYPE
 
 SELECT CASE(NTYPE)
    CASE (NSCARC_MATRIX_POISSON_PROL)
-      SCARC_POINT_TO_CMATRIX => G%AP
+      SCARC_POINT_TO_CMATRIX => G%POISSON_PROL
    CASE (NSCARC_MATRIX_CONNECTION)
       SCARC_POINT_TO_CMATRIX => G%CONNECTION
    CASE (NSCARC_MATRIX_POISSON)
-      SCARC_POINT_TO_CMATRIX => G%POISSONC
+      SCARC_POINT_TO_CMATRIX => G%POISSON
 #ifdef WITH_MKL
    CASE (NSCARC_MATRIX_POISSON_SYM)
-      SCARC_POINT_TO_CMATRIX => G%POISSONC_SYM
+      SCARC_POINT_TO_CMATRIX => G%POISSON_SYM
 #endif
    CASE (NSCARC_MATRIX_PROLONGATION)
       SCARC_POINT_TO_CMATRIX => G%PROLONGATION
@@ -14298,14 +14194,14 @@ INTEGER, INTENT(IN) :: NTYPE
 
 SELECT CASE(NTYPE)
    CASE (NSCARC_MATRIX_POISSON_PROL)
-      SCARC_POINT_TO_OTHER_CMATRIX => OG%AP
+      SCARC_POINT_TO_OTHER_CMATRIX => OG%POISSON_PROL
    CASE (NSCARC_MATRIX_CONNECTION)
       SCARC_POINT_TO_OTHER_CMATRIX => OG%CONNECTION
    CASE (NSCARC_MATRIX_POISSON)
-      SCARC_POINT_TO_OTHER_CMATRIX => OG%POISSONC
+      SCARC_POINT_TO_OTHER_CMATRIX => OG%POISSON
 #ifdef WITH_MKL
    CASE (NSCARC_MATRIX_POISSON_SYM)
-      SCARC_POINT_TO_OTHER_CMATRIX => OG%POISSONC_SYM
+      SCARC_POINT_TO_OTHER_CMATRIX => OG%POISSON_SYM
 #endif
    CASE (NSCARC_MATRIX_PROLONGATION)
       SCARC_POINT_TO_OTHER_CMATRIX => OG%PROLONGATION
@@ -14406,6 +14302,7 @@ IF (OM%NIC_R == 0 .AND. OM%NIC_S == 0) ARE_NEIGHBORS = .FALSE.
 
 END FUNCTION ARE_NEIGHBORS
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Point to specified vector on a given grid level
 ! ------------------------------------------------------------------------------------------------
@@ -14499,8 +14396,6 @@ SELECT CASE (NV)
 END SELECT
 CURRENT_HVECTOR = NV
 END FUNCTION POINT_TO_HVECTOR
-
-
 
 
 ! ================================================================================================
@@ -14610,8 +14505,6 @@ ENDDO
 END SUBROUTINE SCARC_SCALING_VARIABLE
 
 
-
-
 ! ====================================================================================================
 ! ====================================================================================================
 ! Bundle of routines for the Smoothed Algebraic Multigrid Method
@@ -14628,7 +14521,7 @@ END SUBROUTINE SCARC_SCALING_VARIABLE
 ! Compute QR-decomposition of nullspace vector in order to determine tentative prolongator 
 ! Set nullspace for next level and perform Jacobi relaxation to get the final prolongator
 ! If the maximum allowed level is not yet reached, set dimensions for next coarser level, 
-! define its nullspace and perform relaxation to define the respective prolongation matrix
+! define its nullspace and perform relaxation to define the respective Prolongation matrix
 ! Define Poisson matrix on coarser level by Galerkin approach: A_coarse = R * A_fine * P
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_ALGEBRAIC_MULTIGRID
@@ -14661,11 +14554,11 @@ WRITE(MSG%LU_DEBUG,*) '========================================================'
    CALL SCARC_SETUP_AGGREGATION_ZONES(NL)           
    CALL SCARC_RELAX_NULLSPACE(NL)                   
 
-   ! Setup final aggregation zones matrix Z and prolongation matrix P based on QR-decomposition
+   ! Setup final aggregation Zones matrix Z and Prolongation matrix P based on QR-decomposition
    CALL SCARC_SETUP_ZONE_OPERATOR(NL)               
    CALL SCARC_SETUP_PROLONGATION(NL)                
 
-   ! Setup nullspace on coarser level and setup corresponding restriction matrix R
+   ! Setup nullspace on coarser level and setup corresponding Restriction matrix R
    CALL SCARC_SETUP_NULLSPACE_COARSE(NL)            
    CALL SCARC_SETUP_RESTRICTION(NL)                 
 
@@ -14734,7 +14627,6 @@ INTEGER :: NM, IC
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
    DO IC = 1, G%NCE
-WRITE(MSG%LU_DEBUG,*) 'INVERT: G%DIAG(',IC,')=', G%DIAG(IC)
       G%DIAG(IC) = 1.0_EB/G%DIAG(IC)
    ENDDO
 ENDDO MESHES_LOOP
@@ -14768,9 +14660,6 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    A => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
    C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
 
-#ifdef WITH_SCARC_VERBOSE
-   CALL SCARC_VERBOSE_CMATRIX(A, 'A','POISSON')
-#endif
 #ifdef WITH_SCARC_DEBUG
    CALL SCARC_DEBUG_CMATRIX(A, 'A','POISSON')
    WRITE(MSG%LU_DEBUG,*) 'CONNECTION: DIAG:', SIZE(G%DIAG)
@@ -14827,9 +14716,11 @@ WRITE(*,*) 'NM=',MYID+1,' NL=',NL,': THETA=',THETA
             C%VAL(IZONE) = VAL
             IZONE = IZONE + 1
          ELSE
+#ifdef WITH_SCARC_DEBUG
  WRITE(MSG%LU_VERBOSE,'(I6,A,4I6,6E12.4)') MYID+1,': CONNECTION: NO NEIGHBORS ', &
                                    IC, ICOL, JC, IZONE, &
                                    THETA, EPS, G%DIAG(IC), G%DIAG(JC), EPS*ABS(G%DIAG(JC)), VAL**2
+#endif
          ENDIF
 
       ENDDO
@@ -14851,11 +14742,8 @@ WRITE(*,*) 'NM=',MYID+1,' NL=',NL,': THETA=',THETA
       ENDDO
    ENDDO
    
-#ifdef WITH_SCARC_VERBOSE
-   CALL SCARC_VERBOSE_CMATRIX(C, 'CONNECTION', 'STRENGTH OF CNNECTION - PASS 2')
-#endif
 #ifdef WITH_SCARC_DEBUG
-   CALL SCARC_VERBOSE_CMATRIX(C, 'C','CONNECTION')
+   CALL SCARC_DEBUG_CMATRIX(C, 'C','CONNECTION')
 #endif
    
 ENDDO MESHES_LOOP
@@ -14887,7 +14775,7 @@ MESHES_ALLOCATION_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
 
-   CALL SCARC_ALLOCATE_INT1 (G%CPOINTS,      1, G%NCE,  NSCARC_INIT_ZERO, 'G%CPOINTS', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1 (G%ZONE_CENTRES,      1, G%NCE,  NSCARC_INIT_ZERO, 'G%ZONE_CENTRES', CROUTINE)
    CALL SCARC_ALLOCATE_INT1 (G%ZONES_GLOBAL, 1, G%NCE2, NSCARC_INIT_ZERO, 'G%ZONES_GLOBAL', CROUTINE)
    CALL SCARC_ALLOCATE_INT1 (G%ZONES_LOCAL,  1, G%NCE2, NSCARC_INIT_ZERO, 'G%ZONES_LOCAL', CROUTINE)
 
@@ -14905,7 +14793,7 @@ COARSENING_TYPE_SELECT: SELECT CASE (TYPE_COARSENING)
   
          CALL SCARC_POINT_TO_GRID(NM, NL)
          C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
-         CALL SCARC_SETUP_AGGREGATED_ZONES(G, C, NL)
+         CALL SCARC_SETUP_AGGREGATED_ZONES(G, C)
          MESH_INT (NM) = G%N_ZONES
       ENDDO
       
@@ -14926,7 +14814,7 @@ COARSENING_TYPE_SELECT: SELECT CASE (TYPE_COARSENING)
             IF (SUB%ORDER(NM, ICYCLE) == NSCARC_ORDER_ACTIVE) THEN
                CALL SCARC_POINT_TO_GRID(NM, NL)
                C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
-               CALL SCARC_SETUP_AGGREGATED_ZONES(G, C, NL)
+               CALL SCARC_SETUP_AGGREGATED_ZONES(G, C)
                MESH_INT (NM) = G%N_ZONES
             ENDIF
    
@@ -14943,7 +14831,7 @@ COARSENING_TYPE_SELECT: SELECT CASE (TYPE_COARSENING)
             IF (SUB%ORDER (NM, ICYCLE) /= NSCARC_ORDER_ACTIVE) THEN
                CALL SCARC_POINT_TO_GRID(NM, NL)
                C => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_CONNECTION)
-               CALL SCARC_SETUP_AGGREGATED_ZONES(G, C, NL)
+               CALL SCARC_SETUP_AGGREGATED_ZONES(G, C)
                MESH_INT (NM) = G%N_ZONES
             ENDIF
    
@@ -15003,6 +14891,7 @@ WRITE(MSG%LU_DEBUG,*) 'GC%NC_GLOBAL ', GC%NC_GLOBAL
 WRITE(MSG%LU_DEBUG,*) 'GC%NC ', GC%NC
 WRITE(MSG%LU_DEBUG,*) 'GC%NCE', GC%NCE
 WRITE(MSG%LU_DEBUG,*) 'GC%NC_OFFSET(1:NMESHES) ', GC%NC_OFFSET(1:NMESHES)
+WRITE(MSG%LU_DEBUG,*) 'GF%NCE', GF%NCE
 #endif
    ENDIF                   
 
@@ -15011,14 +14900,14 @@ WRITE(MSG%LU_DEBUG,*) 'GC%NC_OFFSET(1:NMESHES) ', GC%NC_OFFSET(1:NMESHES)
    CALL SCARC_ALLOCATE_INT1(GC%LOCAL_TO_GLOBAL, 1, GF%NCE, NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL', CROUTINE)
    DO IZL = 1, GC%NC
       GC%LOCAL_TO_GLOBAL(IZL) = IZL + GC%NC_OFFSET(NM)
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':GC%LOCAL_TO_GLOBAL(',IZL,')=',GC%LOCAL_TO_GLOBAL(IZL)
 #endif
    ENDDO
 
    DO IC = 1, GF%NC
       GF%ZONES_GLOBAL(IC) = GF%ZONES_LOCAL(IC) + GC%NC_OFFSET(NM)
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':GF%ZONES_GLOBAL(',IC,')=',GF%ZONES_GLOBAL(IC)
 #endif
    ENDDO
@@ -15044,7 +14933,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    GC%NCE2 = GF%N_ZONES
 
    CALL SCARC_REDUCE_INT1(GC%LOCAL_TO_GLOBAL, GC%NCE2, 'GC%LOCAL_TO_GLOBAL', CROUTINE)
-   CALL SCARC_REDUCE_INT1(GC%CPOINTS, GC%NCE2, 'GC%CPOINTS', CROUTINE)
+   CALL SCARC_REDUCE_INT1(GC%ZONE_CENTRES, GC%NCE2, 'GC%ZONE_CENTRES', CROUTINE)
 
    GF%N_COARSE = GF%N_ZONES
 
@@ -15077,13 +14966,13 @@ ENDDO
 
 END SUBROUTINE SCARC_SETUP_AGGREGATION_ZONES
 
+
 ! ------------------------------------------------------------------------------------------------------
 !> \brief  Standard aggregation prodecure based on strength of connection matrix
 ! ------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_AGGREGATED_ZONES(G, C, NL)
+SUBROUTINE SCARC_SETUP_AGGREGATED_ZONES(G, C)
 TYPE (SCARC_CMATRIX_TYPE), POINTER, INTENT(IN) :: C
 TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
-INTEGER, INTENT(IN) :: NL
 INTEGER :: IC, ICOL, JC, IZONE, JZONE
 LOGICAL :: HAS_NEIGHBORS, HAS_AGGREGATED_NEIGHBORS
 
@@ -15094,7 +14983,7 @@ CROUTINE = 'SCARC_SETUP_AGGREGATED_ZONES'
 ! 
 G%ZONES_LOCAL = 0
 G%ZONES_GLOBAL = 0
-G%CPOINTS = 0
+G%ZONE_CENTRES = 0
 
 PASS1_LOOP: DO IC = 1, G%NC
 
@@ -15116,12 +15005,10 @@ PASS1_LOOP: DO IC = 1, G%NC
 
    IF (.NOT. HAS_NEIGHBORS) THEN                               ! do not aggregate isolated cells
       G%ZONES_LOCAL(IC) = NSCARC_HUGE_INT
-WRITE(MSG%LU_VERBOSE,*) MYID+1,' NOT HAS_NEIGHBORS :', IC
    ELSE IF (.NOT. HAS_AGGREGATED_NEIGHBORS) THEN               ! build aggregate of this cell and its neighbors
-WRITE(MSG%LU_VERBOSE,*) MYID+1,' NOT HAS_AGGREGATED_NEIGHBORS :', IC
       G%N_ZONES = G%N_ZONES + 1
       G%ZONES_LOCAL(IC) = G%N_ZONES
-      G%CPOINTS(G%N_ZONES) = IC                
+      G%ZONE_CENTRES(G%N_ZONES) = IC                
       DO ICOL = C%ROW(IC), C%ROW(IC+1)-1 
          JC = C%COL(ICOL)
          IF (JC /= 0 .AND. JC <= G%NC) G%ZONES_LOCAL(C%COL(ICOL)) = G%N_ZONES
@@ -15145,7 +15032,7 @@ PASS2_LOOP: DO IC = 1, G%NC
       JC = C%COL(ICOL)
       JZONE = G%ZONES_LOCAL(JC)
       IF (JZONE > 0) THEN
-         IF (JC >= G%NC .OR. G%CPOINTS(JZONE)>0) THEN
+         IF (JC >= G%NC .OR. G%ZONE_CENTRES(JZONE)>0) THEN
             G%ZONES_LOCAL(IC) = -JZONE
             EXIT
          ENDIF
@@ -15162,8 +15049,6 @@ CALL SCARC_DEBUG_ZONES(G, -1, 1, 'AFTER ACTIVE PASS2')
 ! 
 ! Pass 3 of Aggregation:  Process remaining nodes which have not been aggregated yet
 ! 
-WRITE(MSG%LU_VERBOSE,*) MYID+1,': BEFORE PASS3: G%N_ZONES=',G%N_ZONES
-
 PASS3_LOOP: DO IC = 1, G%NC
 
    IZONE = G%ZONES_LOCAL(IC)
@@ -15174,16 +15059,14 @@ PASS3_LOOP: DO IC = 1, G%NC
          G%ZONES_LOCAL(IC) = IZONE 
       ELSE IF (IZONE == NSCARC_HUGE_INT ) THEN
          G%ZONES_LOCAL(IC) = -1
-WRITE(MSG%LU_VERBOSE,*) MYID+1,': PASS3: A: IC, ZONES_LOCAL(IC): ',IC, G%ZONES_LOCAL(IC)
       ELSE
          G%ZONES_LOCAL(IC) = -IZONE 
-WRITE(MSG%LU_VERBOSE,*) MYID+1,': PASS3: B: IC, ZONES_LOCAL(IC): ',IC, G%ZONES_LOCAL(IC)
       ENDIF
       CYCLE PASS3_LOOP
    ENDIF
 
    G%ZONES_LOCAL(IC) = G%N_ZONES
-   G%CPOINTS(G%N_ZONES) = IC
+   G%ZONE_CENTRES(G%N_ZONES) = IC
 
    DO ICOL = C%ROW(IC), C%ROW(IC+1)-1
       JC = C%COL(ICOL)
@@ -15197,9 +15080,8 @@ IF (MINVAL(G%ZONES_LOCAL) < 0) THEN
    WRITE(*,*) MYID+1, ':CAUTION: CELL ',MINLOC(G%ZONES_LOCAL),' HAS NOT BEEN AGGREGATED DURING AGGREGATION'
 #ifdef WITH_SCARC_VERBOSE
    WRITE(*,*) MYID+1, ':CAUTION: CELL ',MINLOC(G%ZONES_LOCAL),' HAS NOT BEEN AGGREGATED DURING AGGREGATION'
-   WRITE(MSG%LU_VERBOSE,*) 'G%ZONES_LOCAL:', NL
+   WRITE(MSG%LU_VERBOSE,*) 'G%ZONES_LOCAL:'
    WRITE(MSG%LU_VERBOSE,'(8I12)') G%ZONES_LOCAL(1:G%NCE)
-   CALL SCARC_VERBOSE_CMATRIX(C, 'CONNECTION','FAILURE AGGREGATION')
 #endif
    CALL MPI_FINALIZE(IERROR)
    STOP
@@ -15325,7 +15207,7 @@ WRITE(MSG%LU_DEBUG,*) 'NZD=',NZD
 
 GF%ZONES_LOCAL = 0
 GF%ZONES_GLOBAL = 0
-GF%CPOINTS = 0
+GF%ZONE_CENTRES = 0
 DIMENSION_IF: IF (TWO_D) THEN
 
 #ifdef WITH_SCARC_DEBUG
@@ -15346,7 +15228,7 @@ WRITE(MSG%LU_DEBUG,*) 'TWO_D'
                IF (BFIRST) THEN
                   GF%N_ZONES = GF%N_ZONES + 1
                   BFIRST = .FALSE. 
-                  GF%CPOINTS(GF%N_ZONES) = IC
+                  GF%ZONE_CENTRES(GF%N_ZONES) = IC
                   GC%CELL_NUMBER(IX, 1, IZ) = GF%N_ZONES
                   LC%IS_SOLID(IX, 1, IZ) = .FALSE.
                ENDIF
@@ -15382,7 +15264,7 @@ WRITE(MSG%LU_DEBUG,*) 'THREE_D'
                      IF (BFIRST) THEN
                         GF%N_ZONES = GF%N_ZONES + 1
                         BFIRST = .FALSE. 
-                        GF%CPOINTS(GF%N_ZONES) = IC
+                        GF%ZONE_CENTRES(GF%N_ZONES) = IC
                         GC%CELL_NUMBER(IX, IY, IZ) = GF%N_ZONES
                         LC%IS_SOLID(IX, IY, IZ) = .FALSE.
                      ENDIF
@@ -15427,7 +15309,6 @@ CALL SCARC_DEBUG_ZONES(GF, -1, 1, 'AFTER ACTIVE PASS3')
 END SUBROUTINE SCARC_SETUP_CUBIC_ZONES
 
 
-
 ! ------------------------------------------------------------------------------------------------------
 !> \brief Remove workspace on specified grid level which will no longer be needed after matrix setup
 ! ------------------------------------------------------------------------------------------------------
@@ -15454,7 +15335,7 @@ CROUTINE = 'SCARC_CLEAN_WORKSPACE_AMG'
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_POINT_TO_GRID (NM, NL)
-   CALL SCARC_DEALLOCATE_INT1 (G%CPOINTS, 'G%CPOINTS', CROUTINE)
+   CALL SCARC_DEALLOCATE_INT1 (G%ZONE_CENTRES, 'G%ZONE_CENTRES', CROUTINE)
    CALL SCARC_DEALLOCATE_REAL1 (G%AUX1, 'G%AUX1', CROUTINE)
    CALL SCARC_DEALLOCATE_REAL1 (G%AUX2, 'G%AUX2', CROUTINE)
    CALL SCARC_DEALLOCATE_REAL1 (G%RR, 'G%RR', CROUTINE)
@@ -15630,8 +15511,9 @@ IF (NMESHES > 1) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_NULLSPACE, NSCARC_NONE, NL
 
 END SUBROUTINE SCARC_RELAX_NULLSPACE
 
+
 ! ------------------------------------------------------------------------------------------------------
-!> \brief Setup basic structure of prolongation matrix
+!> \brief Setup basic structure of Prolongation matrix
 ! This concerns the setting of the number of rows and the column pointers
 ! The values are still missing and are set in a later step
 ! ------------------------------------------------------------------------------------------------------
@@ -15746,8 +15628,8 @@ INTEGER :: NM, NOM, IC, JC, ICC, ICC0, ICOL, ICCOL, JCCOL, IP0, IP, JCC, IQ, INB
 CROUTINE = 'SCARC_SETUP_PROLONGATION'
 
 ! Allocate several workspaces (with conservative bounds which will be reduced later)
-!    - prolongation matrix on internal part of mesh 
-!    - for every neighbor small prolongation matrix for corresponding overlap
+!    - Prolongation matrix on internal part of mesh 
+!    - for every neighbor small Prolongation matrix for corresponding overlap
 !    - vectors Q and R for QR-decomposition of aggregation zones operator
 ! Initialize QR-decomposition
  
@@ -15957,7 +15839,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 #endif
 ENDDO
 
-! Determine global columns array for prolongation matrix
+! Determine global columns array for Prolongation matrix
  
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -15979,29 +15861,14 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 ENDDO
 
  
-! Exchange resulting columns and values of prolongation matrix and extract exchanged data from 
+! Exchange resulting columns and values of Prolongation matrix and extract exchanged data from 
 ! overlapping parts with single neighbors and attach them to main matrix
  
 IF (NMESHES > 1) THEN
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) ' MATRIX_COLS'
-#endif
    CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLS,  NSCARC_MATRIX_PROLONGATION, NL)
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) ' MATRIX_COLSG'
-#endif
    CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLSG, NSCARC_MATRIX_PROLONGATION, NL)
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) ' MATRIX_VALS'
-#endif
    CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALS,  NSCARC_MATRIX_PROLONGATION, NL)
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) ' MATRIX_OVERLAPS'
-#endif
    CALL SCARC_EXTRACT_MATRIX_OVERLAPS(NSCARC_MATRIX_PROLONGATION, 0, NL)
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) ' READY'
-#endif
 ENDIF
    
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -16009,22 +15876,11 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1) 
    PF => SCARC_POINT_TO_CMATRIX(GF, NSCARC_MATRIX_PROLONGATION)
 
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) '----------- NM =',NM,': NL=',NL
-   CALL SCARC_DEBUG_CMATRIX(PF, 'G%PROLONGATION','SETUP_PROLONGATION: AFTER EXTRACT OVERLAPS')
-#endif
-
    NLEN = MAX(GC%NCE2, 4 * (GC%NCE2 - GC%NC + 2) + 50)           ! TODO check length
-WRITE(MSG%LU_VERBOSE,*) ' ALLOCATING CELLS_LOCAL FOR LEVEL ', NL,' in length ', NLEN, GC%NC, GC%NCE, GC%NCE2
    CALL SCARC_ALLOCATE_INT1 (GC%CELLS_LOCAL,  1, NLEN, NSCARC_INIT_ZERO, 'GC%CELLS_LOCAL',  CROUTINE)
    CALL SCARC_ALLOCATE_INT1 (GC%CELLS_GLOBAL, 1, NLEN, NSCARC_INIT_ZERO, 'GC%CELLS_GLOBAL', CROUTINE)
 
    CALL SCARC_GET_CELL_DEPENDENCIES_GALERKIN(GC, GF, PF, NLEN)
-
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) '----------- NM =',NM,': NL=',NL
-   CALL SCARC_DEBUG_CMATRIX(PF, 'G%PROLONGATION','SETUP_PROLONGATION: AFTER CELL DEPENDENCIES ')
-#endif
 
    CALL SCARC_REDUCE_INT1(GC%CELLS_LOCAL, GC%NC_GALERKIN, 'GC%CELLS_LOCAL', CROUTINE)
    CALL SCARC_REDUCE_INT1(GC%CELLS_GLOBAL, GC%NC_GALERKIN, 'GC%CELLS_GLOBAL', CROUTINE)
@@ -16059,7 +15915,7 @@ INTEGER :: IZL, IZG, IP, ICOL, IC, IFOUND1, IFOUND2, IFOUND3
 IP = 1
 PROLONGATION_CELLS_LOOP: DO IC = 1, GF%NCE
 
-   ! Check if zone number used in given row of prolongation matrix is already accounted for
+   ! Check if zone number used in given row of Prolongation matrix is already accounted for
    DO ICOL = PF%ROW(IC), PF%ROW(IC+1) - 1
 
       IZL = PF%COL(ICOL)
@@ -16069,8 +15925,6 @@ PROLONGATION_CELLS_LOOP: DO IC = 1, GF%NCE
       IFOUND2 = FINDLOC (GF%ZONES_GLOBAL(1:GF%NC), VALUE = IZG, DIM = 1)
       IFOUND3 = FINDLOC (GC%LOCAL_TO_GLOBAL(1:GC%NCE2), VALUE = IZG, DIM = 1)
       IF (IFOUND1 <= 0 .AND. IFOUND2 <= 0) THEN  
-WRITE(MSG%LU_VERBOSE,*) 'IC, ICOL, IZG, IP, SIZE_LOC, SIZE_GLOB:', IC, ICOL, IZG, IP, &
-                        SIZE(GC%CELLS_LOCAL), SIZE(GC%CELLS_GLOBAL) 
          GC%CELLS_LOCAL(IP)  = IFOUND3
          GC%CELLS_GLOBAL(IP) = IZG
          IP = IP + 1
@@ -16155,8 +16009,8 @@ END FUNCTION SCARC_MATCH_MATRIX_COLUMN
 
 
 ! ------------------------------------------------------------------------------------------------------
-!> \brief Setup restriction matrix: Build transpose of prolongation matrix
-! Compute the restriction matrix, R, which interpolates from the fine-grid to the coarse-grid.
+!> \brief Setup Restriction matrix: Build transpose of Prolongation matrix
+! Compute the Restriction matrix, R, which interpolates from the fine-grid to the coarse-grid.
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_RESTRICTION(NL)
 USE SCARC_POINTERS, ONLY: GC, GF, RF, PF
@@ -16166,7 +16020,7 @@ LOGICAL :: IS_INCLUDED
 
 CROUTINE = 'SCARC_SETUP_RESTRICTION'
 
-! Allocate restriction matrix R on internal mesh part
+! Allocate Restriction matrix R on internal mesh part
 MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)            ! Sets pointers GF and GC to fine and coarse level
@@ -16179,8 +16033,8 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_ALLOCATE_CMATRIX(RF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%RESTRICTION', CROUTINE)
 
-   IRROW = 1                             ! counter of current row of restriction matrix - corresponds to coarse cells
-   IRCOL = 1                             ! counter of current column of restriction matrix
+   IRROW = 1                             ! counter of current row of Restriction matrix - corresponds to coarse cells
+   IRCOL = 1                             ! counter of current column of Restriction matrix
    RF%ROW(IRROW) = IRCOL
 
    LOCAL_COARSE_CELLS_LOOP: DO ICCL = 1, GC%NCE
@@ -16250,7 +16104,7 @@ END FUNCTION SCARC_FIND_MATCHING_COLUMN
 
 
 ! ------------------------------------------------------------------------------------------------------
-!> \brief Find matching components to multiply row of Poisson matrix with column of prolongation matrix
+!> \brief Find matching components to multiply row of Poisson matrix with column of Prolongation matrix
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_MULTIPLY_POISSON_PROL(A, P, PP, ICC, IP, IC)
 TYPE (SCARC_CMATRIX_TYPE), POINTER, INTENT(IN) :: A, P, PP
@@ -16277,8 +16131,9 @@ ENDIF
 
 END SUBROUTINE SCARC_MULTIPLY_POISSON_PROL
 
+
 ! ------------------------------------------------------------------------------------------------------
-!> \brief Perform matrix multiplication between fine Poisson matrix and prolongation matrix 
+!> \brief Perform matrix multiplication between fine Poisson matrix and Prolongation matrix 
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_POISSON_PROL(NL)
 USE SCARC_POINTERS, ONLY: GC, GF, AF, PF, PPF, OA, OPP
@@ -16298,7 +16153,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    !PPF%N_ROW = AF%N_ROW
    PPF%N_ROW = GF%NCE+1
-   PPF%N_VAL = PPF%N_ROW*25            ! TODO: only temporarily
+   PPF%N_VAL = PPF%N_ROW*30            ! TODO: only temporarily
    CALL SCARC_ALLOCATE_CMATRIX(PPF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%PPF', CROUTINE)
 
    DO INBR = 1, SCARC(NM)%N_NEIGHBORS
@@ -16311,7 +16166,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       OPP%N_VAL = AF%N_VAL              ! TODO : CHECK : MUCH TOO BIG !!!
       OPP%N_ROW = GF%NCE + 1            
-      CALL SCARC_ALLOCATE_CMATRIX(OPP, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OGF%AP', CROUTINE)
+      CALL SCARC_ALLOCATE_CMATRIX(OPP, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OGF%PP', CROUTINE)
 
    ENDDO
 
@@ -16356,7 +16211,7 @@ TSUM = TSUM + CPU(MYID)%AMG
 
 ENDDO
 
-! Exchange overlapping parts of prolongation matrix and extract exchanged data
+! Exchange overlapping parts of Prolongation matrix and extract exchanged data
 IF (NMESHES > 1) THEN
    CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLS,  NSCARC_MATRIX_POISSON_PROL, NL)
    CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLSG, NSCARC_MATRIX_POISSON_PROL, NL)
@@ -16364,7 +16219,7 @@ IF (NMESHES > 1) THEN
    CALL SCARC_EXTRACT_MATRIX_OVERLAPS(NSCARC_MATRIX_POISSON_PROL, 0, NL)
 ENDIF
 
-! Reduce workspace for prolongation matrix to really needed size
+! Reduce workspace for Prolongation matrix to really needed size
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)
@@ -16389,37 +16244,7 @@ END SUBROUTINE SCARC_SETUP_POISSON_PROL
 
 
 ! ------------------------------------------------------------------------------------------------------
-!> \brief Map global to local cell number 
-! ------------------------------------------------------------------------------------------------------
-INTEGER FUNCTION SCARC_MAP_GLOBAL_TO_LOCAL(G, ICG, NM, NL)
-USE SCARC_POINTERS, ONLY: SUB
-TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G
-INTEGER, INTENT(IN) :: ICG, NM, NL
-INTEGER :: NOM, IOR0
-
-SUB => SUBDIVISION
-SCARC_MAP_GLOBAL_TO_LOCAL = -1
-
-MESHES_LOOP: DO NOM = 1, NMESHES
-   IF (G%NC_OFFSET(NM) < ICG .AND. ICG <= G%NC_OFFSET(NM) + G%NC_LOCAL(NM)) THEN
-      EXIT MESHES_LOOP
-   ENDIF
-ENDDO MESHES_LOOP
-
-IF (ARE_NEIGHBORS(NM, NOM)) THEN
-   DO IOR0 = -3, 3
-      CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
-      ! TODO: Check, really something to do?
-      !DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-      !   ICE = OG%ICG_TO_ICE(ICG, 1)
-      !ENDDO
-   ENDDO
-ENDIF
-
-END FUNCTION SCARC_MAP_GLOBAL_TO_LOCAL
-
-! ------------------------------------------------------------------------------------------------------
-!> \brief Find matching components to multiply row of restriction matrix with column of Poisson-Prol matrix
+!> \brief Find matching components to multiply row of Restriction matrix with column of Poisson-Prol matrix
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_MULTIPLY_GALERKIN(PPF, RF, AC, ICCL, JCCL, JCCG, IP)
 TYPE (SCARC_CMATRIX_TYPE), POINTER, INTENT(IN) :: PPF, RF, AC
@@ -16443,6 +16268,7 @@ IF (ABS(DSUM) > TOL) THEN
 ENDIF
 
 END SUBROUTINE SCARC_MULTIPLY_GALERKIN
+
 
 ! ------------------------------------------------------------------------------------------------------
 !> \brief Setup Galerkin matrix on coarser grid level (AMG only)
@@ -16474,7 +16300,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    IF (.NOT.ALLOCATED (AC%VAL)) THEN
       AC%N_ROW = GC%NCE+1
       AC%N_VAL = AC%N_ROW**2             ! only temporarily TODO TOO BIG
-      CALL SCARC_ALLOCATE_CMATRIX(AC, NL+1, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GC%POISSONC', CROUTINE)
+      CALL SCARC_ALLOCATE_CMATRIX(AC, NL+1, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GC%POISSON', CROUTINE)
    ENDIF
 
    DO INBR = 1, SCARC(NM)%N_NEIGHBORS
@@ -16486,7 +16312,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       OAC%N_VAL = AC%N_VAL              ! TODO : CHECK : MUCH TOO BIG !!!
       OAC%N_ROW = GC%NCE2 + 1           ! TODO : CHECK : MUCH TOO BIG !!!
-      CALL SCARC_ALLOCATE_CMATRIX(OAC, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OAC%POISSONC', CROUTINE)
+      CALL SCARC_ALLOCATE_CMATRIX(OAC, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OAC%POISSON', CROUTINE)
 
    ENDDO
 
@@ -16551,6 +16377,7 @@ TSUM = TSUM + CPU(MYID)%AMG
 #endif
 
    CALL SCARC_REDUCE_CMATRIX (AC, 'POISSON-COARSE', CROUTINE)
+   CALL SCARC_GET_MATRIX_STENCIL_MAX(AC, GC%NC)
 
 ENDDO
 
@@ -16562,7 +16389,6 @@ RANK_INT = 0
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)
    AC => SCARC_POINT_TO_CMATRIX (GC, NSCARC_MATRIX_POISSON)         
-   CALL SCARC_GET_MATRIX_STENCIL_MAX(AC, GC%NC)
    MESH_INT(NM) = AC%N_STENCIL_MAX
    RANK_INT = MAX(RANK_INT, MESH_INT(NM))
 ENDDO
@@ -16578,18 +16404,13 @@ IF (TYPE_MKL(NL+1) == NSCARC_MKL_LOCAL .OR. TYPE_MKL(NL+1) == NSCARC_MKL_GLOBAL)
 ENDIF
 #endif
 
-IF (NL == 2) THEN
-CALL MPI_FINALIZE(IERROR)
-STOP
-ENDIF
- 
 END SUBROUTINE SCARC_SETUP_GALERKIN
 
 
 ! ------------------------------------------------------------------------------------------------------
 !> \brief Compute entry of Poisson times Prolongation matrix at specified position
 ! This consists of a summation over the entries:    P(:,ICC)*A(IC,:) 
-! Thus, it must be checked, if - for a given entry of A in row IC - the prolongation matrix
+! Thus, it must be checked, if - for a given entry of A in row IC - the Prolongation matrix
 ! has a corresponding non-zero value
 ! ------------------------------------------------------------------------------------------------------
 DOUBLE PRECISION FUNCTION SCARC_VALUE_RAP(IC, ICC)
@@ -16618,22 +16439,28 @@ WRITE(MSG%LU_DEBUG,*) 'VALUE_AP: RETURN DSUM=', DSUM
 
 END FUNCTION SCARC_VALUE_RAP
 
+
 ! ------------------------------------------------------------------------------------------------------
 !> \brief Resort matrix entries such that diagonal entry comes first (compact storage technique only)
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_RESORT_MATRIX_ROWS(NL)
 USE SCARC_POINTERS, ONLY: G, A
 INTEGER, INTENT(IN) :: NL
+INTEGER, ALLOCATABLE, DIMENSION(:) :: COL_AUX, COLG_AUX
+REAL(EB), ALLOCATABLE, DIMENSION(:) :: VAL_AUX
 INTEGER:: NM, NCOL, ICOL, JCOL, KCOL, IC
-INTEGER:: COL_AUX(100) = 0, COLG_AUX(100)
-REAL(EB) :: VAL_AUX(100) = 0.0_EB
 LOGICAL :: COLG_IS_DEFINED = .FALSE.
 
+CROUTINE = 'SCARC_RESORT_MATRIX_ROWS'
+
+! TODO: use correct length of COL
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_POINT_TO_GRID (NM, NL)
    A => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
 
-IF (NL /= NLEVEL_MIN) CALL SCARC_VERBOSE_CMATRIX(A, 'A', 'RESORT')
+   CALL SCARC_ALLOCATE_INT1  (COL_AUX,  1, A%N_STENCIL_MAX, NSCARC_INIT_ZERO, 'COL_AUX',  CROUTINE)
+   CALL SCARC_ALLOCATE_INT1  (COLG_AUX, 1, A%N_STENCIL_MAX, NSCARC_INIT_ZERO, 'COLG_AUX', CROUTINE)
+   CALL SCARC_ALLOCATE_REAL1 (VAL_AUX,  1, A%N_STENCIL_MAX, NSCARC_INIT_ZERO, 'VAL_AUX',  CROUTINE)
 
    IF (ALLOCATED(A%COLG)) COLG_IS_DEFINED = .TRUE.
 
@@ -16658,7 +16485,6 @@ IF (NL /= NLEVEL_MIN) CALL SCARC_VERBOSE_CMATRIX(A, 'A', 'RESORT')
 
       ! Store corresponding index and value in first matrix element of that row
       ICOL = A%ROW(IC)
-WRITE(MSG%LU_VERBOSE,*) 'IC, ICOL=',IC, ICOL, SIZE(A%COL), SIZE(A%COLG)
       A%COL(ICOL)  = COL_AUX(JCOL)
       A%COLG(ICOL) = COLG_AUX(JCOL)
       A%VAL(ICOL)  = VAL_AUX(JCOL)
@@ -16696,9 +16522,14 @@ WRITE(MSG%LU_VERBOSE,*) 'IC, ICOL=',IC, ICOL, SIZE(A%COL), SIZE(A%COLG)
    CALL SCARC_DEBUG_CMATRIX (A, 'A','AFTER RESORT_MATRIX_ROWS')
 #endif
 
+   CALL SCARC_DEALLOCATE_INT1  (COL_AUX,  'COL_AUX',  CROUTINE)
+   CALL SCARC_DEALLOCATE_INT1  (COLG_AUX, 'COLG_AUX', CROUTINE)
+   CALL SCARC_DEALLOCATE_REAL1 (VAL_AUX,  'VAL_AUX',  CROUTINE)
+
 ENDDO
 
 END SUBROUTINE SCARC_RESORT_MATRIX_ROWS
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Set exact solution according to specified function
@@ -16722,6 +16553,7 @@ REAL (EB), INTENT(IN) :: X, Z
 !RHS = 625.0_EB/8.0_EB * (X * (0.8_EB - X) + Z * (0.8_EB - Z))
 RHS = 2.0_EB * (X * (0.8_EB - X) + Z * (0.8_EB - Z))
 END FUNCTION RHS
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Preset right hand side in such a way that exact solution is known
@@ -16827,6 +16659,8 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 ENDDO
 
 END SUBROUTINE SCARC_PRESET_RHS
+
+
 ! ================================================================================================
 ! ================================================================================================
 ! Bundle of routines for the memory administration within ScaRC
@@ -16915,6 +16749,7 @@ ENDIF
 #endif
 END SUBROUTINE SCARC_UPDATE_MEMORY
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Update memory statistics w.r.t to occupied workspace and number of allocated arrays
 ! ------------------------------------------------------------------------------------------------
@@ -16945,6 +16780,7 @@ END SELECT
 
 END SUBROUTINE SCARC_UPDATE_MEMORY_COUNTERS
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Get full text information about the data type of the currently processed array
 ! ------------------------------------------------------------------------------------------------
@@ -16969,6 +16805,7 @@ SELECT CASE (NDATA)
 END SELECT
 
 END FUNCTION SCARC_GET_DATA_TYPE
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Get full text information about the dimension of the currently processed array
@@ -17020,6 +16857,7 @@ IF (NDATA == NSCARC_DATA_CMATRIX .OR. NDATA == NSCARC_DATA_BMATRIX) SCARC_GET_IN
 IF (NSTATE == NSCARC_MEMORY_REMOVE) SCARC_GET_INIT_TYPE = ' '
 
 END FUNCTION SCARC_GET_INIT_TYPE
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Allocate and initialize integer array of dimension 1
@@ -17350,6 +17188,7 @@ CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_REAL_EB, NSCARC_MEMORY_CREATE, 3, NINIT, NL
 
 END SUBROUTINE SCARC_ALLOCATE_REAL3
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Deallocate one-dimensional integer vector 
 ! ------------------------------------------------------------------------------------------------
@@ -17359,6 +17198,7 @@ CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 DEALLOCATE(WORKSPACE) 
 CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_INTEGER, NSCARC_MEMORY_REMOVE, 1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 END SUBROUTINE SCARC_DEALLOCATE_INT1
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Deallocate two-dimensional integer vector 
@@ -17370,6 +17210,7 @@ DEALLOCATE(WORKSPACE)
 CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_INTEGER, NSCARC_MEMORY_REMOVE, 2, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 END SUBROUTINE SCARC_DEALLOCATE_INT2
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Deallocate three-dimensional integer vector 
 ! ------------------------------------------------------------------------------------------------
@@ -17379,6 +17220,7 @@ CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 DEALLOCATE(WORKSPACE) 
 CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_INTEGER, NSCARC_MEMORY_REMOVE, 3, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 END SUBROUTINE SCARC_DEALLOCATE_INT3
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Deallocate one-dimensional logical vector 
@@ -17390,6 +17232,7 @@ DEALLOCATE(WORKSPACE)
 CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_LOGICAL, NSCARC_MEMORY_REMOVE, 1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 END SUBROUTINE SCARC_DEALLOCATE_LOG1
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Deallocate two-dimensional logical vector 
 ! ------------------------------------------------------------------------------------------------
@@ -17399,6 +17242,7 @@ CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 DEALLOCATE(WORKSPACE) 
 CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_LOGICAL, NSCARC_MEMORY_REMOVE, 2, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 END SUBROUTINE SCARC_DEALLOCATE_LOG2
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Deallocate three-dimensional logical vector 
@@ -17410,6 +17254,7 @@ DEALLOCATE(WORKSPACE)
 CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_LOGICAL, NSCARC_MEMORY_REMOVE, 3, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 END SUBROUTINE SCARC_DEALLOCATE_LOG3
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Deallocate one-dimensional double precision vector 
 ! ------------------------------------------------------------------------------------------------
@@ -17419,6 +17264,7 @@ CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 DEALLOCATE(WORKSPACE) 
 CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_REAL_EB, NSCARC_MEMORY_REMOVE, 1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 END SUBROUTINE SCARC_DEALLOCATE_REAL1
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Deallocate two-dimensional double precision vector 
@@ -17430,6 +17276,7 @@ DEALLOCATE(WORKSPACE)
 CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_REAL_EB, NSCARC_MEMORY_REMOVE, 2, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 END SUBROUTINE SCARC_DEALLOCATE_REAL2
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Deallocate three-dimensional double precision vector 
 ! ------------------------------------------------------------------------------------------------
@@ -17439,6 +17286,7 @@ CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 DEALLOCATE(WORKSPACE) 
 CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_REAL_EB, NSCARC_MEMORY_REMOVE, 3, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 END SUBROUTINE SCARC_DEALLOCATE_REAL3
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Deallocate one-dimensional single precision vector 
@@ -17450,6 +17298,7 @@ DEALLOCATE(WORKSPACE)
 CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_REAL_EB, NSCARC_MEMORY_REMOVE, 1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 END SUBROUTINE SCARC_DEALLOCATE_REAL1_FB
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Deallocate one-dimensional single precision vector 
 ! ------------------------------------------------------------------------------------------------
@@ -17460,6 +17309,7 @@ DEALLOCATE(WORKSPACE)
 CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_REAL_EB, NSCARC_MEMORY_REMOVE, 2, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 END SUBROUTINE SCARC_DEALLOCATE_REAL2_FB
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Deallocate one-dimensional single precision vector 
 ! ------------------------------------------------------------------------------------------------
@@ -17469,6 +17319,7 @@ CHARACTER(*), INTENT(IN) :: CNAME, CSCOPE
 DEALLOCATE(WORKSPACE) 
 CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_REAL_EB, NSCARC_MEMORY_REMOVE, 3, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 END SUBROUTINE SCARC_DEALLOCATE_REAL3_FB
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Resize one-dimensional integer vector to requested bounds
@@ -17506,6 +17357,7 @@ ELSE
 ENDIF
 
 END SUBROUTINE SCARC_RESIZE_INT1
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Resize two-dimensional integer vector to requested bounds
@@ -17581,6 +17433,7 @@ ELSE IF (NSIZE < SIZE(WORKSPACE)) THEN
 ENDIF
 
 END SUBROUTINE SCARC_REDUCE_INT1
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Reduce size of integer array with dimension 2
@@ -17851,6 +17704,7 @@ A%TARGET = 0
 
 END SUBROUTINE SCARC_DEALLOCATE_BMATRIX
 
+
 ! ----------------------------------------------------------------------------------------------------
 !> \brief Dump residual information
 ! ----------------------------------------------------------------------------------------------------
@@ -17921,6 +17775,7 @@ REAL(EB) :: INCX, INCY, INCZ, XCOR0, YCOR0, ZCOR0
 INTEGER :: IC, IZL, IZG, ICPT, MAGG, II, JJ, KK, IFACE, IOR0, NOM, ICG, INBR, ICW, ICE, ITYPE = 0
 CHARACTER(60) :: CAGG
 
+WRITE(*,*) 'Printing out blender information '
 IF (NL /= NLEVEL_MIN .AND. TYPE_COARSENING /= NSCARC_COARSENING_CUBIC) RETURN
 
 CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
@@ -17932,6 +17787,7 @@ ELSE
 ENDIF
 
 WRITE (CAGG, '(3A,i3.3,A,i3.3,A)') 'python/',TRIM(CHID),'/m',NM,'_l',NL,'.val'
+WRITE(*,*) ' ... into ', CAGG
 MAGG=GET_FILE_NUMBER()
 OPEN(MAGG,FILE=CAGG)
 
@@ -17955,7 +17811,7 @@ IF (NL == NLEVEL_MIN) THEN
                IC=G%CELL_NUMBER(II,JJ,KK)
                IZL = ABS(G%ZONES_LOCAL(IC))
                IZG = ABS(G%ZONES_GLOBAL(IC))
-               ICPT = G%CPOINTS(IZL)      
+               ICPT = G%ZONE_CENTRES(IZL)      
     
                XCOR0 = XCOR(II-1)
                ZCOR0 = ZCOR(KK-1)
@@ -18214,7 +18070,7 @@ REAL (EB) :: SCAL
 
 G   => SCARC(NM)%LEVEL(NL)%UNSTRUCTURED
 MGM => SCARC(NM)%LEVEL(NL)%MGM
-A   => G%POISSONC
+A   => G%POISSON
 
  
 ! Temporarily extract full matrix from compact storage technique - just for proof of concept
@@ -18380,7 +18236,7 @@ INTEGER :: I, J, K, IC, JC, ICOL, IP
 
 G   => SCARC(NM)%LEVEL(NL)%UNSTRUCTURED
 MGM => SCARC(NM)%LEVEL(NL)%MGM
-AC  => G%POISSONC
+AC  => G%POISSON
 
  
 ! Temporarily extract full matrix from compact storage technique - just for proof of concept
@@ -18424,7 +18280,7 @@ INTEGER :: I
 
 G   => SCARC(NM)%LEVEL(NL)%UNSTRUCTURED
 MGM => SCARC(NM)%LEVEL(NL)%MGM
-AC  => G%POISSONC
+AC  => G%POISSON
 
 N = G%NC
 
@@ -18490,7 +18346,7 @@ REAL (EB), DIMENSION(:),   POINTER :: B, X, Y
 
 G   => SCARC(NM)%LEVEL(NL)%UNSTRUCTURED
 MGM => SCARC(NM)%LEVEL(NL)%MGM
-AC  => G%POISSONC
+AC  => G%POISSON
 
 IA => MGM%IA
 IL => MGM%IL
@@ -18618,7 +18474,6 @@ END SUBROUTINE SCARC_VERBOSE_CMATRIX
 #endif
 
 
-
 #ifdef WITH_SCARC_DEBUG
 ! ================================================================================================
 ! Start  WITH_SCARC_DEBUG  - Part
@@ -18676,6 +18531,7 @@ ENDDO
 FN_DUMP = CNAME
 END SUBROUTINE SCARC_DUMP_QUANTITY
 
+
 ! ------------------------------------------------------------------------------------------------------
 !> \brief Debugging version only: Print out debug information for integer vector
 ! ------------------------------------------------------------------------------------------------------
@@ -18701,6 +18557,7 @@ WRITE(MSG%LU_DEBUG,*) '============ DEBUGGING REAL1 ARRAY ', CNAME, ' AT ', TRIM
 WRITE(MSG%LU_DEBUG,'(8E12.4)') (ARR(IC), IC=I1, I2)
 END SUBROUTINE SCARC_DEBUG_REAL1
 
+
 ! ------------------------------------------------------------------------------------------------------
 !> \brief Debugging version only: Print out debug information for aggregation zones
 ! ------------------------------------------------------------------------------------------------------
@@ -18721,9 +18578,10 @@ ELSE
    WRITE(MSG%LU_DEBUG,*) '-------------- ZONES_GLOBAL: overlap:'
    WRITE(MSG%LU_DEBUG,'(8I12)') G%ZONES_GLOBAL(G%NC+1: G%NCE2)
 ENDIF
-WRITE(MSG%LU_DEBUG,*) '-------------- CPOINTS'
-WRITE(MSG%LU_DEBUG,'(8I12)') G%CPOINTS
+WRITE(MSG%LU_DEBUG,*) '-------------- ZONE_CENTRES'
+WRITE(MSG%LU_DEBUG,'(8I12)') G%ZONE_CENTRES
 END SUBROUTINE SCARC_DEBUG_ZONES
+
 
 ! ------------------------------------------------------------------------------------------------------
 !> \brief Debugging version only: Print out debug information for compactly stored matrix
@@ -19296,6 +19154,7 @@ CLOSE(MMATRIX)
 
 END SUBROUTINE SCARC_MATLAB_MATRIX
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Debugging version only: Print out matrix information on specified level for PYTHON
 ! ------------------------------------------------------------------------------------------------
@@ -19414,12 +19273,10 @@ CLOSE(MAGG)
 1002 FORMAT(I8)
 END SUBROUTINE SCARC_PYTHON_ZONES
 
-
 ! ================================================================================================
 ! End  WITH_SCARC_DEBUG  - Part
 ! ================================================================================================
 #endif
-
 
 
 #ifdef WITH_SCARC_POSTPROCESSING
@@ -19467,7 +19324,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       CASE(NSCARC_DUMP_A)          
 
-         A => G%POISSONC
+         A => G%POISSON
          MSG%LU_POST1 = GET_FILE_NUMBER() 
          MSG%LU_POST2 = GET_FILE_NUMBER() 
          MSG%LU_POST3 = GET_FILE_NUMBER() 
@@ -20192,6 +20049,7 @@ SUBROUTINE SCARC_PRESSURE_DIFFERENCE(NL)
 USE SCARC_POINTERS, ONLY: L, PR
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, IX, IY, IZ
+
 
 ! -----------------------------------------------------------------------------------------------
 !> \brief POSTPROCESSING version only: Store new pressure vector for comparison in next time step
