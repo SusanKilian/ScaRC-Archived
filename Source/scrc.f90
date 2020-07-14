@@ -5228,8 +5228,10 @@ ENDDO MESHES_POISSON_LOOP
 
 ! Setup mappings for the global numbering of vectors and the Poisson matrix (compact storage technique only)
  
-CALL SCARC_SETUP_GLOBAL_NUMBERING_CELLS(NLEVEL_MIN)
-CALL SCARC_SETUP_GLOBAL_NUMBERING_MATRIX(NSCARC_MATRIX_POISSON, NLEVEL_MIN)
+IF (TYPE_MATRIX == NSCARC_MATRIX_COMPACT) THEN
+   CALL SCARC_SETUP_GLOBAL_NUMBERING_CELLS(NLEVEL_MIN)
+   CALL SCARC_SETUP_GLOBAL_NUMBERING_MATRIX(NSCARC_MATRIX_POISSON, NLEVEL_MIN)
+ENDIF
  
 ! If there is more than one mesh, exchange matrix values in overlapping parts
 ! This must be done for all multilevel methods at least at the finest grid level
@@ -11683,7 +11685,7 @@ INTEGER :: NM
 INTEGER :: IXF, IYF, IZF, ICF(8)=0, ICFB(-2:2,-2:2)=0
 INTEGER :: IXC, IYC, IZC, ICC, IC, ICOL
 
-IF (IS_GMG) THEN
+IF (IS_GMG .OR. IS_CG_GMG) THEN
  
 ! ---------- Twolevel-CG or Geometric multigrid (as main solver or preconditioner) 
  
@@ -11931,7 +11933,7 @@ INTEGER :: NM, I
 INTEGER :: IXF, IYF, IZF, ICF(8)=0, ICFB(-1:1,-1:1)=0
 INTEGER :: IXC, IYC, IZC, ICC, IC, ICOL
 
-IF (IS_GMG) THEN
+IF (IS_GMG .OR. IS_CG_GMG) THEN
  
 ! ------------------ Twolevel CG or Geometric Multigrid 
  
