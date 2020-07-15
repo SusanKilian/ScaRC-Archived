@@ -25,12 +25,12 @@ IMPLICIT NONE
 INTEGER, PARAMETER :: NSCARC_ACCURACY_ABSOLUTE       =  1         !< Type of requested accuracy of method: absolute
 INTEGER, PARAMETER :: NSCARC_ACCURACY_RELATIVE       =  2         !< Type of requested accuracy of method: relative
                    
-INTEGER, PARAMETER :: NSCARC_BUFFER_FULL             =  1         !< Length of exchange buffer: full length
-INTEGER, PARAMETER :: NSCARC_BUFFER_LAYER1           =  2         !< Length of exchange buffer: one ghost cell layer
-INTEGER, PARAMETER :: NSCARC_BUFFER_LAYER2           =  3         !< Length of exchange buffer: two ghost cell layers
-INTEGER, PARAMETER :: NSCARC_BUFFER_LAYER4           =  4         !< Length of exchange buffer: four ghost cell layers
-INTEGER, PARAMETER :: NSCARC_BUFFER_STENCIL          =  5         !< Length of exchange buffer: stencil size
-INTEGER, PARAMETER :: NSCARC_BUFFER_BASIC            =  6         !< Length of exchange buffer: basic initialization
+INTEGER, PARAMETER :: NSCARC_BUFFER_BASIC            =  1         !< Length of exchange buffer: basic initialization
+INTEGER, PARAMETER :: NSCARC_BUFFER_FULL             =  2         !< Length of exchange buffer: full length
+INTEGER, PARAMETER :: NSCARC_BUFFER_LAYER1           =  3         !< Length of exchange buffer: one ghost cell layer
+INTEGER, PARAMETER :: NSCARC_BUFFER_LAYER2           =  4         !< Length of exchange buffer: two ghost cell layers
+INTEGER, PARAMETER :: NSCARC_BUFFER_LAYER4           =  5         !< Length of exchange buffer: four ghost cell layers
+INTEGER, PARAMETER :: NSCARC_BUFFER_STENCIL          =  6         !< Length of exchange buffer: stencil size
 
 INTEGER, PARAMETER :: NSCARC_COARSE_ITERATIVE        =  1         !< Type of coarse grid solver: iterative solver
 INTEGER, PARAMETER :: NSCARC_COARSE_DIRECT           =  2         !< Type of coarse grid solver: direct solver
@@ -984,22 +984,22 @@ TYPE SCARC_GRID_TYPE
    ! Number of Dirichlet and Neumann boundary cells
    INTEGER :: N_DIRIC   = NSCARC_ZERO_INT                      !< Number of Dirichlet BCs
    INTEGER :: N_NEUMANN = NSCARC_ZERO_INT                      !< Number of Neumann BCs
+   INTEGER :: N_FINE    = NSCARC_ZERO_INT                       !< Number of fine cells (AMG only)
+   INTEGER :: N_COARSE  = NSCARC_ZERO_INT                       !< Number of coarse cells (AMG only)
+   INTEGER :: N_ZONES   = NSCARC_ZERO_INT                       !< Number of zones (AMG only)
 
-   INTEGER :: N_FINE   = NSCARC_ZERO_INT                       !< Number of fine cells (AMG only)
-   INTEGER :: N_COARSE = NSCARC_ZERO_INT                       !< Number of coarse cells (AMG only)
-   INTEGER :: N_ZONES  = NSCARC_ZERO_INT                       !< Number of zones (AMG only)
    INTEGER :: N_STENCIL_MAX  = 25                              !< Max stencil size (AMG only)
 
    ! Pointer variables and arrays for data exchange with neighbors
-   INTEGER :: ICG = 0                                          !< Ghost cell pointer for first layer
-   INTEGER :: ICG2 = 0                                         !< Ghost cell pointer for second layer
-   INTEGER :: ICE = 0                                          !< Ghost cell pointer for extended cells
+   INTEGER :: ICG  = NSCARC_ZERO_INT                           !< Ghost cell pointer for first layer
+   INTEGER :: ICG2 = NSCARC_ZERO_INT                           !< Ghost cell pointer for second layer
+   INTEGER :: ICE  = NSCARC_ZERO_INT                           !< Ghost cell pointer for extended cells
 
-   INTEGER :: NLEN_BUFFER_LAYER1                               !< Length for single layer length exchange on that level
-   INTEGER :: NLEN_BUFFER_LAYER2                               !< Length for double layer length exchange on that level
-   INTEGER :: NLEN_BUFFER_LAYER4                               !< Length for fourfold length exchange on that level
-   INTEGER :: NLEN_BUFFER_STENCIL                              !< Length for stencil layer length exchange on that level
-   INTEGER :: NLEN_BUFFER_FULL                                 !< Length for full length exchange on that level
+   INTEGER :: NLEN_BUFFER_LAYER1  = NSCARC_ZERO_INT            !< Length for single layer length exchange on that level
+   INTEGER :: NLEN_BUFFER_LAYER2  = NSCARC_ZERO_INT            !< Length for double layer length exchange on that level
+   INTEGER :: NLEN_BUFFER_LAYER4  = NSCARC_ZERO_INT            !< Length for fourfold length exchange on that level
+   INTEGER :: NLEN_BUFFER_STENCIL = NSCARC_ZERO_INT            !< Length for stencil layer length exchange on that level
+   INTEGER :: NLEN_BUFFER_FULL    = NSCARC_ZERO_INT            !< Length for full length exchange on that level
 
 END TYPE SCARC_GRID_TYPE
 
@@ -3630,6 +3630,7 @@ MULTI_LEVEL_IF: IF (HAS_LEVELS_GMG) THEN
          CALL SCARC_SETUP_WALL_INDEX (LC, GC, M, NL)
 
          ! Setup order in which ghost cells are processed during data exchanges
+
          WALLCELLS_LOOP: DO IW = 1, LC%N_WALL_CELLS
          
            NOM = GC%WALL(IW)%NOM
@@ -3639,8 +3640,12 @@ MULTI_LEVEL_IF: IF (HAS_LEVELS_GMG) THEN
               OGC%ICG2 = OGC%ICG2 + 1
               IF (OLC%GHOST_FIRSTW(IOR0) == 0) OLC%GHOST_FIRSTW(IOR0) = OGC%ICG2
               IF (OLC%GHOST_FIRSTE(IOR0) == 0) OLC%GHOST_FIRSTE(IOR0) = OGC%ICG2
-              OLC%GHOST_LASTW(IOR0) = OGC%ICG2 + OGC%NCG - 1
-              OLC%GHOST_LASTE(IOR0) = OGC%ICG2 + OGC%NCG - 1
+              OLC%GHOST_LASTW(IOR0) = OGC%ICG2 
+              OLC%GHOST_LASTE(IOR0) = OGC%ICG2 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'NL, IOR0, NOM, FIRSTW, LASTW, FIRSTE, LASTE:', NL, IOR0, NOM, &
+                      OLC%GHOST_FIRSTW(IOR0),OLC%GHOST_LASTW(IOR0),OLC%GHOST_FIRSTE(IOR0),OLC%GHOST_LASTE(IOR0)
+#endif
            ENDIF
          
          ENDDO WALLCELLS_LOOP
@@ -3712,7 +3717,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       ! Define maximum lengths for the single overlapping buffers
 
-      OS%NLEN_MAX_BUFFER_LAYER1  = MAX(OS%NLEN_MAX_BUFFER_LAYER1, OG%NCG+1)
+      OS%NLEN_MAX_BUFFER_LAYER1  = MAX(OS%NLEN_MAX_BUFFER_LAYER1, (OG%NCG+1) * 1)
       OS%NLEN_MAX_BUFFER_LAYER2  = MAX(OS%NLEN_MAX_BUFFER_LAYER2, (OG%NCG+1) * 2)
       OS%NLEN_MAX_BUFFER_LAYER4  = MAX(OS%NLEN_MAX_BUFFER_LAYER2, (OG%NCG+1) * 4)
       OS%NLEN_MAX_BUFFER_STENCIL = MAX(OS%NLEN_MAX_BUFFER_LAYER2, (OG%NCG+1) * NSCARC_MAX_STENCIL)
@@ -3760,6 +3765,23 @@ IF (NMESHES > 1) THEN
 
    IF (HAS_LEVELS_MULTIPLE .AND. .NOT.HAS_LEVELS_AMG) THEN
       DO NL = NLEVEL_MIN+1, NLEVEL_MAX
+
+         DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+            DO INBR = 1, SCARC(NM)%N_NEIGHBORS
+      
+               CALL SCARC_POINT_TO_GRID(NM, NLEVEL_MIN)                          
+               NOM = S%NEIGHBORS(INBR)
+               CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
+   
+               OG%NLEN_BUFFER_LAYER1  = MAX(OG%NLEN_BUFFER_LAYER1,  (OG%NCG+1) * 1)
+               OG%NLEN_BUFFER_LAYER2  = MAX(OG%NLEN_BUFFER_LAYER2,  (OG%NCG+1) * 2)
+               OG%NLEN_BUFFER_LAYER4  = MAX(OG%NLEN_BUFFER_LAYER4,  (OG%NCG+1) * 4)
+               OG%NLEN_BUFFER_STENCIL = MAX(OG%NLEN_BUFFER_STENCIL, (OG%NCG+1) * NSCARC_MAX_STENCIL)
+               OG%NLEN_BUFFER_FULL    = MAX(OG%NLEN_BUFFER_FULL,    (OG%NCG+1) * NSCARC_MAX_STENCIL * 4)
+   
+            ENDDO
+          ENDDO
+
          CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_NUMBERS, NSCARC_NONE, NL)
          CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_CELL_SIZES,   NSCARC_NONE, NL)
       ENDDO
@@ -5247,14 +5269,8 @@ ENDIF
 ! Furthermore also at all higher levels except for the AMG method,
 ! in this case it will be done later in routine SETUP_ALGEBRAIC_MULTIGRID
 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'ZZZZZZZ', NLEVEL_MIN
-#endif
 NMESHES_IF: IF (NMESHES > 1) THEN
 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'AAAAA', NLEVEL_MIN
-#endif
    IF (SCARC_MATRIX_LEVEL(NLEVEL_MIN) == NSCARC_MATRIX_COMPACT) CALL SCARC_SETUP_POISSON_GLOBAL(NLEVEL_MIN)
 
    MULTI_LEVEL_IF: IF (HAS_LEVELS_MULTIPLE .AND. .NOT.HAS_LEVELS_AMG) THEN
@@ -5312,26 +5328,11 @@ USE SCARC_POINTERS, ONLY: A, OA
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, INBR, NOM
 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'A:POISSON_GLOBAL :', NL
-#endif
 CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLS,  NSCARC_MATRIX_POISSON, NL)
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'B:POISSON_GLOBAL :', NL
-#endif
 CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLSG, NSCARC_MATRIX_POISSON, NL)
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'C:POISSON_GLOBAL :', NL
-#endif
 CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALS,  NSCARC_MATRIX_POISSON, NL)
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'D:POISSON_GLOBAL :', NL
-#endif
 
 CALL SCARC_EXTRACT_MATRIX_OVERLAPS(NSCARC_MATRIX_POISSON, 1, NL)
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'E:POISSON_GLOBAL :', NL
-#endif
 
 MESHES_FINE_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -5367,11 +5368,17 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    IF (HAS_LEVELS_AMG) THEN
       CALL SCARC_ALLOCATE_INT1 (G%LOCAL_TO_GLOBAL, 1, G%NCE2, NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL', CROUTINE)    ! two layers
    ELSE
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SETUP_GLOBAL_NUMBERING_CELLS: NM, NL:', NM, NL
+#endif
       CALL SCARC_ALLOCATE_INT1 (G%LOCAL_TO_GLOBAL, 1, G%NCE , NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL', CROUTINE)    ! one layers
    ENDIF
 
    DO IC = 1, G%NC
       G%LOCAL_TO_GLOBAL(IC) = IC + G%NC_OFFSET(NM)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) NL,':A:LOCAL_TO_GLOBAL(',IC,')=', G%LOCAL_TO_GLOBAL(IC)
+#endif
    ENDDO
 
    DO IW = 1, G%NW
@@ -5381,7 +5388,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       ICN = G%ICE_TO_ICN(ICE)
       G%LOCAL_TO_GLOBAL(ICE) = ICN + G%NC_OFFSET(NOM)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) NL,':LOCAL_TO_GLOBAL(',ICE,')=', G%LOCAL_TO_GLOBAL(ICE)
+WRITE(MSG%LU_DEBUG,*) NL,':B:LOCAL_TO_GLOBAL(',ICE,')=', G%LOCAL_TO_GLOBAL(ICE)
 #endif
    ENDDO
 
@@ -12476,6 +12483,7 @@ SEND_PACK_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             CALL SCARC_SEND_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_LAYER1, 'POISSON DIAGS')
 
          CASE (NSCARC_EXCHANGE_MATRIX_COLS)
+WRITE(MSG%LU_DEBUG,*) '===========> PACK_MATRIX_COLS FOR LEVEL ', NL
             CALL SCARC_PACK_MATRIX_COLS(NPARAM)
             CALL SCARC_SEND_MESSAGE_INT (NM, NOM, NL, NSCARC_BUFFER_FULL, 'POISSON COLS')
 
@@ -12574,6 +12582,7 @@ SEND_UNPACK_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             CALL SCARC_UNPACK_MATRIX_DIAGS (NM, NOM)
 
          CASE (NSCARC_EXCHANGE_MATRIX_COLS)
+WRITE(MSG%LU_DEBUG,*) '===========> UNPACK_MATRIX_COLS FOR LEVEL ', NL
             CALL SCARC_UNPACK_MATRIX_COLS (NM, NOM, NPARAM)
 
          CASE (NSCARC_EXCHANGE_MATRIX_COLSG)
@@ -12657,6 +12666,11 @@ CDUMMY = CTEXT
 
 RECV_BUFFER_INT = NSCARC_HUGE_INT
 CALL MPI_IRECV(RECV_BUFFER_INT, NLEN, MPI_INTEGER, SNODE, TAG, MPI_COMM_WORLD, REQ(N_REQ),IERROR)
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'RECV_MESSAGE_INT: RECV_BUFFER_INT, NLEN:', NLEN
+WRITE(MSG%LU_DEBUG,'(8I12)') RECV_BUFFER_INT
+#endif
 
 #ifdef WITH_SCARC_VERBOSE2
 WRITE(MSG%LU_VERBOSE,*) ' ...  done'
@@ -12819,9 +12833,16 @@ SUBROUTINE SCARC_PACK_CELL_NUMBERS
 USE SCARC_POINTERS, ONLY: G, OL, OG
 INTEGER :: IOR0, ICG, IWG, IXW, IYW, IZW
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'PACK_CELL_NUMBERS: '
+#endif
 OS%SEND_BUFFER_INT = NSCARC_HUGE_INT
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'PACK_CELL_NUMBERS: OL%GHOST_FIRSTW(',IOR0,')=', OL%GHOST_FIRSTW
+WRITE(MSG%LU_DEBUG,*) 'PACK_CELL_NUMBERS: OL%GHOST_FIRSTE(',IOR0,')=', OL%GHOST_FIRSTE
+#endif
    DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
       IWG = OG%ICG_TO_IWG(ICG)
       IXW = G%WALL(IWG)%IXW
@@ -13285,6 +13306,9 @@ OAC => SCARC_POINT_TO_OTHER_CMATRIX(OG, NMATRIX)
 LL = 1                                 
 DO IOR0 = -3, 3
    IF (OL%GHOST_LASTE(IOR0) == 0) CYCLE
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'UNPACK_MATRIX_COLS: FIRSTW, LASTW:', OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
+#endif
    ICP = OL%GHOST_FIRSTE(IOR0)
    OAC%ROW(ICP) = LL
    DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
