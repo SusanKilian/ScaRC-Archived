@@ -3542,7 +3542,8 @@ MULTI_LEVEL_IF: IF (HAS_LEVELS_GMG) THEN
 
          LC%N_WALL_CELLS_EXT = SCARC_COUNT_EXTERNAL_WALL_CELLS(LF, LC, GF)
          LC%N_WALL_CELLS_INT = SCARC_COUNT_INTERNAL_WALL_CELLS(LF, LC, GC)
-         LC%N_WALL_CELLS     = LC%N_WALL_CELLS_EXT + LC%N_WALL_CELLS_INT
+
+         LC%N_WALL_CELLS = LC%N_WALL_CELLS_EXT + LC%N_WALL_CELLS_INT
 
          SELECT CASE(TYPE_GRID)
             CASE (NSCARC_GRID_STRUCTURED)
@@ -3554,14 +3555,14 @@ MULTI_LEVEL_IF: IF (HAS_LEVELS_GMG) THEN
          ALLOCATE(GC%WALL(LC%N_WALL_CELLS), STAT=IERROR)
          CALL ChkMemErr('SCARC_SETUP_NEIGHBORS','WALL',IERROR)
 
-         ! First allocate administrative mapping arrays for own mesh
+         ! First allocate administrative mapping arrays for own mesh if there is an overlap
  
          IF (GC%NCE > GC%NC) THEN
             CALL SCARC_ALLOCATE_INT1 (GC%ICE_TO_IWG , GC%NC+1, GC%NCE, NSCARC_INIT_ZERO, 'GC%ICE_TO_IWG', CROUTINE)
             CALL SCARC_ALLOCATE_INT1 (GC%ICE_TO_ICN , GC%NC+1, GC%NCE, NSCARC_INIT_ZERO, 'GC%ICE_TO_ICN', CROUTINE)
          ENDIF
 
-         ! Set basic and wall information for all faces of coarser level
+         ! Setup basic face information for coarser mesh
  
          CALL SCARC_SETUP_FACE_BASICS(LC)
 
@@ -3618,7 +3619,7 @@ MULTI_LEVEL_IF: IF (HAS_LEVELS_GMG) THEN
                ENDDO
             ENDIF
 
-            ! Setup complete face information for coarser mesh
+            ! Setup complete wall information on coarser mesh level
 
             CALL SCARC_SETUP_WALL_LEVEL(LF, LC, GF, GC, IOR0, IWC, IREFINE, NM, NL)
 
