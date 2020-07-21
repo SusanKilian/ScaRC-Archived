@@ -1,0 +1,6 @@
+&PRES SOLVER                     = 'SCARC'
+      SCARC_PRECON               = 'MULTIGRID'
+      SCARC_MULTIGRID_LEVEL      =   3
+      SCARC_MULTIGRID_ITERATIONS =   1
+      SCARC_SMOOTH_ITERATIONS    =   8        /
+
