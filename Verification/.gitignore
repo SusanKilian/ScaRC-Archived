@@ -1,6 +1,10 @@
 dump
 
+*.hgt
 *.out
+*.bnd
+*.sinfo
+*.binfo
 *.csv
 *.sf
 *.debug*
@@ -23,4 +27,6 @@ dump
 *.fed_smv
 *slice.info
 *svn.txt
-
+ss
+tt
+rr

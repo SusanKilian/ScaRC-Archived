@@ -241,6 +241,9 @@ SPECIES_GT_1_IF: IF (N_TOTAL_SCALARS>1) THEN
    ! Ensure RHO_D terms sum to zero over all species.  Gather error into largest mass fraction present.
 
    IF (SIM_MODE==DNS_MODE .OR. SIM_MODE==LES_MODE) THEN
+      ! for VLES and SVLES modes, the diffusivity is the same for all species
+      ! so, as long as ZZP is realizable, the sum of diffusive fluxes will be zero
+      ! and the flux corrections below are not required
 
       !$OMP PARALLEL DO PRIVATE(N) SCHEDULE(STATIC)
       DO K=0,KBAR
@@ -1266,7 +1269,7 @@ PREDICT_NORMALS: IF (PREDICTOR) THEN
 
             IF (SF%SPECIES_BC_INDEX==SPECIFIED_MASS_FLUX .OR. &
                 SF%SPECIES_BC_INDEX==INTERPOLATED_BC     .OR. &
-                WC%NODE_INDEX > 0                        .OR. &
+                WC%ONE_D%NODE_INDEX > 0                  .OR. &
                 ANY(SF%LEAK_PATH>0))                          &
                 CYCLE WALL_LOOP3
 
@@ -1415,7 +1418,7 @@ ELSE PREDICT_NORMALS
          SF => SURFACE(WC%SURF_INDEX)
          IF (SF%SPECIES_BC_INDEX==SPECIFIED_MASS_FLUX .OR. &
              SF%SPECIES_BC_INDEX==INTERPOLATED_BC     .OR. &
-             WC%NODE_INDEX > 0                        .OR. &
+             WC%ONE_D%NODE_INDEX > 0                  .OR. &
              ANY(SF%LEAK_PATH>0)) CYCLE
       ENDIF
       WC%ONE_D%U_NORMAL = WC%ONE_D%U_NORMAL_S
