@@ -8,7 +8,7 @@ Test multiple mesh and parallel processing features.
 &MESH IJK=16,16,48, XB=7.0,8.0,3.0,4.0,1.0,4.0 /
 &MESH IJK=64,16,16, XB=3.0,7.0,3.0,4.0,3.0,4.0, RGB=230,50,43 /
 
-&TIME T_END=0.01 /
+&TIME T_END=1.0 /
 
 &PRES SOLVER = 'SCARC'
       SCARC_MATRIX = 'COMPACT'
@@ -16,7 +16,7 @@ Test multiple mesh and parallel processing features.
       SCARC_METHOD = 'MULTIGRID'
       SCARC_MULTIGRID = 'ALGEBRAIC'
       SCARC_MULTIGRID_LEVEL = 2
-      SCARC_SMOOTH_ITERATIONS = 4
+      SCARC_SMOOTH_ITERATIONS = 8
       SCARC_COARSENING = 'AGGREGATED' /
 
 &SURF ID='FIRE', HRRPUA=1000., PART_ID='smoke', COLOR='EMERALD GREEN' /

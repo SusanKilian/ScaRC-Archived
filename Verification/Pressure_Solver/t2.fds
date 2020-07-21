@@ -8,6 +8,7 @@
 
 &PRES SOLVER                     = 'SCARC'
       SCARC_PRECON               = 'MULTIGRID'
+      SCARC_MATRIX               = 'COMPACT'
       SCARC_MULTIGRID            = 'GEOMETRIC' 
       SCARC_MULTIGRID_LEVEL      =   3
       SCARC_MULTIGRID_ITERATIONS =   2
