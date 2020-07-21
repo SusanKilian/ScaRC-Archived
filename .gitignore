@@ -2,6 +2,8 @@ output
 SSJ19
 VisualStudio
 Develop
+C++
+MyDoxyfile
 
 .DS_Store
 .*.swp
@@ -32,6 +34,7 @@ tt
 *.sq
 *.sinfo
 *.binfo
+*.numbers
 ss
 tt
 rr
@@ -42,16 +45,8 @@ latex
 
 Documents
 Build
-Source/cgbaro.f90
-Source/scrc0.f90
-Source/scrc1.f90
-Source/scrc2.f90
-Source/scrc3.f90
+Source/save
 Utilities/Python/res.py
 Verification/Scarc/dump/*
-Source/ilu.f90
 Verification/Scarc/matlab/*
 Verification/Scarc/ssor
-/Verification/Pressure_Solver/cnn_dancing0
-/Verification/Pressure_Solver/duct0.fds
-/Verification/Pressure_Solver/dancing0.fds
