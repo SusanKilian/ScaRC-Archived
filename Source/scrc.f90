@@ -15630,7 +15630,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_ALLOCATE_REAL1 (G%AUX2, 1, G%NCE2+1, NSCARC_INIT_ZERO, 'G%AUX2', CROUTINE)
 ENDDO
 
-! for coarser levels exchange numbers and values of second layer cells with are needed for nullspace computation
+! For coarser levels exchange numbers and values of second layer cells with are needed for nullspace computation
 
 IF (SCARC_MULTIGRID_RELAXING .AND. NL > NLEVEL_MIN) THEN
    CALL SCARC_IDENTIFY_LAYER2(NL)
@@ -15645,6 +15645,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    MG => L%MG
    MG%OMEGA = 1.0_EB/MG%APPROX_SPECTRAL_RADIUS
+   !MG%OMEGA = 4.0_EB/(3.0_EB*MG%APPROX_SPECTRAL_RADIUS)
 
 #ifdef WITH_SCARC_DEBUG
 IF (SCARC_MULTIGRID_RELAXING) THEN
@@ -15665,7 +15666,7 @@ ENDIF
    !    'x' corresponds to nullspace vector consisting of only '1'-entries 
    !    'b' corresponds to zero vector 
 
-   ! on finest level NULLSPACE vector is preset with 1, so matrix entries can simply be added
+   ! On finest level NULLSPACE vector is preset with 1, so matrix entries can simply be added
    IF (NL == NLEVEL_MIN) THEN
 
       CALL SCARC_ALLOCATE_REAL1 (G%NULLSPACE, 1, G%NCE2, NSCARC_INIT_ONE, 'G%NULLSPACE', CROUTINE)
@@ -15674,6 +15675,10 @@ ENDIF
          DO ICOL = A%ROW(IC), A%ROW(IC+1)-1                          
             G%AUX2(IC) = G%AUX2(IC) + A%VAL(ICOL)
          ENDDO
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,1I6, 2E12.4)') &
+   'FINE LEVEL: IC, A%VAL(ICOL), AUX2:', IC, A%VAL(ICOL), G%AUX2(IC)
+#endif
       ENDDO FINE_CELLS_LOOP
 
    ! on coarser levels NULLSPACE vector was set in preceding coarsening loop to R-vector from QR-decomposition 
@@ -15728,16 +15733,14 @@ WRITE(MSG%LU_DEBUG,*) '======================= IC, G%AUX2(IC) =', IC, G%AUX2(IC)
 
    ENDIF
    
-   ! If relaxing is required (default setting), then scale it by parameter omega and inverse of diagonal:   d = omega D^{-1} d
+   ! Scale it by parameter omega and inverse of diagonal:   d = omega D^{-1} d
 
-   IF (SCARC_MULTIGRID_RELAXING) THEN
-      DO IC = 1, G%NC
-         G%AUX2(IC) = MG%OMEGA * G%DIAG(IC) * G%AUX2(IC) 
+   DO IC = 1, G%NC
+      G%AUX2(IC) = MG%OMEGA * G%DIAG(IC) * G%AUX2(IC) 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'RELAXING NULLSPACE: IC, DIAG, AUX2:', IC, G%DIAG(IC), G%AUX2(IC)
 #endif
-      ENDDO
-   ENDIF
+   ENDDO
    
   ! Get new iterate:   x = x - d
 
@@ -15749,6 +15752,7 @@ WRITE(MSG%LU_DEBUG,*) 'RELAXING NULLSPACE: IC, DIAG, AUX2:', IC, G%DIAG(IC), G%A
    
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) 'NM=',NM,': ======================================================='
+   WRITE(MSG%LU_DEBUG,*) 'OMEGA=',MG%OMEGA
    WRITE(MSG%LU_DEBUG,*) 'RELAX_NULLSPACE: AUX1: '
    WRITE(MSG%LU_DEBUG,'(6E12.4)') G%AUX1(1: G%NC)
    WRITE(MSG%LU_DEBUG,*) '---------------------------------'
@@ -15878,7 +15882,7 @@ END SUBROUTINE SCARC_SETUP_ZONE_OPERATOR
 SUBROUTINE SCARC_SETUP_PROLONGATION_AMG(NL)
 USE SCARC_POINTERS, ONLY:  G, A, OA, P, OP, GF, PF
 INTEGER, INTENT(IN) :: NL
-REAL(EB):: DSUM, SCAL, PSAVE !, TOL = 1.0E-12_EB
+REAL(EB):: DSUM, SCAL !, TOL = 1.0E-12_EB
 INTEGER :: NM, NOM, IC, JC, ICC, ICC0, ICOL, ICCOL, JCCOL, IP0, IP, JCC, IQ, INBR, NLEN
 
 CROUTINE = 'SCARC_SETUP_PROLONGATION'
@@ -16018,7 +16022,11 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    Z => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_ZONES)
 
    MG%OMEGA = 4.0_EB/3.0_EB                                         ! currently used default
-   SCAL = MG%OMEGA/MG%APPROX_SPECTRAL_RADIUS                        ! for testing purposes rho is set to 2 currently
+   IF (SCARC_MULTIGRID_RELAXING) THEN
+      SCAL = MG%OMEGA/MG%APPROX_SPECTRAL_RADIUS                        ! for testing purposes rho is set to 2 currently
+   ELSE
+      SCAL = 0.0_EB
+   ENDIF
    
    IP = 1
    IP0 = IP
@@ -16054,6 +16062,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       P%ROW(IC+1) = IP
    ENDDO
+p
    P%N_VAL = IP - 1
 
 ENDDO
@@ -16082,7 +16091,6 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          DO JCCOL = P%ROW(IC), P%ROW(IC+1) - 1
             JCC = P%COL(JCCOL)
             IF (JCC == ICC) THEN
-               PSAVE = P%VAL(JCCOL)
                P%VAL(JCCOL) = P%VAL(JCCOL) + G%QQ(ICCOL)
                CYCLE
             ENDIF
