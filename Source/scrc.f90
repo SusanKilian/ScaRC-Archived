@@ -14661,7 +14661,7 @@ WRITE(MSG%LU_DEBUG,*) '========================================================'
 
    ! Setup final aggregation Zones matrix Z and Prolongation matrix P based on QR-decomposition
    CALL SCARC_SETUP_ZONE_OPERATOR(NL)               
-   CALL SCARC_SETUP_PROLONGATION(NL)                
+   CALL SCARC_SETUP_PROLONGATION_AMG(NL)                
 
    ! Setup nullspace on coarser level and setup corresponding Restriction matrix R
    CALL SCARC_SETUP_NULLSPACE_COARSE(NL)            
@@ -16165,10 +16165,10 @@ ENDDO
 END SUBROUTINE SCARC_SETUP_PROLONGATION_AMG
 
 SUBROUTINE SCARC_SETUP_PROLONGATION_GMG(NL)
-USE SCARC_POINTERS, ONLY:  G, A, OA, P, OP, GF, PF
+USE SCARC_POINTERS, ONLY:  G, A, OA, P, OP
 INTEGER, INTENT(IN) :: NL
-REAL(EB):: DSUM, SCAL, PSAVE !, TOL = 1.0E-12_EB
-INTEGER :: NM, NOM, IC, JC, ICC, ICC0, ICOL, ICCOL, JCCOL, IP0, IP, JCC, IQ, INBR, NLEN
+REAL(EB):: DSUM
+INTEGER :: NM, NOM, IC, JC, ICC, ICC0, ICOL, ICCOL, IP0, IP, INBR
 
 CROUTINE = 'SCARC_SETUP_PROLONGATION_GMG'
 
