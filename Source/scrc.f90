@@ -332,7 +332,7 @@ INTEGER       :: SCARC_COARSE_ITERATIONS = 100                  !< Max number of
 INTEGER       :: SCARC_COARSE_LEVEL      =  1                   !< Coarse grid level for twolevel-Krylov method
 REAL (EB)     :: SCARC_COARSE_OMEGA      = 0.80E+0_EB           !< Relaxation parameter
 
-CHARACTER(40) :: SCARC_COARSENING = 'DOUBLED'                   !< Coarsening strategy (DOUBLED/CUBIC/AGGREGATED)
+CHARACTER(40) :: SCARC_COARSENING = 'GMG'                       !< Coarsening strategy (CUBIC/AGGREGATED/GMG)
 
 ! ---------- Parameters for Krylov type methods
  
@@ -11800,6 +11800,11 @@ WRITE(MSG%LU_DEBUG,*) 'GC%NCE=', GC%NCE
                                              + VF(ICF(2)) &
                                              + VF(ICF(3)) &
                                              + VF(ICF(4)) )
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,7I6, 5E12.4)') 'REST: IXC, IZC, ICC, ICF(1:4), VC(ICC), 0.25*VF(ICF):', &
+ IXC, IZC, ICC, ICF(1), ICF(2), ICF(3), ICF(4), &
+ VC(ICC), VF(ICF(1)), VF(ICF(2)), VF(ICF(3)), VF(ICF(4))
+#endif
                      ENDDO
                   ENDDO
                   !$OMP END PARALLEL DO
@@ -12040,6 +12045,10 @@ IF (IS_GMG .OR. IS_CG_GMG .OR. IS_CG_ADD .OR. IS_CG_MUL) THEN
       
                         DO I = 1, 4
                            VF(ICF(I)) = VC(ICC)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4I6, 2E12.4)') 'PROL: IXC, IZC, ICC, ICF(I), VF(ICF(I)),VC(ICC):', &
+   IXC, IZC, ICC, ICF(I), VF(ICF(I)), VC(ICC)
+#endif
                         ENDDO
                      ENDDO
                   ENDDO
@@ -14661,11 +14670,17 @@ WRITE(MSG%LU_DEBUG,*) '========================================================'
 
    ! Setup final aggregation Zones matrix Z and Prolongation matrix P based on QR-decomposition
    CALL SCARC_SETUP_ZONE_OPERATOR(NL)               
-   CALL SCARC_SETUP_PROLONGATION_AMG(NL)                
 
-   ! Setup nullspace on coarser level and setup corresponding Restriction matrix R
-   CALL SCARC_SETUP_NULLSPACE_COARSE(NL)            
-   CALL SCARC_SETUP_RESTRICTION(NL)                 
+      ! Setup restriction and prolongation matrices for GMG-like coarsening
+   IF (TYPE_COARSENING == NSCARC_COARSENING_GMG) THEN
+      CALL SCARC_SETUP_TRANSFER_GMG(NL)
+
+   ! Setup Prolongation matrix P based on QR-decomposition, near nullspace on coarser level and corresponding Restriction matrix R
+   ELSE
+      CALL SCARC_SETUP_PROLONGATION_AMG(NL)
+      CALL SCARC_SETUP_NULLSPACE_COARSE(NL)
+      CALL SCARC_SETUP_RESTRICTION(NL)
+   ENDIF
 
    ! First setup A*P matrix to finally build the Galerkin matrix R*A*P
    CALL SCARC_SETUP_POISSON_PROL(NL)             
@@ -16062,7 +16077,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       P%ROW(IC+1) = IP
    ENDDO
-p
+ 
    P%N_VAL = IP - 1
 
 ENDDO
@@ -16166,74 +16181,148 @@ ENDDO
 
 END SUBROUTINE SCARC_SETUP_PROLONGATION_AMG
 
-SUBROUTINE SCARC_SETUP_PROLONGATION_GMG(NL)
-USE SCARC_POINTERS, ONLY:  G, A, OA, P, OP
+
+! -------------------------------------------------------------------------------------------
+!> \brief Setup restriction and prolongation matrices in case of GMG-like coarsening
+! -------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_TRANSFER_GMG(NL)
+USE SCARC_POINTERS, ONLY:  GF, GC, AF, RF, ZF, OPF
 INTEGER, INTENT(IN) :: NL
-REAL(EB):: DSUM
-INTEGER :: NM, NOM, IC, JC, ICC, ICC0, ICOL, ICCOL, IP0, IP, INBR
+INTEGER :: NM, IC, JC, ICC, ICCOL, IP, JCC, JCCOL, NOM, INBR, NLEN
 
 CROUTINE = 'SCARC_SETUP_PROLONGATION_GMG'
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
-   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+   CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL + 1)                                   ! Sets grid pointer G
 
-   A => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_POISSON)
-   P => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_PROLONGATION)
-   Z => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_ZONES)
+   AF => SCARC_POINT_TO_CMATRIX(GF, NSCARC_MATRIX_POISSON)
+   ZF => SCARC_POINT_TO_CMATRIX(GF, NSCARC_MATRIX_ZONES)
+   RF => SCARC_POINT_TO_CMATRIX(GF, NSCARC_MATRIX_RESTRICTION)
+   PF => SCARC_POINT_TO_CMATRIX(GF, NSCARC_MATRIX_PROLONGATION)
 
-   P%N_VAL = A%N_VAL + 1        
-   P%N_ROW = G%NCE + 1                  
-   CALL SCARC_ALLOCATE_CMATRIX(P, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'G%PROLONGATION', CROUTINE)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'TRANSFER_GMG: GF%NC=', GF%NC
+WRITE(MSG%LU_DEBUG,*) 'TRANSFER_GMG: GC%NC=', GC%NC
+#endif
 
-   DO INBR = 1, SCARC(NM)%N_NEIGHBORS
+   RF%N_VAL = GF%NC
+   RF%N_ROW = GC%NC + 1
+   CALL SCARC_ALLOCATE_CMATRIX(RF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%RESTRICTION', CROUTINE)
 
-      NOM = S%NEIGHBORS(INBR)
-      CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
+   PF%N_VAL = AF%N_VAL + 1        
+   PF%N_ROW = GF%NC + 1
+   CALL SCARC_ALLOCATE_CMATRIX(PF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%PROLONGATION', CROUTINE)
 
-      OA => SCARC_POINT_TO_OTHER_CMATRIX(OG, NSCARC_MATRIX_POISSON)
-      OP => SCARC_POINT_TO_OTHER_CMATRIX(OG, NSCARC_MATRIX_PROLONGATION)
+   SELECT CASE (TYPE_INTERPOL)
 
-      OP%N_VAL = OA%N_VAL + 1              ! TODO : CHECK : MUCH TOO BIG !!!
-      OP%N_ROW = G%NCE + 1                 ! TODO : CHECK : MUCH TOO BIG !!!
-      CALL SCARC_ALLOCATE_CMATRIX(OP, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'OG%PROLONGATION', CROUTINE)
+      CASE (NSCARC_INTERPOL_CONSTANT)
 
-   ENDDO
-
-   IP = 1
-   IP0 = IP
-   P%ROW(1) = IP
-   DO IC = 1, G%NC
-      DO ICC = 1, Z%N_ROW-1
-   
-         DO ICCOL = Z%ROW(ICC), Z%ROW(ICC+1)-1
-            JC = Z%COL(ICCOL)
-            ICOL = SCARC_MATCH_MATRIX_COLUMN(A, IC, JC)
-            IF (ICOL /= -1) ICC0 = ICC
+         IP = 1
+         RF%ROW(1) = IP
+         DO ICC = 1, ZF%N_ROW-1
+            DO ICCOL = ZF%ROW(ICC), ZF%ROW(ICC+1)-1
+               JC = ZF%COL(ICCOL)
+               RF%COL(IP) = ZF%COL(ICCOL)
+               RF%VAL(IP) = 0.25_EB
+               IP = IP + 1
+            ENDDO
+            RF%ROW(ICC + 1) = IP
          ENDDO
-   
-         IF (ABS(DSUM) /= 0.0_EB) THEN
-            P%VAL(IP) = DSUM
-            P%COL(IP) = ICC
-            IP = IP + 1
-         ENDIF
-   
-      ENDDO
- 
-      ! take care that at least one entry per fine cell is generated
-      IF (IP == IP0) THEN
-         P%VAL(IP) = 0.0_EB
-         P%COL(IP) = ICC0
-         IP = IP + 1
-      ENDIF
-      IP0 = IP
+      
+         IP = 1
+         PF%ROW(1) = IP
+         DO IC = 1, GF%NC
+            DO ICC = 1, ZF%N_ROW -1
+               COLUMN_LOOP: DO ICCOL = ZF%ROW(ICC), ZF%ROW(ICC+1)-1
+                  IF (ZF%COL(ICCOL) == IC) THEN
+                     PF%COL(IP) = ICC
+                     PF%VAL(IP) = 1.0_EB
+                     IP = IP + 1
+                     EXIT COLUMN_LOOP
+                  ENDIF
+               ENDDO COLUMN_LOOP
+            ENDDO
+            PF%ROW(IC + 1) = IP
+         ENDDO
 
-      P%ROW(IC+1) = IP
-   ENDDO
-   P%N_VAL = IP - 1
+      CASE (NSCARC_INTERPOL_BILINEAR)
+
+        WRITE(*,*) 'BILINEAR INTERPOLATION STILL TO DO'
+
+   END SELECT
+
+#ifdef WITH_SCARC_DEBUG
+   CALL SCARC_DEBUG_CMATRIX(RF, 'RESTRICTION','IN TRANSFER GMG')
+   CALL SCARC_DEBUG_CMATRIX(PF, 'PROLONGATION','IN TRANSFER GMG')
+#endif
+
 ENDDO
 
-END SUBROUTINE SCARC_SETUP_PROLONGATION_GMG
+! Determine global columns array for Prolongation matrix
+ 
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+   CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1)                
+   PF => SCARC_POINT_TO_CMATRIX(GF, NSCARC_MATRIX_PROLONGATION)
+
+   DO IC = 1, GF%NC
+      DO JCCOL = PF%ROW(IC), PF%ROW(IC+1) - 1
+         JCC = PF%COL(JCCOL)
+         PF%COLG(JCCOL) = GC%LOCAL_TO_GLOBAL(JCC)
+      ENDDO
+   ENDDO
+   
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '----------- NM =',NM,': NL=',NL
+   CALL SCARC_DEBUG_CMATRIX(PF, 'G%PROLONGATION','SETUP_PROLONGATION: AFTER LAST EXCHANGE')
+#endif
+
+ENDDO
+
+ 
+! Exchange resulting columns and values of Prolongation matrix and extract exchanged data from 
+! overlapping parts with single neighbors and attach them to main matrix
+ 
+IF (NMESHES > 1) THEN
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLS,  NSCARC_MATRIX_PROLONGATION, NL)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_COLSG, NSCARC_MATRIX_PROLONGATION, NL)
+   CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_MATRIX_VALS,  NSCARC_MATRIX_PROLONGATION, NL)
+   CALL SCARC_EXTRACT_MATRIX_OVERLAPS(NSCARC_MATRIX_PROLONGATION, 0, NL)
+ENDIF
+   
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+   CALL SCARC_POINT_TO_MULTIGRID (NM, NL, NL+1) 
+   PF => SCARC_POINT_TO_CMATRIX(GF, NSCARC_MATRIX_PROLONGATION)
+
+   NLEN = MAX(GC%NCE2, 4 * (GC%NCE2 - GC%NC + 2) + 50)           ! TODO check length
+   CALL SCARC_ALLOCATE_INT1 (GC%CELLS_LOCAL,  1, NLEN, NSCARC_INIT_ZERO, 'GC%CELLS_LOCAL',  CROUTINE)
+   CALL SCARC_ALLOCATE_INT1 (GC%CELLS_GLOBAL, 1, NLEN, NSCARC_INIT_ZERO, 'GC%CELLS_GLOBAL', CROUTINE)
+
+   CALL SCARC_GET_CELL_DEPENDENCIES_GALERKIN(GC, GF, PF, NLEN)
+
+   CALL SCARC_REDUCE_INT1(GC%CELLS_LOCAL, GC%NC_GALERKIN, 'GC%CELLS_LOCAL', CROUTINE)
+   CALL SCARC_REDUCE_INT1(GC%CELLS_GLOBAL, GC%NC_GALERKIN, 'GC%CELLS_GLOBAL', CROUTINE)
+
+   CALL SCARC_REDUCE_CMATRIX(PF, 'P%PROLONGATION', CROUTINE)
+   DO INBR = 1, S%N_NEIGHBORS
+      NOM = S%NEIGHBORS(INBR)
+      CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
+      OPF => SCARC_POINT_TO_OTHER_CMATRIX(OGF, NSCARC_MATRIX_PROLONGATION)
+      CALL SCARC_REDUCE_CMATRIX(OPF, 'OP%PROLONGATION', CROUTINE)
+   ENDDO
+
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '======================= LEVEL ', NL
+   CALL SCARC_DEBUG_CMATRIX(PF, 'GF%PROLONGATION','SETUP_PROLONGATION: FINAL')
+#endif
+
+ENDDO
+
+
+
+END SUBROUTINE SCARC_SETUP_TRANSFER_GMG
 
 ! -------------------------------------------------------------------------------------------
 !> \brief Determine on which overlapping global coarse cells are given mesh depends (also considering diagonal connections)
