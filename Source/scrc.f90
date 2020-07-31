@@ -5311,7 +5311,7 @@ USE SCARC_POINTERS, ONLY : G
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, NOM, IC, IW, ICE, ICN
 
-IF (NMESHES == 1) RETURN
+!IF (NMESHES == 1) RETURN
 CROUTINE = 'SCARC_SETUP_GLOBAL_CELL_MAPPING'
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -16186,9 +16186,12 @@ END SUBROUTINE SCARC_SETUP_PROLONGATION_AMG
 !> \brief Setup restriction and prolongation matrices in case of GMG-like coarsening
 ! -------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_TRANSFER_GMG(NL)
-USE SCARC_POINTERS, ONLY:  GF, GC, AF, RF, ZF, OPF
+USE SCARC_POINTERS, ONLY:  S, GF, GC, AF, RF, ZF, OPF
 INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, IC, JC, ICC, ICCOL, IP, JCC, JCCOL, NOM, INBR, NLEN
+INTEGER :: NM, IC, JC, ICC, ICCOL, IRCOL, IP, JCC, JCCOL, NOM, INBR, NLEN
+INTEGER :: IS, IXC, IZC, IXF, IZF, IOFFX, IOFFZ
+INTEGER :: STENCIL(16) = 0
+INTEGER :: RN, RE, RS, RW
 
 CROUTINE = 'SCARC_SETUP_PROLONGATION_GMG'
 
@@ -16206,17 +16209,17 @@ WRITE(MSG%LU_DEBUG,*) 'TRANSFER_GMG: GF%NC=', GF%NC
 WRITE(MSG%LU_DEBUG,*) 'TRANSFER_GMG: GC%NC=', GC%NC
 #endif
 
-   RF%N_VAL = GF%NC
-   RF%N_ROW = GC%NC + 1
-   CALL SCARC_ALLOCATE_CMATRIX(RF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%RESTRICTION', CROUTINE)
-
-   PF%N_VAL = AF%N_VAL + 1        
-   PF%N_ROW = GF%NC + 1
-   CALL SCARC_ALLOCATE_CMATRIX(PF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%PROLONGATION', CROUTINE)
-
    SELECT CASE (TYPE_INTERPOL)
 
       CASE (NSCARC_INTERPOL_CONSTANT)
+
+         RF%N_VAL = GF%NC
+         RF%N_ROW = GC%NC + 1
+         CALL SCARC_ALLOCATE_CMATRIX(RF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%RESTRICTION', CROUTINE)
+
+         PF%N_VAL = AF%N_VAL + 1        
+         PF%N_ROW = GF%NC + 1
+         CALL SCARC_ALLOCATE_CMATRIX(PF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%PROLONGATION', CROUTINE)
 
          IP = 1
          RF%ROW(1) = IP
@@ -16225,10 +16228,11 @@ WRITE(MSG%LU_DEBUG,*) 'TRANSFER_GMG: GC%NC=', GC%NC
                JC = ZF%COL(ICCOL)
                RF%COL(IP) = ZF%COL(ICCOL)
                RF%COLG(IP) = GF%LOCAL_TO_GLOBAL(ZF%COL(ICCOL))
-               RF%VAL(IP) = 0.25_EB
+               RF%VAL(IP) = 1.00_EB
                IP = IP + 1
             ENDDO
             RF%ROW(ICC + 1) = IP
+            WRITE(*,*) ICC,':SUM(RF)=',SUM(RF%VAL(RF%ROW(ICC):RF%ROW(ICC+1)-1))
          ENDDO
       
          IP = 1
@@ -16239,18 +16243,100 @@ WRITE(MSG%LU_DEBUG,*) 'TRANSFER_GMG: GC%NC=', GC%NC
                   IF (ZF%COL(ICCOL) == IC) THEN
                      PF%COL(IP) = ICC
                      PF%COLG(IP) = GC%LOCAL_TO_GLOBAL(ICC)
-                     PF%VAL(IP) = 1.0_EB
+                     PF%VAL(IP) = 0.25_EB
                      IP = IP + 1
                      EXIT COLUMN_LOOP
                   ENDIF
                ENDDO COLUMN_LOOP
             ENDDO
             PF%ROW(IC + 1) = IP
+            WRITE(*,*) ICC,':SUM(PF)=',SUM(PF%VAL(PF%ROW(IC):PF%ROW(IC+1)-1))
          ENDDO
 
       CASE (NSCARC_INTERPOL_BILINEAR)
 
-        WRITE(*,*) 'BILINEAR INTERPOLATION STILL TO DO'
+         RF%N_VAL = 16*GF%NC
+         RF%N_ROW = GC%NC + 1
+         CALL SCARC_ALLOCATE_CMATRIX(RF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%RESTRICTION', CROUTINE)
+
+         PF%N_VAL = AF%N_VAL + 1        
+         PF%N_ROW = GF%NC + 1
+         CALL SCARC_ALLOCATE_CMATRIX(PF, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'GF%PROLONGATION', CROUTINE)
+
+         IP = 1
+         RF%ROW(1) = IP
+         DO IZC = 1, LC%NZ
+            DO IXC = 1, LC%NX
+
+               ICC = (IZC - 1) * LC%NX + IXC
+
+               IXF = 2 * IXC
+               IZF = 2 * IZC
+               
+               IF (IXC == 1 .AND. IZC == 1) THEN
+                  RN = 1; RE = 1; RS = 0; RW = 0
+               ELSE IF (IXC == 1 .AND. IZC == LC%NZ) THEN
+                  RN = 0; RE = 1; RS = 1; RW = 0
+               ELSE IF (IXC == LC%NX .AND. IZC == 1) THEN
+                  RN = 1; RE = 0; RS = 0; RW = 1
+               ELSE IF (IXC == LC%NX .AND. IZC == LC%NZ) THEN
+                  RN = 0; RE = 0; RS = 1; RW = 1
+               ELSE IF (IXC == 1) THEN
+                  RN = 1; RE = 1; RS = 1; RW = 0
+               ELSE IF (IXC == LC%NX) THEN
+                  RN = 1; RE = 0; RS = 1; RW = 1
+               ELSE IF (IZC == 1) THEN
+                  RN = 1; RE = 1; RS = 0; RW = 1
+               ELSE IF (IZC == LC%NZ) THEN
+                  RN = 0; RE = 1; RS = 1; RW = 1
+               ELSE
+                  RN = 1; RE = 1; RS = 1; RW = 1
+               ENDIF
+
+               STENCIL(13:16) =  (/    RN *RW,    RN *(2+RW),    RN *(2+RE),    RN *RE /)
+               STENCIL( 9:12) =  (/ (2+RN)*RW, (2+RN)*(2+RW), (2+RN)*(2+RE), (2+RN)*RE /)
+               STENCIL( 5: 8) =  (/ (2+RS)*RW, (2+RS)*(2+RW), (2+RS)*(2+RE), (2+RS)*RE /)
+               STENCIL( 1: 4) =  (/    RS *RW,    RS *(2+RW),    RS *(2+RE),    RS *RE /)
+
+               IS = 1
+               DO IOFFZ = -2, 1
+                  DO IOFFX = -2, 1
+                     CALL PROCESS_FINE_CELL (IXF + IOFFX, 1, IZF + IOFFZ, IP, IS, STENCIL(IS))
+                     IS = IS + 1
+                  ENDDO
+               ENDDO
+
+               RF%ROW(ICC + 1) = IP
+               WRITE(*,*) ICC,':SUM(RF)=',SUM(RF%VAL(RF%ROW(ICC):RF%ROW(ICC+1)-1))
+
+
+            ENDDO
+         ENDDO
+
+         IP = 1
+         PF%ROW(1) = IP
+         DO IC = 1, GF%NC
+            DO ICC = 1, GC%NC 
+               COLUMN_LOOP2: DO IRCOL = RF%ROW(ICC), RF%ROW(ICC+1)-1
+                  IF (RF%COL(IRCOL) == IC) THEN
+                     PF%COL(IP) = ICC
+                     PF%COLG(IP) = GC%LOCAL_TO_GLOBAL(ICC)
+                     PF%VAL(IP) = RF%VAL(IRCOL)
+                     IP = IP + 1
+                     EXIT COLUMN_LOOP2
+                  ENDIF
+               ENDDO COLUMN_LOOP2
+            ENDDO
+            PF%ROW(IC + 1) = IP
+            WRITE(*,*) ICC,':SUM(PF)=',SUM(PF%VAL(PF%ROW(IC):PF%ROW(IC+1)-1))
+         ENDDO
+
+         PF%VAL = PF%VAL/16.0_EB
+         IF (TWO_D) THEN
+            RF%VAL = RF%VAL/4.0_EB
+         ELSE
+            RF%VAL = RF%VAL/2.0_EB
+         ENDIF
 
    END SELECT
 
@@ -16322,9 +16408,28 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 ENDDO
 
-
-
 END SUBROUTINE SCARC_SETUP_TRANSFER_GMG
+
+SUBROUTINE PROCESS_FINE_CELL(IXF, IYF, IZF, IP, IS, VAL)
+USE SCARC_POINTERS, ONLY: RF, GF
+INTEGER, INTENT(IN) :: IXF, IYF, IZF, IS, VAL
+INTEGER, INTENT(INOUT) :: IP
+
+IF (VAL /= 0) THEN
+   RF%COL(IP) = ICF (IXF, IYF, IZF)
+   RF%COLG(IP) = GF%LOCAL_TO_GLOBAL(RF%COL(IP))
+   RF%VAL(IP) = VAL
+   IP = IP + 1
+ENDIF
+
+END SUBROUTINE PROCESS_FINE_CELL
+
+INTEGER FUNCTION ICF (IXF, IYF, IZF)
+USE SCARC_POINTERS, ONLY : LF
+INTEGER, INTENT(IN) :: IXF, IYF, IZF
+ICF = (IZF - 1) * LF%NX * LF%NY + (IYF - 1) * LF%NX + IXF
+RETURN
+END FUNCTION
 
 ! -------------------------------------------------------------------------------------------
 !> \brief Determine on which overlapping global coarse cells are given mesh depends (also considering diagonal connections)
@@ -16539,18 +16644,18 @@ INTEGER :: IACOL, IPCOL, JC
 DSUM = 0.0_EB
 DO IACOL = A%ROW(IC), A%ROW(IC+1)-1
    JC = A%COL(IACOL)
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'MULTIPLY_POISSON_PROL: IC, ICC, IP, JC:', IC, ICC, IP, JC
 #endif
    IF (JC == 0) CYCLE
    IPCOL = SCARC_FIND_MATCHING_COLUMN(P, JC, ICC)
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'MULTIPLY_POISSON_PROL: IPCOL =', IPCOL
 #endif
    IF (JC < 0 .OR. IPCOL <= 0) CYCLE
    ICC0 = ICC
    DSUM = DSUM + A%VAL(IACOL) * P%VAL(IPCOL)
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'MULTIPLY_POISSON_PROL: DSUM, A%VAL, P%VAL:', DSUM, A%VAL(IACOL), P%VAL(IPCOL)
 #endif
 ENDDO
