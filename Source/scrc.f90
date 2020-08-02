@@ -9,8 +9,8 @@
 !  - WITH_SCARC_POSTPROCESSING   : dump environment for separate ScaRC postprocessing program
 ! ================================================================================================================
 !#undef WITH_MKL
-#define WITH_SCARC_VERBOSE
-#define WITH_SCARC_DEBUG
+#undef WITH_SCARC_VERBOSE
+#undef WITH_SCARC_DEBUG
 #undef WITH_SCARC_MGM
 #undef WITH_SCARC_POSTPROCESSING
 
@@ -5356,7 +5356,6 @@ IF (NMESHES == 1) THEN
    WRITE(MSG%LU_DEBUG,*) 'SETTING UP GLOBAL_POISSON_COLUMNS FOR NMESHES == 1'
 #endif
    A%COLG = A%COL
-CALL SCARC_DEBUG_CMATRIX(A, 'A','SETUP_GLOBAL_POISSON_COLUMNS')
 ELSE
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
@@ -5371,7 +5370,6 @@ ELSE
          ENDDO
       ENDDO
    ENDDO
-CALL SCARC_DEBUG_CMATRIX(A, 'A','SETUP_GLOBAL_POISSON_COLUMNS')
 ENDIF
 
 END SUBROUTINE SCARC_SETUP_GLOBAL_POISSON_COLUMNS
@@ -5948,13 +5946,11 @@ DO IC = 1, AS%N_ROW - 1
 
       CASE(NSCARC_MKL_LOCAL) 
 
-WRITE(MSG%LU_DEBUG,*) 'AAAA'
          DO ICOL = A%ROW(IC), A%ROW(IC+1)-1
             JC = A%COL(ICOL)
             IF (JC >= IC .AND. JC <= G%NC) THEN
                AS%COL(IAS) = A%COL(ICOL)
                AS%COLG(IAS) = A%COLG(ICOL)
-WRITE(MSG%LU_DEBUG,*) 'AS%COLG(',IAS,')=', AS%COLG(IAS)
                SELECT CASE (TYPE_MKL_PRECISION)
                   CASE (NSCARC_PRECISION_DOUBLE)
                      AS%VAL(IAS) = A%VAL(ICOL)
@@ -5972,7 +5968,6 @@ WRITE(MSG%LU_DEBUG,*) 'AS%COLG(',IAS,')=', AS%COLG(IAS)
 
          ! Store indices of all diagonal and upper-diagonal entries
 
-WRITE(MSG%LU_DEBUG,*) 'BBB'
          ICOL_AUX = 0
          IC_AUX   = NSCARC_HUGE_INT
          ISYM = 1
@@ -5983,13 +5978,11 @@ WRITE(MSG%LU_DEBUG,*) 'BBB'
                IF (JC >= JC0) THEN
                   ICOL_AUX(ISYM) = ICOL
                   IC_AUX(ISYM) = JC
-WRITE(MSG%LU_DEBUG,*) 'BBB1: IC_AUX(',ISYM,')=', IC_AUX(ISYM)
                   ISYM  = ISYM  + 1
                ENDIF
             ELSE
                ICOL_AUX(ISYM) = ICOL
                IC_AUX(ISYM) = JC
-WRITE(MSG%LU_DEBUG,*) 'BBB2: IC_AUX(',ISYM,')=', IC_AUX(ISYM)
                ISYM  = ISYM  + 1
             ENDIF
          ENDDO
@@ -6013,7 +6006,6 @@ WRITE(MSG%LU_DEBUG,*) 'BBB2: IC_AUX(',ISYM,')=', IC_AUX(ISYM)
                         AS%VAL_FB(IAS) = REAL(A%VAL(ICOL), FB)
                   END SELECT
                   AS%COL(IAS) = A%COLG(ICOL)
-WRITE(MSG%LU_DEBUG,*) 'CCC: AS%COLG(',IAS,')=', AS%COLG(IAS)
                   IC_AUX(ISYM) = NSCARC_HUGE_INT            ! mark entry as already used
                   IAS  = IAS  + 1
                ENDIF
@@ -8805,7 +8797,6 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
  
       IF (TYPE_MKL_PRECISION == NSCARC_PRECISION_SINGLE) THEN
 
-WRITE(MSG%LU_DEBUG,*) MYID,': SETUP_CLUSTER_SINGLE'
          MKL%IPARM(28) = 1         ! single precision
          MKL%PHASE = 11
          CALL CLUSTER_SPARSE_SOLVER_S(MKL%CT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC_GLOBAL, &
@@ -8815,7 +8806,6 @@ WRITE(MSG%LU_DEBUG,*) MYID,': SETUP_CLUSTER_SINGLE'
          CALL CLUSTER_SPARSE_SOLVER_S(MKL%CT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC_GLOBAL, &
                                       AS%VAL_FB, AS%ROW, AS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                                       MKL%MSGLVL, DUMMY_FB, DUMMY_FB, MPI_COMM_WORLD, MKL%ERROR)
-WRITE(MSG%LU_DEBUG,*) MYID,': SETUP_CLUSTER_SINGLE:', MKL%ERROR
 
          IF (MKL%ERROR /= 0) THEN
             WRITE(*,*) 'ERROR in MKL SETUP, MKL%ERROR=', MKL%ERROR
@@ -8825,7 +8815,6 @@ WRITE(MSG%LU_DEBUG,*) MYID,': SETUP_CLUSTER_SINGLE:', MKL%ERROR
 
       ELSE
 
-WRITE(MSG%LU_DEBUG,*) MYID,': SETUP_CLUSTER_DOUBLE:', NL, G%NC_LOCAL(NM), G%NC_OFFSET(NM), G%NC_GLOBAL
          MKL%IPARM(28) = 0         ! double precision
          MKL%PHASE = 11
          CALL CLUSTER_SPARSE_SOLVER_D(MKL%CT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC_GLOBAL, &
@@ -8835,7 +8824,6 @@ WRITE(MSG%LU_DEBUG,*) MYID,': SETUP_CLUSTER_DOUBLE:', NL, G%NC_LOCAL(NM), G%NC_O
          CALL CLUSTER_SPARSE_SOLVER_D(MKL%CT, MKL%MAXFCT, MKL%MNUM, MKL%MTYPE, MKL%PHASE, G%NC_GLOBAL, &
                                       AS%VAL, AS%ROW, AS%COL, MKL%PERM, MKL%NRHS, MKL%IPARM, &
                                       MKL%MSGLVL, DUMMY, DUMMY, MPI_COMM_WORLD, MKL%ERROR)
-WRITE(MSG%LU_DEBUG,*) MYID,': SETUP_CLUSTER_DOUBLE:', MKL%ERROR
          IF (MKL%ERROR /= 0) THEN
             WRITE(*,*) 'ERROR in MKL SETUP, MKL%ERROR=', MKL%ERROR
             CALL MPI_FINALIZE(IERROR)
@@ -10839,10 +10827,8 @@ SELECT CASE (TYPE_COARSE)
 #ifdef WITH_MKL
       !IF (STACK(NPARENT)%SOLVER%TYPE_SCOPE(0) == NSCARC_SCOPE_GLOBAL .AND. NMESHES > 1) THEN
       IF (NMESHES > 1) THEN
-WRITE(MSG%LU_DEBUG,*) 'CALLING CLUSTER'
          CALL SCARC_METHOD_CLUSTER (NSTACK, NPARENT, NLEVEL)
       ELSE
-WRITE(MSG%LU_DEBUG,*) 'CALLING PARDISO'
          CALL SCARC_METHOD_PARDISO (NSTACK, NPARENT, NLEVEL)
       ENDIF
 #else
