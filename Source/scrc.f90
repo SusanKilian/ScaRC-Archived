@@ -5251,13 +5251,9 @@ ENDDO MESHES_POISSON_LOOP
 
 ! Setup mappings for the global numbering of vectors and the Poisson matrix (compact storage technique only)
  
-WRITE(*,*) 'A'
 IF (TYPE_MATRIX == NSCARC_MATRIX_COMPACT) THEN
-WRITE(*,*) 'B'
    CALL SCARC_SETUP_GLOBAL_CELL_MAPPING(NLEVEL_MIN)
-WRITE(*,*) 'C'
    CALL SCARC_SETUP_GLOBAL_POISSON_COLUMNS(NLEVEL_MIN)
-WRITE(*,*) 'D'
 ENDIF
  
 ! If there is more than one mesh, exchange matrix values in overlapping parts
