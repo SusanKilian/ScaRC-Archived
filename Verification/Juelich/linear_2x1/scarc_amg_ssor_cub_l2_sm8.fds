@@ -1,4 +1,4 @@
-&HEAD CHID='scarc_cgamg_fft_agg_l2_sm8', TITLE='flow through a 2D-channel with linear inflow' /
+&HEAD CHID='scarc_amg_ssor_cub_l2_sm8', TITLE='flow through a 2D-channel with linear inflow' /
 
 &MESH IJK=40, 1, 20, XB=-0.4, 0.0, -0.01, 0.01, -0.1, 0.1, MULT_ID='mesh' /
 &MULT ID='mesh', DX=0.40, DY=0.02, DZ=0.20, I_UPPER=1, J_UPPER=0, K_UPPER=0 /
@@ -7,15 +7,14 @@
 
 &PRES SOLVER                   = 'SCARC'
       SCARC_MATRIX             = 'COMPACT'
-      SCARC_METHOD             = 'KRYLOV'
-      SCARC_PRECON             = 'MULTIGRID'
+      SCARC_METHOD             = 'MULTIGRID'
       SCARC_MULTIGRID          = 'ALGEBRAIC'
       SCARC_MULTIGRID_ACCURACY = 1.0E-6
       SCARC_MULTIGRID_THETA    = 2.0E-2
       SCARC_MULTIGRID_LEVEL    = 2
-      SCARC_SMOOTH             = 'FFT'
+      SCARC_SMOOTH             = 'SSOR'
       SCARC_SMOOTH_ITERATIONS  = 8
-      SCARC_COARSENING         = 'AGGREGATED' /
+      SCARC_COARSENING         = 'CUBIC' /
 
 &DUMP DT_PL3D=1.E10, VELOCITY_ERROR_FILE = .TRUE. /
 
