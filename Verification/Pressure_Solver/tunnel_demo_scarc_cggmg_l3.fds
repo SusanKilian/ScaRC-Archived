@@ -1,12 +1,13 @@
-&HEAD CHID='tunnel_demo_scarc_gmg_l2', TITLE='Example of a tunnel simulation with structured ScaRC solver' /
+&HEAD CHID='tunnel_demo_scarc_gmg_l3', TITLE='Example of a tunnel simulation with structured ScaRC solver' /
 &TIME T_END=2. /
-&MESH IJK=40,10,10, XB=0.0,16.0,-2.0,2.0,0.0,4.0, MULT_ID='mesh' /
+&MESH IJK=80,20,20, XB=0.0,16.0,-2.0,2.0,0.0,4.0, MULT_ID='mesh' /
 &MULT ID='mesh', DX=16., I_UPPER=7 /
 &MISC GVEC=-1.70,0.0,-9.65 /
 &PRES SOLVER                  = 'SCARC'
-      SCARC_METHOD            = 'MULTIGRID'
+      SCARC_METHOD            = 'KRYLOV'
+      SCARC_PRECON            = 'MULTIGRID'
       SCARC_MULTIGRID         = 'GEOMETRIC'
-      SCARC_MULTIGRID_LEVEL   =   2
+      SCARC_MULTIGRID_LEVEL   =   3
       SCARC_COARSE            = 'DIRECT'
       SCARC_SMOOTH            = 'FFT'     
       SCARC_SMOOTH_ITERATIONS =   8           /
