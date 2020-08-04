@@ -10919,7 +10919,7 @@ MULTIGRID_LOOP: DO ITE = 1, NIT
       ! initial and final residual are passed via vector V by default
  
       PRESMOOTHING_LOOP: DO WHILE (NL < NLEVEL_MAX)
-         CALL SCARC_SMOOTHER (NSCARC_CYCLING_PRESMOOTH, NS+1, NS, NL)         ! D_fine   := Smooth(defect)
+         IF (ITE /= 1) CALL SCARC_SMOOTHER (NSCARC_CYCLING_PRESMOOTH, NS+1, NS, NL)         ! D_fine   := Smooth(defect)
          CALL SCARC_RESTRICTION (V, B, NL, NL+1)                              ! B_coarse := Rest(D_fine)
 #ifdef WITH_SCARC_DEBUG
 CALL SCARC_DEBUG_LEVEL (V, 'MG PRE: V', NL)
@@ -11120,7 +11120,7 @@ CALL SCARC_SETUP_SOLVER(NS, NP)
 ! Because initial vector in MG is set to zero, this defect corresponds to F
  
 ITE = 0
-BVERBOSE = .TRUE.
+BVERBOSE = .FALSE.
 IF (BVERBOSE) THEN
    BL2NORM  = .TRUE.
    BMATVEC  = .TRUE.
