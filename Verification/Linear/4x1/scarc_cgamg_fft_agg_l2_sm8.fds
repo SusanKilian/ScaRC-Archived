@@ -8,7 +8,7 @@
 &PRES SOLVER                   = 'SCARC'
       SCARC_MATRIX             = 'COMPACT'
       SCARC_METHOD             = 'KRYLOV'
-      SCARC_MKL_PRECISION      = 'SINGLE'
+      SCARC_MKL_PRECISION      = 'DOUBLE'
       SCARC_PRECON             = 'MULTIGRID'
       SCARC_MULTIGRID          = 'ALGEBRAIC'
       SCARC_MULTIGRID_ACCURACY = 1.0E-6

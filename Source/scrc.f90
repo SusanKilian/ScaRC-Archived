@@ -16236,7 +16236,7 @@ WRITE(MSG%LU_DEBUG,*) 'TRANSFER_GMG: TYPE_INTERPOL=', TYPE_INTERPOL
                IP = IP + 1
             ENDDO
             RF%ROW(ICC + 1) = IP
-            WRITE(*,*) ICC,':SUM(RF)=',SUM(RF%VAL(RF%ROW(ICC):RF%ROW(ICC+1)-1))
+            !WRITE(*,*) ICC,':SUM(RF)=',SUM(RF%VAL(RF%ROW(ICC):RF%ROW(ICC+1)-1))
          ENDDO
       
          IP = 1
@@ -16254,7 +16254,7 @@ WRITE(MSG%LU_DEBUG,*) 'TRANSFER_GMG: TYPE_INTERPOL=', TYPE_INTERPOL
                ENDDO COLUMN_LOOP
             ENDDO
             PF%ROW(IC + 1) = IP
-            WRITE(*,*) ICC,':SUM(PF)=',SUM(PF%VAL(PF%ROW(IC):PF%ROW(IC+1)-1))
+            !WRITE(*,*) ICC,':SUM(PF)=',SUM(PF%VAL(PF%ROW(IC):PF%ROW(IC+1)-1))
          ENDDO
 
       CASE (NSCARC_INTERPOL_BILINEAR)
