@@ -9,9 +9,9 @@
 !  - WITH_SCARC_POSTPROCESSING   : dump environment for separate ScaRC postprocessing program
 ! ================================================================================================================
 !#undef WITH_MKL
-#undef WITH_SCARC_VERBOSE
-#undef WITH_SCARC_DEBUG
-#undef WITH_SCARC_MGM
+#define WITH_SCARC_VERBOSE
+#define WITH_SCARC_DEBUG
+#define WITH_SCARC_MGM
 #undef WITH_SCARC_POSTPROCESSING
 
 
@@ -411,7 +411,7 @@ LOGICAL :: IS_MKL_LEVEL(10)     = .FALSE.                       !< Flag for leve
 LOGICAL :: HAS_CSV_DUMP         = .FALSE.                       !< Flag for CSV-file to be dumped out
 LOGICAL :: HAS_GRIDS_MULTIPLE   = .FALSE.                       !< Flag for multiple discretization types
 LOGICAL :: HAS_TWO_LEVELS       = .FALSE.                       !< Flag for two grid levels
-LOGICAL :: HAS_MULTI_LEVELS  = .FALSE.                       !< Flag for multiple grid levels
+LOGICAL :: HAS_MULTI_LEVELS     = .FALSE.                       !< Flag for multiple grid levels
 LOGICAL :: HAS_LEVELS_AMG       = .FALSE.                       !< Flag for AMG-based grid levels
 LOGICAL :: HAS_LEVELS_GMG       = .FALSE.                       !< Flag for GMG-based grid levels
 
@@ -2191,7 +2191,7 @@ IS_FFT = (TYPE_PRECON == NSCARC_RELAX_FFT)  .OR. (TYPE_SMOOTH == NSCARC_RELAX_FF
 IS_FFTO= (TYPE_PRECON == NSCARC_RELAX_FFTO) .OR. (TYPE_SMOOTH == NSCARC_RELAX_FFTO)
 IS_MKL = (TYPE_PRECON >= NSCARC_RELAX_MKL)  .OR. (TYPE_SMOOTH >= NSCARC_RELAX_MKL) 
 
-HAS_TWO_LEVELS      = IS_CG .AND. (TYPE_PRECON /= NSCARC_RELAX_MULTIGRID) .AND. (TYPE_TWOLEVEL > NSCARC_TWOLEVEL_NONE)
+HAS_TWO_LEVELS   = IS_CG .AND. (TYPE_PRECON /= NSCARC_RELAX_MULTIGRID) .AND. (TYPE_TWOLEVEL > NSCARC_TWOLEVEL_NONE)
 HAS_MULTI_LEVELS = IS_MG .OR. IS_CG_MG .OR. HAS_TWO_LEVELS 
 
 IS_CG_ADD    = HAS_TWO_LEVELS .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_ADD)
@@ -2697,6 +2697,13 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CALL SCARC_ALLOCATE_INT3(G%CELL_NUMBER, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, &
                                NSCARC_INIT_UNDEF, 'CELL_NUMBER', CROUTINE)
 
+      ! Allocate index array which specifies I, J, K components for all degrees of freedom
+
+      NC = L%NX * L%NY * L%NZ
+      CALL SCARC_ALLOCATE_INT1(G%ICX, 1, NC, NSCARC_INIT_UNDEF, 'G%ICX', CROUTINE)
+      CALL SCARC_ALLOCATE_INT1(G%ICY, 1, NC, NSCARC_INIT_UNDEF, 'G%ICY', CROUTINE)
+      CALL SCARC_ALLOCATE_INT1(G%ICZ, 1, NC, NSCARC_INIT_UNDEF, 'G%ICZ', CROUTINE)
+
       ! Define local cell numbers for Poisson equation
 
       DO IZ=1,L%NZ
@@ -2704,6 +2711,9 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             DO IX=1,L%NX
                G%NC_LOCAL(NM) = G%NC_LOCAL(NM) + 1
                G%CELL_NUMBER(IX,IY,IZ) = G%NC_LOCAL(NM)
+               G%ICX(G%NC_LOCAL(NM)) = IX
+               G%ICY(G%NC_LOCAL(NM)) = IY
+               G%ICZ(G%NC_LOCAL(NM)) = IZ
             ENDDO
          ENDDO
       ENDDO
@@ -2723,6 +2733,13 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CALL SCARC_ALLOCATE_INT3(G%CELL_NUMBER, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, &
                                NSCARC_INIT_UNDEF, 'G%CELL_NUMBER', CROUTINE)
 
+      ! Allocate index array which specifies I, J, K components for all degrees of freedom
+
+      NC = L%NX * L%NY * L%NZ
+      CALL SCARC_ALLOCATE_INT1(G%ICX, 1, NC, NSCARC_INIT_UNDEF, 'G%ICX', CROUTINE)
+      CALL SCARC_ALLOCATE_INT1(G%ICY, 1, NC, NSCARC_INIT_UNDEF, 'G%ICY', CROUTINE)
+      CALL SCARC_ALLOCATE_INT1(G%ICZ, 1, NC, NSCARC_INIT_UNDEF, 'G%ICZ', CROUTINE)
+
       ! Number of local cells per mesh
 
       CALL SCARC_ALLOCATE_INT1(G%NC_LOCAL , 1, NMESHES, NSCARC_INIT_ZERO, 'G%NC_LOCAL', CROUTINE)
@@ -2741,6 +2758,9 @@ MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                IF (.NOT.L%IS_SOLID(IX,IY,IZ)) THEN
                   G%NC_LOCAL(NM) = G%NC_LOCAL(NM) + 1
                   G%CELL_NUMBER(IX,IY,IZ) = G%NC_LOCAL(NM)
+                  G%ICX(G%NC_LOCAL(NM)) = IX
+                  G%ICY(G%NC_LOCAL(NM)) = IY
+                  G%ICZ(G%NC_LOCAL(NM)) = IZ
                ENDIF
             ENDDO
          ENDDO
