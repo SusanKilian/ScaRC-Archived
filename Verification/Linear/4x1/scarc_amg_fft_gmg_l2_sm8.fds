@@ -1,6 +1,7 @@
-&HEAD CHID='scarc_amg_fft_agg_l2_sm8', TITLE='flow through a 2D-channel with linear inflow' /
+&HEAD CHID='scarc_amg_fft_gmg_l2_sm8', TITLE='flow through a 2D-channel with linear inflow' /
 
-&MESH IJK=320, 1, 10, XB=-3.2,  3.2, -0.01, 0.01, -0.1, 0.1 /
+&MESH IJK=160, 1, 20, XB=-3.2, -1.6, -0.01, 0.01, -0.1, 0.1, MULT_ID='mesh' /
+&MULT ID='mesh', DX=1.60, DY=0.02, DZ=0.20, I_UPPER=3, J_UPPER=0, K_UPPER=0 /
 
 &TIME T_END=2.0 / 
 
@@ -12,9 +13,11 @@
       SCARC_MULTIGRID_ACCURACY = 1.0E-6
       SCARC_MULTIGRID_THETA    = 2.0E-2 
       SCARC_MULTIGRID_LEVEL    = 2
+      SCARC_MULTIGRID_RELAXING = .FALSE.
+      SCARC_MULTIGRID_INTERPOL = 'CONSTANT'
       SCARC_SMOOTH             = 'FFT'
       SCARC_SMOOTH_ITERATIONS  = 8
-      SCARC_COARSENING         = 'AGGREGATED' /
+      SCARC_COARSENING         = 'GMG' /
 
 &DUMP DT_PL3D=1.E10, VELOCITY_ERROR_FILE = .TRUE. /
 
