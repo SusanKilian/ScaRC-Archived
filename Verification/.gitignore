@@ -1,5 +1,8 @@
 dump
 python
+2x1_orig
+meshes
+save
 
 *.val
 *.txt

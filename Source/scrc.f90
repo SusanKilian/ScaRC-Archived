@@ -9,9 +9,9 @@
 !  - WITH_SCARC_POSTPROCESSING   : dump environment for separate ScaRC postprocessing program
 ! ================================================================================================================
 !#undef WITH_MKL
-#define WITH_SCARC_VERBOSE
-#define WITH_SCARC_DEBUG
-#define WITH_SCARC_MGM
+#undef WITH_SCARC_VERBOSE
+#undef WITH_SCARC_DEBUG
+#undef WITH_SCARC_MGM
 #undef WITH_SCARC_POSTPROCESSING
 
 
@@ -10939,7 +10939,8 @@ MULTIGRID_LOOP: DO ITE = 1, NIT
       ! initial and final residual are passed via vector V by default
  
       PRESMOOTHING_LOOP: DO WHILE (NL < NLEVEL_MAX)
-         IF (ITE /= 1) CALL SCARC_SMOOTHER (NSCARC_CYCLING_PRESMOOTH, NS+1, NS, NL)         ! D_fine   := Smooth(defect)
+         !IF (ITE /= 1) CALL SCARC_SMOOTHER (NSCARC_CYCLING_PRESMOOTH, NS+1, NS, NL)         ! D_fine   := Smooth(defect)
+         CALL SCARC_SMOOTHER (NSCARC_CYCLING_PRESMOOTH, NS+1, NS, NL)         ! D_fine   := Smooth(defect)
          CALL SCARC_RESTRICTION (V, B, NL, NL+1)                              ! B_coarse := Rest(D_fine)
 #ifdef WITH_SCARC_DEBUG
 CALL SCARC_DEBUG_LEVEL (V, 'MG PRE: V', NL)
