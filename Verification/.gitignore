@@ -1,4 +1,5 @@
 dump
+python
 
 *.txt
 *.mem
