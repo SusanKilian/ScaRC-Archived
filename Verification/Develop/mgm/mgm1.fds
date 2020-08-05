@@ -9,7 +9,7 @@
       SCARC_ERROR_FILE        = .TRUE.
       SCARC_METHOD            = 'MGM' /
 
-&TIME T_END=0.5, DT=0.002 /
+&TIME T_END=0.05, DT=0.002 /
 
 &SURF ID='INFLOW2',VEL=-2.0, RAMP_V='IN2' /
 
