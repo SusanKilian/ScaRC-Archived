@@ -1,10 +1,10 @@
-mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe fft-0
-mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe fft-1
-mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe fft-2
-mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe fft-3
-mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe fft-4
-mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe fft-5
-mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe fft-6
+mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe fft-0.fds
+mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe fft-1.fds
+mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe fft-2.fds
+mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe fft-3.fds
+mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe fft-4.fds
+mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe fft-5.fds
+mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe fft-6.fds
 
 mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe glmat.fds
 mpiexec -n 64 ../../../Build/impi_intel_win_64/fds_impi_win_64.exe scarc.fds
