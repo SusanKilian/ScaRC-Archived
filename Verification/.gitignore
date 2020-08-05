@@ -1,6 +1,7 @@
 dump
 python
 
+*.val
 *.txt
 *.mem
 *.hgt
@@ -33,3 +34,4 @@ python
 ss
 tt
 rr
+pp
