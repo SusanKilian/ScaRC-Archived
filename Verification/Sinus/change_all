@@ -1,0 +1,12 @@
+cd 1x1
+sh change.sed
+cd ../4x1
+sh change.sed
+cd ../8x1
+sh change.sed
+cd ../16x1
+sh change.sed
+cd ../32x1
+sh change.sed
+cd ../64x1
+sh change.sed

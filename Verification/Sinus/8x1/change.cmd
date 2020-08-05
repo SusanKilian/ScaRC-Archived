@@ -1,0 +1,2 @@
+s/MESH IJK=320, 1, 20, XB=-3.2, 0.0/MESH IJK=80, 1, 20, XB=-3.2, -2.4/g
+s/MULT ID='mesh', DX=3.20, DY=0.02, DZ=0.20, I_UPPER=1/MULT ID='mesh', DX=0.80, DY=0.02, DZ=0.20, I_UPPER=7/g

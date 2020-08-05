@@ -1,6 +1,4 @@
-cd 1x1
-sh change.sed
-cd ../4x1
+cd 4x1
 sh change.sed
 cd ../8x1
 sh change.sed

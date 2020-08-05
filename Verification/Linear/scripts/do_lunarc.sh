@@ -1,5 +1,6 @@
 rba 2 fft 
 rba 2 glmat 
+rba 2 scarc 
 
 rba 2 scarc_amg_fft_agg_l2_sm8
 rba 2 scarc_amg_fft_agg_l3_sm8 

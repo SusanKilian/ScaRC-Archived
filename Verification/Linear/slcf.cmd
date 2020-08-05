@@ -1,0 +1,1 @@
+s/\&SLCF/ SLCF/g
