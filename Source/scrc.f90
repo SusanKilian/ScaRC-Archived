@@ -6248,7 +6248,11 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
          GWC%ICW = IC
 
          IP = A%ROW(IC)
-         A%VAL(IP) = A%VAL(IP) - F%SCAL_BOUNDARY
+         IF (IW <= L%N_WALL_CELLS_EXT) THEN
+            A%VAL(IP) = A%VAL(IP) - F%SCAL_BOUNDARY
+         ELSE
+            A%VAL(IP) = A%VAL(IP) + F%SCAL_BOUNDARY
+         ENDIF
 
       ENDDO
 
