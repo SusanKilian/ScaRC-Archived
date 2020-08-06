@@ -19456,7 +19456,8 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       DO JJ = NNY, 1, - 1
          DO II=1, NNX
             IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(II,JJ,KK)) THEN
-               CYCLE
+               VC(IC) = 0.0_EB
+               !CYCLE
             ELSE
                IC=G%CELL_NUMBER(II,JJ,KK)
                IF (ABS(VC(IC))<1.0E-14_EB) THEN
