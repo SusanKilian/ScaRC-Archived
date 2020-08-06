@@ -12392,6 +12392,19 @@ ENDDO
 ! -----------------------------------------------------------------------------------------------
 CALL SCARC_EXCHANGE(NSCARC_EXCHANGE_PRESSURE, NSCARC_NONE, NL)
 
+
+#ifdef WITH_SCARC_DEBUG
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+   IF (PREDICTOR) THEN
+      HP => M%H
+   ELSE
+      HP => M%HS
+   ENDIF
+   CALL SCARC_DUMP_PRESSURE(HP, NM, NLEVEL_MIN, 'HP')
+ENDDO
+#endif
+
 END SUBROUTINE SCARC_UPDATE_GHOSTCELLS
 
 
@@ -18724,7 +18737,7 @@ END SUBROUTINE SCARC_MGM_STORE_INTERNAL_VELOCITIES
 SUBROUTINE SCARC_SETUP_MGM(NLMIN, NLMAX)
 USE SCARC_POINTERS, ONLY: L, G, MGM
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
-INTEGER :: NM, NL, IC, IW, IP, NC, NW_INT, NW_EXT, NW1, NW2
+INTEGER :: NM, NL, IC, IW, IP
 LOGICAL, DIMENSION(:), ALLOCATABLE :: IS_PROCESSED
 
 CROUTINE = 'SCARC_SETUP_MGM'
@@ -19257,6 +19270,35 @@ CLOSE(LU_DUMP)
 
 FN_DUMP = CNAME
 END SUBROUTINE SCARC_DUMP_VECTOR
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Debugging version only: Dump out information for specified quantity
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DUMP_PRESSURE (HP, NM, NL, CNAME)
+USE SCARC_POINTERS, ONLY: L, G
+USE SCARC_ITERATION_ENVIRONMENT
+INTEGER, INTENT(IN) :: NM, NL
+REAL(EB), DIMENSION(:,:,:), INTENT(IN) :: HP
+CHARACTER(*), INTENT(IN) :: CNAME
+CHARACTER(80) :: FN_DUMP, CDIR
+INTEGER :: LU_DUMP, IC, IX, IY, IZ
+
+CALL SCARC_POINT_TO_GRID (NM, NL)                    
+WRITE (FN_DUMP, '(A,A,A,i3.3,A)') 'dump/',TRIM(CNAME),'_ITE',ITE_PRES
+LU_DUMP = GET_FILE_NUMBER()
+OPEN (LU_DUMP, FILE=FN_DUMP)
+DO IZ = 1, L%NZ
+   DO IY = 1, L%NY
+      DO IX = 1, L%NX
+         WRITE(LU_DUMP,*) HP(IX, IY, IZ)
+      ENDDO
+   ENDDO
+ENDDO
+CLOSE(LU_DUMP)
+
+FN_DUMP = CNAME
+END SUBROUTINE SCARC_DUMP_PRESSURE
+
 
 
 ! ------------------------------------------------------------------------------------------------------
