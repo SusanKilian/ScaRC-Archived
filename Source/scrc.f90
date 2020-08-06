@@ -1013,6 +1013,7 @@ TYPE SCARC_MGM_TYPE
    REAL(EB), ALLOCATABLE, DIMENSION (:)   :: B, X, Y           !< Right hand side, solution vectors
 
    INTEGER,  ALLOCATABLE, DIMENSION (:)   :: PERM              !< Permutation vector for reordering of matrix rows
+   INTEGER :: NCS, NCU                                         !< Number of cells for structured/unstructured grid
    INTEGER :: NW1, NW2, NWI, NWE                               !< Range of IW's with non-zero B-values
 
    LOGICAL :: IS_LU_BASED = .FALSE.                            !< Perform LU-decomposition (development version only)
@@ -7359,6 +7360,7 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP COARSE_SOLVER'
       ! ------- First part of method: Setup CG solver for inhomogeneous problem on structured discretization
 
       TYPE_GRID = NSCARC_GRID_STRUCTURED
+      CALL SCARC_ASSIGN_GRID_TYPE(NSCARC_GRID_STRUCTURED)
 
       NSTACK = NSCARC_STACK_ROOT
       STACK(NSTACK)%SOLVER => MAIN_CG_STRUCTURED
@@ -7374,6 +7376,8 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP COARSE_SOLVER'
       ! ------- Second part of method: Setup CG solver for homogeneous problem on unstructured discretization
 
       TYPE_GRID = NSCARC_GRID_UNSTRUCTURED
+      TYPE_PRECON = NSCARC_RELAX_SSOR
+      CALL SCARC_ASSIGN_GRID_TYPE(NSCARC_GRID_UNSTRUCTURED)
 
       NSTACK = NSTACK + 1
       STACK(NSTACK)%SOLVER => MAIN_CG_UNSTRUCTURED
@@ -7382,7 +7386,7 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP COARSE_SOLVER'
       ! For a first proof of concept only use SSOR-preconditioning (may be extended later to other preconditioners)
 
       NSTACK = NSTACK + 1
-      STACK(NSTACK)%SOLVER => PRECON_ILU
+      STACK(NSTACK)%SOLVER => PRECON_SSOR
       CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
 
 #endif
@@ -9153,9 +9157,9 @@ WRITE(MSG%LU_DEBUG,*) '==========> A: MGM: STRUCTURED'
       ! first solve inhomogeneous Poisson problem on structured grid with ScaRC (with Block-FFT)
       CALL SCARC_ASSIGN_GRID_TYPE(NSCARC_GRID_STRUCTURED)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'TYPE_GRID =', TYPE_GRID1G/NSCARC
+WRITE(MSG%LU_DEBUG,*) 'TYPE_GRID =', TYPE_GRID
 #endif
-      CALL SCARC_METHOD_KRYLOV (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
+      CALL SCARC_METHOD_KRYLOV (1, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
    
       CALL SCARC_MGM_STORE_SOLUTION(NLEVEL_MIN, 1)
       CALL SCARC_MGM_STORE_INTERNAL_VELOCITIES(NLEVEL_MIN)
@@ -9170,10 +9174,16 @@ WRITE(MSG%LU_DEBUG,*) '==========> B: MGM: BSTRUCTURED'
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'TYPE_GRID =', TYPE_GRID
 #endif
-      CALL SCARC_METHOD_KRYLOV (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_HOMOGENEOUS, NLEVEL_MIN)
+      CALL SCARC_METHOD_KRYLOV (3, NSCARC_STACK_ZERO, NSCARC_RHS_HOMOGENEOUS, NLEVEL_MIN)
 
       CALL SCARC_MGM_STORE_SOLUTION(NLEVEL_MIN, 2)
       CALL SCARC_MGM_STORE_SOLUTION(NLEVEL_MIN, 3)
+      
+      TYPE_METHOD = NSCARC_METHOD_MGM
+      CALL SCARC_ASSIGN_GRID_TYPE(NSCARC_GRID_STRUCTURED)
+
+      CALL SCARC_UPDATE_MAINCELLS(NLEVEL_MIN)
+      CALL SCARC_UPDATE_GHOSTCELLS(NLEVEL_MIN)
 
 #endif
    
@@ -10594,6 +10604,7 @@ TYPE_MATVEC = NSCARC_MATVEC_GLOBAL
 NS  = NSTACK
 NP  = NPARENT
 NL  = NLEVEL
+NG = TYPE_GRID
 
 #ifdef WITH_SCARC_POSTPROCESSING
 IF (ICYC == 1) THEN
@@ -10606,7 +10617,6 @@ ENDIF
 !   - Get parameters for current scope (note: NL denotes the finest level)
 !   - Get right hand side vector and clear solution vectors
 
-NG = TYPE_GRID
 CALL SCARC_SETUP_SOLVER(NS, NP)
 TYPE_GRID = NG
 CALL SCARC_SETUP_WORKSPACE(NS, NL, NRHS)
@@ -10737,7 +10747,7 @@ CALL SCARC_DEBUG_LEVEL (X, 'CG-METHOD: X FINAL', NL)
 WRITE(MSG%LU_DEBUG,*) '=======================>> CG : END =', ITE
 #endif
 
-IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) THEN
+IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN .AND. TYPE_METHOD /= NSCARC_METHOD_MGM) THEN
    CALL SCARC_UPDATE_MAINCELLS(NLEVEL_MIN)
    CALL SCARC_UPDATE_GHOSTCELLS(NLEVEL_MIN)
 #ifdef WITH_SCARC_POSTPROCESSING
@@ -11552,7 +11562,12 @@ SELECT_SOLVER_TYPE: SELECT CASE (SV%TYPE_SOLVER)
    
                ST%B = 0.0_EB                                    ! set RHS to zero
                ST%X = 0.0_EB                                    ! use zero as initial vector
-   
+               ST%V = 0.0_EB                                 
+               ST%D = 0.0_EB                                
+               ST%R = 0.0_EB                               
+               ST%Y = 0.0_EB                              
+               ST%Z = 0.0_EB                             
+  
                MGM => L%MGM
 
                !$OMP PARALLEL DO PRIVATE(IW, GWC, I, J, K, IOR0, IC) SCHEDULE(STATIC)
@@ -18603,7 +18618,7 @@ END SUBROUTINE SCARC_BLENDER_ZONES
 SUBROUTINE SCARC_MGM_STORE_SOLUTION(NL, NTYPE)
 USE SCARC_POINTERS, ONLY: ST, MGM
 INTEGER, INTENT(IN) :: NL, NTYPE
-INTEGER :: NM
+INTEGER :: NM, ICS, ICU, IX, IY, IZ
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -18613,18 +18628,32 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    SELECT CASE(NTYPE)
       CASE (1)
          MGM%H1 = ST%X
+         CALL SCARC_DUMP_VECTOR(MGM%H1, NM, NL, 'MGM-H1')
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'MGM_STORE_SOLUTION: NTYPE =', NTYPE
 CALL SCARC_DEBUG_LEVEL_MESH(MGM%H1, 'MGM%H1', NM, NL)
 #endif
       CASE (2)
          MGM%H2 = ST%X
+         CALL SCARC_DUMP_VECTOR(MGM%H2, NM, NL, 'MGM-H2')
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'MGM_STORE_SOLUTION: NTYPE =', NTYPE
 CALL SCARC_DEBUG_LEVEL_MESH(MGM%H2, 'MGM%H2', NM, NL)
 #endif
       CASE (3)
-         ST%X = MGM%H1 + MGM%H2
+         CALL SCARC_DUMP_VECTOR(ST%X, NM, NL, 'MGM-X')
+         ICS = 1                       ! structured cell number
+         DO IZ = 1, L%NZ
+            DO IY = 1, L%NY
+               DO IX = 1, L%NX
+                  ICS = (IZ-1) * L%NX * L%NY + (IY - 1) * L%NX + IX
+                  IF (.NOT.L%IS_SOLID(IX, IY, IZ)) THEN
+                     ICU = G%CELL_NUMBER(IX, IY, IZ)
+                     ST%X(ICS) = MGM%H1(ICS) + MGM%H2(ICU)
+                  ENDIF
+               ENDDO
+            ENDDO
+         ENDDO
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'MGM_STORE_SOLUTION: NTYPE =', NTYPE
 CALL SCARC_DEBUG_LEVEL_MESH(MGM%H1, 'MGM%H1' ,NM, NL)
@@ -18695,7 +18724,7 @@ END SUBROUTINE SCARC_MGM_STORE_INTERNAL_VELOCITIES
 SUBROUTINE SCARC_SETUP_MGM(NLMIN, NLMAX)
 USE SCARC_POINTERS, ONLY: L, G, MGM
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
-INTEGER :: NM, NL, IC, IW, IP
+INTEGER :: NM, NL, IC, IW, IP, NC, NW_INT, NW_EXT, NW1, NW2
 LOGICAL, DIMENSION(:), ALLOCATABLE :: IS_PROCESSED
 
 CROUTINE = 'SCARC_SETUP_MGM'
@@ -18704,17 +18733,21 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    DO NL = NLMIN, NLMAX
 
       L => SCARC(NM)%LEVEL(NL)
-      G => L%UNSTRUCTURED
       MGM => L%MGM
+
+      G => L%STRUCTURED
+      MGM%NCS = G%NC
+      
+      G => L%UNSTRUCTURED
+      MGM%NCU = G%NC
 
       MGM%NWE = L%N_WALL_CELLS_EXT
       MGM%NWI = L%N_WALL_CELLS_INT
-
       MGM%NW1 = L%N_WALL_CELLS_EXT + 1
       MGM%NW2 = L%N_WALL_CELLS_EXT + L%N_WALL_CELLS_INT
 
-      CALL SCARC_ALLOCATE_REAL1(MGM%H1, 1, G%NC, NSCARC_INIT_ZERO, 'H1', CROUTINE)
-      CALL SCARC_ALLOCATE_REAL1(MGM%H2, 1, G%NC, NSCARC_INIT_ZERO, 'H2', CROUTINE)
+      CALL SCARC_ALLOCATE_REAL1(MGM%H1, 1, MGM%NCS, NSCARC_INIT_ZERO, 'H1', CROUTINE)
+      CALL SCARC_ALLOCATE_REAL1(MGM%H2, 1, MGM%NCU, NSCARC_INIT_ZERO, 'H2', CROUTINE)
 
       CALL SCARC_ALLOCATE_REAL1(MGM%US, MGM%NW1, MGM%NW2, NSCARC_INIT_ZERO, 'UMGM', CROUTINE)
       CALL SCARC_ALLOCATE_REAL1(MGM%VS, MGM%NW1, MGM%NW2, NSCARC_INIT_ZERO, 'VMGM', CROUTINE)
@@ -19195,53 +19228,35 @@ END SUBROUTINE SCARC_VERBOSE_CMATRIX
 ! ------------------------------------------------------------------------------------------------
 !> \brief Debugging version only: Dump out information for specified quantity
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DUMP_QUANTITY (NV, CNAME, ISM, NS, NL)
-USE SCARC_POINTERS, ONLY: G, VC
+SUBROUTINE SCARC_DUMP_VECTOR (VC, NM, NL, CNAME)
+USE SCARC_POINTERS, ONLY: L, G
 USE SCARC_ITERATION_ENVIRONMENT
-INTEGER, INTENT(IN) :: NV, NS, NL, ISM
+INTEGER, INTENT(IN) :: NM, NL
+REAL(EB), DIMENSION(:), INTENT(IN) :: VC
 CHARACTER(*), INTENT(IN) :: CNAME
 CHARACTER(80) :: FN_DUMP, CDIR
-INTEGER :: LU_DUMP, IC, NM
+INTEGER :: LU_DUMP, IC, IX, IY, IZ
 
-IF (TRIM(CNAME) == 'RESIDUAL') THEN
-   CDIR = 'res'
-ELSE IF (TRIM(CNAME) == 'ERROR') THEN
-   CDIR = 'err'
-ELSE IF (TRIM(CNAME) == 'RHS') THEN
-   CDIR = 'rhs'
-ELSE IF (TRIM(CNAME) == 'EXACT') THEN
-   CDIR = 'exa'
-ELSE IF (TRIM(CNAME) == 'DISCRET') THEN
-   CDIR = 'dis'
-ENDIF
-
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   VC => SCARC_POINT_TO_VECTOR (NM, NL, NV)
-   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-   if (ISM == 0) THEN
-      WRITE (FN_DUMP, '(A,A3,A,i3.3,A,I3.3,A,I3.3,A,I3.3,A,I1,A,A)') &
-         'dump/',CDIR,'_t',ITE_TOTAL,'_ALL',ITE_SMOOTH,'_mg',ITE_MG,'_cg',ITE_CG,'_level',NL,'_',&
-         TRIM(STACK(NS)%SOLVER%CNAME)
-   else if (ISM == NSCARC_CYCLING_PRESMOOTH) THEN
-      WRITE (FN_DUMP, '(A,A3,A,i3.3,A,I3.3,A,I3.3,A,I3.3,A,I1,A,A)') &
-         'dump/',CDIR,'_t',ITE_TOTAL,'_PRE',ITE_SMOOTH,'_mg',ITE_MG,'_cg',ITE_CG,'_level',NL,'_',&
-         TRIM(STACK(NS)%SOLVER%CNAME)
-   ELSE IF (ISM == NSCARC_CYCLING_POSTSMOOTH) THEN
-      WRITE (FN_DUMP, '(A,A3,A,i3.3,A,I3.3,A,I3.3,A,I3.3,A,I1,A,A)') &
-         'dump/',CDIR,'_t',ITE_TOTAL,'_POST',ITE_SMOOTH,'_mg',ITE_MG,'_cg',ITE_CG,'_level',NL,'_',&
-         TRIM(STACK(NS)%SOLVER%CNAME)
-   ENDIF
-   LU_DUMP = GET_FILE_NUMBER()
-   OPEN (LU_DUMP, FILE=FN_DUMP)
-   DO IC = 1, G%NC
-      !WRITE(LU_DUMP,'(F25.16)') VC(IC)
-      WRITE(LU_DUMP,*) VC(IC)
+CALL SCARC_POINT_TO_GRID (NM, NL)                    
+WRITE (FN_DUMP, '(A,A,A,i3.3,A)') 'dump/',TRIM(CNAME),'_ITE',ITE_PRES
+LU_DUMP = GET_FILE_NUMBER()
+OPEN (LU_DUMP, FILE=FN_DUMP)
+DO IZ = 1, L%NZ
+   DO IY = 1, L%NY
+      DO IX = 1, L%NX
+         IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(IX,IY,IZ)) THEN
+            WRITE(LU_DUMP,*) 0.0_EB
+         ELSE
+            IC=G%CELL_NUMBER(IX,IY,IZ)
+            WRITE(LU_DUMP,*) VC(IC)
+         ENDIF
+      ENDDO
    ENDDO
-   CLOSE(LU_DUMP)
 ENDDO
+CLOSE(LU_DUMP)
 
 FN_DUMP = CNAME
-END SUBROUTINE SCARC_DUMP_QUANTITY
+END SUBROUTINE SCARC_DUMP_VECTOR
 
 
 ! ------------------------------------------------------------------------------------------------------
