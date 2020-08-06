@@ -5258,17 +5258,21 @@ WRITE(MSG%LU_DEBUG,*) 'IS_CG_GMG:  ', NL
 
       CASE (NSCARC_METHOD_MGM)
    
-         ! First assemble unstructured matrix
-
-         CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)
-         CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
-         CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
-
-         ! Then assemble structured matrix
+         ! Then assemble structured matrix with inhomogeneous boundary conditions
 
          CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_STRUCTURED)
          CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
          CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
+
+         ! First assemble unstructured matrix with homogeneous Dirichlet boundary conditions
+
+         CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)
+         CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
+         CALL SCARC_SETUP_BOUNDARY_DIRICHLET(NM, NLEVEL_MIN)
+
+         ! Reassign structured grid type
+
+         CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_STRUCTURED)
 #endif
 
    END SELECT SELECT_SCARC_METHOD
@@ -6139,6 +6143,9 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
          ENDDO
       ENDIF 
 
+#ifdef WITH_SCARC_DEBUG
+      CALL SCARC_DEBUG_CMATRIX(A, 'POISSON', 'POISSON WITH BDRY')
+#endif
 
  
    ! ---------- Matrix in bandwise storage technique
@@ -6207,7 +6214,57 @@ END SELECT
 
 END SUBROUTINE SCARC_SETUP_BOUNDARY
 
+SUBROUTINE SCARC_SETUP_BOUNDARY_DIRICHLET (NM, NL)
+USE SCARC_POINTERS, ONLY: L, G, F, GWC, A
+INTEGER, INTENT(IN) :: NM, NL
+INTEGER :: I, J, K, IOR0, IW, IC, NOM, IP
 
+CALL SCARC_POINT_TO_GRID (NM, NL)          
+
+SELECT CASE (SCARC_MATRIX_LEVEL(NL))
+
+   ! ---------- Matrix in compact storage technique
+ 
+   CASE (NSCARC_MATRIX_COMPACT)
+
+      A => G%POISSON
+
+      DO IW = 1, G%NW
+
+         GWC => G%WALL(IW)
+         IOR0 = GWC%IOR
+         IF (TWO_D .AND. ABS(IOR0) == 2) CYCLE       
+
+         F  => L%FACE(IOR0)
+
+         I = GWC%IXW
+         J = GWC%IYW
+         K = GWC%IZW
+
+         IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I, J, K)) CYCLE
+
+         NOM = GWC%NOM
+         IC  = G%CELL_NUMBER(I, J, K)
+         GWC%ICW = IC
+
+         IP = A%ROW(IC)
+         A%VAL(IP) = A%VAL(IP) - F%SCAL_BOUNDARY
+
+      ENDDO
+
+#ifdef WITH_SCARC_DEBUG
+      CALL SCARC_DEBUG_CMATRIX(A, 'POISSON', 'POISSON WITH DIRICHLET BDRY')
+#endif
+
+   ! ---------- Matrix in compact storage technique
+ 
+   CASE (NSCARC_MATRIX_BANDWISE)
+
+      WRITE(*,*) 'BOUNDARY_DIRICHLET for banded homogeneous BCs not finished yet'
+
+END SELECT
+
+END SUBROUTINE SCARC_SETUP_BOUNDARY_DIRICHLET
 ! ------------------------------------------------------------------------------------------------
 !> \brief Setup condensed system for compact matrix storage technique
 ! Define switch entries for toggle between original and condensed values
@@ -11601,6 +11658,7 @@ WRITE(MSG%LU_DEBUG,'(A, 6I4, 8E12.4)') &
                ENDDO
                !$OMP END PARALLEL DO
 #endif
+               CALL SCARC_DEBUG_LEVEL_MESH(ST%B, 'RHS second pass MGM', NM, NL)
    
          END SELECT SELECT_RHS_TYPE
  
@@ -19247,7 +19305,7 @@ USE SCARC_ITERATION_ENVIRONMENT
 INTEGER, INTENT(IN) :: NM, NL
 REAL(EB), DIMENSION(:), INTENT(IN) :: VC
 CHARACTER(*), INTENT(IN) :: CNAME
-CHARACTER(80) :: FN_DUMP, CDIR
+CHARACTER(80) :: FN_DUMP
 INTEGER :: LU_DUMP, IC, IX, IY, IZ
 
 CALL SCARC_POINT_TO_GRID (NM, NL)                    
@@ -19275,13 +19333,13 @@ END SUBROUTINE SCARC_DUMP_VECTOR
 !> \brief Debugging version only: Dump out information for specified quantity
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DUMP_PRESSURE (HP, NM, NL, CNAME)
-USE SCARC_POINTERS, ONLY: L, G
+USE SCARC_POINTERS, ONLY: L
 USE SCARC_ITERATION_ENVIRONMENT
 INTEGER, INTENT(IN) :: NM, NL
 REAL(EB), DIMENSION(:,:,:), INTENT(IN) :: HP
 CHARACTER(*), INTENT(IN) :: CNAME
-CHARACTER(80) :: FN_DUMP, CDIR
-INTEGER :: LU_DUMP, IC, IX, IY, IZ
+CHARACTER(80) :: FN_DUMP
+INTEGER :: LU_DUMP, IX, IY, IZ
 
 CALL SCARC_POINT_TO_GRID (NM, NL)                    
 WRITE (FN_DUMP, '(A,A,A,i3.3,A)') 'dump/',TRIM(CNAME),'_ITE',ITE_PRES
@@ -19442,9 +19500,10 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    NNY=MIN(10,L%NY)
    NNZ=MIN(10,L%NZ)
 
+   WRITE(MSG%LU_DEBUG,*) 'IS_UNSTRUCTURED =', IS_UNSTRUCTURED
    WRITE(MSG%LU_DEBUG,*) '=========================================================='
    WRITE(MSG%LU_DEBUG,2001) CVEC, NM, NL
-   WRITE(MSG%LU_DEBUG,2002) G%NC, NNX, NNY, NNZ, NV, SIZE(VC)
+   WRITE(MSG%LU_DEBUG,2002) G%NC, NNX, NNY, NNZ, NV, SIZE(VC), TYPE_GRID
    WRITE(MSG%LU_DEBUG,*) '=========================================================='
    !IF ((IS_AMG.OR.IS_CG_AMG.OR.HAS_COARSENING_AMG) .AND. NL > NLEVEL_MIN) THEN
 
@@ -19456,7 +19515,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       DO JJ = NNY, 1, - 1
          DO II=1, NNX
             IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(II,JJ,KK)) THEN
-               VC(IC) = 0.0_EB
+               VALUES(II)=0.0_EB
                !CYCLE
             ELSE
                IC=G%CELL_NUMBER(II,JJ,KK)
@@ -19467,9 +19526,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                ENDIF
             ENDIF
          ENDDO
-         !WRITE(MSG%LU_DEBUG, '(5E23.14)') (VALUES(II), II=4, NNX)
          WRITE(MSG%LU_DEBUG, '(12E14.6)') (VALUES(II), II=1, NNX)
-         !WRITE(MSG%LU_DEBUG, '(12E11.3)') (VALUES(II), II=1, NNX
       ENDDO
       IF (.NOT. TWO_D) WRITE(MSG%LU_DEBUG, *) '----------------'
    ENDDO
@@ -19481,9 +19538,8 @@ ENDDO
 
 !CALL SCARC_MATLAB_VECTOR(NV, CVEC, NL)
 
-!2000 FORMAT('=== ',A,' : ',A,' on mesh ',I8,' on level ',I8, ': NX, NY, NZ=',3I8,': NV=',I8)
 2001 FORMAT('=== ',A,' on mesh ',I8,' on level ',I8)
-2002 FORMAT('=== NC = ',I6, ': NX, NY, NZ=',3I6,': NV=',I6,': Size=',I8)
+2002 FORMAT('=== NC = ',I6, ': NX, NY, NZ=',3I6,': NV=',I6,': Size=',I8,': GRID=', I6)
 END SUBROUTINE SCARC_DEBUG_LEVEL
 
 ! ------------------------------------------------------------------------------------------------
