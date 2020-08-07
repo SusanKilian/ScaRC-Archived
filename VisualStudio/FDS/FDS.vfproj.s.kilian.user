@@ -3,7 +3,7 @@
 	<Configurations>
 		<Configuration Name="Debug|Win32"/>
 		<Configuration Name="Release|Win32"/>
-		<Configuration Name="Debug|x64" CommandArguments="a1.fds" WorkingDirectory="../Cases"/>
+		<Configuration Name="Debug|x64" CommandArguments="mgm1.fds" WorkingDirectory="../Cases"/>
 		<Configuration Name="Release|x64" CommandArguments="poisson3d_scarc_1mesh.fds" WorkingDirectory="../Cases"/>
 		<Configuration Name="Release_Qipo|Win32"/>
 		<Configuration Name="Release_Qipo|x64"/></Configurations></VisualStudioUserFile>

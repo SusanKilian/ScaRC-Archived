@@ -5272,9 +5272,6 @@ WRITE(MSG%LU_DEBUG,*) 'IS_CG_GMG:  ', NL
          !CALL SCARC_SETUP_BOUNDARY_DIRICHLET(NM, NLEVEL_MIN)
          TYPE_MKL(NLEVEL_MIN) = NSCARC_MKL_LOCAL
 
-         ! Reassign structured grid type
-
-         CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_STRUCTURED)
 #endif
 
    END SELECT SELECT_SCARC_METHOD
@@ -7451,7 +7448,11 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP COARSE_SOLVER'
       ! ------- Second part of method: Setup CG solver for homogeneous problem on unstructured discretization
 
       TYPE_GRID = NSCARC_GRID_UNSTRUCTURED
+#ifdef WITH_MKL
       TYPE_PRECON = NSCARC_RELAX_MKL
+#else
+      TYPE_PRECON = NSCARC_RELAX_SSOR
+#endif
       CALL SCARC_ASSIGN_GRID_TYPE(NSCARC_GRID_UNSTRUCTURED)
 
       NSTACK = NSTACK + 1
