@@ -102,7 +102,7 @@ def plot_quantity(base,name, quan, ite, nx, nz, dx, dz):
       #show()
 
 base = '../../VisualStudio/Cases'
-base = '/Users/susannekilian/GIT/github/01_ScaRC/Verification/Develop/MGM'
+#base = '/Users/susannekilian/GIT/github/01_ScaRC/Verification/Develop/MGM'
 
 nx = 8
 nz = 8
