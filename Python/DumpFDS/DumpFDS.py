@@ -73,7 +73,8 @@ def plot_quantity(base,name, quan, ite, nx, nz, dx, dz):
    #print 'max, min:', max_val, min_val
    surf = ax.plot_surface(xp, zp, val, rstride=1, cstride=1, cmap=cm.jet, antialiased=False)
    #surf = ax.plot_surface(xp, zp, val, rstride=8, cstride=8, cmap=cm.jet)
-   ax.set_zlim(min_val-0.01, max_val+0.01)
+   #ax.set_zlim(min_val-0.01, max_val+0.01)
+   ax.set_zlim(-10.0, 180.0)
    ax.set_xlabel('x')
    ax.set_ylabel('y')
    ax.set_zlabel('z')
@@ -101,6 +102,7 @@ def plot_quantity(base,name, quan, ite, nx, nz, dx, dz):
       #show()
 
 base = '../../VisualStudio/Cases'
+base = '/Users/susannekilian/GIT/github/01_ScaRC/Verification/Develop/MGM'
 
 nx = 8
 nz = 8
