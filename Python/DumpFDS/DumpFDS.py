@@ -19,7 +19,7 @@ def read_quantity(base, name, ite):
 
    quan = []
    found = False
-   dump_name = "%s/dump/%s_ITE%3.3d" %(base,name, ite)
+   dump_name = "%s/dump/%s_%3.3d" %(base,name, ite)
    #print ("reading from %s" %dump_name)
 
    if os.path.exists(dump_name) :
@@ -81,7 +81,7 @@ def plot_quantity(base,name, quan, ite, nx, nz, dx, dz):
    #ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
    fig.colorbar(surf, shrink=0.5, aspect=5)
    picture = "%s/pictures/%s_ite%3.3d.png" %(base, name, ite)
-   plt.show()
+   #plt.show()
    savefig(picture)
    plt.close(fig)
 
@@ -110,7 +110,7 @@ dz = 0.8/nz
 
 nit = 10
 
-names = ['MGM-H1', 'MGM-H2', 'MGM-X']
+names = ['h1', 'h2', 'h', 'mgm1', 'uscarc1']
 for ite in range(nit):
    for name in names:
       (found, quan) = read_quantity(base, name, ite+1)
