@@ -5268,7 +5268,9 @@ WRITE(MSG%LU_DEBUG,*) 'IS_CG_GMG:  ', NL
 
          CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)
          CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
-         CALL SCARC_SETUP_BOUNDARY_DIRICHLET(NM, NLEVEL_MIN)
+         CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
+         !CALL SCARC_SETUP_BOUNDARY_DIRICHLET(NM, NLEVEL_MIN)
+         TYPE_MKL(NLEVEL_MIN) = NSCARC_MKL_LOCAL
 
          ! Reassign structured grid type
 
@@ -6118,8 +6120,14 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
             SELECT CASE (GWC%BTYPE)
                CASE (DIRICHLET)
                   A%VAL(IP) = A%VAL(IP) - F%SCAL_BOUNDARY
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,6I6,E12.4)') 'B :DIRICHLET: IW, I, J, K, NOM, IC, A%VAL:', IW, I, J, K, NOM, IC, A%VAL(IP)
+#endif
                CASE (NEUMANN)
                   A%VAL(IP) = A%VAL(IP) + F%SCAL_BOUNDARY
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,6I6,E12.4)') 'B :NEUMANN  : IW, I, J, K, NOM, IC, A%VAL:', IW, I, J, K, NOM, IC, A%VAL(IP)
+#endif
             END SELECT
 
          ! Purely Neumann matrix
@@ -6250,8 +6258,14 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
          IP = A%ROW(IC)
          IF (IW <= L%N_WALL_CELLS_EXT) THEN
             A%VAL(IP) = A%VAL(IP) - F%SCAL_BOUNDARY
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,6I6,E12.4)') 'BD:DIRICHLET: IW, I, J, K, NOM, IC, A%VAL:', IW, I, J, K, NOM, IC, A%VAL(IP)
+#endif
          ELSE
             A%VAL(IP) = A%VAL(IP) + F%SCAL_BOUNDARY
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,6I6,E12.4)') 'BD:NEUMANN  : IW, I, J, K, NOM, IC, A%VAL:', IW, I, J, K, NOM, IC, A%VAL(IP)
+#endif
          ENDIF
 
       ENDDO
@@ -7437,7 +7451,7 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP COARSE_SOLVER'
       ! ------- Second part of method: Setup CG solver for homogeneous problem on unstructured discretization
 
       TYPE_GRID = NSCARC_GRID_UNSTRUCTURED
-      TYPE_PRECON = NSCARC_RELAX_SSOR
+      TYPE_PRECON = NSCARC_RELAX_MKL
       CALL SCARC_ASSIGN_GRID_TYPE(NSCARC_GRID_UNSTRUCTURED)
 
       NSTACK = NSTACK + 1
@@ -7447,8 +7461,27 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP COARSE_SOLVER'
       ! For a first proof of concept only use SSOR-preconditioning (may be extended later to other preconditioners)
 
       NSTACK = NSTACK + 1
+#ifdef WITH_MKL
+      STACK(NSTACK)%SOLVER => PRECON_MKL
+      SELECT CASE(TYPE_SCOPE(1))
+
+         ! Globally acting - call global CLUSTER_SPARSE_SOLVER from MKL
+
+         CASE (NSCARC_SCOPE_GLOBAL)
+            CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_GLOBAL)
+            CALL SCARC_SETUP_CLUSTER(NLEVEL_MIN, NLEVEL_MIN)
+
+         ! locally acting - call global PARDISO solver from MKL
+
+         CASE (NSCARC_SCOPE_LOCAL)
+            CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
+            CALL SCARC_SETUP_PARDISO(NLEVEL_MIN, NLEVEL_MIN)
+
+      END SELECT
+#else
       STACK(NSTACK)%SOLVER => PRECON_SSOR
       CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
+#endif
 
 #endif
 
@@ -9223,7 +9256,7 @@ WRITE(MSG%LU_DEBUG,*) 'TYPE_GRID =', TYPE_GRID
       CALL SCARC_METHOD_KRYLOV (1, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
    
       CALL SCARC_MGM_STORE_SOLUTION(NLEVEL_MIN, 1)
-      CALL SCARC_MGM_STORE_INTERNAL_VELOCITIES(NLEVEL_MIN)
+      CALL SCARC_MGM_GET_INTERNAL_VELOCITIES(NLEVEL_MIN)
       CALL SCARC_MGM_STORE_SOLUTION(NLEVEL_MIN, 1)
    
 #ifdef WITH_SCARC_DEBUG
@@ -18737,7 +18770,7 @@ END SUBROUTINE SCARC_MGM_STORE_SOLUTION
 ! ---------------------------------------------------------------------------------------------------------------
 !> \brief Set internal boundary conditions for unstructured, homogeneous part of McKeeney-Greengard-Mayo method
 ! ---------------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_MGM_STORE_INTERNAL_VELOCITIES(NL)
+SUBROUTINE SCARC_MGM_GET_INTERNAL_VELOCITIES(NL)
 USE SCARC_ITERATION_ENVIRONMENT
 USE SCARC_POINTERS, ONLY: M, L, MGM, UU, VV, WW, HP
 INTEGER, INTENT(IN) :: NL
@@ -18782,7 +18815,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 ENDDO
 
-END SUBROUTINE SCARC_MGM_STORE_INTERNAL_VELOCITIES
+END SUBROUTINE SCARC_MGM_GET_INTERNAL_VELOCITIES
 
 
 ! ----------------------------------------------------------------------------------------------------
