@@ -9,8 +9,8 @@
 !  - WITH_SCARC_POSTPROCESSING   : dump environment for separate ScaRC postprocessing program
 ! ================================================================================================================
 !#undef WITH_MKL
-#define WITH_SCARC_VERBOSE
 #undef WITH_SCARC_DEBUG
+#define WITH_SCARC_VERBOSE
 #define WITH_SCARC_MGM
 #undef WITH_SCARC_POSTPROCESSING
 
@@ -19354,11 +19354,6 @@ END SUBROUTINE SCARC_VERBOSE_CMATRIX
 #endif
 
 
-#ifdef WITH_SCARC_DEBUG
-! ================================================================================================
-! Start  WITH_SCARC_DEBUG  - Part
-! Collection of routines which print out different quantities or allow to preset them
-! ================================================================================================
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Debugging version only: Dump out information for specified quantity
@@ -19423,6 +19418,11 @@ END SUBROUTINE SCARC_DUMP_PRESSURE
 
 
 
+#ifdef WITH_SCARC_DEBUG
+! ================================================================================================
+! Start  WITH_SCARC_DEBUG  - Part
+! Collection of routines which print out different quantities or allow to preset them
+! ================================================================================================
 ! ------------------------------------------------------------------------------------------------------
 !> \brief Debugging version only: Print out debug information for integer vector
 ! ------------------------------------------------------------------------------------------------------
