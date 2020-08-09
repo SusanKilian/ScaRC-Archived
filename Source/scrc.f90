@@ -9,7 +9,7 @@
 !  - WITH_SCARC_POSTPROCESSING   : dump environment for separate ScaRC postprocessing program
 ! ================================================================================================================
 !#undef WITH_MKL
-#undef WITH_SCARC_DEBUG
+#define WITH_SCARC_DEBUG
 #define WITH_SCARC_VERBOSE
 #define WITH_SCARC_MGM
 #undef WITH_SCARC_POSTPROCESSING
@@ -9235,6 +9235,12 @@ DTI = 1.0_EB/DT_CURRENT
 ITE_PRES = ITE_PRES + 1
 ITE_GLOBAL = ICYC
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '==================================================================================='
+WRITE(MSG%LU_DEBUG,*) '================= SCARC_SOLVER : ICYC = ', ICYC
+WRITE(MSG%LU_DEBUG,*) '==================================================================================='
+#endif
+
 SELECT_METHOD: SELECT CASE (TYPE_METHOD)
 
    ! ---------------- Krylov method (CG) -------------------------------------
@@ -12404,9 +12410,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ENDDO
    !$OMP END PARALLEL DO 
 
-#ifdef WITH_SCARC_VERBOSE
-   CALL SCARC_DUMP_PRESSURE (HP, NM, NL, 'm')
-#endif
+!#ifdef WITH_SCARC_VERBOSE
+!   CALL SCARC_DUMP_PRESSURE (HP, NM, 'm')
+!#endif
 ENDDO
 
 END SUBROUTINE SCARC_UPDATE_MAINCELLS
@@ -12489,9 +12495,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ENDDO WALL_CELLS_LOOP
    !$OMP END PARALLEL DO
 
-#ifdef WITH_SCARC_VERBOSE
-   CALL SCARC_DUMP_PRESSURE (HP, NM, NL, 'g')
-#endif
+!#ifdef WITH_SCARC_VERBOSE
+!   CALL SCARC_DUMP_PRESSURE (HP, NM, NL, 'g')
+!#endif
 
 ENDDO
 
@@ -12510,9 +12516,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ELSE
       HP => M%HS
    ENDIF
-#ifdef WITH_SCARC_VERBOSE
-   CALL SCARC_DUMP_PRESSURE(HP, NM, NLEVEL_MIN, TRIM(CHID))
-#endif
+!#ifdef WITH_SCARC_VERBOSE
+!   CALL SCARC_DUMP_PRESSURE(HP, NM, NLEVEL_MIN, TRIM(CHID))
+!#endif
 ENDDO
 #endif
 
@@ -18753,7 +18759,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CASE (1)
          MGM%H1(1:MGM%NCS) = ST%X(1:MGM%NCS)
 #ifdef WITH_SCARC_VERBOSE
-         CALL SCARC_DUMP_VECTOR(MGM%H1, NM, NL, 'h1')
+         CALL SCARC_DUMP_VECTOR(MGM%H1, NM, NL, 'mgm_h1')
 #endif
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'MGM_STORE_PRESSURE_VECTOR: NTYPE =', NTYPE
@@ -18763,7 +18769,7 @@ CALL SCARC_DEBUG_LEVEL_MESH(MGM%H1, 'MGM%H1', NSCARC_GRID_STRUCTURED, NM, NL)
          MGM%H2 = 0.0_EB
          MGM%H2(1:MGM%NCU) = ST%X(1:MGM%NCU)
 #ifdef WITH_SCARC_VERBOSE
-         CALL SCARC_DUMP_VECTOR(MGM%H2, NM, NL, 'h2')
+         CALL SCARC_DUMP_VECTOR(MGM%H2, NM, NL, 'mgm_h2')
 #endif
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'MGM_STORE_PRESSURE_VECTOR: NTYPE =', NTYPE
@@ -19391,29 +19397,49 @@ END SUBROUTINE SCARC_DUMP_VECTOR
 ! ------------------------------------------------------------------------------------------------
 !> \brief Debugging version only: Dump out information for specified quantity
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DUMP_PRESSURE (HP, NM, NL, CNAME)
-USE SCARC_POINTERS, ONLY: L
+SUBROUTINE SCARC_DUMP_PRESSURE (HP, NM, CNAME)
 USE SCARC_ITERATION_ENVIRONMENT
-INTEGER, INTENT(IN) :: NM, NL
+INTEGER, INTENT(IN) :: NM
 REAL(EB), DIMENSION(:,:,:), INTENT(IN) :: HP
 CHARACTER(*), INTENT(IN) :: CNAME
-CHARACTER(80) :: FN_DUMP
+CHARACTER(80) :: FN_DUMP, FN_DEBUG
 INTEGER :: LU_DUMP, IX, IY, IZ
+INTEGER, SAVE :: LU_DEBUG
+LOGICAL :: BFIRST = .TRUE.
 
-CALL SCARC_POINT_TO_GRID (NM, NL)                    
-WRITE (FN_DUMP, '(A,A,A,i3.3,A)') 'dump/',TRIM(CNAME),'_',ITE_PRES
+IF (BFIRST) THEN
+   WRITE (FN_DEBUG, '(A,A,A,i3.3)') 'debug/',TRIM(CHID),'_',ICYC
+   LU_DEBUG = GET_FILE_NUMBER()
+   OPEN (LU_DEBUG, FILE=FN_DEBUG)
+   BFIRST = .FALSE.
+ENDIF
+
+WRITE(LU_DEBUG,*) '==========================================================================='
+IF (PREDICTOR) THEN
+   WRITE(LU_DEBUG,*) ' ICYC = ', ICYC, '        PREDICTOR: H'
+ELSE
+   WRITE(LU_DEBUG,*) ' ICYC = ', ICYC, '        PREDICTOR: HS'
+ENDIF
+WRITE(LU_DEBUG,*) '==========================================================================='
+WRITE (FN_DUMP, '(A,A,A,A,A,i3.3)') 'pressure/',TRIM(CHID),'_',TRIM(CNAME),'_',ICYC
+
 LU_DUMP = GET_FILE_NUMBER()
 OPEN (LU_DUMP, FILE=FN_DUMP)
-DO IZ = 1, L%NZ
-   DO IY = 1, L%NY
-      DO IX = 1, L%NX
-         WRITE(LU_DUMP,*) HP(IX, IY, IZ)
+DO IZ = 1, MESHES(NM)%KBAR
+   DO IY = 1, MESHES(NM)%JBAR
+      DO IX = 1, MESHES(NM)%IBAR
+         WRITE(LU_DUMP,*)  HP(IX, IY, IZ)
       ENDDO
    ENDDO
 ENDDO
 CLOSE(LU_DUMP)
 
-FN_DUMP = CNAME
+DO IZ = MESHES(NM)%KBAR, 1, -1
+   DO IY = MESHES(NM)%JBAR, 1, -1
+      WRITE(LU_DEBUG,'(8E12.4)') (HP(IX, IY, IZ), IX = 1, MESHES(NM)%IBAR)
+   ENDDO
+ENDDO
+
 END SUBROUTINE SCARC_DUMP_PRESSURE
 
 
