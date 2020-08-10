@@ -11592,7 +11592,6 @@ SELECT_SOLVER_TYPE: SELECT CASE (SV%TYPE_SOLVER)
                MAIN_INHOMOGENEOUS_LOOP: DO IOR0 = -3, 3, 1 
       
                   IF (IOR0 == 0) CYCLE
-      
                   F => SCARC(NM)%LEVEL(NL)%FACE(IOR0)
                   
                   IW1 = F%NCW0
@@ -11717,17 +11716,17 @@ WRITE(MSG%LU_DEBUG,'(A, 5I6,2E12.4)') 'SETUP_WORKSPACE: NEUMANN  : IW, I, J, K, 
    
                   SELECT CASE (IOR0)
                      CASE(1)
-                        ST%B(IC) =  L%DXI * DTI * MGM%UU(IW)
-                     CASE(-1)
                         ST%B(IC) = -L%DXI * DTI * MGM%UU(IW)
+                     CASE(-1)
+                        ST%B(IC) =  L%DXI * DTI * MGM%UU(IW)
                      CASE(2)
-                        ST%B(IC) =  L%DYI * DTI * MGM%VV(IW)
-                     CASE(-2)
                         ST%B(IC) = -L%DYI * DTI * MGM%VV(IW)
+                     CASE(-2)
+                        ST%B(IC) =  L%DYI * DTI * MGM%VV(IW)
                      CASE(3)
-                        ST%B(IC) =  L%DZI * DTI * MGM%WW(IW)
-                     CASE(-3)
                         ST%B(IC) = -L%DZI * DTI * MGM%WW(IW)
+                     CASE(-3)
+                        ST%B(IC) = +L%DZI * DTI * MGM%WW(IW)
                   END SELECT
    
 #ifdef WITH_SCARC_DEBUG
@@ -18968,6 +18967,8 @@ WRITE(MSG%LU_DEBUG,'(A, 5I6,3E12.4)') 'MGM:3: IX, IY, IZ, ICS, ICU, X1(ICS), X1(
             ENDDO
          ENDDO
 #ifdef WITH_SCARC_DEBUG
+         CALL SCARC_DEBUG_VECTOR1(MGM%X1, NM, NL, NSCARC_GRID_STRUCTURED, 'MGM%X1')
+         CALL SCARC_DEBUG_VECTOR1(MGM%X2, NM, NL, NSCARC_GRID_UNSTRUCTURED, 'MGM%X2')
          CALL SCARC_DEBUG_VECTOR1(MGM%X0, NM, NL, NSCARC_GRID_STRUCTURED, 'MGM%X0')
 #endif
 
