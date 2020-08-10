@@ -10866,7 +10866,11 @@ WRITE(MSG%LU_DEBUG,*) '=======================>> CG : END =', ITE
 
 IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) THEN
    CALL SCARC_UPDATE_MAINCELLS(NLEVEL_MIN)
-   CALL SCARC_UPDATE_GHOSTCELLS(NLEVEL_MIN)
+   IF (NSTACK == 3 .AND. TYPE_METHOD == NSCARC_METHOD_MGM) THEN
+      CALL SCARC_UPDATE_GHOSTCELLS2(NLEVEL_MIN)
+   ELSE
+      CALL SCARC_UPDATE_GHOSTCELLS(NLEVEL_MIN)
+   ENDIF
 #ifdef WITH_SCARC_POSTPROCESSING
    CALL SCARC_PRESSURE_DIFFERENCE(NLEVEL_MIN)
    CALL SCARC_DUMP_SYSTEM(NS, NSCARC_DUMP_X)
@@ -12556,6 +12560,116 @@ ENDDO
 #endif
 
 END SUBROUTINE SCARC_UPDATE_GHOSTCELLS
+
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Set correct boundary values at external and internal boundaries
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_UPDATE_GHOSTCELLS2(NL)
+USE SCARC_POINTERS, ONLY: M, L, G, GWC, HP
+INTEGER, INTENT(IN) :: NL
+INTEGER :: NM, BTYPE, IW, IOR0, IXG, IYG, IZG, IXW, IYW, IZW !, I, J, K
+
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+
+   IF (PREDICTOR) THEN
+      HP => M%H
+   ELSE
+      HP => M%HS
+   ENDIF
+
+   ! Compute ghost cell values
+ 
+   !!$OMP PARALLEL DO SHARED(HP, M, L, G) PRIVATE(IW, IXG, IYG, IZG, IXW, IYW, IZW, IOR0, GWC) SCHEDULE(STATIC)
+   WALL_CELLS_LOOP: DO IW = 1, L%N_WALL_CELLS_EXT
+
+      GWC => G%WALL(IW)
+
+      IXG = GWC%IXG
+      IYG = GWC%IYG
+      IZG = GWC%IZG
+
+      IXW = GWC%IXW
+      IYW = GWC%IYW
+      IZW = GWC%IZW
+
+      IOR0 = GWC%IOR
+
+      BTYPE = DIRICHLET
+      SELECT CASE (IOR0)
+         CASE ( 1)
+            IF (BTYPE==DIRICHLET) THEN
+               HP(IXG,IYW,IZW) = -HP(IXW,IYW,IZW) 
+            ELSE IF (BTYPE==NEUMANN) THEN
+               HP(IXG,IYW,IZW) =  HP(IXW,IYW,IZW) 
+            ENDIF
+         CASE (-1)
+            IF (BTYPE==DIRICHLET) THEN
+               HP(IXG,IYW,IZW) = -HP(IXW,IYW,IZW) 
+            ELSE IF (BTYPE==NEUMANN) THEN
+               HP(IXG,IYW,IZW) =  HP(IXW,IYW,IZW) 
+            ENDIF
+         CASE ( 2)
+            IF (BTYPE==DIRICHLET) THEN
+               HP(IXW,IYG,IZW) = -HP(IXW,IYW,IZW) 
+            ELSE IF (BTYPE==NEUMANN) THEN
+               HP(IXW,IYG,IZW) =  HP(IXW,IYW,IZW) 
+            ENDIF
+         CASE (-2)
+            IF (BTYPE==DIRICHLET) THEN
+               HP(IXW,IYG,IZW) = -HP(IXW,IYW,IZW) 
+            ELSE IF (BTYPE==NEUMANN) THEN
+               HP(IXW,IYG,IZW) =  HP(IXW,IYW,IZW) 
+            ENDIF
+         CASE ( 3)
+            IF (BTYPE==DIRICHLET) THEN
+               HP(IXW,IYW,IZG) = -HP(IXW,IYW,IZW) 
+            ELSE IF (BTYPE==NEUMANN) THEN
+               HP(IXW,IYW,IZG) =  HP(IXW,IYW,IZW) 
+            ENDIF
+         CASE (-3)
+            IF (BTYPE==DIRICHLET) THEN
+               HP(IXW,IYW,IZG) = -HP(IXW,IYW,IZW) 
+            ELSE IF (BTYPE==NEUMANN) THEN
+               HP(IXW,IYW,IZG) =  HP(IXW,IYW,IZW) 
+            ENDIF
+      END SELECT
+#ifdef WITH_SCARC_DEBUG
+      WRITE(MSG%LU_DEBUG,'(A, 5I6, E12.4)') 'UPDATE_GHOST_CELLS: IW, IOR0, IXW, IYW, IZG, HP:',&
+                                             IW, IOR0, IXW, IYW, IZG, HP(IXW, IYW, IZG)
+#endif
+
+   ENDDO WALL_CELLS_LOOP
+   !!$OMP END PARALLEL DO
+
+#ifdef WITH_SCARC_VERBOSE
+   CALL SCARC_DUMP_PRESSURE (HP, NM, 'ghost')
+#endif
+
+ENDDO
+
+! -----------------------------------------------------------------------------------------------
+!> \brief Perform data exchange to achieve consistency of ghost values along internal boundaries
+! Note: this is no longer necessary because MESH_EXCHANGE(5) is used after the call of ScaRC
+! -----------------------------------------------------------------------------------------------
+CALL SCARC_EXCHANGE(NSCARC_EXCHANGE_PRESSURE, NSCARC_NONE, NL)
+
+
+#ifdef WITH_SCARC_DEBUG
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+   IF (PREDICTOR) THEN
+      HP => M%H
+   ELSE
+      HP => M%HS
+   ENDIF
+   CALL SCARC_DEBUG_VECTOR3_BIG (HP, NM, NLEVEL_MIN, 'HP: UPDATE_GHOST_CELLS')
+ENDDO
+#endif
+
+END SUBROUTINE SCARC_UPDATE_GHOSTCELLS2
 
 
 ! ------------------------------------------------------------------------------------------------
