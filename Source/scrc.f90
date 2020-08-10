@@ -12438,7 +12438,6 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    !$OMP END PARALLEL DO 
 
 #ifdef WITH_SCARC_DEBUG
-WRITE(*,*) 'HALLOOOOO11'
    CALL SCARC_DEBUG_VECTOR3 (HP, NM, NLEVEL_MIN, 'HP: UPDATE_MAIN_CELLS')
 #endif
 #ifdef WITH_SCARC_VERBOSE
@@ -12551,7 +12550,6 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ELSE
       HP => M%HS
    ENDIF
-WRITE(*,*) 'HALLOOOOO22'
    CALL SCARC_DEBUG_VECTOR3 (HP, NM, NLEVEL_MIN, 'HP: UPDATE_GHOST_CELLS')
 ENDDO
 #endif
@@ -19396,7 +19394,7 @@ WRITE(MSG%LU_DEBUG,*) '=========================================================
 WRITE(MSG%LU_DEBUG,*) ' DEBUG vector ', CNAME
 WRITE(MSG%LU_DEBUG,*) '============================================================='
 DO IZ = L%NZ, 1, -1
-   WRITE(MSG%LU_DEBUG,*) '-------- IZ = ', IZ,' ------------------------------------------'
+   IF (.NOT.TWO_D) WRITE(MSG%LU_DEBUG,*) '-------- IZ = ', IZ,' ------------------------------------------'
    DO IY = L%NY, 1, -1
       DO IX = 1, L%NX
          IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(IX,IY,IZ)) THEN
@@ -19435,7 +19433,7 @@ WRITE(MSG%LU_DEBUG,*) '=========================================================
 WRITE(MSG%LU_DEBUG,*) ' DEBUG vector ', CNAME
 WRITE(MSG%LU_DEBUG,*) '============================================================='
 DO IZ = L%NZ+1, 0, -1
-   WRITE(MSG%LU_DEBUG,*) '-------- IZ = ', IZ,' ------------------------------------------'
+   IF (.NOT.TWO_D) WRITE(MSG%LU_DEBUG,*) '-------- IZ = ', IZ,' ------------------------------------------'
    DO IY = L%NY+1, 0, -1
       DO IX = 0, L%NX+1
          IF (IS_UNSTRUCTURED.AND.L%IS_SOLID(IX,IY,IZ)) THEN
@@ -19473,7 +19471,7 @@ WRITE(MSG%LU_DEBUG,*) '=========================================================
 WRITE(MSG%LU_DEBUG,*) ' DEBUG vector ', CNAME
 WRITE(MSG%LU_DEBUG,*) '============================================================='
 DO IZ = L%NZ, 1, -1
-   WRITE(MSG%LU_DEBUG,*) '-------- IZ = ', IZ,' ------------------------------------------'
+   IF (.NOT.TWO_D) WRITE(MSG%LU_DEBUG,*) '-------- IZ = ', IZ,' ------------------------------------------'
    DO IY = L%NY, 1, -1
       WRITE(MSG%LU_DEBUG,'(8E12.4)') (VC(IX, IY, IZ), IX = 1, L%NX)
    ENDDO
@@ -19499,7 +19497,7 @@ WRITE(MSG%LU_DEBUG,*) '=========================================================
 WRITE(MSG%LU_DEBUG,*) ' DEBUG vector ', CNAME
 WRITE(MSG%LU_DEBUG,*) '============================================================='
 DO IZ = L%NZ+1, 0, -1
-   WRITE(MSG%LU_DEBUG,*) '-------- IZ = ', IZ,' ------------------------------------------'
+   IF (.NOT.TWO_D) WRITE(MSG%LU_DEBUG,*) '-------- IZ = ', IZ,' ------------------------------------------'
    DO IY = L%NY+1, 0, -1
       WRITE(MSG%LU_DEBUG,'(10E12.4)') (VC(IX, IY, IZ), IX = 0, L%NX+1)
    ENDDO
