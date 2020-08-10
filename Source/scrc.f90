@@ -18893,9 +18893,9 @@ END SUBROUTINE SCARC_BLENDER_ZONES
 !> \brief Store preliminary solution vector in McKeeney-Greengard-Mayo method
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_MGM_STORE_PRESSURE_VECTOR(NL, NTYPE)
-USE SCARC_POINTERS, ONLY: ST, MGM
+USE SCARC_POINTERS, ONLY: ST, MGM, HP
 INTEGER, INTENT(IN) :: NL, NTYPE
-INTEGER :: NM, NX, NY, NZ
+INTEGER :: NM, NX, NY, NZ, IX, IY, IZ
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -18926,10 +18926,19 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 #endif
       CASE (3)
          IF (PREDICTOR) THEN
-            MESHES(NM)%H(0:NX, 0:NY, 0:NZ)  = MGM%H1(0:NX, 0:NY, 0:NZ) + MGM%H2(0:NX, 0:NY, 0:NZ)
+            HP => MESHES(NM)%H
          ELSE
-            MESHES(NM)%HS(0:NX, 0:NY, 0:NZ) = MGM%H1(0:NX, 0:NY, 0:NZ) + MGM%H2(0:NX, 0:NY, 0:NZ)
+            HP => MESHES(NM)%HS
          ENDIF
+         HP = 0.0_EB
+         DO IZ = 0, NZ
+            DO IY = 0, NY
+               DO IX = 0, NX
+                  IF (L%IS_SOLID(IX, IY, IZ)) CYCLE
+                  HP(IX, IY, IZ) = MGM%H1(IX, IY, IZ) + MGM%H2(IX, IY, IZ)
+               ENDDO
+            ENDDO
+         ENDDO
 #ifdef WITH_SCARC_VERBOSE
          CALL SCARC_DUMP_PRESSURE(MESHES(NM)%H, NM, 'mgm_h0')
 #endif
