@@ -1,0 +1,3 @@
+rm pressurep/*
+rm dump/*
+python DumpFDS.py

@@ -1,12 +1,11 @@
-&HEAD CHID='uscarc1',TITLE='ScaRC-GMG for 2D-square with obstruction on 8 meshes' /
+&HEAD CHID='uglmat1',TITLE='ScaRC-GMG for 2D-square with obstruction on 8 meshes' /
 
 &MESH IJK=8,1,8, XB=0.0,0.8,-0.01,0.01,0.0,0.8 /
 
 &MISC NOISE = .FALSE. 
       DNS   = .TRUE./
 
-&PRES SOLVER = 'USCARC' 
-      SCARC_KRYLOV_ACCURACY = 1.0E-14 /
+&PRES SOLVER = 'UGLMAT' /
 
 &TIME T_END=0.01, DT=0.002 /
 

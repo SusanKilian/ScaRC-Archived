@@ -14,12 +14,15 @@ import numpy as np
 
 
 
-def read_quantity(base, name, ite):
+def read_quantity(base, name, plot_type, cpres, ite):
    ''' read indicated quantity from corresponding save-directory'''
 
    quan = []
    found = False
-   dump_name = "%s/dump/%s_%3.3d" %(base,name, ite)
+   if plot_type == 'dump':
+      dump_name = "%s/%s/%s_%3.3d" %(base, plot_type, name, ite)
+   else:
+      dump_name = "%s/%s/%s_%s_%3.3d" %(base, plot_type, name, cpres, ite)
    #print ("reading from %s" %dump_name)
 
    if os.path.exists(dump_name) :
@@ -38,8 +41,13 @@ def read_quantity(base, name, ite):
    return (found,quan)
 
 
-def plot_quantity(base,name, quan, ite, nx, nz, dx, dz):
+def plot_quantity(base, name, plot_type, cpres, quan, ite, nx, nz, dx, dz):
    ''' 3D-plot of specified quantity '''
+
+   if plot_type == 'dump':
+      plot_name = "%s/%s_%3.3d.png" %(plot_type, name, ite)
+   else:
+      plot_name = "%s/%s_%s_%3.3d.png" %(plot_type, cpres, name, ite)
 
    xp = []
    for ix in range(nx):
@@ -74,15 +82,16 @@ def plot_quantity(base,name, quan, ite, nx, nz, dx, dz):
    surf = ax.plot_surface(xp, zp, val, rstride=1, cstride=1, cmap=cm.jet, antialiased=False)
    #surf = ax.plot_surface(xp, zp, val, rstride=8, cstride=8, cmap=cm.jet)
    #ax.set_zlim(min_val-0.01, max_val+0.01)
-   ax.set_zlim(-10.0, 180.0)
+   ax.set_zlim(-10.0, 380.0)
    ax.set_xlabel('x')
    ax.set_ylabel('y')
    ax.set_zlabel('z')
    #ax.zaxis.set_major_locator(LinearLocator(10))
    #ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
    fig.colorbar(surf, shrink=0.5, aspect=5)
-   picture = "%s/pictures/%s_ite%3.3d.png" %(base, name, ite)
    #plt.show()
+   picture = plot_name
+   print 'Plotting picture ', plot_name, min_val, max_val
    savefig(picture)
    plt.close(fig)
 
@@ -96,13 +105,13 @@ def plot_quantity(base,name, quan, ite, nx, nz, dx, dz):
       ax2.set_xlabel('x')
       ax2.set_ylabel('y')
       ax2.set_zlabel('z')
-      picture = "%s/pictures/%s_%3.3d.png" %(base,name, ite)
+      picture = "%wf%s" %(plot_name)
       savefig(picture)
       plt.close(fig2)
       #show()
 
-base = '../../VisualStudio/Cases'
-#base = '/Users/susannekilian/GIT/github/01_ScaRC/Verification/Develop/MGM'
+#base = '../../VisualStudio/Cases'
+base = '/Users/susannekilian/GIT/github/01_ScaRC/Verification/Develop/MGM'
 
 nx = 8
 nz = 8
@@ -110,10 +119,18 @@ nz = 8
 dx = 0.8/nx
 dz = 0.8/nz
 
-nit = 10
+nit = 50
 
-names = ['h1', 'h2', 'h', 'mgm1', 'uscarc1']
+names = ['h1', 'h2', 'h']
 for ite in range(nit):
    for name in names:
-      (found, quan) = read_quantity(base, name, ite+1)
-      if found: plot_quantity(base, name, quan, ite+1, nx, nz, dx, dz)
+      (found, quan) = read_quantity(base, name, 'dump', ' ', ite+1)
+      #if found: plot_quantity(base, name, quan, ite+1, nx, nz, dx, dz)
+
+names = ['mgm1', 'scarc1','uscarc1', 'glmat1','uglmat1']
+for ite in range(nit):
+   for name in names:
+      (found, quan) = read_quantity(base, name, 'pressure', 'H', ite+1)
+      if found: plot_quantity(base, name, 'pressure', 'H', quan, ite+1, nx, nz, dx, dz)
+      (found, quan) = read_quantity(base, name, 'pressure', 'HS', ite+1)
+      if found: plot_quantity(base, name, 'pressure', 'HS', quan, ite+1, nx, nz, dx, dz)
