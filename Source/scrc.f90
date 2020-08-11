@@ -1021,7 +1021,7 @@ TYPE SCARC_MGM_TYPE
    INTEGER :: NCS, NCU                                         !< Number of cells for structured/unstructured grid
    INTEGER :: NW1, NW2, NWI, NWE                               !< Range of IW's with non-zero B-values
 
-   LOGICAL :: IS_LU_BASED = .FALSE.                            !< Perform LU-decomposition (development version only)
+   LOGICAL :: IS_LU_BASED = .FALSE.                            !< Flag for LU-decomposition (development version only)
 
 END TYPE SCARC_MGM_TYPE
 #endif
@@ -2213,6 +2213,7 @@ HAS_AMG_LEVELS = IS_AMG .OR. IS_CG_AMG
 
 #ifdef WITH_SCARC_MGM
 IS_MGM = TYPE_METHOD == NSCARC_METHOD_MGM
+WRITE(*,*) 'IS_MGM=', IS_MGM
 #endif
 
 END SUBROUTINE SCARC_PARSE_INPUT
@@ -10859,11 +10860,7 @@ WRITE(MSG%LU_DEBUG,*) '=======================>> CG : END =', ITE
 
 IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) THEN
    CALL SCARC_UPDATE_MAINCELLS(NLEVEL_MIN)
-   IF (NSTACK == 3) THEN
-      CALL SCARC_UPDATE_GHOSTCELLS2(NLEVEL_MIN)
-   ELSE
-      CALL SCARC_UPDATE_GHOSTCELLS(NLEVEL_MIN)
-   ENDIF
+   CALL SCARC_UPDATE_GHOSTCELLS(NLEVEL_MIN)
 #ifdef WITH_SCARC_POSTPROCESSING
    CALL SCARC_PRESSURE_DIFFERENCE(NLEVEL_MIN)
    CALL SCARC_DUMP_SYSTEM(NS, NSCARC_DUMP_X)
@@ -11550,11 +11547,22 @@ SELECT_SOLVER_TYPE: SELECT CASE (SV%TYPE_SOLVER)
          ST => SCARC(NM)%LEVEL(NL)%STAGE(SV%TYPE_STAGE)
    
          PRHS => M%PRHS
-         IF (PREDICTOR) THEN
-            HP => M%H
+         IF (IS_MGM) THEN
+            IF (PREDICTOR) THEN
+               HP => L%MGM%H1
+            ELSE
+               HP => L%MGM%H2
+            ENDIF
          ELSE
-            HP => M%HS
+            IF (PREDICTOR) THEN
+               HP => M%H
+            ELSE
+               HP => M%HS
+            ENDIF
          ENDIF
+
+WRITE(*,*) 'SET_WORKSPACE:1: HP'
+WRITE(*,'(10E12.4)') ((HP(I,1,K), I=0, 9), K=0,9)
 
 #ifdef WITH_SCARC_POSTPROCESSING
          PR => L%PRESSURE
@@ -11579,7 +11587,7 @@ SELECT_SOLVER_TYPE: SELECT CASE (SV%TYPE_SOLVER)
                   ST%B(IC) = PRHS(G%ICX(IC), G%ICY(IC), G%ICZ(IC))      ! get new RHS from surrounding code
                ENDDO                         
                !$OMP END PARALLEL DO
-               ST%X = 0.0_EB                      ! CAUTION - ONLY TEMPORARILY - TODO
+               !ST%X = 0.0_EB                      ! CAUTION - ONLY TEMPORARILY - TODO
       
                !!$OMP PARALLEL 
                MAIN_INHOMOGENEOUS_LOOP: DO IOR0 = -3, 3, 1 
@@ -11707,18 +11715,12 @@ WRITE(MSG%LU_DEBUG,'(A, 5I6,2E12.4)') 'SETUP_WORKSPACE: NEUMANN  : IW, I, J, K, 
                   IOR0 = GWC%IOR
                   IC   = G%CELL_NUMBER(I,J,K)
    
-                  SELECT CASE (IOR0)
+                  SELECT CASE (ABS(IOR0))
                      CASE(1)
-                        ST%B(IC) = -L%DXI * DTI * MGM%UU(IW)
-                     CASE(-1)
                         ST%B(IC) = -L%DXI * DTI * MGM%UU(IW)
                      CASE(2)
                         ST%B(IC) = -L%DYI * DTI * MGM%VV(IW)
-                     CASE(-2)
-                        ST%B(IC) = -L%DYI * DTI * MGM%VV(IW)
                      CASE(3)
-                        ST%B(IC) = -L%DZI * DTI * MGM%WW(IW)
-                     CASE(-3)
                         ST%B(IC) = -L%DZI * DTI * MGM%WW(IW)
                   END SELECT
    
@@ -11740,6 +11742,9 @@ WRITE(MSG%LU_DEBUG,'(A, 6I4, 6E12.4)') &
          PR%B_NEW = ST%B
 #endif
    
+WRITE(*,*) 'SET_WORKSPACE:2: HP'
+WRITE(*,'(10E12.4)') ((HP(I,1,K), I=0, 9), K=0,9)
+
       ENDDO MAIN_MESHES_LOOP
       
       ! In case of a Krylov method clear overlapping parts of auxiliary vectors
@@ -12400,19 +12405,29 @@ END SUBROUTINE SCARC_UPDATE_PRECONDITIONER
 SUBROUTINE SCARC_UPDATE_MAINCELLS(NL)
 USE SCARC_POINTERS, ONLY: M, G, ST, HP
 INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, IC !, I, J, K
+INTEGER :: NM, IC , I, K
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
    ST => SCARC(NM)%LEVEL(NL)%STAGE(NSCARC_STAGE_ONE)
 
-   IF (PREDICTOR) THEN
-      HP => M%H
+   IF (IS_MGM) THEN
+      IF (PREDICTOR) THEN
+         HP => L%MGM%H1
+      ELSE
+         HP => L%MGM%H2
+      ENDIF
    ELSE
-      HP => M%HS
+      IF (PREDICTOR) THEN
+         HP => M%H
+      ELSE
+         HP => M%HS
+      ENDIF
    ENDIF
 
+WRITE(*,*) 'UPDATE_MAIN_CELLS:1: HP'
+WRITE(*,'(10E12.4)') ((HP(I,1,K), I=0, 9), K=0,9)
    HP = 0.0_EB
    !!$OMP PARALLEL DO PRIVATE(IC) SCHEDULE(STATIC)
    DO IC = 1, G%NC
@@ -12423,6 +12438,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 #endif
    ENDDO
    !!$OMP END PARALLEL DO 
+
+WRITE(*,*) 'UPDATE_MAIN_CELLS:2: HP'
+WRITE(*,'(10E12.4)') ((HP(I,1,K), I=0,9), K=0,9)
 
 #ifdef WITH_SCARC_DEBUG
    CALL SCARC_DEBUG_VECTOR3_BIG (HP, NM, 'HP: UPDATE_MAIN_CELLS')
@@ -12441,18 +12459,28 @@ END SUBROUTINE SCARC_UPDATE_MAINCELLS
 SUBROUTINE SCARC_UPDATE_GHOSTCELLS(NL)
 USE SCARC_POINTERS, ONLY: M, L, G, GWC, HP
 INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, IW, IOR0, IXG, IYG, IZG, IXW, IYW, IZW !, I, J, K
+INTEGER :: NM, IW, IOR0, IXG, IYG, IZG, IXW, IYW, IZW , I, K
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
 
-   IF (PREDICTOR) THEN
-      HP => M%H
+   IF (IS_MGM) THEN
+      IF (PREDICTOR) THEN
+         HP => L%MGM%H1
+      ELSE
+         HP => L%MGM%H2
+      ENDIF
    ELSE
-      HP => M%HS
+      IF (PREDICTOR) THEN
+         HP => M%H
+      ELSE
+         HP => M%HS
+      ENDIF
    ENDIF
 
+WRITE(*,*) 'UPDATE_GHOST_CELLS:1: HP'
+WRITE(*,'(10E12.4)') ((HP(I,1,K), I=0, 9), K=0,9)
    ! Compute ghost cell values
  
    !!$OMP PARALLEL DO SHARED(HP, M, L, G) PRIVATE(IW, IXG, IYG, IZG, IXW, IYW, IZW, IOR0, GWC) SCHEDULE(STATIC)
@@ -12516,6 +12544,8 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ENDDO WALL_CELLS_LOOP
    !!$OMP END PARALLEL DO
 
+WRITE(*,*) 'UPDATE_GHOST_CELLS:2: HP'
+WRITE(*,'(10E12.4)') ((HP(I,1,K), I=0, 9), K=0,9)
 #ifdef WITH_SCARC_DEBUG
    CALL SCARC_DEBUG_VECTOR3_BIG (HP, NM, 'HP: UPDATE_GHOST_CELLS')
 #endif
@@ -12525,140 +12555,39 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 ENDDO
 
-! -----------------------------------------------------------------------------------------------
-!> \brief Perform data exchange to achieve consistency of ghost values along internal boundaries
-! Note: this is no longer necessary because MESH_EXCHANGE(5) is used after the call of ScaRC
-! -----------------------------------------------------------------------------------------------
-CALL SCARC_EXCHANGE(NSCARC_EXCHANGE_PRESSURE, NSCARC_NONE, NL)
+! Perform data exchange to achieve consistency of ghost values along internal boundaries
+! Note: this is most probably no longer necessary because MESH_EXCHANGE(5) is used after the call of ScaRC
 
+CALL SCARC_EXCHANGE(NSCARC_EXCHANGE_PRESSURE, NSCARC_NONE, NL)
 
 #ifdef WITH_SCARC_DEBUG
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-   IF (PREDICTOR) THEN
-      HP => M%H
+   IF (IS_MGM) THEN
+      IF (PREDICTOR) THEN
+         HP => L%MGM%H1
+      ELSE
+         HP => L%MGM%H2
+      ENDIF
    ELSE
-      HP => M%HS
+      IF (PREDICTOR) THEN
+         HP => M%H
+      ELSE
+         HP => M%HS
+      ENDIF
    ENDIF
-   CALL SCARC_DEBUG_VECTOR3_BIG (HP, NM, 'HP: UPDATE_GHOST_CELLS')
+   CALL SCARC_DEBUG_VECTOR3_BIG (HP, NM, 'HP: UPDATE_GHOST_CELLS - AFTER EXCHANGE')
+   IF (IS_MGM) THEN
+      IF (PREDICTOR) THEN
+         M%H = MGM%H1
+      ELSE
+         M%HS = MGM%H2
+      ENDIF
+   ENDIF
 ENDDO
 #endif
 
 END SUBROUTINE SCARC_UPDATE_GHOSTCELLS
-
-
-! ------------------------------------------------------------------------------------------------
-!> \brief Set correct boundary values at external and internal boundaries
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_UPDATE_GHOSTCELLS2(NL)
-USE SCARC_POINTERS, ONLY: M, L, G, GWC, HP
-INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, BTYPE, IW, IOR0, IXG, IYG, IZG, IXW, IYW, IZW !, I, J, K
-
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-
-   IF (PREDICTOR) THEN
-      HP => M%H
-   ELSE
-      HP => M%HS
-   ENDIF
-
-   ! Compute ghost cell values
- 
-   !!$OMP PARALLEL DO SHARED(HP, M, L, G) PRIVATE(IW, IXG, IYG, IZG, IXW, IYW, IZW, IOR0, GWC) SCHEDULE(STATIC)
-   WALL_CELLS_LOOP: DO IW = 1, L%N_WALL_CELLS_EXT
-
-      GWC => G%WALL(IW)
-
-      IXG = GWC%IXG
-      IYG = GWC%IYG
-      IZG = GWC%IZG
-
-      IXW = GWC%IXW
-      IYW = GWC%IYW
-      IZW = GWC%IZW
-
-      IOR0 = GWC%IOR
-
-      !BTYPE = DIRICHLET
-      BTYPE = GWC%BTYPE
-      SELECT CASE (IOR0)
-         CASE ( 1)
-            IF (BTYPE==DIRICHLET) THEN
-               HP(IXG,IYW,IZW) = -HP(IXW,IYW,IZW) 
-            ELSE IF (BTYPE==NEUMANN) THEN
-               HP(IXG,IYW,IZW) =  HP(IXW,IYW,IZW) 
-            ENDIF
-         CASE (-1)
-            IF (BTYPE==DIRICHLET) THEN
-               HP(IXG,IYW,IZW) = -HP(IXW,IYW,IZW) 
-            ELSE IF (BTYPE==NEUMANN) THEN
-               HP(IXG,IYW,IZW) =  HP(IXW,IYW,IZW) 
-            ENDIF
-         CASE ( 2)
-            IF (BTYPE==DIRICHLET) THEN
-               HP(IXW,IYG,IZW) = -HP(IXW,IYW,IZW) 
-            ELSE IF (BTYPE==NEUMANN) THEN
-               HP(IXW,IYG,IZW) =  HP(IXW,IYW,IZW) 
-            ENDIF
-         CASE (-2)
-            IF (BTYPE==DIRICHLET) THEN
-               HP(IXW,IYG,IZW) = -HP(IXW,IYW,IZW) 
-            ELSE IF (BTYPE==NEUMANN) THEN
-               HP(IXW,IYG,IZW) =  HP(IXW,IYW,IZW) 
-            ENDIF
-         CASE ( 3)
-            IF (BTYPE==DIRICHLET) THEN
-               HP(IXW,IYW,IZG) = -HP(IXW,IYW,IZW) 
-            ELSE IF (BTYPE==NEUMANN) THEN
-               HP(IXW,IYW,IZG) =  HP(IXW,IYW,IZW) 
-            ENDIF
-         CASE (-3)
-            IF (BTYPE==DIRICHLET) THEN
-               HP(IXW,IYW,IZG) = -HP(IXW,IYW,IZW) 
-            ELSE IF (BTYPE==NEUMANN) THEN
-               HP(IXW,IYW,IZG) =  HP(IXW,IYW,IZW) 
-            ENDIF
-      END SELECT
-#ifdef WITH_SCARC_DEBUG2
-      WRITE(MSG%LU_DEBUG,'(A, 5I6, E12.4)') 'UPDATE_GHOST_CELLS: IW, IOR0, IXW, IYW, IZG, HP:',&
-                                             IW, IOR0, IXW, IYW, IZG, HP(IXW, IYW, IZG)
-#endif
-
-   ENDDO WALL_CELLS_LOOP
-   !!$OMP END PARALLEL DO
-
-#ifdef WITH_SCARC_DEBUG
-   CALL SCARC_DEBUG_VECTOR3_BIG (HP, NM, 'HP: UPDATE_GHOST_CELLS2')
-#endif
-#ifdef WITH_SCARC_VERBOSE2
-   CALL SCARC_DUMP_PRESSURE (HP, NM, 'ghost')
-#endif
-
-ENDDO
-
-! -----------------------------------------------------------------------------------------------
-!> \brief Perform data exchange to achieve consistency of ghost values along internal boundaries
-! Note: this is no longer necessary because MESH_EXCHANGE(5) is used after the call of ScaRC
-! -----------------------------------------------------------------------------------------------
-CALL SCARC_EXCHANGE(NSCARC_EXCHANGE_PRESSURE, NSCARC_NONE, NL)
-
-
-#ifdef WITH_SCARC_DEBUG
-DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-   IF (PREDICTOR) THEN
-      HP => M%H
-   ELSE
-      HP => M%HS
-   ENDIF
-   CALL SCARC_DEBUG_VECTOR3_BIG (HP, NM, 'HP: UPDATE_GHOST_CELLS')
-ENDDO
-#endif
-
-END SUBROUTINE SCARC_UPDATE_GHOSTCELLS2
 
 
 ! ------------------------------------------------------------------------------------------------
@@ -19010,12 +18939,12 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       UU => M%U
       VV => M%V
       WW => M%W
-      HP => M%H
+      HP => MGM%H1
    ELSE
       UU => M%US
       VV => M%VS
       WW => M%WS
-      HP => M%HS
+      HP => MGM%H2
    ENDIF
 
 #ifdef WITH_SCARC_DEBUG
@@ -19091,6 +19020,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       L => SCARC(NM)%LEVEL(NL)
       MGM => L%MGM
+      IS_MGM = .TRUE.
 
       ! Store number of cells and external/internal boundary cells for simpler use in MGM method
 
