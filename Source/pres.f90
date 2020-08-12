@@ -48,12 +48,12 @@ ELSE
    HP => HS
    RHOP => RHOS
 ENDIF
-WRITE(*,*) 'PRES:1:HP'
-WRITE(*,'(8E12.4)') ((HP(I,1,K), I=1, IBAR), K=1,KBAR)
-WRITE(*,*) 'PRES:1:UU'
-WRITE(*,'(8E12.4)') ((UU(I,1,K), I=1, IBAR), K=1,KBAR)
-WRITE(*,*) 'PRES:1:WW'
-WRITE(*,'(8E12.4)') ((WW(I,1,K), I=1, IBAR), K=1,KBAR)
+!WRITE(*,*) 'PRES:1:HP'
+!WRITE(*,'(8E12.4)') ((HP(I,1,K), I=1, IBAR), K=1,KBAR)
+!WRITE(*,*) 'PRES:1:UU'
+!WRITE(*,'(8E12.4)') ((UU(I,1,K), I=1, IBAR), K=1,KBAR)
+!WRITE(*,*) 'PRES:1:WW'
+!WRITE(*,'(8E12.4)') ((WW(I,1,K), I=1, IBAR), K=1,KBAR)
 
 ! Apply pressure boundary conditions at external cells.
 ! If Neumann, BXS, BXF, etc., contain dH/dx(x=XS), dH/dx(x=XF), etc.

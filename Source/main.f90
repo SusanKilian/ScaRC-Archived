@@ -538,7 +538,7 @@ MAIN_LOOP: DO
 
    ICYC  = ICYC + 1   ! Time step iterations
 
-WRITE(*,*) '============================ ICYC = ', ICYC
+!WRITE(*,*) '============================ ICYC = ', ICYC
    ! Do not print out general diagnostics into .out file every time step
 
    DIAGNOSTICS = .FALSE.
@@ -664,7 +664,7 @@ WRITE(*,*) '============================ ICYC = ', ICYC
 
       ! Solve for the pressure at the current time step
 
-WRITE(*,*) '============================ PI 1  '
+!WRITE(*,*) '============================ PI 1  '
       CALL PRESSURE_ITERATION_SCHEME
       CALL EVAC_PRESSURE_ITERATION_SCHEME
 
@@ -846,7 +846,7 @@ WRITE(*,*) '============================ PI 1  '
 
    ! Solve the pressure equation.
 
-WRITE(*,*) '============================ PI 2  '
+!WRITE(*,*) '============================ PI 2  '
    CALL PRESSURE_ITERATION_SCHEME
    CALL EVAC_PRESSURE_ITERATION_SCHEME
 
@@ -1332,24 +1332,24 @@ PRESSURE_ITERATION_LOOP: DO
 
    ! Solve the Poission equation using either FFT, SCARC, or GLMAT
 
-WRITE(*,*) '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PRESSURE_ITERATION :', PRESSURE_ITERATIONS
-WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: FVX'
-WRITE(*,'(8E12.4)') ((MESHES(1)%FVX(I,1,K), I=1, 8), K=1,8)
-WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: FVY'
-WRITE(*,'(8E12.4)') ((MESHES(1)%FVZ(I,1,K), I=1, 8), K=1,8)
-WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: U'
-WRITE(*,'(9E12.4)') ((MESHES(1)%U(I,1,K), I=0, 8), K=0,8)
-WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: US'
-WRITE(*,'(9E12.4)') ((MESHES(1)%US(I,1,K), I=0, 8), K=0,8)
-WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: W'
-WRITE(*,'(9E12.4)') ((MESHES(1)%W(I,1,K), I=0, 8), K=0,8)
-WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: WS'
-WRITE(*,'(9E12.4)') ((MESHES(1)%WS(I,1,K), I=0, 8), K=0,8)
-WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: H'
-WRITE(*,'(10E12.4)') ((MESHES(1)%H(I,1,K), I=0, 9), K=0,9)
-WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: HS'
-WRITE(*,'(10E12.4)') ((MESHES(1)%HS(I,1,K), I=0, 9), K=0,9)
-WRITE(*,*) ' ........... starting ScaRC ............', PRESSURE_ITERATIONS
+!WRITE(*,*) '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PRESSURE_ITERATION :', PRESSURE_ITERATIONS
+!WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: FVX'
+!WRITE(*,'(8E12.4)') ((MESHES(1)%FVX(I,1,K), I=1, 8), K=1,8)
+!WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: FVY'
+!WRITE(*,'(8E12.4)') ((MESHES(1)%FVZ(I,1,K), I=1, 8), K=1,8)
+!WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: U'
+!WRITE(*,'(9E12.4)') ((MESHES(1)%U(I,1,K), I=0, 8), K=0,8)
+!WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: US'
+!WRITE(*,'(9E12.4)') ((MESHES(1)%US(I,1,K), I=0, 8), K=0,8)
+!WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: W'
+!WRITE(*,'(9E12.4)') ((MESHES(1)%W(I,1,K), I=0, 8), K=0,8)
+!WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: WS'
+!WRITE(*,'(9E12.4)') ((MESHES(1)%WS(I,1,K), I=0, 8), K=0,8)
+!WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: H'
+!WRITE(*,'(10E12.4)') ((MESHES(1)%H(I,1,K), I=0, 9), K=0,9)
+!WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:1: HS'
+!WRITE(*,'(10E12.4)') ((MESHES(1)%HS(I,1,K), I=0, 9), K=0,9)
+!WRITE(*,*) ' ........... starting ScaRC ............', PRESSURE_ITERATIONS
 
    SELECT CASE(PRES_METHOD)
       CASE ('FFT')
@@ -1365,11 +1365,11 @@ WRITE(*,*) ' ........... starting ScaRC ............', PRESSURE_ITERATIONS
          CALL MESH_EXCHANGE(5)
          CALL COPY_H_OMESH_TO_MESH
    END SELECT
-WRITE(*,*) ' ........... leaving ScaRC ............', PRESSURE_ITERATIONS
-WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:2: H'
-WRITE(*,'(10E12.4)') ((MESHES(1)%H(I,1,K), I=0, 9), K=0,9)
-WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:2: HS'
-WRITE(*,'(10E12.4)') ((MESHES(1)%HS(I,1,K), I=0, 9), K=0,9)
+!WRITE(*,*) ' ........... leaving ScaRC ............', PRESSURE_ITERATIONS
+!WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:2: H'
+!WRITE(*,'(10E12.4)') ((MESHES(1)%H(I,1,K), I=0, 9), K=0,9)
+!WRITE(*,*) 'PRESSURE_ITERATION_SCHEME:2: HS'
+!WRITE(*,'(10E12.4)') ((MESHES(1)%HS(I,1,K), I=0, 9), K=0,9)
 
    ! Check the residuals of the Poisson solution
 
