@@ -1,8 +1,11 @@
-&HEAD CHID='linear2d_1x1', TITLE='flow through a 2D-channel with linear inflow' /
+&HEAD CHID='linear2d_tol-6_4x1', TITLE='flow through a 2D-channel with linear inflow' /
 
-&MESH IJK=80,1,20, XB= -0.40, 0.40, -0.01, 0.01, -0.1, 0.1 /
+&MESH IJK=20, 1, 20, XB=-0.4, -0.2, -0.01, 0.01, -0.1, 0.1, MULT_ID='mesh' /
+&MULT ID='mesh', DX=0.20, DY=0.02, DZ=0.20, I_UPPER=3, J_UPPER=0, K_UPPER=0 /
 
 &TIME T_END=2.0 / 
+
+&PRES VELOCITY_TOLERANCE = 1E-6, MAX_PRESSURE_ITERATIONS = 100 /
 
 &DUMP DT_PL3D=1.E10, VELOCITY_ERROR_FILE = .TRUE. /
 
