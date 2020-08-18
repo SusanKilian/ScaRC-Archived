@@ -9,7 +9,7 @@
 !  - WITH_SCARC_POSTPROCESSING   : dump environment for separate ScaRC postprocessing program
 ! ================================================================================================================
 !#undef WITH_MKL
-#define WITH_SCARC_DEBUG
+#undef WITH_SCARC_DEBUG
 #define WITH_SCARC_VERBOSE
 #define WITH_SCARC_MGM
 #undef WITH_SCARC_POSTPROCESSING
@@ -9233,7 +9233,7 @@ SUBROUTINE SCARC_SOLVER(DT_CURRENT)
 USE SCARC_ITERATION_ENVIRONMENT
 REAL (EB), INTENT(IN) :: DT_CURRENT
 REAL (EB) :: TNOW
-INTEGER :: I, K, IBAR, KBAR
+INTEGER :: IBAR, KBAR
 
 TNOW = CURRENT_TIME()
 
@@ -9278,8 +9278,6 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
  
       CALL SCARC_METHOD_KRYLOV (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
    
-      WRITE(MSG%LU_DEBUG,*) ' SUSISUSI - KRYLOV'
-      WRITE(*,*) ' SUSISUSI - KRYLOV'
  
    ! ---------------- Multigrid method ---------------------------------------
  
@@ -12466,7 +12464,10 @@ END SUBROUTINE SCARC_UPDATE_PRECONDITIONER
 SUBROUTINE SCARC_UPDATE_MAINCELLS(NL)
 USE SCARC_POINTERS, ONLY: M, G, ST, HP
 INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, IC , I, K
+INTEGER :: NM, IC 
+#ifdef WITH_SCARC_DEBUG
+INTEGER :: I, K
+#endif
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -12525,7 +12526,10 @@ END SUBROUTINE SCARC_UPDATE_MAINCELLS
 SUBROUTINE SCARC_UPDATE_GHOSTCELLS(NL)
 USE SCARC_POINTERS, ONLY: M, L, G, GWC, HP
 INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, IW, IOR0, IXG, IYG, IZG, IXW, IYW, IZW , I, K
+INTEGER :: NM, IW, IOR0, IXG, IYG, IZG, IXW, IYW, IZW 
+#ifdef WITH_SCARC_DEBUG
+INTEGER :: I, K
+#endif
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -18997,7 +19001,10 @@ SUBROUTINE SCARC_MGM_SETUP_INTERNAL_VELOCITIES(NL)
 USE SCARC_ITERATION_ENVIRONMENT
 USE SCARC_POINTERS, ONLY: M, L, MGM, UU, VV, WW, HP
 INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, IW, I, J, K, IOR0, IXW, IYW, IZW, IXG, IYG, IZG, IBAR, KBAR
+INTEGER :: NM, IW, I, J, K, IOR0, IXW, IYW, IZW, IXG, IYG, IZG
+#ifdef WITH_SCARC_DEBUG
+INTEGER :: IBAR, KBAR
+#endif
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -19611,6 +19618,7 @@ END SUBROUTINE SCARC_VERBOSE_CMATRIX
 
 
 
+#ifdef WITH_SCARC_DEBUG
 ! ------------------------------------------------------------------------------------------------
 !> \brief Debugging version only: Dump out information for specified quantity
 ! ------------------------------------------------------------------------------------------------
@@ -19780,7 +19788,6 @@ END SUBROUTINE SCARC_DUMP_PRESSURE
 
 
 
-#ifdef WITH_SCARC_DEBUG
 ! ================================================================================================
 ! Start  WITH_SCARC_DEBUG  - Part
 ! Collection of routines which print out different quantities or allow to preset them
