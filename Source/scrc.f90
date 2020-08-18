@@ -5275,8 +5275,8 @@ WRITE(MSG%LU_DEBUG,*) 'IS_CG_GMG:  ', NL
 
          CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)
          CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
-         CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
-         !CALL SCARC_SETUP_BOUNDARY_DIRICHLET(NM, NLEVEL_MIN)
+         !CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
+         CALL SCARC_SETUP_BOUNDARY_DIRICHLET(NM, NLEVEL_MIN)
 #ifdef WITH_MKL
          TYPE_MKL(NLEVEL_MIN) = NSCARC_MKL_LOCAL
 #endif
@@ -12623,7 +12623,7 @@ WRITE(MSG%LU_DEBUG,'(10E16.8)') ((HP(I,1,K), I=0, L%NX), K=0,L%NZ)
 #ifdef WITH_SCARC_DEBUG
    CALL SCARC_DEBUG_VECTOR3_BIG (HP, NM, 'HP: UPDATE_GHOST_CELLS')
 #endif
-#ifdef WITH_SCARC_VERBOSE
+#ifdef WITH_SCARC_VERBOSE2
    CALL SCARC_DUMP_PRESSURE (HP, NM, 'h')
 #endif
 
@@ -18909,13 +18909,8 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !   MGM%H1(0:NX, 0:NY, 0:NZ) = MESHES(NM)%HS(0:NX, 0:NY, 0:NZ)
          !ENDIF
 
-#ifdef WITH_SCARC_DEBUG
-         WRITE(MSG%LU_DEBUG,*) 'MGM%NCS=', MGM%NCS
-         CALL SCARC_DEBUG_VECTOR1(MGM%X1, NM, NL, NSCARC_GRID_STRUCTURED, 'P1:MGM%X1')
-         !CALL SCARC_DEBUG_VECTOR3_BIG(MGM%H1, NM, 'P1:MGM%H1')
-#endif
 #ifdef WITH_SCARC_VERBOSE
-         CALL SCARC_DUMP_PRESSURE(MGM%H1, NM, 'h1')
+         CALL SCARC_DUMP_VECTOR1(MGM%X1, NM, NL, NSCARC_GRID_STRUCTURED, 'h1')
 #endif
       CASE (2)
          MGM%X2 = 0.0_EB
@@ -18927,13 +18922,8 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          !   MGM%H2(0:NX, 0:NY, 0:NZ) = MESHES(NM)%HS(0:NX, 0:NY, 0:NZ)
          !ENDIF
 
-#ifdef WITH_SCARC_DEBUG
-         WRITE(MSG%LU_DEBUG,*) 'MGM%NCU=', MGM%NCU
-         CALL SCARC_DEBUG_VECTOR1(MGM%X2, NM, NL, NSCARC_GRID_UNSTRUCTURED, 'P2:MGM%X2')
-         !CALL SCARC_DEBUG_VECTOR3_BIG(MGM%H2, NM, 'P2:MGM%H2')
-#endif
 #ifdef WITH_SCARC_VERBOSE
-         CALL SCARC_DUMP_PRESSURE(MGM%H2, NM, 'h2')
+         CALL SCARC_DUMP_VECTOR1(MGM%X2, NM, NL, NSCARC_GRID_UNSTRUCTURED, 'h2')
 #endif
       CASE (3)
          !IF (PREDICTOR) THEN
@@ -18975,14 +18965,8 @@ WRITE(MSG%LU_DEBUG,'(A, 5I6,3E12.4)') 'MGM:3: IX, IY, IZ, ICS, ICU, X1(ICS), X1(
                ENDDO
             ENDDO
          ENDDO
-#ifdef WITH_SCARC_DEBUG
-         !CALL SCARC_DEBUG_VECTOR3_BIG(MGM%H1, NM, 'P3:MGM%H1')
-         !CALL SCARC_DEBUG_VECTOR3_BIG(MGM%H2, NM, 'P3:MGM%H2')
-         !CALL SCARC_DEBUG_VECTOR3_BIG(MGM%H0, NM, 'P3:MGM%H0')
-         CALL SCARC_DEBUG_VECTOR1(MGM%X1, NM, NL, NSCARC_GRID_STRUCTURED,   'P3:MGM%X1')
-         CALL SCARC_DEBUG_VECTOR1(MGM%X2, NM, NL, NSCARC_GRID_UNSTRUCTURED, 'P3:MGM%X2')
-         !CALL SCARC_DEBUG_VECTOR1(MGM%X0, NM, NL, NSCARC_GRID_STRUCTURED,   'P3:MGM%X0')
-         CALL SCARC_DEBUG_VECTOR1(ST%X, NM, NL, NSCARC_GRID_STRUCTURED,   'P3:ST%X')
+#ifdef WITH_SCARC_VERBOSE
+         CALL SCARC_DUMP_VECTOR1(ST%X, NM, NL, NSCARC_GRID_STRUCTURED, 'h')
 #endif
 
 !         MGM%H1 = 0.0_EB
@@ -19686,30 +19670,34 @@ WRITE(MSG%LU_VERBOSE,*) '============ END VERBOSE MATRIX ', CNAME, ' AT ', TRIM(
 ENDIF
 
 END SUBROUTINE SCARC_VERBOSE_CMATRIX
-#endif
 
 
 
-#ifdef WITH_SCARC_DEBUG
 ! ------------------------------------------------------------------------------------------------
 !> \brief Debugging version only: Dump out information for specified quantity
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DEBUG_VECTOR1 (VC, NM, NL, NG, CNAME)
+SUBROUTINE SCARC_DUMP_VECTOR1 (VC, NM, NL, NG, CNAME)
 USE SCARC_POINTERS, ONLY: L
 USE SCARC_ITERATION_ENVIRONMENT
 INTEGER, INTENT(IN) :: NM, NL, NG
 REAL(EB), DIMENSION(:), INTENT(IN) :: VC
 REAL(EB), DIMENSION(0:100) :: VALUES
 CHARACTER(*), INTENT(IN) :: CNAME
+CHARACTER(80) :: FN_DUMP
 INTEGER :: IC, IX, IY, IZ
+INTEGER, SAVE :: LU_DUMP
 
 CALL SCARC_POINT_TO_GRID (NM, NL)                    
    
-WRITE(MSG%LU_DEBUG,*) '============================================================='
-WRITE(MSG%LU_DEBUG,*) ' DEBUG vector ', CNAME
-WRITE(MSG%LU_DEBUG,*) '============================================================='
+WRITE (FN_DUMP, '(A,A,A,A,A,i3.3)') 'pressure/',TRIM(CHID),'_',TRIM(CNAME),'_',ICYC
+
+LU_DUMP = GET_FILE_NUMBER()
+OPEN (LU_DUMP, FILE=FN_DUMP)
+!WRITE(LU_DUMP,*) '============================================================='
+!WRITE(LU_DUMP,*) ' DEBUG vector ', CNAME
+!WRITE(LU_DUMP,*) '============================================================='
 DO IZ = L%NZ, 1, -1
-   IF (.NOT.TWO_D) WRITE(MSG%LU_DEBUG,*) '-------- IZ = ', IZ,' ------------------------------------------'
+   IF (.NOT.TWO_D) WRITE(LU_DUMP,*) '-------- IZ = ', IZ,' ------------------------------------------'
    DO IY = L%NY, 1, -1
       DO IX = 1, L%NX
          IF (NG == NSCARC_GRID_UNSTRUCTURED .AND. L%IS_SOLID(IX,IY,IZ)) THEN
@@ -19727,14 +19715,17 @@ DO IZ = L%NZ, 1, -1
             ENDIF
          ENDIF
       ENDDO
-      WRITE(MSG%LU_DEBUG,'(8E12.4)') VALUES(1:L%NX)
+      WRITE(LU_DUMP,'(E12.4)') VALUES(1:L%NX)
    ENDDO
 ENDDO
-WRITE(MSG%LU_DEBUG,*) '============================================================='
+!WRITE(LU_DUMP,*) '============================================================='
+CLOSE(LU_DUMP)
 
-END SUBROUTINE SCARC_DEBUG_VECTOR1
+END SUBROUTINE SCARC_DUMP_VECTOR1
+#endif
 
 
+#ifdef WITH_SCARC_DEBUG
 ! ------------------------------------------------------------------------------------------------
 !> \brief Debugging version only: Dump out information for specified quantity
 ! ------------------------------------------------------------------------------------------------
