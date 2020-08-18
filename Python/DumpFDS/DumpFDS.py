@@ -23,7 +23,7 @@ def read_quantity(base, name, plot_type, cpres, ite):
       dump_name = "%s/%s/%s_%3.3d" %(base, plot_type, name, ite)
    else:
       dump_name = "%s/%s/%s_%s_%3.3d" %(base, plot_type, name, cpres, ite)
-   #print ("reading from %s" %dump_name)
+   print ("trying to read from %s" %dump_name)
 
    if os.path.exists(dump_name) :
 
@@ -48,6 +48,7 @@ def plot_quantity(base, name, plot_type, cpres, quan, ite, nx, nz, dx, dz):
       plot_name = "%s/%s_%3.3d.png" %(plot_type, name, ite)
    else:
       plot_name = "%s/%s_%s_%3.3d.png" %(plot_type, cpres, name, ite)
+   print ("trying to plot to %s" %plot_name)
 
    xp = []
    for ix in range(nx):
@@ -82,14 +83,18 @@ def plot_quantity(base, name, plot_type, cpres, quan, ite, nx, nz, dx, dz):
    surf = ax.plot_surface(xp, zp, val, rstride=1, cstride=1, cmap=cm.jet, antialiased=False)
    #surf = ax.plot_surface(xp, zp, val, rstride=8, cstride=8, cmap=cm.jet)
    #ax.set_zlim(min_val-0.01, max_val+0.01)
-   ax.set_zlim(-10.0, 380.0)
-   ax.set_xlabel('x')
-   ax.set_ylabel('y')
+   #ax.set_zlim(-10.0, 380.0)
+   #ax.set_xlabel('x')
+   #ax.set_ylabel('y')
    ax.set_zlabel('z')
+   ax.set_xticklabels([])
+   ax.set_yticklabels([])
+   ax.set_zticks([0])
    #ax.zaxis.set_major_locator(LinearLocator(10))
    #ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
-   fig.colorbar(surf, shrink=0.5, aspect=5)
-   #plt.show()
+   #fig.colorbar(surf, shrink=0.5, aspect=5)
+   ax.view_init(24, -69)
+   plt.show()
    picture = plot_name
    print 'Plotting picture ', plot_name, min_val, max_val
    savefig(picture)
@@ -113,24 +118,27 @@ def plot_quantity(base, name, plot_type, cpres, quan, ite, nx, nz, dx, dz):
 #base = '../../VisualStudio/Cases'
 base = '/Users/susannekilian/GIT/github/01_ScaRC/Verification/Develop/MGM'
 
-nx = 8
-nz = 8
+nx = 32
+nz = 32
 
 dx = 0.8/nx
 dz = 0.8/nz
 
-nit = 50
+nit = 1
 
-names = ['h1', 'h2', 'h']
+#names = ['h1', 'h2', 'h']
+#or ite in range(nit):
+#  for name in names:
+#     (found, quan) = read_quantity(base, name, 'dump', ' ', ite+1)
+#     #if found: plot_quantity(base, name, quan, ite+1, nx, nz, dx, dz)
+
+#names = ['mgm1', 'scarc1','uscarc1', 'glmat1','uglmat1']
+names = ['mgm32']
 for ite in range(nit):
    for name in names:
-      (found, quan) = read_quantity(base, name, 'dump', ' ', ite+1)
-      #if found: plot_quantity(base, name, quan, ite+1, nx, nz, dx, dz)
-
-names = ['mgm1', 'scarc1','uscarc1', 'glmat1','uglmat1']
-for ite in range(nit):
-   for name in names:
-      (found, quan) = read_quantity(base, name, 'pressure', 'H', ite+1)
-      if found: plot_quantity(base, name, 'pressure', 'H', quan, ite+1, nx, nz, dx, dz)
-      (found, quan) = read_quantity(base, name, 'pressure', 'HS', ite+1)
-      if found: plot_quantity(base, name, 'pressure', 'HS', quan, ite+1, nx, nz, dx, dz)
+      (found, quan) = read_quantity(base, name, 'pressure', 'h1', ite+1)
+      if found: plot_quantity(base, name, 'pressure', 'h1', quan, ite+1, nx, nz, dx, dz)
+      (found, quan) = read_quantity(base, name, 'pressure', 'h2', ite+1)
+      if found: plot_quantity(base, name, 'pressure', 'h2', quan, ite+1, nx, nz, dx, dz)
+      (found, quan) = read_quantity(base, name, 'pressure', 'h', ite+1)
+      if found: plot_quantity(base, name, 'pressure', 'h', quan, ite+1, nx, nz, dx, dz)
