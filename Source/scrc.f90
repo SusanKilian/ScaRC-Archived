@@ -12623,8 +12623,8 @@ WRITE(MSG%LU_DEBUG,'(10E16.8)') ((HP(I,1,K), I=0, L%NX), K=0,L%NZ)
 #ifdef WITH_SCARC_DEBUG
    CALL SCARC_DEBUG_VECTOR3_BIG (HP, NM, 'HP: UPDATE_GHOST_CELLS')
 #endif
-#ifdef WITH_SCARC_VERBOSE2
-   CALL SCARC_DUMP_PRESSURE (HP, NM, 'ghost')
+#ifdef WITH_SCARC_VERBOSE
+   CALL SCARC_DUMP_PRESSURE (HP, NM, 'h')
 #endif
 
 ENDDO
@@ -18914,9 +18914,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CALL SCARC_DEBUG_VECTOR1(MGM%X1, NM, NL, NSCARC_GRID_STRUCTURED, 'P1:MGM%X1')
          !CALL SCARC_DEBUG_VECTOR3_BIG(MGM%H1, NM, 'P1:MGM%H1')
 #endif
-!#ifdef WITH_SCARC_VERBOSE2
-!         CALL SCARC_DUMP_PRESSURE(MGM%H1, NM, 'mgm_h1')
-!#endif
+#ifdef WITH_SCARC_VERBOSE
+         CALL SCARC_DUMP_PRESSURE(MGM%H1, NM, 'h1')
+#endif
       CASE (2)
          MGM%X2 = 0.0_EB
          MGM%X2(1:MGM%NCU) = ST%X(1:MGM%NCU)                    ! store unstructured ScaRC solution
@@ -18932,9 +18932,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
          CALL SCARC_DEBUG_VECTOR1(MGM%X2, NM, NL, NSCARC_GRID_UNSTRUCTURED, 'P2:MGM%X2')
          !CALL SCARC_DEBUG_VECTOR3_BIG(MGM%H2, NM, 'P2:MGM%H2')
 #endif
-!#ifdef WITH_SCARC_VERBOSE2
-!         CALL SCARC_DUMP_PRESSURE(MGM%H2, NM, 'mgm_h2')
-!#endif
+#ifdef WITH_SCARC_VERBOSE
+         CALL SCARC_DUMP_PRESSURE(MGM%H2, NM, 'h2')
+#endif
       CASE (3)
          !IF (PREDICTOR) THEN
          !   HP => MESHES(NM)%H
@@ -19546,6 +19546,78 @@ END SUBROUTINE SCARC_METHOD_MGM_ILU
 
 
 #ifdef WITH_SCARC_VERBOSE
+! ------------------------------------------------------------------------------------------------
+!> \brief Debugging version only: Dump out information for specified quantity
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DUMP_PRESSURE (HP, NM, CNAME)
+USE SCARC_ITERATION_ENVIRONMENT
+INTEGER, INTENT(IN) :: NM
+REAL(EB), DIMENSION(0:,0:,0:), INTENT(IN) :: HP
+CHARACTER(*), INTENT(IN) :: CNAME
+CHARACTER(80) :: FN_DUMP, FN_DEBUG1
+INTEGER :: LU_DUMP, IX, IY, IZ
+INTEGER, SAVE :: LU_DEBUG1
+LOGICAL :: BFIRST = .TRUE.
+
+IF (BFIRST) THEN
+   WRITE (FN_DEBUG1, '(A,A,A,i3.3)') 'debug/',TRIM(CHID),'_',ICYC
+   LU_DEBUG1 = GET_FILE_NUMBER()
+   OPEN (LU_DEBUG1, FILE=FN_DEBUG1)
+   BFIRST = .FALSE.
+ENDIF
+
+WRITE(LU_DEBUG1,*) '==========================================================================='
+IF (PREDICTOR) THEN
+   WRITE(LU_DEBUG1,*) ' ICYC = ', ICYC, '        PREDICTOR: H'
+ELSE
+   WRITE(LU_DEBUG1,*) ' ICYC = ', ICYC, '        PREDICTOR: HS'
+ENDIF
+WRITE(LU_DEBUG1,*) '==========================================================================='
+WRITE (FN_DUMP, '(A,A,A,A,A,i3.3)') 'pressure/',TRIM(CHID),'_',TRIM(CNAME),'_',ICYC
+
+LU_DUMP = GET_FILE_NUMBER()
+OPEN (LU_DUMP, FILE=FN_DUMP)
+DO IZ = 0, MESHES(NM)%KBP1
+   IF (TWO_D) THEN
+      DO IY = 1, MESHES(NM)%JBAR
+         DO IX = 0, MESHES(NM)%IBP1
+            WRITE(LU_DUMP,*)  HP(IX, IY, IZ)
+         ENDDO
+      ENDDO
+   ELSE
+      DO IY = 0, MESHES(NM)%JBP1
+         DO IX = 0, MESHES(NM)%IBP1
+            WRITE(LU_DUMP,*)  HP(IX, IY, IZ)
+         ENDDO
+      ENDDO
+   ENDIF
+ENDDO
+CLOSE(LU_DUMP)
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'DUMP_PRESSURE: HP'
+#endif
+DO IZ = MESHES(NM)%KBP1, 0, -1
+   IF (TWO_D) THEN
+      DO IY = MESHES(NM)%JBAR, 1, -1
+         WRITE(LU_DEBUG1,'(10E12.4)') (HP(IX, IY, IZ), IX = 0, MESHES(NM)%IBP1)
+#ifdef WITH_SCARC_DEBUG
+         WRITE(MSG%LU_DEBUG,'(10E12.4)') (HP(IX, IY, IZ), IX = 0, MESHES(NM)%IBP1)
+#endif
+      ENDDO
+   ELSE
+      DO IY = MESHES(NM)%JBP1, 0, -1
+         WRITE(LU_DEBUG1,'(10E12.4)') (HP(IX, IY, IZ), IX = 0, MESHES(NM)%IBP1)
+#ifdef WITH_SCARC_DEBUG
+         WRITE(MSG%LU_DEBUG,'(10E12.4)') (HP(IX, IY, IZ), IX = 0, MESHES(NM)%IBP1)
+#endif
+      ENDDO
+   ENDIF
+ENDDO
+
+END SUBROUTINE SCARC_DUMP_PRESSURE
+
+
 ! ------------------------------------------------------------------------------------------------------
 !> \brief Verbose version only: Print out Verbose information for compactly stored matrix
 ! ------------------------------------------------------------------------------------------------------
@@ -19713,78 +19785,6 @@ ENDDO
 WRITE(MSG%LU_DEBUG,*) '============================================================='
 
 END SUBROUTINE SCARC_DEBUG_VECTOR3_BIG
-
-
-! ------------------------------------------------------------------------------------------------
-!> \brief Debugging version only: Dump out information for specified quantity
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DUMP_PRESSURE (HP, NM, CNAME)
-USE SCARC_ITERATION_ENVIRONMENT
-INTEGER, INTENT(IN) :: NM
-REAL(EB), DIMENSION(0:,0:,0:), INTENT(IN) :: HP
-CHARACTER(*), INTENT(IN) :: CNAME
-CHARACTER(80) :: FN_DUMP, FN_DEBUG1
-INTEGER :: LU_DUMP, IX, IY, IZ
-INTEGER, SAVE :: LU_DEBUG1
-LOGICAL :: BFIRST = .TRUE.
-
-IF (BFIRST) THEN
-   WRITE (FN_DEBUG1, '(A,A,A,i3.3)') 'debug/',TRIM(CHID),'_',ICYC
-   LU_DEBUG1 = GET_FILE_NUMBER()
-   OPEN (LU_DEBUG1, FILE=FN_DEBUG1)
-   BFIRST = .FALSE.
-ENDIF
-
-WRITE(LU_DEBUG1,*) '==========================================================================='
-IF (PREDICTOR) THEN
-   WRITE(LU_DEBUG1,*) ' ICYC = ', ICYC, '        PREDICTOR: H'
-ELSE
-   WRITE(LU_DEBUG1,*) ' ICYC = ', ICYC, '        PREDICTOR: HS'
-ENDIF
-WRITE(LU_DEBUG1,*) '==========================================================================='
-WRITE (FN_DUMP, '(A,A,A,A,A,i3.3)') 'pressure/',TRIM(CHID),'_',TRIM(CNAME),'_',ICYC
-
-LU_DUMP = GET_FILE_NUMBER()
-OPEN (LU_DUMP, FILE=FN_DUMP)
-DO IZ = 0, MESHES(NM)%KBP1
-   IF (TWO_D) THEN
-      DO IY = 1, MESHES(NM)%JBAR
-         DO IX = 0, MESHES(NM)%IBP1
-            WRITE(LU_DUMP,*)  HP(IX, IY, IZ)
-         ENDDO
-      ENDDO
-   ELSE
-      DO IY = 0, MESHES(NM)%JBP1
-         DO IX = 0, MESHES(NM)%IBP1
-            WRITE(LU_DUMP,*)  HP(IX, IY, IZ)
-         ENDDO
-      ENDDO
-   ENDIF
-ENDDO
-CLOSE(LU_DUMP)
-
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'DUMP_PRESSURE: HP'
-#endif
-DO IZ = MESHES(NM)%KBP1, 0, -1
-   IF (TWO_D) THEN
-      DO IY = MESHES(NM)%JBAR, 1, -1
-         WRITE(LU_DEBUG1,'(10E12.4)') (HP(IX, IY, IZ), IX = 0, MESHES(NM)%IBP1)
-#ifdef WITH_SCARC_DEBUG
-         WRITE(MSG%LU_DEBUG,'(10E12.4)') (HP(IX, IY, IZ), IX = 0, MESHES(NM)%IBP1)
-#endif
-      ENDDO
-   ELSE
-      DO IY = MESHES(NM)%JBP1, 0, -1
-         WRITE(LU_DEBUG1,'(10E12.4)') (HP(IX, IY, IZ), IX = 0, MESHES(NM)%IBP1)
-#ifdef WITH_SCARC_DEBUG
-         WRITE(MSG%LU_DEBUG,'(10E12.4)') (HP(IX, IY, IZ), IX = 0, MESHES(NM)%IBP1)
-#endif
-      ENDDO
-   ENDIF
-ENDDO
-
-END SUBROUTINE SCARC_DUMP_PRESSURE
 
 
 
