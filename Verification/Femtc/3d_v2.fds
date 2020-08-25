@@ -1,6 +1,6 @@
-&HEAD CHID='amg_agg3d',TITLE='ScaRC-CG for 3D-cube with obstruction on 8 meshes' /
+&HEAD CHID='3d_v2',TITLE='ScaRC-CG for 3D-cube with obstruction on 8 meshes' /
 
-&MESH IJK=11,11,11, XB=0.0,1.10,0.0,1.10,0.0,1.10 /
+&MESH IJK=27,27,27, XB=0.0,2.70,0.0,2.70,0.0,2.70 /
 
 &MISC NOISE = .FALSE.
       DNS   = .TRUE. /
@@ -23,7 +23,7 @@
 
 &DUMP VELOCITY_ERROR_FILE=.TRUE. /
 
-&OBST XB=0.5,0.7,0.5,0.7,0.5,0.7, COLOR='BLUE' /
+&OBST XB=0.6,2.1,0.6,2.1,0.6,2.1, COLOR='BLUE' /
 
 &SURF ID='INFLOW1',VEL=-2.0, RAMP_V='IN1' /
 &SURF ID='INFLOW2',VEL=-2.0, RAMP_V='IN2'/
