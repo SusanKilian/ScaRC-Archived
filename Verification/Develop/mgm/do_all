@@ -2,8 +2,8 @@ rm dump/*
 rm pressure/*
 rm debug/*
 
-dod 1 mgm1.fds
-dod 1 uscarc1.fds
-dod 1 scarc1.fds
-dod 1 glmat1.fds
-dod 1 uglmat1.fds
+dod 1 mgm1
+#dod 1 uscarc1
+#dod 1 scarc1
+#dod 1 glmat1
+#dod 1 uglmat1
