@@ -1,7 +1,7 @@
 
  Fire Dynamics Simulator
 
- Current Date     : October 13, 2020  16:51:10
+ Current Date     : October 13, 2020  17:05:00
  Revision         : FDS6.7.5-254-g2178300-master
  Revision Date    : Fri Oct 9 15:16:47 2020 -0400
  Compiler         : Intel ifort 18.0.1
@@ -513,6 +513,6 @@ Total Number of Grid Cells        216000
  
  
    Using GLMAT as pressure solver. List of H unknown numbers per proc:
-    MPI Process, H unknowns =           0      188680 , Peak Factorization Memory Required (MB)=         289
+    MPI Process, H unknowns =           0      187000 , Peak Factorization Memory Required (MB)=         291
 
 ERROR: FDS was improperly set-up - FDS stopped (CHID: uglmat_mesh1_PKW6)
