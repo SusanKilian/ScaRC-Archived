@@ -1,0 +1,518 @@
+
+ Fire Dynamics Simulator
+
+ Current Date     : October 13, 2020  16:51:10
+ Revision         : FDS6.7.5-254-g2178300-master
+ Revision Date    : Fri Oct 9 15:16:47 2020 -0400
+ Compiler         : Intel ifort 18.0.1
+ Compilation Date : Oct 12, 2020 10:43:49
+
+ MPI Enabled;    Number of MPI Processes:       1
+ OpenMP Enabled; Number of OpenMP Threads:      4
+
+ MPI version: 3.1
+ MPI library version: Intel(R) MPI Library 2018 Update 1 for Linux* OS
+
+
+ Job TITLE        : 
+ Job ID string    : uglmat_mesh1_PKW6
+
+
+ Grid Dimensions, Mesh     1
+
+   Cells in the X Direction            90
+   Cells in the Y Direction            60
+   Cells in the Z Direction            40
+   Number of Grid Cells            216000
+
+
+ Physical Dimensions, Mesh     1
+
+   Length (m)                      18.000
+   Width  (m)                      12.000
+   Height (m)                       8.000
+   Initial Time Step (s)            0.112
+
+Total Number of Grid Cells        216000
+
+
+ Miscellaneous Parameters
+
+   Simulation Start Time (s)          0.0
+   Simulation End Time (s)         5400.0
+   LES Calculation
+   Eddy Viscosity:           Deardorff Model (C_DEARDORFF = 0.10)
+   Near-wall Eddy Viscosity: Smagorinsky with Van Driest damping (C_SMAGORINSKY = 0.20)
+   Turbulent Prandtl Number:         0.50
+   Turbulent Schmidt Number:         0.50
+   Ambient Temperature (C):         20.00
+
+
+ Mass Fraction Transformation Matrix to Convert Species Mixtures (Columns) to Primitive Species (Rows)
+
+                         AIR       REAC_FUE  PRODUCTS
+   REAC_FUEL             0.000000  1.000000  0.000000
+   NITROGEN              0.762470  0.000000  0.702658
+   OXYGEN                0.230997  0.000000  0.000000
+   CARBON DIOXIDE        0.000591  0.000000  0.213555
+   CARBON MONOXIDE       0.000000  0.000000  0.000000
+   WATER VAPOR           0.005941  0.000000  0.076457
+   SOOT                  0.000000  0.000000  0.007330
+   HYDROGEN              0.000000  0.000000  0.000000
+
+
+ Primitive Species Information
+
+   REAC_FUEL
+   Gas Species
+   Molecular Weight (g/mol)            14.95845
+   Ambient Density (kg/m^3)            0.622
+   Enthalpy of Formation (J/kg)       -9.27E+06
+
+   NITROGEN
+   Gas Species
+   Molecular Weight (g/mol)            28.01340
+   Ambient Density (kg/m^3)            1.165
+   Enthalpy of Formation (J/kg)        0.00E+00
+
+   OXYGEN
+   Gas Species
+   Molecular Weight (g/mol)            31.99880
+   Ambient Density (kg/m^3)            1.330
+   Enthalpy of Formation (J/kg)        0.00E+00
+
+   CARBON DIOXIDE
+   Gas Species
+   Molecular Weight (g/mol)            44.00950
+   Ambient Density (kg/m^3)            1.830
+   Enthalpy of Formation (J/kg)       -8.94E+06
+
+   CARBON MONOXIDE
+   Gas Species
+   Molecular Weight (g/mol)            28.01010
+   Ambient Density (kg/m^3)            1.164
+   Enthalpy of Formation (J/kg)       -3.95E+06
+
+   WATER VAPOR
+   Gas Species
+   Molecular Weight (g/mol)            18.01528
+   Ambient Density (kg/m^3)            0.749
+   Enthalpy of Formation (J/kg)       -1.34E+07
+
+   SOOT
+   Gas Species
+   Molecular Weight (g/mol)            10.91042
+   Ambient Density (kg/m^3)            0.454
+   Enthalpy of Formation (J/kg)        0.00E+00
+
+   HYDROGEN
+   Gas Species
+   Molecular Weight (g/mol)             2.01588
+   Ambient Density (kg/m^3)            0.084
+   Enthalpy of Formation (J/kg)        0.00E+00
+
+
+ Tracked (Lumped) Species Information
+
+   AIR
+   Molecular Weight (g/mol)            28.75199
+   Ambient Density (kg/m^3)            1.195
+   Initial Mass Fraction               1.000
+   Enthalpy of Formation (J/kg)     -8.50E+04
+
+   Sub Species                    Mass Fraction     Mole Fraction
+   NITROGEN                       7.624701E-01      7.825730E-01
+   OXYGEN                         2.309974E-01      2.075589E-01
+   CARBON DIOXIDE                 5.914651E-04      3.864120E-04
+   WATER VAPOR                    5.940984E-03      9.481679E-03
+ 
+     Viscosity (kg/m/s) Ambient,  293 K:  1.80E-05
+                                  500 K:  2.61E-05
+                                 1000 K:  4.13E-05
+                                 1500 K:  5.37E-05
+   Therm. Cond. (W/m/K) Ambient,  293 K:  2.56E-02
+                                  500 K:  3.81E-02
+                                 1000 K:  6.69E-02
+                                 1500 K:  9.25E-02
+        Enthalpy (J/kg) Ambient,  293 K: -9.01E+04
+                                  500 K:  1.22E+05
+                                 1000 K:  6.72E+05
+                                 1500 K:  1.27E+06
+    Spec. Heat (J/kg/K) Ambient,  293 K:  1.02E+03
+                                  500 K:  1.04E+03
+                                 1000 K:  1.16E+03
+                                 1500 K:  1.23E+03
+   Diff. Coeff. (m^2/s) Ambient,  293 K:  1.99E-05
+                                  500 K:  4.96E-05
+                                 1000 K:  1.58E-04
+                                 1500 K:  3.09E-04
+
+   REAC_FUEL
+   Molecular Weight (g/mol)            14.95845
+   Ambient Density (kg/m^3)            0.622
+   Initial Mass Fraction               0.000
+   Enthalpy of Formation (J/kg)     -9.27E+06
+
+   Sub Species                    Mass Fraction     Mole Fraction
+   REAC_FUEL                      1.000000E+00      1.000000E+00
+ 
+     Viscosity (kg/m/s) Ambient,  293 K:  1.27E-05
+                                  500 K:  1.84E-05
+                                 1000 K:  2.89E-05
+                                 1500 K:  3.75E-05
+   Therm. Cond. (W/m/K) Ambient,  293 K:  3.48E-02
+                                  500 K:  5.03E-02
+                                 1000 K:  7.91E-02
+                                 1500 K:  1.03E-01
+        Enthalpy (J/kg) Ambient,  293 K: -9.28E+06
+                                  500 K: -8.87E+06
+                                 1000 K: -7.90E+06
+                                 1500 K: -6.93E+06
+    Spec. Heat (J/kg/K) Ambient,  293 K:  1.95E+03
+                                  500 K:  1.95E+03
+                                 1000 K:  1.95E+03
+                                 1500 K:  1.95E+03
+   Diff. Coeff. (m^2/s) Ambient,  293 K:  2.38E-05
+                                  500 K:  5.91E-05
+                                 1000 K:  1.88E-04
+                                 1500 K:  3.68E-04
+
+   PRODUCTS
+   Molecular Weight (g/mol)            28.69337
+   Ambient Density (kg/m^3)            1.193
+   Initial Mass Fraction               0.000
+   Enthalpy of Formation (J/kg)     -2.94E+06
+
+   Sub Species                    Mass Fraction     Mole Fraction
+   NITROGEN                       7.026583E-01      7.197139E-01
+   CARBON DIOXIDE                 2.135546E-01      1.392336E-01
+   CARBON MONOXIDE                0.000000E+00      0.000000E+00
+   WATER VAPOR                    7.645708E-02      1.217750E-01
+   SOOT                           7.330093E-03      1.927744E-02
+ 
+     Viscosity (kg/m/s) Ambient,  293 K:  1.62E-05
+                                  500 K:  2.40E-05
+                                 1000 K:  3.89E-05
+                                 1500 K:  5.12E-05
+   Therm. Cond. (W/m/K) Ambient,  293 K:  2.32E-02
+                                  500 K:  3.61E-02
+                                 1000 K:  6.68E-02
+                                 1500 K:  9.51E-02
+        Enthalpy (J/kg) Ambient,  293 K: -2.94E+06
+                                  500 K: -2.72E+06
+                                 1000 K: -2.12E+06
+                                 1500 K: -1.45E+06
+    Spec. Heat (J/kg/K) Ambient,  293 K:  1.06E+03
+                                  500 K:  1.12E+03
+                                 1000 K:  1.27E+03
+                                 1500 K:  1.37E+03
+   Diff. Coeff. (m^2/s) Ambient,  293 K:  1.95E-05
+                                  500 K:  4.92E-05
+                                 1000 K:  1.58E-04
+                                 1500 K:  3.11E-04
+
+
+ Gas Phase Reaction Information
+
+   Mischbrandlast aus:		40% Polyethylen,30% Styropor, 30% Polyurethan
+
+   Reaction ID:  Reaction1
+
+   Fuel                                           Heat of Combustion (kJ/kg)
+   REAC_FUEL                                                      25820.0000
+
+   Stoichiometry
+
+   Primitive Species Stoich. Coeff.
+   Species ID                                                          Molar
+   REAC_FUEL                                                       -1.000000
+   NITROGEN                                                         0.015000
+   OXYGEN                                                          -1.217862
+   CARBON DIOXIDE                                                   0.888947
+   WATER VAPOR                                                      0.723830
+   SOOT                                                             0.123392
+
+   Tracked (Lumped) Species Stoich. Coeff.
+   Species ID                                             Molar         Mass
+   AIR                                                -5.867550   -11.278153
+   REAC_FUEL                                          -1.000000    -1.000000
+   PRODUCTS                                            6.400858    12.278153
+
+   Reaction Kinetics
+
+   Arrhenius Parameters
+   Pre-exponential:    Infinite
+   Activation Energy:  N/A
+
+   ODE Solver:  EXPLICIT EULER
+   Extinction Model:  EXTINCTION 2
+   Auto-Ignition Temperature (K):       0.0
+   Critical Flame Temperature (K):   1700.2
+
+
+ Material Information
+
+   1 CONCRETE                                                    
+     Stahlbeton C30-C37 WU
+     Emissivity                      0.900
+     Density (kg/m3)                2400.0
+     Specific Heat (kJ/kg/K)      1.00E+00
+     Conductivity (W/m/K)          2.10E+00
+
+   2 STEEL                                                       
+     Drysdale, Intro to Fire Dynamics - ATF NIST Multi-Floor Validation
+     Emissivity                     95.000
+     Density (kg/m3)                7850.0
+     Specific Heat (kJ/kg/K)      4.60E-01
+     Conductivity (W/m/K)          4.58E+01
+
+   3 STEEL03                                                     
+     Drysdale, Intro to Fire Dynamics - ATF NIST Multi-Floor Validation
+     Emissivity                      0.950
+     Density (kg/m3)                7850.0
+     Specific Heat (kJ/kg/K)      4.60E-01
+     Conductivity (W/m/K)          4.58E+01
+
+
+ Surface Conditions
+
+   0 INERT (DEFAULT)
+
+   1 ADIABATIC
+
+   2 BETON
+     Material List
+          1  CONCRETE
+     Layer  1
+        Thickness   (m):  0.10000
+        Density (kg/m3):  2400.00
+        CONCRETE, Mass fraction:    1.00
+     Total surface density   240.000 kg/m2
+     Reaction products considered from the first  0.50 layers.
+     Solid Phase Node, Layer, Coordinates(m):
+                    0      1       0.0000000
+                    1      1       0.0007937
+                    2      1       0.0023810
+                    3      1       0.0055556
+                    4      1       0.0119048
+                    5      1       0.0246032
+                    6      1       0.0500000
+                    7      1       0.0753968
+                    8      1       0.0880952
+                    9      1       0.0944444
+                   10      1       0.0976190
+                   11      1       0.0992063
+                   12      1       0.1000000
+     Exposed Backing
+
+   3 STAHL
+     Material List
+          1  STEEL
+     Layer  1
+        Thickness   (m):  0.05000
+        Density (kg/m3):  7850.00
+        STEEL, Mass fraction:    1.00
+     Total surface density   392.500 kg/m2
+     Reaction products considered from the first  0.50 layers.
+     Solid Phase Node, Layer, Coordinates(m):
+                    0      1       0.0000000
+                    1      1       0.0022727
+                    2      1       0.0068182
+                    3      1       0.0159091
+                    4      1       0.0340909
+                    5      1       0.0431818
+                    6      1       0.0477273
+                    7      1       0.0500000
+     Exposed Backing
+
+   4 CAR_BODY02
+     Properties completely fabricated
+     Material List
+          1  STEEL03
+     Layer  1
+        Thickness   (m):  0.00120
+        Density (kg/m3):  7850.00
+        STEEL03, Mass fraction:    1.00
+     Total surface density     9.420 kg/m2
+     Reaction products considered from the first  0.50 layers.
+     Solid Phase Node, Layer, Coordinates(m):
+                    0      1       0.0000000
+                    1      1       0.0012000
+     Exposed Backing
+
+   5 BURNER1_PKW1
+     HRR Per Unit Area (kW/m2)       1921.3
+     REAC_FUEL Mass Flux (kg/s/m2)   7.44E-02
+
+   6 BURNER2_VAN
+     HRR Per Unit Area (kW/m2)       3846.2
+     REAC_FUEL Mass Flux (kg/s/m2)   1.49E-01
+
+   7 BURNER3_PKW2
+     HRR Per Unit Area (kW/m2)       1921.3
+     REAC_FUEL Mass Flux (kg/s/m2)   7.44E-02
+
+   8 BURNER4_PKW3
+     HRR Per Unit Area (kW/m2)       1921.3
+     REAC_FUEL Mass Flux (kg/s/m2)   7.44E-02
+
+   9 OPEN
+     Passive Vent to Atmosphere
+
+  10 MIRROR
+     Symmetry Plane
+
+  11 INTERPOLATED
+
+  12 PERIODIC
+
+  13 HVAC
+
+  14 MASSLESS TRACER
+
+  15 DROPLET
+
+  16 EVACUATION_OUTFLOW
+     Normal Velocity (m/s)         0.000
+
+  17 MASSLESS TARGET
+
+  18 PERIODIC FLOW ONLY
+
+
+ Cut-off Density and Temperature
+
+    Minimum Temperature:   -10.0 C
+    Maximum Temperature:  2726.8 C
+    Minimum Density:  1.195E-01 kg/m3
+    Maximum Density:  2.663E+00 kg/m3
+
+
+ Device Coordinates
+
+     1 Coords:     48.100000     16.500000      1.500000, Make: null, ID: SZ2_SM_2/0_2_110, Quantity: ADIABATIC SURFACE TEMPERATURE
+     2 Coords:     48.300000     16.700000      1.500000, Make: null, ID: SZ2_SM_2/0_3_110, Quantity: ADIABATIC SURFACE TEMPERATURE
+     3 Coords:     47.900000     16.700000      1.500000, Make: null, ID: SZ2_SM_2/0_4_110, Quantity: ADIABATIC SURFACE TEMPERATURE
+     4 Coords:     48.100000     16.500000      1.700000, Make: null, ID: SZ2_SM_2/0_2_130, Quantity: ADIABATIC SURFACE TEMPERATURE
+     5 Coords:     48.300000     16.700000      1.700000, Make: null, ID: SZ2_SM_2/0_3_130, Quantity: ADIABATIC SURFACE TEMPERATURE
+     6 Coords:     47.900000     16.700000      1.700000, Make: null, ID: SZ2_SM_2/0_4_130, Quantity: ADIABATIC SURFACE TEMPERATURE
+     7 Coords:     48.100000     16.900000      1.900000, Make: null, ID: SZ2_SM_2/0_1_150, Quantity: ADIABATIC SURFACE TEMPERATURE
+     8 Coords:     48.100000     16.500000      1.900000, Make: null, ID: SZ2_SM_2/0_2_150, Quantity: ADIABATIC SURFACE TEMPERATURE
+     9 Coords:     48.300000     16.700000      1.900000, Make: null, ID: SZ2_SM_2/0_3_150, Quantity: ADIABATIC SURFACE TEMPERATURE
+    10 Coords:     47.900000     16.700000      1.900000, Make: null, ID: SZ2_SM_2/0_4_150, Quantity: ADIABATIC SURFACE TEMPERATURE
+    11 Coords:     48.100000     16.900000      2.700000, Make: null, ID: SZ2_SM_2/0_1_230, Quantity: ADIABATIC SURFACE TEMPERATURE
+    12 Coords:     48.300000     16.700000      2.700000, Make: null, ID: SZ2_SM_2/0_3_230, Quantity: ADIABATIC SURFACE TEMPERATURE
+    13 Coords:     47.900000     16.700000      2.700000, Make: null, ID: SZ2_SM_2/0_4_230, Quantity: ADIABATIC SURFACE TEMPERATURE
+    14 Coords:     48.100000     16.900000      3.300000, Make: null, ID: SZ2_SM_2/0_1_290, Quantity: ADIABATIC SURFACE TEMPERATURE
+    15 Coords:     48.100000     16.500000      3.300000, Make: null, ID: SZ2_SM_2/0_2_290, Quantity: ADIABATIC SURFACE TEMPERATURE
+    16 Coords:     48.100000     16.900000      3.500000, Make: null, ID: SZ2_SM_2/0_1_310, Quantity: ADIABATIC SURFACE TEMPERATURE
+    17 Coords:     48.100000     16.500000      3.500000, Make: null, ID: SZ2_SM_2/0_2_310, Quantity: ADIABATIC SURFACE TEMPERATURE
+    18 Coords:     48.100000     16.900000      3.700000, Make: null, ID: SZ2_SM_2/0_1_330, Quantity: ADIABATIC SURFACE TEMPERATURE
+    19 Coords:     48.100000     16.500000      3.700000, Make: null, ID: SZ2_SM_2/0_2_330, Quantity: ADIABATIC SURFACE TEMPERATURE
+    20 Coords:     48.100000     16.500000      4.300000, Make: null, ID: SZ2_SM_2/0_2_390, Quantity: ADIABATIC SURFACE TEMPERATURE
+    21 Coords:     50.700000     16.500000      1.500000, Make: null, ID: SZ2_SM_3/0_2_110, Quantity: ADIABATIC SURFACE TEMPERATURE
+    22 Coords:     50.900000     16.700000      1.500000, Make: null, ID: SZ2_SM_3/0_3_110, Quantity: ADIABATIC SURFACE TEMPERATURE
+    23 Coords:     50.500000     16.700000      1.500000, Make: null, ID: SZ2_SM_3/0_4_110, Quantity: ADIABATIC SURFACE TEMPERATURE
+    24 Coords:     50.700000     16.500000      1.700000, Make: null, ID: SZ2_SM_3/0_2_130, Quantity: ADIABATIC SURFACE TEMPERATURE
+    25 Coords:     50.900000     16.700000      1.700000, Make: null, ID: SZ2_SM_3/0_3_130, Quantity: ADIABATIC SURFACE TEMPERATURE
+    26 Coords:     50.500000     16.700000      1.700000, Make: null, ID: SZ2_SM_3/0_4_130, Quantity: ADIABATIC SURFACE TEMPERATURE
+    27 Coords:     50.700000     16.900000      1.900000, Make: null, ID: SZ2_SM_3/0_1_150, Quantity: ADIABATIC SURFACE TEMPERATURE
+    28 Coords:     50.700000     16.500000      1.900000, Make: null, ID: SZ2_SM_3/0_2_150, Quantity: ADIABATIC SURFACE TEMPERATURE
+    29 Coords:     50.900000     16.700000      1.900000, Make: null, ID: SZ2_SM_3/0_3_150, Quantity: ADIABATIC SURFACE TEMPERATURE
+    30 Coords:     50.500000     16.700000      1.900000, Make: null, ID: SZ2_SM_3/0_4_150, Quantity: ADIABATIC SURFACE TEMPERATURE
+    31 Coords:     50.700000     16.900000      2.700000, Make: null, ID: SZ2_SM_3/0_1_230, Quantity: ADIABATIC SURFACE TEMPERATURE
+    32 Coords:     50.900000     16.700000      2.700000, Make: null, ID: SZ2_SM_3/0_3_230, Quantity: ADIABATIC SURFACE TEMPERATURE
+    33 Coords:     50.500000     16.700000      2.700000, Make: null, ID: SZ2_SM_3/0_4_230, Quantity: ADIABATIC SURFACE TEMPERATURE
+    34 Coords:     50.700000     16.900000      3.300000, Make: null, ID: SZ2_SM_3/0_1_290, Quantity: ADIABATIC SURFACE TEMPERATURE
+    35 Coords:     50.700000     16.500000      3.300000, Make: null, ID: SZ2_SM_3/0_2_290, Quantity: ADIABATIC SURFACE TEMPERATURE
+    36 Coords:     50.700000     16.900000      3.500000, Make: null, ID: SZ2_SM_3/0_1_310, Quantity: ADIABATIC SURFACE TEMPERATURE
+    37 Coords:     50.700000     16.500000      3.500000, Make: null, ID: SZ2_SM_3/0_2_310, Quantity: ADIABATIC SURFACE TEMPERATURE
+    38 Coords:     50.700000     16.900000      3.700000, Make: null, ID: SZ2_SM_3/0_1_330, Quantity: ADIABATIC SURFACE TEMPERATURE
+    39 Coords:     50.700000     16.500000      3.700000, Make: null, ID: SZ2_SM_3/0_2_330, Quantity: ADIABATIC SURFACE TEMPERATURE
+    40 Coords:     50.700000     16.500000      4.300000, Make: null, ID: SZ2_SM_3/0_2_390, Quantity: ADIABATIC SURFACE TEMPERATURE
+    41 Coords:     48.100000     17.900000      3.900000, Make: null, ID: SZ2_DT_2/1.20_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    42 Coords:     48.100000     18.300000      3.900000, Make: null, ID: SZ2_DT_2/1.60_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    43 Coords:     48.100000     18.700000      3.900000, Make: null, ID: SZ2_DT_2/2.00_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    44 Coords:     48.100000     19.100000      3.900000, Make: null, ID: SZ2_DT_2/2.40_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    45 Coords:     48.100000     19.500000      3.900000, Make: null, ID: SZ2_DT_2/2.80_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    46 Coords:     48.100000     19.900000      3.900000, Make: null, ID: SZ2_DT_2/3.20_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    47 Coords:     48.100000     20.300000      3.900000, Make: null, ID: SZ2_DT_2/3.60_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    48 Coords:     48.100000     20.700000      3.900000, Make: null, ID: SZ2_DT_2/4.00_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    49 Coords:     48.100000     21.700000      3.900000, Make: null, ID: SZ2_DT_2/5.00_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    50 Coords:     48.100000     15.500000      2.500000, Make: null, ID: SZ2_DT_2/-1.20_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    51 Coords:     48.100000     15.100000      2.500000, Make: null, ID: SZ2_DT_2/-1.60_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    52 Coords:     48.100000     14.700000      2.500000, Make: null, ID: SZ2_DT_2/-2.00_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    53 Coords:     48.100000     14.300000      2.500000, Make: null, ID: SZ2_DT_2/-2.40_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    54 Coords:     48.100000     13.900000      2.500000, Make: null, ID: SZ2_DT_2/-2.80_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    55 Coords:     48.100000     13.500000      2.500000, Make: null, ID: SZ2_DT_2/-3.20_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    56 Coords:     48.100000     13.100000      2.500000, Make: null, ID: SZ2_DT_2/-3.60_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    57 Coords:     48.100000     12.700000      2.500000, Make: null, ID: SZ2_DT_2/-4.00_2, Quantity: ADIABATIC SURFACE TEMPERATURE
+    58 Coords:     48.100000     11.700000      2.500000, Make: null, ID: SZ2_DT_2/-5.00_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    59 Coords:     50.700000     17.900000      3.900000, Make: null, ID: SZ2_DT_3/1.20_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    60 Coords:     50.700000     18.300000      3.900000, Make: null, ID: SZ2_DT_3/1.60_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    61 Coords:     50.700000     18.700000      3.900000, Make: null, ID: SZ2_DT_3/2.00_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    62 Coords:     50.700000     19.100000      3.900000, Make: null, ID: SZ2_DT_3/2.40_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    63 Coords:     50.700000     19.500000      3.900000, Make: null, ID: SZ2_DT_3/2.80_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    64 Coords:     50.700000     19.900000      3.900000, Make: null, ID: SZ2_DT_3/3.20_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    65 Coords:     50.700000     20.300000      3.900000, Make: null, ID: SZ2_DT_3/3.60_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    66 Coords:     50.700000     20.700000      3.900000, Make: null, ID: SZ2_DT_3/4.00_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    67 Coords:     50.700000     21.700000      3.900000, Make: null, ID: SZ2_DT_3/5.00_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    68 Coords:     50.700000     15.500000      2.500000, Make: null, ID: SZ2_DT_3/-1.20_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    69 Coords:     50.700000     15.100000      2.500000, Make: null, ID: SZ2_DT_3/-1.60_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    70 Coords:     50.700000     14.700000      2.500000, Make: null, ID: SZ2_DT_3/-2.00_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    71 Coords:     50.700000     14.300000      2.500000, Make: null, ID: SZ2_DT_3/-2.40_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    72 Coords:     50.700000     13.900000      2.500000, Make: null, ID: SZ2_DT_3/-2.80_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    73 Coords:     50.700000     13.500000      2.500000, Make: null, ID: SZ2_DT_3/-3.20_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    74 Coords:     50.700000     11.700000      2.500000, Make: null, ID: SZ2_DT_3/-5.00_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    75 Coords:     50.700000     13.100000      2.500000, Make: null, ID: SZ2_DT_3/-3.60_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+    76 Coords:     50.700000     12.700000      2.500000, Make: null, ID: SZ2_DT_3/-4.00_1, Quantity: ADIABATIC SURFACE TEMPERATURE
+
+
+ PLOT3D Information
+
+   Sampling Interval (s)              30.0
+
+   1 Quantity: TEMPERATURE
+   2 Quantity: U-VELOCITY
+   3 Quantity: V-VELOCITY
+   4 Quantity: W-VELOCITY
+   5 Quantity: VISIBILITY, Species: SOOT
+
+
+ Slice File Information, Mesh     1
+
+   Sampling Interval (s)             1.000
+
+   1 Nodes:   0  90  44  44   0  40, Quantity: TEMPERATURE
+   2 Nodes:   0  90   0  60  12  12, Quantity: TEMPERATURE
+   3 Nodes:   0  90   0  60  20  20, Quantity: TEMPERATURE
+   4 Nodes:   0  90  18  18   0  40, Quantity: TEMPERATURE
+
+
+ Radiation Model Information
+
+   Number of control angles  104
+   Time step increment         3
+   Angle increment             5
+   Theta band N_phi   Solid angle
+     1:        4     0.120
+     2:       12     0.114
+     3:       16     0.127
+     4:       20     0.120
+     5:       20     0.120
+     6:       16     0.127
+     7:       12     0.114
+     8:        4     0.120
+   Using gray gas absorption.
+   Mean beam length  0.100 m
+
+
+ GlMat Information
+
+   Global Pressure solver       : Intel MKL Cluster Sparse Solver
+ 
+ 
+   Using GLMAT as pressure solver. List of H unknown numbers per proc:
+    MPI Process, H unknowns =           0      188680 , Peak Factorization Memory Required (MB)=         289
+
+ERROR: FDS was improperly set-up - FDS stopped (CHID: uglmat_mesh1_PKW6)
