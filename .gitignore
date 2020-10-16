@@ -33,6 +33,7 @@ tt
 *.out
 *.end
 *.smv
+*.bnd
 *.sq
 *.sinfo
 *.binfo
