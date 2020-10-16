@@ -1487,7 +1487,6 @@ SUBROUTINE NO_FLUX(DT,NM)
 ! Set FVX,FVY,FVZ inside and on the surface of solid obstructions to maintain no flux
 
 USE MATH_FUNCTIONS, ONLY: EVALUATE_RAMP
-USE SCRC, ONLY : SCARC_MGM_FLAG
 INTEGER, INTENT(IN) :: NM
 REAL(EB), INTENT(IN) :: DT
 REAL(EB), POINTER, DIMENSION(:,:,:) :: HP=>NULL(),OM_HP=>NULL()
@@ -1598,21 +1597,6 @@ OBST_LOOP: DO N=1,N_OBST
 
 ENDDO OBST_LOOP
 
-!WRITE(*,*) 'NO_FLUX:HP'
-!WRITE(*,'(8E12.4)') ((HP(I,1,K), I=1, IBAR), K=1,KBAR)
-!WRITE(*,*) 'NO_FLUX:FVX'
-!WRITE(*,'(8E12.4)') ((FVX(I,1,K), I=1, IBAR), K=1,KBAR)
-!WRITE(*,*) 'NO_FLUX:FVZ'
-!WRITE(*,'(8E12.4)') ((FVZ(I,1,K), I=1, IBAR), K=1,KBAR)
-!WRITE(*,*) 'NO_FLUX:U'
-!WRITE(*,'(8E12.4)') ((U(I,1,K), I=1, IBAR), K=1,KBAR)
-!WRITE(*,*) 'NO_FLUX:US'
-!WRITE(*,'(8E12.4)') ((US(I,1,K), I=1, IBAR), K=1,KBAR)
-!!WRITE(*,*) 'NO_FLUX:W'
-!WRITE(*,'(8E12.4)') ((W(I,1,K), I=1, IBAR), K=1,KBAR)
-!WRITE(*,*) 'NO_FLUX:WS'
-!WRITE(*,'(8E12.4)') ((WS(I,1,K), I=1, IBAR), K=1,KBAR)
-
 ! Set FVX, FVY and FVZ to drive the normal velocity at solid boundaries towards the specified value (U_NORMAL or U_NORMAL_S)
 ! Logical to define not to apply pressure gradient on external mesh boundaries for GLMAT.
 
@@ -1638,8 +1622,7 @@ WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
    IOR = WC%ONE_D%IOR
 
    DHFCT=1._EB
-   IF ( (.NOT. PRES_ON_WHOLE_DOMAIN) .OR. (GLMAT_ON_WHOLE_DOMAIN .AND.  IW<=N_EXTERNAL_WALL_CELLS) &
-         .OR. SCARC_MGM_FLAG ) DHFCT=0._EB
+   IF ( (.NOT. PRES_ON_WHOLE_DOMAIN) .OR. (GLMAT_ON_WHOLE_DOMAIN .AND.  IW<=N_EXTERNAL_WALL_CELLS) ) DHFCT=0._EB
 
    IF (NOM/=0 .OR. WC%BOUNDARY_TYPE==SOLID_BOUNDARY .OR. WC%BOUNDARY_TYPE==NULL_BOUNDARY) THEN
       IF (PREDICTOR) THEN
@@ -1712,11 +1695,6 @@ WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
 
 ENDDO WALL_LOOP
 
-!WRITE(*,*) 'NO_FLUX:2:FVX'
-!WRITE(*,'(8E12.4)') ((FVX(I,1,K), I=1, IBAR), K=1,KBAR)
-!WRITE(*,*) 'NO_FLUX:2:FVZ'
-!WRITE(*,'(8E12.4)') ((FVZ(I,1,K), I=1, IBAR), K=1,KBAR)
-
 T_USED(4)=T_USED(4)+CURRENT_TIME()-T_NOW
 
 END SUBROUTINE NO_FLUX
@@ -1727,7 +1705,6 @@ SUBROUTINE VELOCITY_PREDICTOR(T,DT,DT_NEW,NM)
 USE TURBULENCE, ONLY: COMPRESSION_WAVE
 USE MANUFACTURED_SOLUTIONS, ONLY: UF_MMS,WF_MMS,VD2D_MMS_U,VD2D_MMS_V
 USE COMPLEX_GEOMETRY, ONLY : CCIBM_VELOCITY_NO_GRADH
-USE SCRC, ONLY : SCARC_MGM_FLAG
 
 ! Estimates the velocity components at the next time step
 
@@ -1747,24 +1724,6 @@ ENDIF
 T_NOW=CURRENT_TIME()
 CALL POINT_TO_MESH(NM)
 
-!WRITE(*,*) 'VELOCITY_PREDICTOR:1:H'
-!WRITE(*,'(10E12.4)') ((H(I,1,K), I=0, IBP1), K=0,KBP1)
-!WRITE(*,*) 'VELOCITY_PREDICTOR:1:U'
-!WRITE(*,'(9E12.4)') ((U(I,1,K), I=0, IBAR), K=0,KBAR)
-!WRITE(*,*) 'VELOCITY_PREDICTOR:1:US'
-!WRITE(*,'(9E12.4)') ((US(I,1,K), I=0, IBAR), K=0,KBAR)
-!WRITE(*,*) 'VELOCITY_PREDICTOR:1:W'
-!WRITE(*,'(9E12.4)') ((W(I,1,K), I=0, IBAR), K=0,KBAR)
-!WRITE(*,*) 'VELOCITY_PREDICTOR:1:WS'
-!WRITE(*,'(9E12.4)') ((WS(I,1,K), I=0, IBAR), K=0,KBAR)
-!WRITE(*,*) 'VELOCITY_PREDICTOR:1:FVX'
-!WRITE(*,'(8E12.4)') ((FVX(I,1,K), I=1, IBAR), K=1,KBAR)
-!WRITE(*,*) 'VELOCITY_PREDICTOR:1:FVY'
-!WRITE(*,'(8E12.4)') ((FVY(I,1,K), I=1, IBAR), K=1,KBAR)
-!WRITE(*,*) 'VELOCITY_PREDICTOR:1:FVZ'
-!WRITE(*,'(8E12.4)') ((FVZ(I,1,K), I=1, IBAR), K=1,KBAR)
-!WRITE(*,*) 'SCARC_MGM_FLAG =', SCARC_MGM_FLAG
-
 FREEZE_VELOCITY_IF: IF (FREEZE_VELOCITY) THEN
    US = U
    VS = V
@@ -1775,8 +1734,6 @@ ELSE FREEZE_VELOCITY_IF
       DO J=1,JBAR
          DO I=0,IBAR
             US(I,J,K) = U(I,J,K) - DT*( FVX(I,J,K) + RDXN(I)*(H(I+1,J,K)-H(I,J,K)) )
-!WRITE(*,'(A, 3I4, 6E12.4)') 'I,J,K, US, U, FVX, HIP, HI, RDXN:', &
-!           I, J, K, US(I,J,K), U(I,J,K), FVX(I,J,K), H(I+1,J,K), H(I,J,K), RDXN(I)
          ENDDO
       ENDDO
    ENDDO
@@ -1797,21 +1754,10 @@ ELSE FREEZE_VELOCITY_IF
       ENDDO
    ENDDO
 
-   IF (PRES_METHOD == 'GLMAT' .OR. PRES_METHOD == 'USCARC' .OR. SCARC_MGM_FLAG) CALL WALL_VELOCITY_NO_GRADH(DT,.FALSE.)
+   IF (PRES_METHOD == 'GLMAT' .OR. PRES_METHOD == 'USCARC') CALL WALL_VELOCITY_NO_GRADH(DT,.FALSE.)
    IF (CC_IBM) CALL CCIBM_VELOCITY_NO_GRADH(DT,.FALSE.)
 
 ENDIF FREEZE_VELOCITY_IF
-
-!WRITE(*,*) 'VELOCITY_PREDICTOR:2:H'
-!WRITE(*,'(10E12.4)') ((H(I,1,K), I=0, IBP1), K=0,KBP1)
-!WRITE(*,*) 'VELOCITY_PREDICTOR:2:U'
-!WRITE(*,'(9E12.4)') ((U(I,1,K), I=0, IBAR), K=0,KBAR)
-!WRITE(*,*) 'VELOCITY_PREDICTOR:2:US'
-!WRITE(*,'(9E12.4)') ((US(I,1,K), I=0, IBAR), K=0,KBAR)
-!WRITE(*,*) 'VELOCITY_PREDICTOR:2:W'
-!WRITE(*,'(9E12.4)') ((W(I,1,K), I=0, IBAR), K=0,KBAR)
-!WRITE(*,*) 'VELOCITY_PREDICTOR:2:WS'
-!WRITE(*,'(9E12.4)') ((WS(I,1,K), I=0, IBAR), K=0,KBAR)
 
 ! Manufactured solution (debug)
 
@@ -1856,7 +1802,6 @@ SUBROUTINE VELOCITY_CORRECTOR(T,DT,NM)
 USE TURBULENCE, ONLY: COMPRESSION_WAVE
 USE MANUFACTURED_SOLUTIONS, ONLY: UF_MMS,WF_MMS,VD2D_MMS_U,VD2D_MMS_V
 USE COMPLEX_GEOMETRY, ONLY : CCIBM_VELOCITY_NO_GRADH
-USE SCRC, ONLY : SCARC_MGM_FLAG
 
 ! Correct the velocity components
 
@@ -1886,7 +1831,7 @@ ELSE FREEZE_VELOCITY_IF
       W_OLD = W
    ENDIF
 
-   IF (PRES_METHOD == 'GLMAT' .OR. PRES_METHOD == 'USCARC' .OR. SCARC_MGM_FLAG) THEN
+   IF (PRES_METHOD == 'GLMAT' .OR. PRES_METHOD == 'USCARC') THEN
       CALL WALL_VELOCITY_NO_GRADH(DT,.TRUE.)                    ! Store U velocities on OBST surfaces.
       IF (CC_IBM) CALL CCIBM_VELOCITY_NO_GRADH(DT,.TRUE.)       ! Store velocities on GEOM SOLID faces.
    ENDIF
@@ -1915,7 +1860,7 @@ ELSE FREEZE_VELOCITY_IF
       ENDDO
    ENDDO
 
-   IF (PRES_METHOD == 'GLMAT' .OR. PRES_METHOD == 'USCARC' .OR. SCARC_MGM_FLAG) THEN
+   IF (PRES_METHOD == 'GLMAT' .OR. PRES_METHOD == 'USCARC') THEN
       CALL WALL_VELOCITY_NO_GRADH(DT,.FALSE.)
       IF (CC_IBM) CALL CCIBM_VELOCITY_NO_GRADH(DT,.FALSE.)
    ENDIF
@@ -1945,13 +1890,6 @@ IF (PERIODIC_TEST==7 .AND. .FALSE.) THEN
    ENDDO
 ENDIF
 
-!WRITE(*,*) 'VELOCITY_CORRECTOR:1:HS'
-!WRITE(*,'(8E12.4)') ((HS(I,1,K), I=1, IBAR), K=1,KBAR)
-!WRITE(*,*) 'VELOCITY_CORRECTOR:1:U'
-!WRITE(*,'(8E12.4)') ((U(I,1,K), I=1, IBAR), K=1,KBAR)
-!WRITE(*,*) 'VELOCITY_CORRECTOR:1:W'
-!WRITE(*,'(8E12.4)') ((W(I,1,K), I=1, IBAR), K=1,KBAR)
-
 ! No vertical velocity in Evacuation meshes
 
 IF (EVACUATION_ONLY(NM)) W = 0._EB
@@ -1975,11 +1913,12 @@ LOGICAL, INTENT(IN) :: APPLY_TO_ESTIMATED_VARIABLES
 REAL(EB) :: MUA,TSI,WGT,T_NOW,RAMP_T,OMW,MU_WALL,RHO_WALL,SLIP_COEF,VEL_T, &
             UUP(2),UUM(2),DXX(2),MU_DUIDXJ(-2:2),DUIDXJ(-2:2),PROFILE_FACTOR,VEL_GAS,VEL_GHOST, &
             MU_DUIDXJ_USE(2),DUIDXJ_USE(2),VEL_EDDY,U_TAU,Y_PLUS,&
-            TMP_F,TMP_G,K_G,CP_G,LOB,HTC,ZZ_GET(1:N_TRACKED_SPECIES)
+            TMP_F,TMP_G,K_G,CP_G,LOB,HTC,ZZ_GET(1:N_TRACKED_SPECIES),UBAR,VBAR,WBAR,DUMMY,U_NORM
 INTEGER :: I,J,K,NOM(2),IIO(2),JJO(2),KKO(2),IE,II,JJ,KK,IEC,IOR,IWM,IWP,ICMM,ICMP,ICPM,ICPP,IC,ICD,ICDO,IVL,I_SGN,IS, &
            VELOCITY_BC_INDEX,IIGM,JJGM,KKGM,IIGP,JJGP,KKGP,SURF_INDEXM,SURF_INDEXP,ITMP,ICD_SGN,ICDO_SGN, &
            BOUNDARY_TYPE_M,BOUNDARY_TYPE_P,IS2,IWPI,IWMI,VENT_INDEX
-LOGICAL :: ALTERED_GRADIENT(-2:2),PROCESS_EDGE,SYNTHETIC_EDDY_METHOD,HVAC_TANGENTIAL,INTERPOLATED_EDGE
+LOGICAL :: ALTERED_GRADIENT(-2:2),PROCESS_EDGE,SYNTHETIC_EDDY_METHOD,HVAC_TANGENTIAL,INTERPOLATED_EDGE,&
+           UPWIND_BOUNDARY,INFLOW_BOUNDARY
 REAL(EB), POINTER, DIMENSION(:,:,:) :: UU=>NULL(),VV=>NULL(),WW=>NULL(),U_Y=>NULL(),U_Z=>NULL(), &
                                        V_X=>NULL(),V_Z=>NULL(),W_X=>NULL(),W_Y=>NULL(),RHOP=>NULL(),VEL_OTHER=>NULL()
 REAL(EB), POINTER, DIMENSION(:,:,:,:) :: ZZP
@@ -2216,7 +2155,39 @@ EDGE_LOOP: DO IE=1,N_EDGES
             VENT_INDEX = MAX(WCM%VENT_INDEX,WCP%VENT_INDEX)
             VT => VENTS(VENT_INDEX)
 
-         !  WIND_NO_WIND_IF: IF (.NOT.ANY(MEAN_FORCING)) THEN  ! For regular OPEN boundary, (free-slip) BCs
+            UPWIND_BOUNDARY = .FALSE.
+            INFLOW_BOUNDARY = .FALSE.
+
+            IF (ANY(MEAN_FORCING)) THEN
+               UBAR = U0*EVALUATE_RAMP(T,DUMMY,I_RAMP_U0_T)*EVALUATE_RAMP(ZC(KK),DUMMY,I_RAMP_U0_Z)
+               VBAR = V0*EVALUATE_RAMP(T,DUMMY,I_RAMP_V0_T)*EVALUATE_RAMP(ZC(KK),DUMMY,I_RAMP_V0_Z)
+               WBAR = W0*EVALUATE_RAMP(T,DUMMY,I_RAMP_W0_T)*EVALUATE_RAMP(ZC(KK),DUMMY,I_RAMP_W0_Z)
+               SELECT CASE(IEC)
+                  CASE(1)
+                     IF (JJ==0    .AND. IOR== 2) U_NORM = 0.5_EB*(VV(II,   0,KK) + VV(II,   0,KK+1))
+                     IF (JJ==JBAR .AND. IOR==-2) U_NORM = 0.5_EB*(VV(II,JBAR,KK) + VV(II,JBAR,KK+1))
+                     IF (KK==0    .AND. IOR== 3) U_NORM = 0.5_EB*(WW(II,JJ,0)    + WW(II,JJ+1,   0))
+                     IF (KK==KBAR .AND. IOR==-3) U_NORM = 0.5_EB*(WW(II,JJ,KBAR) + WW(II,JJ+1,KBAR))
+                  CASE(2)
+                     IF (II==0    .AND. IOR== 1) U_NORM = 0.5_EB*(UU(   0,JJ,KK) + UU(   0,JJ,KK+1))
+                     IF (II==IBAR .AND. IOR==-1) U_NORM = 0.5_EB*(UU(IBAR,JJ,KK) + UU(IBAR,JJ,KK+1))
+                     IF (KK==0    .AND. IOR== 3) U_NORM = 0.5_EB*(WW(II,JJ,   0) + WW(II+1,JJ,   0))
+                     IF (KK==KBAR .AND. IOR==-3) U_NORM = 0.5_EB*(WW(II,JJ,KBAR) + WW(II+1,JJ,KBAR))
+                  CASE(3)
+                     IF (II==0    .AND. IOR== 1) U_NORM = 0.5_EB*(UU(   0,JJ,KK) + UU(   0,JJ+1,KK))
+                     IF (II==IBAR .AND. IOR==-1) U_NORM = 0.5_EB*(UU(IBAR,JJ,KK) + UU(IBAR,JJ+1,KK))
+                     IF (JJ==0    .AND. IOR== 2) U_NORM = 0.5_EB*(VV(II,   0,KK) + VV(II+1,   0,KK))
+                     IF (JJ==JBAR .AND. IOR==-2) U_NORM = 0.5_EB*(VV(II,JBAR,KK) + VV(II+1,JBAR,KK))
+               END SELECT
+               IF ((IOR==1.AND.UBAR>=0._EB)   .OR. (IOR==-1.AND.UBAR<=0._EB))   UPWIND_BOUNDARY = .TRUE.
+               IF ((IOR==2.AND.VBAR>=0._EB)   .OR. (IOR==-2.AND.VBAR<=0._EB))   UPWIND_BOUNDARY = .TRUE.
+               IF ((IOR==3.AND.WBAR>=0._EB)   .OR. (IOR==-3.AND.WBAR<=0._EB))   UPWIND_BOUNDARY = .TRUE.
+               IF ((IOR==1.AND.U_NORM>=0._EB) .OR. (IOR==-1.AND.U_NORM<=0._EB)) INFLOW_BOUNDARY = .TRUE.
+               IF ((IOR==2.AND.U_NORM>=0._EB) .OR. (IOR==-2.AND.U_NORM<=0._EB)) INFLOW_BOUNDARY = .TRUE.
+               IF ((IOR==3.AND.U_NORM>=0._EB) .OR. (IOR==-3.AND.U_NORM<=0._EB)) INFLOW_BOUNDARY = .TRUE.
+            ENDIF
+
+            WIND_NO_WIND_IF: IF (.NOT.UPWIND_BOUNDARY .OR. .NOT.INFLOW_BOUNDARY) THEN  ! For regular OPEN boundary, (free-slip) BCs
 
                SELECT CASE(IEC)
                   CASE(1)
@@ -2236,31 +2207,27 @@ EDGE_LOOP: DO IE=1,N_EDGES
                      IF (JJ==JBAR .AND. IOR==-2) UU(II,JBP1,KK) = UU(II,JBAR,KK)
                END SELECT
 
-         !  ELSE WIND_NO_WIND_IF  ! For wind, use prescribed far-field velocity all around
+            ELSE WIND_NO_WIND_IF  ! For upwind, inflow boundaries, use the specified wind field for tangential velocity components
 
-         !     UBAR = U0*EVALUATE_RAMP(T,DUMMY,I_RAMP_U0_T)*EVALUATE_RAMP(ZC(KK),DUMMY,I_RAMP_U0_Z)
-         !     VBAR = V0*EVALUATE_RAMP(T,DUMMY,I_RAMP_V0_T)*EVALUATE_RAMP(ZC(KK),DUMMY,I_RAMP_V0_Z)
-         !     WBAR = W0*EVALUATE_RAMP(T,DUMMY,I_RAMP_W0_T)*EVALUATE_RAMP(ZC(KK),DUMMY,I_RAMP_W0_Z)
+               SELECT CASE(IEC)
+                  CASE(1)
+                     IF (JJ==0    .AND. IOR== 2) WW(II,0,KK)    = WBAR
+                     IF (JJ==JBAR .AND. IOR==-2) WW(II,JBP1,KK) = WBAR
+                     IF (KK==0    .AND. IOR== 3) VV(II,JJ,0)    = VBAR
+                     IF (KK==KBAR .AND. IOR==-3) VV(II,JJ,KBP1) = VBAR
+                  CASE(2)
+                     IF (II==0    .AND. IOR== 1) WW(0,JJ,KK)    = WBAR
+                     IF (II==IBAR .AND. IOR==-1) WW(IBP1,JJ,KK) = WBAR
+                     IF (KK==0    .AND. IOR== 3) UU(II,JJ,0)    = UBAR
+                     IF (KK==KBAR .AND. IOR==-3) UU(II,JJ,KBP1) = UBAR
+                  CASE(3)
+                     IF (II==0    .AND. IOR== 1) VV(0,JJ,KK)    = VBAR
+                     IF (II==IBAR .AND. IOR==-1) VV(IBP1,JJ,KK) = VBAR
+                     IF (JJ==0    .AND. IOR== 2) UU(II,0,KK)    = UBAR
+                     IF (JJ==JBAR .AND. IOR==-2) UU(II,JBP1,KK) = UBAR
+               END SELECT
 
-         !     SELECT CASE(IEC)
-         !        CASE(1)
-         !           IF (JJ==0    .AND. IOR== 2) WW(II,0,KK)    = WBAR
-         !           IF (JJ==JBAR .AND. IOR==-2) WW(II,JBP1,KK) = WBAR
-         !           IF (KK==0    .AND. IOR== 3) VV(II,JJ,0)    = VBAR
-         !           IF (KK==KBAR .AND. IOR==-3) VV(II,JJ,KBP1) = VBAR
-         !        CASE(2)
-         !           IF (II==0    .AND. IOR== 1) WW(0,JJ,KK)    = WBAR
-         !           IF (II==IBAR .AND. IOR==-1) WW(IBP1,JJ,KK) = WBAR
-         !           IF (KK==0    .AND. IOR== 3) UU(II,JJ,0)    = UBAR
-         !           IF (KK==KBAR .AND. IOR==-3) UU(II,JJ,KBP1) = UBAR
-         !        CASE(3)
-         !           IF (II==0    .AND. IOR== 1) VV(0,JJ,KK)    = VBAR
-         !           IF (II==IBAR .AND. IOR==-1) VV(IBP1,JJ,KK) = VBAR
-         !           IF (JJ==0    .AND. IOR== 2) UU(II,0,KK)    = UBAR
-         !           IF (JJ==JBAR .AND. IOR==-2) UU(II,JBP1,KK) = UBAR
-         !     END SELECT
-
-         !  ENDIF WIND_NO_WIND_IF
+            ENDIF WIND_NO_WIND_IF
 
             IF (IWM/=0 .AND. IWP/=0) THEN
                CYCLE EDGE_LOOP  ! Do no further processing of this edge if both cell faces are OPEN
@@ -2711,8 +2678,6 @@ IF (EVACUATION_ONLY(NM)) RETURN
 
 T_NOW = CURRENT_TIME()
 
-WRITE(*,*) 'CALLING MATCH_VELOCITY'
-
 ! Assign local variable names
 
 CALL POINT_TO_MESH(NM)
@@ -2739,7 +2704,6 @@ EXTERNAL_WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS
 
    IF (WC%BOUNDARY_TYPE/=INTERPOLATED_BOUNDARY) CYCLE EXTERNAL_WALL_LOOP
 
-WRITE(*,*) 'CALLING MATCH_VELOCITY, IW = ', IW
    EWC=>EXTERNAL_WALL(IW)
 
    II  = WC%ONE_D%II
@@ -2949,8 +2913,6 @@ T_NOW = CURRENT_TIME()
 
 ! Assign local variable names
 
-WRITE(*,*) 'CALLING MATCH_VELOCITY_FLUX'
-
 CALL POINT_TO_MESH(NM)
 
 ! Loop over all cell edges and determine the appropriate velocity BCs
@@ -2960,8 +2922,6 @@ EXTERNAL_WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS
    WC=>WALL(IW)
    EWC=>EXTERNAL_WALL(IW)
    IF (WC%BOUNDARY_TYPE/=INTERPOLATED_BOUNDARY) CYCLE EXTERNAL_WALL_LOOP
-
-WRITE(*,*) 'CALLING MATCH_VELOCITY_FLUX IW=',IW
 
    II  = WC%ONE_D%II
    JJ  = WC%ONE_D%JJ
@@ -3231,8 +3191,6 @@ TYPE(WALL_TYPE), POINTER :: WC=>NULL()
 
 IF (SOLID_PHASE_ONLY .OR. FREEZE_VELOCITY) RETURN
 
-WRITE(*,*) 'CALLING BAROCLINIC_CORRECTION ', T
-
 T_NOW=CURRENT_TIME()
 CALL POINT_TO_MESH(NM)
 
@@ -3384,7 +3342,6 @@ END SUBROUTINE BAROCLINIC_CORRECTION
 
 SUBROUTINE WALL_VELOCITY_NO_GRADH(DT,STORE_UN)
 
-USE SCRC, ONLY : SCARC_MGM_FLAG
 ! This routine recomputes velocities on wall cells, such that the correct
 ! normal derivative of H is used on the projection. It is only used when the Poisson equation
 ! for the pressure is solved .NOT. PRES_ON_WHOLE_DOMAIN (i.e. using the GLMAT solver).
@@ -3399,7 +3356,7 @@ TYPE (WALL_TYPE), POINTER :: WC
 REAL(EB), SAVE, ALLOCATABLE, DIMENSION(:) :: UN_WALLS
 
 N_INTERNAL_WALL_CELLS_AUX=0
-IF (.NOT.PRES_ON_WHOLE_DOMAIN .OR. SCARC_MGM_FLAG) N_INTERNAL_WALL_CELLS_AUX=N_INTERNAL_WALL_CELLS
+IF (.NOT.PRES_ON_WHOLE_DOMAIN) N_INTERNAL_WALL_CELLS_AUX=N_INTERNAL_WALL_CELLS
 
 STORE_UN_COND : IF ( STORE_UN .AND. CORRECTOR) THEN
 

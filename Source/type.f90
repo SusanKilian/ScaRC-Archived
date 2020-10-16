@@ -37,8 +37,8 @@ TYPE LAGRANGIAN_PARTICLE_CLASS_TYPE
    REAL(EB) :: KILL_RADIUS                !< Radius (m) below which particle is killed (removed)
    REAL(EB) :: TMP_INITIAL                !< Initial temperature (K) of the particles
    REAL(EB) :: SIGMA                      !< Parameter in Rosin-Rammler distribution
-   REAL(EB) :: VERTICAL_VELOCITY          !< Speed (m/s) of liquid droplet stuck to a vertical surface
-   REAL(EB) :: HORIZONTAL_VELOCITY        !< Speed (m/s) of liquid droplet stuck to a horizontal surface
+   REAL(EB) :: VERTICAL_VELOCITY          !< Vertical velocity component (m/s) of particle stuck to a solid surface
+   REAL(EB) :: HORIZONTAL_VELOCITY        !< Horizontal velocity component (m/s) of particle stuck to a solid surface
    REAL(EB) :: MASS_TRANSFER_COEFFICIENT        !< Mass transfer coefficient from gas to liquid droplet (kg/m2/s)
    REAL(EB) :: HEAT_TRANSFER_COEFFICIENT_GAS    !< Heat transfer coefficient from gas to liquid droplet (W/m2/K)
    REAL(EB) :: HEAT_TRANSFER_COEFFICIENT_SOLID  !< Heat transfer coefficient from solid surface to liquid droplet (W/m2/K)
@@ -115,9 +115,9 @@ TYPE LAGRANGIAN_PARTICLE_CLASS_TYPE
    LOGICAL :: BREAKUP=.FALSE.               !< Flag indicating if paricles or droplets break-up
    LOGICAL :: CHECK_DISTRIBUTION=.FALSE.    !< Flag indicating if diagnostic output on size distribution is specified
    LOGICAL :: FUEL=.FALSE.                  !< Flag indicating if droplets evaporate into fuel gas
-   LOGICAL :: SECOND_ORDER_PARTICLE_TRANSPORT=.FALSE. !< Flag indicating second-order accurate particle position update
    LOGICAL :: DUCT_PARTICLE=.FALSE.         !< Flag indicating if particles can pass through a duct
    LOGICAL :: EMBER_PARTICLE=.FALSE.        !< Flag indicating if particles can become flying embers
+   LOGICAL :: ADHERE_TO_SOLID=.FALSE.       !< Flag indicating if particles can stick to a solid
 
 END TYPE LAGRANGIAN_PARTICLE_CLASS_TYPE
 
@@ -130,6 +130,12 @@ TYPE MATL_COMP_TYPE
    REAL(EB), POINTER, DIMENSION(:) :: RHO !< (1:NWP) Solid density (kg/m3)
    REAL(EB), POINTER, DIMENSION(:) :: RHO_DOT !< (1:NWP) Change in solid density (kg/m3/s)
 END TYPE MATL_COMP_TYPE
+
+!> \brief Gas mass concentration in solid for 1-D mass transfer
+TYPE SPEC_COMP_TYPE
+   REAL(EB), POINTER, DIMENSION(:) :: RHO !< (1:NWP) Gas density (kg/m3)
+!   REAL(EB), POINTER, DIMENSION(:) :: RHO_DOT !< (1:NWP) Change in gas density (kg/m3/s)
+END TYPE SPEC_COMP_TYPE
 
 
 !> \brief Radiation intensity at a boundary for a given wavelength band
@@ -166,6 +172,7 @@ TYPE ONE_D_M_AND_E_XFER_TYPE
    REAL(EB), POINTER, DIMENSION(:) :: K_S                 !< Solid conductivity (W/m/K)
 
    TYPE(MATL_COMP_TYPE), ALLOCATABLE, DIMENSION(:) :: MATL_COMP !< (1:SF\%N_MATL) Material component
+   TYPE(SPEC_COMP_TYPE), ALLOCATABLE, DIMENSION(:) :: SPEC_COMP !< (1:SF\%N_SPEC) Gas component
    TYPE(BAND_TYPE), ALLOCATABLE, DIMENSION(:) :: BAND           !< 1:NSB) Radiation wavelength band
    INTEGER, POINTER, DIMENSION(:) :: N_LAYER_CELLS              !< (1:SF\%N_LAYERS) Number of cells in the layer
 
@@ -384,26 +391,75 @@ TYPE SPECIES_TYPE
    LOGICAL ::  EXPLICIT_H_F=.FALSE.               !< Heat of Formation is explicitly specified
    LOGICAL ::  CONDENSABLE=.FALSE.                !< Species can condense to liquid form
 
-   CHARACTER(LABEL_LENGTH) :: ID,RAMP_CP,RAMP_CP_L,RAMP_K,RAMP_MU,RAMP_D,RADCAL_ID,RAMP_G_F,PROP_ID
-   CHARACTER(FORMULA_LENGTH) :: FORMULA
-   INTEGER :: MODE=2,RAMP_CP_INDEX=-1,RAMP_CP_L_INDEX=-1,RAMP_K_INDEX=-1,RAMP_MU_INDEX=-1,RAMP_D_INDEX=-1,RADCAL_INDEX=-1,&
-              RAMP_G_F_INDEX=-1,AWM_INDEX=-1
-   REAL(EB), ALLOCATABLE, DIMENSION(:) :: H_V,C_P_L,C_P_L_BAR,H_L
+   CHARACTER(LABEL_LENGTH) :: ID                  !< Species name
+   CHARACTER(LABEL_LENGTH) :: RAMP_CP             !< Name of specific heat ramp
+   CHARACTER(LABEL_LENGTH) :: RAMP_CP_L           !< Name of liquid specific heat rame
+   CHARACTER(LABEL_LENGTH) :: RAMP_K              !< Name of conductivity ramp
+   CHARACTER(LABEL_LENGTH) :: RAMP_MU             !< Name of viscosity rame
+   CHARACTER(LABEL_LENGTH) :: RAMP_D              !< Name of diffusivity ramp
+   CHARACTER(LABEL_LENGTH) :: RADCAL_ID           !< Name of closest species with RADCAL properties
+   CHARACTER(LABEL_LENGTH) :: RAMP_G_F
+   CHARACTER(LABEL_LENGTH) :: PROP_ID             !< Name of PROPerty parameters
+   CHARACTER(FORMULA_LENGTH) :: FORMULA           !< Chemical formula
+   INTEGER :: MODE=2
+   INTEGER :: RAMP_CP_INDEX=-1                    !< Index of specific heat ramp
+   INTEGER :: RAMP_CP_L_INDEX=-1                  !< Index of liquid specific heat ramp
+   INTEGER :: RAMP_K_INDEX=-1                     !< Index of conductivity ramp
+   INTEGER :: RAMP_MU_INDEX=-1                    !< Index of viscosity ramp
+   INTEGER :: RAMP_D_INDEX=-1                     !< Index of diffusivity heat ramp
+   INTEGER :: RADCAL_INDEX=-1                     !< Index of nearest species with RADCAL properties
+   INTEGER :: RAMP_G_F_INDEX=-1
+   INTEGER :: AWM_INDEX=-1
+   REAL(EB), ALLOCATABLE, DIMENSION(:) :: H_V       !< Heat of vaporization as a function of temperature
+   REAL(EB), ALLOCATABLE, DIMENSION(:) :: C_P_L     !< Liquid specific heat as a function of temperature
+   REAL(EB), ALLOCATABLE, DIMENSION(:) :: C_P_L_BAR !< Average liquid specific heat as a function of temperture
+   REAL(EB), ALLOCATABLE, DIMENSION(:) :: H_L       !< Heat of liquification as a function of temperature
 
 END TYPE SPECIES_TYPE
 
 TYPE (SPECIES_TYPE), DIMENSION(:), ALLOCATABLE, TARGET :: SPECIES
 
+
+!> \brief Properties of lumped species
+
 TYPE SPECIES_MIXTURE_TYPE
-   REAL(EB), ALLOCATABLE, DIMENSION(:) :: MASS_FRACTION,VOLUME_FRACTION
-   REAL(EB) :: MW , RCON, ZZ0=0._EB, MASS_EXTINCTION_COEFFICIENT=0._EB,ADJUST_NU=1._EB,ATOMS(118)=0._EB,MEAN_DIAMETER,&
-               SPECIFIC_HEAT=-1._EB,REFERENCE_ENTHALPY=-2.E20_EB,THERMOPHORETIC_DIAMETER, &
-               REFERENCE_TEMPERATURE,MU_USER=-1._EB,K_USER=-1._EB,D_USER=-1._EB,PR_USER=-1._EB,EPSK=-1._EB,SIG=-1._EB,&
-               FLD_LETHAL_DOSE=0._EB,FIC_CONCENTRATION=0._EB,&
-               DENSITY_SOLID,CONDUCTIVITY_SOLID,H_F=-1.E30_EB
-   CHARACTER(LABEL_LENGTH), ALLOCATABLE, DIMENSION(:) :: SPEC_ID
-   CHARACTER(LABEL_LENGTH) :: ID='null',RAMP_CP,RAMP_CP_L,RAMP_K,RAMP_MU,RAMP_D,RAMP_G_F
-   CHARACTER(FORMULA_LENGTH) :: FORMULA='null'
+
+   REAL(EB), ALLOCATABLE, DIMENSION(:) :: MASS_FRACTION    !< Mass fractions of components
+   REAL(EB), ALLOCATABLE, DIMENSION(:) :: VOLUME_FRACTION  !< Volume fractions of components
+
+   REAL(EB) :: MW                                  !< Molecular weight (g/mol)
+   REAL(EB) :: RCON                                !< Specific gas constant, \f$ R_0 \sum_\alpha Y_\alpha/W_\alpha \f$ (J/kg/K)
+   REAL(EB) :: ZZ0=0._EB                           !< Initial mass fraction of lumped species
+   REAL(EB) :: MASS_EXTINCTION_COEFFICIENT=0._EB   !< Absorption coefficient of visible light (m2/kg)
+   REAL(EB) :: ADJUST_NU=1._EB                     !< Adjustment factor if stoichiometric coefficients given for non-normalized VF
+   REAL(EB) :: ATOMS(118)=0._EB                    !< Count of each atom in the mixture
+   REAL(EB) :: MEAN_DIAMETER
+   REAL(EB) :: SPECIFIC_HEAT=-1._EB                !< Specific heat (J/kg/K)
+   REAL(EB) :: REFERENCE_ENTHALPY=-2.E20_EB        !< Enthalpy at REFERENCE_TEMPERATURE (J/kg)
+   REAL(EB) :: THERMOPHORETIC_DIAMETER
+   REAL(EB) :: REFERENCE_TEMPERATURE               !< Reference temperature of mixture (K)
+   REAL(EB) :: MU_USER=-1._EB                      !< User-specified viscosity (kg/m/s)
+   REAL(EB) :: K_USER=-1._EB                       !< User-specified thermal conductivity (W/m/K)
+   REAL(EB) :: D_USER=-1._EB                       !< User-specified diffusion coefficient (m2/s)
+   REAL(EB) :: PR_USER=-1._EB                      !< User-specified Prandhl number
+   REAL(EB) :: EPSK=-1._EB
+   REAL(EB) :: SIG=-1._EB
+   REAL(EB) :: FLD_LETHAL_DOSE=0._EB
+   REAL(EB) :: FIC_CONCENTRATION=0._EB
+   REAL(EB) :: DENSITY_SOLID
+   REAL(EB) :: CONDUCTIVITY_SOLID
+   REAL(EB) :: H_F=-1.E30_EB
+
+   CHARACTER(LABEL_LENGTH), ALLOCATABLE, DIMENSION(:) :: SPEC_ID  !< Array of component species names
+   CHARACTER(LABEL_LENGTH) :: ID='null'                           !< Name of lumped species
+   CHARACTER(LABEL_LENGTH) :: RAMP_CP                             !< Name of specific heat ramp
+   CHARACTER(LABEL_LENGTH) :: RAMP_CP_L                           !< Name of liquid specific heat ramp
+   CHARACTER(LABEL_LENGTH) :: RAMP_K                              !< Name of conductivity ramp
+   CHARACTER(LABEL_LENGTH) :: RAMP_MU                             !< Name of viscosity ramp
+   CHARACTER(LABEL_LENGTH) :: RAMP_D                              !< Name of diffusion coefficient ramp
+   CHARACTER(LABEL_LENGTH) :: RAMP_G_F
+   CHARACTER(FORMULA_LENGTH) :: FORMULA='null'                    !< Chemical formula of lumped species
+
    INTEGER :: AWM_INDEX = -1,RAMP_CP_INDEX=-1,SINGLE_SPEC_INDEX=-1,RAMP_K_INDEX=-1,RAMP_MU_INDEX=-1,RAMP_D_INDEX=-1,&
               RAMP_G_F_INDEX=-1,CONDENSATION_SMIX_INDEX=-1,EVAPORATION_SMIX_INDEX=-1,AGGLOMERATION_INDEX=-1
    LOGICAL :: DEPOSITING=.FALSE.,VALID_ATOMS=.TRUE.,EVAPORATING=.FALSE.
@@ -419,8 +475,8 @@ TYPE REACTION_TYPE
    CHARACTER(LABEL_LENGTH), ALLOCATABLE, DIMENSION(:) :: SPEC_ID_NU,SPEC_ID_NU_READ,SPEC_ID_N_S,SPEC_ID_N_S_READ
    REAL(EB) :: C,H,N,O,EPUMO2,HEAT_OF_COMBUSTION,HOC_COMPLETE,A,A_PRIME,A_PRIME_FAST,A_IN,E,E_IN,K,&
                Y_O2_INFTY,Y_N2_INFTY=0._EB,MW_FUEL,MW_SOOT,Y_O2_MIN,&
-               CO_YIELD,SOOT_YIELD,H2_YIELD, SOOT_H_FRACTION,RHO_EXPONENT,RHO_EXPONENT_FAST,CRIT_FLAME_TMP,&
-               NU_O2=0._EB,NU_N2=0._EB,NU_H2O=0._EB,NU_H2=0._EB,NU_CO2=0._EB,NU_CO=0._EB,NU_SOOT=0._EB,S=0._EB,&
+               CO_YIELD,SOOT_YIELD,H2_YIELD,HCN_YIELD,SOOT_H_FRACTION,RHO_EXPONENT,RHO_EXPONENT_FAST,CRIT_FLAME_TMP,&
+               NU_O2=0._EB,NU_N2=0._EB,NU_H2O=0._EB,NU_H2=0._EB,NU_HCN=0._EB,NU_CO2=0._EB,NU_CO=0._EB,NU_SOOT=0._EB,S=0._EB,&
                COMPLETE_HEAT_OF_COMBUSTION
    REAL(EB) :: N_T=0._EB,CHI_R
    REAL(EB), ALLOCATABLE, DIMENSION(:) :: NU,NU_READ,NU_SPECIES,N_S,N_S_READ,NU_MW_O_MW_F
@@ -485,7 +541,7 @@ TYPE SURFACE_TYPE
    INTEGER :: THERMAL_BC_INDEX,NPPC,SPECIES_BC_INDEX,VELOCITY_BC_INDEX,SURF_TYPE,N_CELLS_INI,N_CELLS_MAX=0, &
               PART_INDEX,PROP_INDEX=-1,RAMP_T_I_INDEX=-1, RAMP_T_B_INDEX=0
    INTEGER :: PYROLYSIS_MODEL,NRA,NSB
-   INTEGER :: N_LAYERS,N_MATL,SUBSTEP_POWER=2
+   INTEGER :: N_LAYERS,N_MATL,SUBSTEP_POWER=2,N_SPEC=0
    INTEGER :: N_ONE_D_STORAGE_REALS,N_ONE_D_STORAGE_INTEGERS,N_ONE_D_STORAGE_LOGICALS
    INTEGER :: N_WALL_STORAGE_REALS,N_WALL_STORAGE_INTEGERS,N_WALL_STORAGE_LOGICALS
    INTEGER :: N_CFACE_STORAGE_REALS,N_CFACE_STORAGE_INTEGERS,N_CFACE_STORAGE_LOGICALS
@@ -505,7 +561,8 @@ TYPE SURFACE_TYPE
    LOGICAL :: BURN_AWAY,ADIABATIC,INTERNAL_RADIATION,USER_DEFINED=.TRUE., &
               FREE_SLIP=.FALSE.,NO_SLIP=.FALSE.,SPECIFIED_NORMAL_VELOCITY=.FALSE.,SPECIFIED_TANGENTIAL_VELOCITY=.FALSE., &
               SPECIFIED_NORMAL_GRADIENT=.FALSE.,CONVERT_VOLUME_TO_MASS=.FALSE.,SPECIFIED_HEAT_SOURCE=.FALSE.,&
-              IMPERMEABLE=.FALSE.,BOUNDARY_FUEL_MODEL=.FALSE.,BLOWING=.FALSE.,ABL_MODEL=.FALSE.
+              IMPERMEABLE=.FALSE.,BOUNDARY_FUEL_MODEL=.FALSE.,BLOWING=.FALSE.,BLOWING_2=.FALSE.,ABL_MODEL=.FALSE., &
+              HT3D=.FALSE., MT1D=.FALSE.
    INTEGER :: GEOMETRY,BACKING,PROFILE,HEAT_TRANSFER_MODEL=0
    CHARACTER(LABEL_LENGTH) :: PART_ID,RAMP_Q,RAMP_V,RAMP_T,RAMP_EF,RAMP_PART,RAMP_V_X,RAMP_V_Y,RAMP_V_Z,RAMP_T_B,RAMP_T_I
    CHARACTER(LABEL_LENGTH), ALLOCATABLE, DIMENSION(:) :: RAMP_MF
@@ -531,7 +588,7 @@ TYPE (SURFACE_TYPE), DIMENSION(:), ALLOCATABLE, TARGET :: SURFACE
 TYPE OMESH_TYPE
    REAL(EB), ALLOCATABLE, DIMENSION(:,:,:) :: MU,RHO,RHOS,TMP,U,V,W,US,VS,WS,H,HS,FVX,FVY,FVZ,D,DS,KRES,IL_S,IL_R,Q
    REAL(EB), ALLOCATABLE, DIMENSION(:,:,:,:) :: ZZ,ZZS
-   INTEGER, ALLOCATABLE, DIMENSION(:) :: BOUNDARY_TYPE,IIO_R,JJO_R,KKO_R,IOR_R,IIO_S,JJO_S,KKO_S,IOR_S
+   INTEGER, ALLOCATABLE, DIMENSION(:) :: IIO_R,JJO_R,KKO_R,IOR_R,IIO_S,JJO_S,KKO_S,IOR_S
    INTEGER, ALLOCATABLE, DIMENSION(:) :: N_PART_ORPHANS,N_PART_ADOPT,EXPOSED_WALL_CELL_BACK_INDICES,WALL_CELL_INDICES_SEND
    INTEGER :: I_MIN_R=-10,I_MAX_R=-10,J_MIN_R=-10,J_MAX_R=-10,K_MIN_R=-10,K_MAX_R=-10,NIC_R=0,N_WALL_CELLS_SEND=0, &
               I_MIN_S=-10,I_MAX_S=-10,J_MIN_S=-10,J_MAX_S=-10,K_MIN_S=-10,K_MAX_S=-10,NIC_S=0,N_EXPOSED_WALL_CELLS=0
@@ -544,7 +601,7 @@ TYPE OMESH_TYPE
    TYPE (EXPOSED_WALL_TYPE), ALLOCATABLE, DIMENSION(:) :: EXPOSED_WALL
 
    ! CC_IBM data exchange arrays:
-   INTEGER :: NICC_S(2)=0, NICC_R(2)=0, NFCC_S(2)=0, NFCC_R(2)=0, NCC_INT_R=0, NFEP_R(3)=0, NFEP_R_G=0
+   INTEGER :: NICC_S(2)=0, NICC_R(2)=0, NFCC_S(2)=0, NFCC_R(2)=0, NCC_INT_R=0, NFEP_R(5)=0, NFEP_R_G=0
    REAL(EB), ALLOCATABLE, DIMENSION(:) ::                &
          REAL_SEND_PKG11,REAL_SEND_PKG12,REAL_SEND_PKG13,&
          REAL_RECV_PKG11,REAL_RECV_PKG12,REAL_RECV_PKG13
@@ -554,7 +611,7 @@ TYPE OMESH_TYPE
    ! Face variables data (velocities):
    INTEGER, ALLOCATABLE, DIMENSION(:) :: IIO_FC_R,JJO_FC_R,KKO_FC_R,AXS_FC_R,IIO_FC_S,JJO_FC_S,KKO_FC_S,AXS_FC_S
    INTEGER, ALLOCATABLE, DIMENSION(:) :: IIO_CC_R,JJO_CC_R,KKO_CC_R,IIO_CC_S,JJO_CC_S,KKO_CC_S
-   INTEGER, ALLOCATABLE, DIMENSION(:,:) :: IFEP_R_1, IFEP_R_2, IFEP_R_3
+   INTEGER, ALLOCATABLE, DIMENSION(:,:) :: IFEP_R_1, IFEP_R_2, IFEP_R_3, IFEP_R_4, IFEP_R_5
 
    ! Level Set
    REAL(EB), ALLOCATABLE, DIMENSION(:,:) :: PHI_LS,PHI1_LS,U_LS,V_LS,Z_LS
@@ -713,10 +770,10 @@ TYPE IBM_CUTEDGE_TYPE
    INTEGER,  ALLOCATABLE, DIMENSION(:)             ::NOD_PERM  ! Permutation array for INSERT_FACE_VERT.
 END TYPE IBM_CUTEDGE_TYPE
 
-! REGC_EDGE type, used for computation of wall model turbulent viscosity, shear stress, vorticity.
-TYPE IBM_RCEDGE_TYPE
+! IBM_EDGE type, used for computation of wall model turbulent viscosity, shear stress, vorticity.
+TYPE IBM_EDGE_TYPE
    INTEGER,  DIMENSION(MAX_DIM+1)                  ::     IJK  ! [ i j k X1AXIS]
-   INTEGER :: IE
+   INTEGER :: IE=0
    ! Here: VIND=IAXIS:KAXIS, EP=1:INT_N_EXT_PTS,
    ! INT_VEL_IND = 1; INT_VELS_IND = 2; INT_FV_IND = 3; INT_DHDX_IND = 4; N_INT_FVARS = 4;
    ! INT_NPE_LO = INT_NPE(LOW,VIND,EP,IFACE); INT_NPE_LO = INT_NPE(HIGH,VIND,EP,IEDGE).
@@ -729,8 +786,12 @@ TYPE IBM_RCEDGE_TYPE
    INTEGER,  ALLOCATABLE, DIMENSION(:,:,:,:)  :: INT_NPE        ! (LOW:HIGH,VIND,EP,IEDGE)
    REAL(EB), ALLOCATABLE, DIMENSION(:,:)      :: INT_XN,INT_CN  ! (0:INT_N_EXT_PTS,IEDGE)
    REAL(EB), ALLOCATABLE, DIMENSION(:,:)      :: INT_FVARS      ! (1:N_INT_FVARS,INT_NPE_LO+1:INT_NPE_LO+INT_NPE_HI)
+   REAL(EB), ALLOCATABLE, DIMENSION(:,:)      :: INT_CVARS      ! (1:N_INT_CVARS,INT_NPE_LO+1:INT_NPE_LO+INT_NPE_HI)
    INTEGER,  ALLOCATABLE, DIMENSION(:,:)      :: INT_NOMIND     ! (LOW_IND:HIGH_IND,INT_NPE_LO+1:INT_NPE_LO+INT_NPE_HI)
-END TYPE IBM_RCEDGE_TYPE
+   REAL(EB), ALLOCATABLE, DIMENSION(:)        :: XB_IB
+   INTEGER,  ALLOCATABLE, DIMENSION(:)        :: SURF_INDEX
+   LOGICAL,  ALLOCATABLE, DIMENSION(:)        :: PROCESS_EDGE_ORIENTATION,EDGE_IN_MESH
+END TYPE IBM_EDGE_TYPE
 
 ! Cartesian Faces Cut-Faces data structure:
 INTEGER, PARAMETER :: IBM_MAXVERTS_FACE  =3072 ! Size definition parameter. Max number of vertices per Cartesian Face.
@@ -1037,52 +1098,137 @@ END TYPE PROFILE_TYPE
 
 TYPE (PROFILE_TYPE), DIMENSION(:), ALLOCATABLE, TARGET :: PROFILE
 
+
+!> \brief Parameters associated with initialization of particles or regions of the domain
+
 TYPE INITIALIZATION_TYPE
-   REAL(EB) :: TEMPERATURE,DENSITY,X1,X2,Y1,Y2,Z1,Z2,MASS_PER_VOLUME,MASS_PER_TIME,DT_INSERT,T_INSERT, &
-               X0,Y0,Z0,U0,V0,W0,VOLUME,HRRPUV=0._EB,DX=0._EB,DY=0._EB,DZ=0._EB,HEIGHT,RADIUS,DIAMETER=-1._EB, &
-               PARTICLE_WEIGHT_FACTOR, PACKING_RATIO,CHI_R
-   REAL(EB), ALLOCATABLE, DIMENSION(:) :: PARTICLE_INSERT_CLOCK,MASS_FRACTION
-   INTEGER  :: PART_INDEX=0,N_PARTICLES,LU_PARTICLE,PROF_INDEX=0,DEVC_INDEX=0,CTRL_INDEX=0,TABL_INDEX=0, &
-               N_PARTICLES_PER_CELL=0,PATH_RAMP_INDEX(3)=0,RAMP_Q_INDEX=0
-   LOGICAL :: ADJUST_DENSITY=.FALSE.,ADJUST_TEMPERATURE=.FALSE.,SINGLE_INSERTION=.TRUE., &
-              CELL_CENTERED=.FALSE.,UNIFORM=.FALSE.,RTE_CORRECTION=.TRUE.
+   REAL(EB) :: TEMPERATURE      !< Temperature (K) of the initialized region
+   REAL(EB) :: DENSITY          !< Density (kg/m3) of the initialized region
+   REAL(EB) :: X1               !< Lower x boundary of the initialized region (m)
+   REAL(EB) :: X2               !< Upper x boundary of the initialized region (m)
+   REAL(EB) :: Y1               !< Lower y boundary of the initialized region (m)
+   REAL(EB) :: Y2               !< Upper y boundary of the initialized region (m)
+   REAL(EB) :: Z1               !< Lower z boundary of the initialized region (m)
+   REAL(EB) :: Z2               !< Upper z boundary of the initialized region (m)
+   REAL(EB) :: MASS_PER_VOLUME  !< Mass per unit volume of particles (kg/m3)
+   REAL(EB) :: MASS_PER_TIME    !< Mass (kg) per time (s) of particles
+   REAL(EB) :: DT_INSERT        !< Time increment between particle inserts (s)
+   REAL(EB) :: T_INSERT         !< Time to start inserting particles (s)
+   REAL(EB) :: X0               !< x origin of initialization region (m)
+   REAL(EB) :: Y0               !< y origin of initialization region (m)
+   REAL(EB) :: Z0               !< z origin of initialization region (m)
+   REAL(EB) :: U0               !< Initial u component of velocity of particles (m/s)
+   REAL(EB) :: V0               !< Initial v component of velocity of particles (m/s)
+   REAL(EB) :: W0               !< Initial w component of velocity of particles (m/s)
+   REAL(EB) :: VOLUME           !< Volume of region (m3)
+   REAL(EB) :: HRRPUV=0._EB     !< Heat Release Rate Per Unit Volume (W/m3)
+   REAL(EB) :: DX=0._EB         !< Spacing (m) of an array of particles
+   REAL(EB) :: DY=0._EB         !< Spacing (m) of an array of particles
+   REAL(EB) :: DZ=0._EB         !< Spacing (m) of an array of particles
+   REAL(EB) :: HEIGHT           !< Height of initialization region (m)
+   REAL(EB) :: RADIUS           !< Radius of initialization region, like a cone (m)
+   REAL(EB) :: DIAMETER=-1._EB  !< Diameter of liquid droplets specified on an INIT line (m)
+   REAL(EB) :: PARTICLE_WEIGHT_FACTOR !< Multiplicative factor for particles specified on the INIT line
+   REAL(EB) :: PACKING_RATIO    !< Volume of particles divided by the volume of gas
+   REAL(EB) :: CHI_R            !< Radiative fraction of HRRPUV
+   REAL(EB), ALLOCATABLE, DIMENSION(:) :: PARTICLE_INSERT_CLOCK  !< Time of last particle insertion (s)
+   REAL(EB), ALLOCATABLE, DIMENSION(:) :: MASS_FRACTION          !< Mass fraction of gas components
+   INTEGER  :: PART_INDEX=0     !< Particle class index of inserted particles
+   INTEGER  :: N_PARTICLES      !< Number of particles to insert
+   INTEGER  :: DEVC_INDEX=0     !< Index of the device that uses this INITIALIZATION variable
+   INTEGER  :: CTRL_INDEX=0     !< Index of the controller that uses this INITIALIZATION variable
+   INTEGER  :: N_PARTICLES_PER_CELL=0 !< Number of particles to insert in each cell
+   INTEGER  :: PATH_RAMP_INDEX(3)=0   !< Ramp index of a particle path
+   INTEGER  :: RAMP_Q_INDEX=0         !< Ramp of HRRPUV
+   LOGICAL :: ADJUST_DENSITY=.FALSE.
+   LOGICAL :: ADJUST_TEMPERATURE=.FALSE.
+   LOGICAL :: SINGLE_INSERTION=.TRUE.
+   LOGICAL :: CELL_CENTERED=.FALSE.
+   LOGICAL :: UNIFORM=.FALSE.
    LOGICAL, ALLOCATABLE, DIMENSION(:) :: ALREADY_INSERTED
-   CHARACTER(LABEL_LENGTH) :: SHAPE,DEVC_ID,CTRL_ID,ID
+   CHARACTER(LABEL_LENGTH) :: SHAPE
+   CHARACTER(LABEL_LENGTH) :: DEVC_ID
+   CHARACTER(LABEL_LENGTH) :: CTRL_ID
+   CHARACTER(LABEL_LENGTH) :: ID
 END TYPE INITIALIZATION_TYPE
 
 TYPE (INITIALIZATION_TYPE), DIMENSION(:), ALLOCATABLE, TARGET :: INITIALIZATION
 
+
+!> \brief Parameters used to initalize particles used as gas phase devices
+
 TYPE INIT_RESERVED_TYPE
-   INTEGER :: N_PARTICLES,DEVC_INDEX
+   INTEGER :: N_PARTICLES  !< Number of particles for the device, usually 1
+   INTEGER :: DEVC_INDEX   !< The index of the device
 END TYPE INIT_RESERVED_TYPE
 
 TYPE (INIT_RESERVED_TYPE), DIMENSION(:), ALLOCATABLE, TARGET :: INIT_RESERVED
 
+
+!> \brief Parameters associated with a pressure ZONE
+
 TYPE P_ZONE_TYPE
-   REAL(EB) :: X,Y,Z,DPSTAR=0._EB
-   REAL(EB), ALLOCATABLE, DIMENSION(:) :: LEAK_AREA,LEAK_REFERENCE_PRESSURE,LEAK_PRESSURE_EXPONENT
-   INTEGER :: N_DUCTNODES,MESH_INDEX=0
-   LOGICAL :: EVACUATION=.FALSE.,PERIODIC=.FALSE.
-   INTEGER, ALLOCATABLE, DIMENSION(:) :: NODE_INDEX
-   CHARACTER(LABEL_LENGTH) :: ID
+   REAL(EB) :: X                                                   !< x coordinate of ZONE specifier (m)
+   REAL(EB) :: Y                                                   !< y coordinate of ZONE specifier (m)
+   REAL(EB) :: Z                                                   !< z coordinate of ZONE specifier (m)
+   REAL(EB) :: DPSTAR=0._EB
+   REAL(EB), ALLOCATABLE, DIMENSION(:) :: LEAK_AREA                !< Array of leak areas to other ZONEs
+   REAL(EB), ALLOCATABLE, DIMENSION(:) :: LEAK_REFERENCE_PRESSURE  !< Array of leak reference pressures
+   REAL(EB), ALLOCATABLE, DIMENSION(:) :: LEAK_PRESSURE_EXPONENT   !< Array of leak reference exponents
+   INTEGER :: N_DUCTNODES                                          !< Number of duct nodes in the ZONE
+   INTEGER :: MESH_INDEX=0                                         !< Index of the MESH where the ZONE is located
+   LOGICAL :: EVACUATION=.FALSE.
+   LOGICAL :: PERIODIC=.FALSE.                                     !< Indicator if the ZONE boundary is periodic
+   INTEGER, ALLOCATABLE, DIMENSION(:) :: NODE_INDEX                !< Array of NODE indices connected to the ZONE
+   CHARACTER(LABEL_LENGTH) :: ID                                   !< Identifier
 END TYPE P_ZONE_TYPE
 
 TYPE (P_ZONE_TYPE), DIMENSION(:), ALLOCATABLE, TARGET :: P_ZONE
 
+
+!> \brief Parameters associated with a MOVE line, used to rotate or translate OBSTructions
+
 TYPE MOVEMENT_TYPE
-   REAL(EB) :: SCALE,SCALEX,SCALEY,SCALEZ,DX,DY,DZ,X0,Y0,Z0,ROTATION_ANGLE,AXIS(3),T34(3,4)
-   INTEGER :: INDEX
-   CHARACTER(LABEL_LENGTH) :: ID
+   REAL(EB) :: SCALE              !< Overall scale factor
+   REAL(EB) :: SCALEX             !< Scale factor for x dimension
+   REAL(EB) :: SCALEY             !< Scale factor for y dimension
+   REAL(EB) :: SCALEZ             !< Scale factor for z dimension
+   REAL(EB) :: DX                 !< Translation in x direction (m)
+   REAL(EB) :: DY                 !< Translation in y direction (m)
+   REAL(EB) :: DZ                 !< Translation in z direction (m)
+   REAL(EB) :: X0                 !< x origin of rotation axis (m)
+   REAL(EB) :: Y0                 !< y origin of rotation axis (m)
+   REAL(EB) :: Z0                 !< z origin of rotation axis (m)
+   REAL(EB) :: ROTATION_ANGLE     !< Angle of rotation around AXIS (deg)
+   REAL(EB) :: AXIS(3)            !< Vector originating at (X0,Y0,Z0) that defines axis of rotation
+   REAL(EB) :: T34(3,4)           !< Transformation matrix
+   INTEGER :: INDEX               !< Integer identifier
+   CHARACTER(LABEL_LENGTH) :: ID  !< Character identifier
 END TYPE MOVEMENT_TYPE
 
 TYPE (MOVEMENT_TYPE), DIMENSION(:), ALLOCATABLE, TARGET :: MOVEMENT
 
+
+!> \brief Parameters associated with a MULT line for multiplying OBSTs, VENTs, etc
+
 TYPE MULTIPLIER_TYPE
-   REAL(EB) :: DXB(6),DX0,DY0,DZ0,FDS_AREA(6)=0._EB
-   INTEGER  :: I_LOWER,I_UPPER,J_LOWER,J_UPPER,K_LOWER,K_UPPER,N_LOWER,N_UPPER,N_COPIES
-   LOGICAL, ALLOCATABLE, DIMENSION(:,:,:) :: SKIP
-   CHARACTER(LABEL_LENGTH) :: ID
-   LOGICAL :: SEQUENTIAL=.FALSE.
+   REAL(EB) :: DXB(6)                               !< Array of deltas for six coordinates (m)
+   REAL(EB) :: DX0                                  !< Translation in x direction (m)
+   REAL(EB) :: DY0                                  !< Translation in x direction (m)
+   REAL(EB) :: DZ0                                  !< Translation in x direction (m)
+   REAL(EB) :: FDS_AREA(6)=0._EB
+   INTEGER  :: I_LOWER                              !< Lower bound of i index
+   INTEGER  :: I_UPPER                              !< Upper bound of i index
+   INTEGER  :: J_LOWER                              !< Lower bound of j index
+   INTEGER  :: J_UPPER                              !< Upper bound of j index
+   INTEGER  :: K_LOWER                              !< Lower bound of k index
+   INTEGER  :: K_UPPER                              !< Upper bound of k index
+   INTEGER  :: N_LOWER                              !< Lower bound of n index
+   INTEGER  :: N_UPPER                              !< Upper bound of n index
+   INTEGER  :: N_COPIES                             !< Total number of copies of the original item
+   LOGICAL, ALLOCATABLE, DIMENSION(:,:,:) :: SKIP   !< Flag to skip copies in one of three directions
+   CHARACTER(LABEL_LENGTH) :: ID                    !< Identifying string
+   LOGICAL :: SEQUENTIAL=.FALSE.                    !< Flag indicating of the MULT creates a series of copies or 3D array
 END TYPE MULTIPLIER_TYPE
 
 TYPE (MULTIPLIER_TYPE), DIMENSION(:), ALLOCATABLE, TARGET :: MULTIPLIER
