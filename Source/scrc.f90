@@ -9,7 +9,7 @@
 !  - WITH_SCARC_POSTPROCESSING   : dump environment for separate ScaRC postprocessing program
 ! ================================================================================================================
 !#undef WITH_MKL
-#define WITH_SCARC_DEBUG
+#undef WITH_SCARC_DEBUG
 #define WITH_SCARC_VERBOSE
 #define WITH_SCARC_MGM
 #undef WITH_SCARC_POSTPROCESSING
@@ -9511,6 +9511,9 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
  
       CALL SCARC_METHOD_KRYLOV (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
    
+      DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+         IF (NM == 1) CALL SCARC_DUMP_VECTOR3 (MESHES(1)%HS, NM, NLEVEL_MIN, 'HS')
+      ENDDO
  
    ! ---------------- Multigrid method ---------------------------------------
  
@@ -20295,11 +20298,11 @@ CLOSE(LU_DUMP)
 
 END SUBROUTINE SCARC_DUMP_VECTOR1
 
-SUBROUTINE SCARC_DUMP_VECTOR3 (VC, NM, NL, CNAME)
+SUBROUTINE SCARC_DUMP_VECTOR3 (HP, NM, NL, CNAME)
 USE SCARC_POINTERS, ONLY: L
 USE SCARC_ITERATION_ENVIRONMENT
 INTEGER, INTENT(IN) :: NM, NL
-REAL(EB), DIMENSION(:,:,:), INTENT(IN) :: VC
+REAL(EB), DIMENSION(0:,0:,0:), INTENT(IN) :: HP
 CHARACTER(*), INTENT(IN) :: CNAME
 CHARACTER(80) :: FN_DUMP
 INTEGER :: IX, IY, IZ
@@ -20309,10 +20312,10 @@ WRITE (FN_DUMP, '(A,A,A,A,A,i3.3)') 'pressure/',TRIM(CHID),'_',TRIM(CNAME),'_',I
 
 LU_DUMP = GET_FILE_NUMBER()
 OPEN (LU_DUMP, FILE=FN_DUMP)
-DO IZ = L%NZ, 1, -1
-   DO IY = L%NY, 1, -1
+DO IZ = 1, L%NZ
+   DO IY = 1, L%NY
       DO IX = 1, L%NX
-         WRITE(LU_DUMP,*) VC(IX, IY, IZ)
+         WRITE(LU_DUMP,*) HP(IX, IY, IZ)
       ENDDO
    ENDDO
 ENDDO
