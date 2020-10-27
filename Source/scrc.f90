@@ -9,9 +9,8 @@
 !  - WITH_SCARC_POSTPROCESSING   : dump environment for separate ScaRC postprocessing program
 ! ================================================================================================================
 !#undef WITH_MKL
-#undef WITH_SCARC_DEBUG
+#define WITH_SCARC_DEBUG
 #define WITH_SCARC_VERBOSE
-#define WITH_SCARC_MGM
 #undef WITH_SCARC_POSTPROCESSING
 
 
@@ -113,6 +112,8 @@ INTEGER, PARAMETER :: NSCARC_EXCHANGE_MATRIX_SIZES   = 11         !< Type of dat
 INTEGER, PARAMETER :: NSCARC_EXCHANGE_MATRIX_VALS    = 12         !< Type of data exchange: values of Poisson matrix
 INTEGER, PARAMETER :: NSCARC_EXCHANGE_NULLSPACE      = 13         !< Type of data exchange: nullspace entries (AMG only)
 INTEGER, PARAMETER :: NSCARC_EXCHANGE_PRESSURE       = 14         !< Type of data exchange: pressure values
+INTEGER, PARAMETER :: NSCARC_EXCHANGE_MGM1       = 19         !< Type of data exchange: pressure values
+INTEGER, PARAMETER :: NSCARC_EXCHANGE_MGM2       = 20         !< Type of data exchange: pressure values
 INTEGER, PARAMETER :: NSCARC_EXCHANGE_VECTOR_MEAN    = 15         !< Type of data exchange: mean values of a vector
 INTEGER, PARAMETER :: NSCARC_EXCHANGE_VECTOR_PLAIN   = 16         !< Type of data exchange: plain values of a vector
 INTEGER, PARAMETER :: NSCARC_EXCHANGE_ZONE_NEIGHBORS = 17         !< Type of data exchange: aggregation zones (AMG only)
@@ -182,6 +183,10 @@ INTEGER, PARAMETER :: NSCARC_MKL_LOCAL               =  1         !< Type of MKL
 INTEGER, PARAMETER :: NSCARC_MKL_GLOBAL              =  2         !< Type of MKL method: global LU-decomposition
 INTEGER, PARAMETER :: NSCARC_MKL_COARSE              =  3         !< Type of MKL method: only coarse grid level
 
+INTEGER, PARAMETER :: NSCARC_MGM_ZERO                =  0         !< Type of MGM boundary condition: zero
+INTEGER, PARAMETER :: NSCARC_MGM_SIMPLE              =  1         !< Type of MGM boundary condition: simple
+INTEGER, PARAMETER :: NSCARC_MGM_EXTRAPOLATION       =  2         !< Type of MGM boundary condition: linear extrapolatioln
+
 INTEGER, PARAMETER :: NSCARC_MULTIGRID_GEOMETRIC     =  1         !< Type of multigrid method: geometric multigrid
 INTEGER, PARAMETER :: NSCARC_MULTIGRID_ALGEBRAIC     =  2         !< Type of multigrid method: algebraic multigrid
 INTEGER, PARAMETER :: NSCARC_MULTIGRID_MAIN          =  1         !< Type of multigrid method: used as main solver
@@ -194,18 +199,19 @@ INTEGER, PARAMETER :: NSCARC_ORDER_UNASSIGNED        =  0         !< Order of ag
 INTEGER, PARAMETER :: NSCARC_PRECISION_SINGLE        =  1         !< Type of data precision: single
 INTEGER, PARAMETER :: NSCARC_PRECISION_DOUBLE        =  2         !< Type of data precision: double 
 
-INTEGER, PARAMETER :: NSCARC_RELAX_JAC               =  1         !< Type of preconditioner: JACOBI-methods
-INTEGER, PARAMETER :: NSCARC_RELAX_SSOR              =  2         !< Type of preconditioner: SSOR-methods
-INTEGER, PARAMETER :: NSCARC_RELAX_MJAC              =  3         !< Type of preconditioner: MJAC-methods (matrix form)
-INTEGER, PARAMETER :: NSCARC_RELAX_MGS               =  4         !< Type of preconditioner: MGS-methods (matrix form)
-INTEGER, PARAMETER :: NSCARC_RELAX_MSGS              =  5         !< Type of preconditioner: MSGS-methods (matrix form)
-INTEGER, PARAMETER :: NSCARC_RELAX_MSOR              =  6         !< Type of preconditioner: MSOR-methods (matrix form)
-INTEGER, PARAMETER :: NSCARC_RELAX_MSSOR             =  7         !< Type of preconditioner: MSSOR-methods (matrix form)
-INTEGER, PARAMETER :: NSCARC_RELAX_ILU               =  8         !< Type of preconditioner: ILU-decompositions (own)
-INTEGER, PARAMETER :: NSCARC_RELAX_FFT               =  9         !< Type of preconditioner: FFT-methods
-INTEGER, PARAMETER :: NSCARC_RELAX_FFTO              = 10         !< Type of preconditioner: FFTO-methods (including overlap)
-INTEGER, PARAMETER :: NSCARC_RELAX_MULTIGRID         = 11         !< Type of preconditioner: multigrid methods
-INTEGER, PARAMETER :: NSCARC_RELAX_MKL               = 12         !< Type of preconditioner: LU-decompositions (MKL)
+INTEGER, PARAMETER :: NSCARC_RELAX_FFT               =  1         !< Type of preconditioner: FFT-methods
+INTEGER, PARAMETER :: NSCARC_RELAX_FFTO              =  2         !< Type of preconditioner: FFTO-methods (including overlap)
+INTEGER, PARAMETER :: NSCARC_RELAX_ILU               =  3         !< Type of preconditioner: ILU-decompositions (own)
+INTEGER, PARAMETER :: NSCARC_RELAX_JAC               =  4         !< Type of preconditioner: JACOBI-methods
+INTEGER, PARAMETER :: NSCARC_RELAX_LU                =  5         !< Type of preconditioner: LU-decompositions (own)
+INTEGER, PARAMETER :: NSCARC_RELAX_MGS               =  6         !< Type of preconditioner: MGS-methods (matrix form)
+INTEGER, PARAMETER :: NSCARC_RELAX_MJAC              =  7         !< Type of preconditioner: MJAC-methods (matrix form)
+INTEGER, PARAMETER :: NSCARC_RELAX_MKL               =  8         !< Type of preconditioner: LU-decompositions (MKL)
+INTEGER, PARAMETER :: NSCARC_RELAX_MSGS              =  9         !< Type of preconditioner: MSGS-methods (matrix form)
+INTEGER, PARAMETER :: NSCARC_RELAX_MSOR              = 10         !< Type of preconditioner: MSOR-methods (matrix form)
+INTEGER, PARAMETER :: NSCARC_RELAX_MSSOR             = 11         !< Type of preconditioner: MSSOR-methods (matrix form)
+INTEGER, PARAMETER :: NSCARC_RELAX_MULTIGRID         = 12         !< Type of preconditioner: multigrid methods
+INTEGER, PARAMETER :: NSCARC_RELAX_SSOR              = 13         !< Type of preconditioner: SSOR-methods
 
 INTEGER, PARAMETER :: NSCARC_RHS_HOMOGENEOUS         =  1         !< Type of boundary conditions: homogeneous 
 INTEGER, PARAMETER :: NSCARC_RHS_INHOMOGENEOUS       =  2         !< Type of boundary conditions: inhomogeneous
@@ -354,6 +360,8 @@ INTEGER       :: SCARC_MULTIGRID_POSTSMOOTH = 4                 !< Number of pos
 LOGICAL       :: SCARC_MULTIGRID_RELAXING   = .TRUE.            !< Relaxing of nullspace (AMG only)
 REAL (EB)     :: SCARC_MULTIGRID_THETA      = 0.10E+0_EB        !< Threshold for strength of connection matrix (AMG only)
 
+CHARACTER(40) :: SCARC_MGM_BC               = 'SIMPLE' 
+
 ! ---------- Parameters for smoothing method (used in multigrids-methods)
  
 CHARACTER(40) :: SCARC_SMOOTH            = 'SSOR'               !< Smoother for MG (JACOBI/SSOR)
@@ -429,6 +437,7 @@ INTEGER :: TYPE_LEVEL(0:2)         = NSCARC_UNDEF_INT            !< Type of leve
 INTEGER :: TYPE_MATRIX             = NSCARC_MATRIX_COMPACT       !< Type of storage for matrix
 INTEGER :: TYPE_MATVEC             = NSCARC_MATVEC_GLOBAL        !< Type of matrix-vector multiplication
 INTEGER :: TYPE_METHOD             = NSCARC_METHOD_KRYLOV        !< Type of ScaRC method
+INTEGER :: TYPE_MGM                = NSCARC_MGM_SIMPLE           !< Type of MGM boundary condition
 INTEGER :: TYPE_MKL(0:10)          = NSCARC_MKL_NONE             !< Type of use of MKL solvers
 INTEGER :: TYPE_MKL_PRECISION      = NSCARC_PRECISION_DOUBLE     !< Type of double precision MKL solver
 INTEGER :: TYPE_MULTIGRID          = NSCARC_MULTIGRID_GEOMETRIC  !< Type of multigrid method 
@@ -724,9 +733,9 @@ TYPE SCARC_CMATRIX_TYPE
 
    TYPE (SCARC_MATRIX_COMPACT_CONDENSED_TYPE) :: CONDENSED(NSCARC_MAX_STENCIL)
 
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: ROW                !< Row pointer
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: COL                !< Local column pointers 
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: COLG               !< Global column pointers 
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: ROW                !< Row index vector
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: COL                !< Local column index vectors
+   INTEGER,  ALLOCATABLE, DIMENSION (:) :: COLG               !< Global column index vectors
 
    INTEGER :: POS(-3:3) = 0                                   !< Position of IOR's in STENCIL
    INTEGER :: N_CONDENSED = 0                                 !< Number of condensed entries in matrix
@@ -1000,12 +1009,11 @@ TYPE SCARC_GRID_TYPE
 END TYPE SCARC_GRID_TYPE
 
 
-#ifdef WITH_SCARC_MGM
 !> \brief McKenney-Greengard-Mayo method - still experimental
   
 TYPE SCARC_MGM_TYPE
 
-   REAL(EB), ALLOCATABLE, DIMENSION (:,:,:) :: H1, H2, H0      !< Pressure vectors of different parts
+   REAL(EB), ALLOCATABLE, DIMENSION (:,:,:) :: H1, H2, H3      !< Pressure vectors of different parts
    REAL(EB), ALLOCATABLE, DIMENSION (:)     :: X1, X2          !< ScaRC solution vectors of different parts
    REAL(EB), ALLOCATABLE, DIMENSION (:)     :: UU, VV, WW      !< Velocity components along internal BC's
    REAL(EB), ALLOCATABLE, DIMENSION (:,:)   :: A, IA           !< Lower part of LU-decomposition for unstructured AC
@@ -1020,7 +1028,6 @@ TYPE SCARC_MGM_TYPE
    LOGICAL :: IS_LU_BASED = .TRUE.                            !< Flag for LU-decomposition (development version only)
 
 END TYPE SCARC_MGM_TYPE
-#endif
 
 !> \brief Collection of grid level related information on single mesh
   
@@ -1031,16 +1038,14 @@ TYPE SCARC_LEVEL_TYPE
    TYPE (SCARC_OBST_TYPE), ALLOCATABLE, DIMENSION(:) :: OBST   !< Obstruction information
    TYPE (SCARC_STAGE_TYPE), DIMENSION(2) :: STAGE              !< Hierarchy of solvers and related working vectors
    TYPE (SCARC_GRID_TYPE)      :: STRUCTURED, UNSTRUCTURED     !< Structured and unstructured grid information
-   TYPE (SCARC_MULTIGRID_TYPE) :: MG                           !< Multigrid method information
    TYPE (SCARC_FFT_TYPE)       :: FFT                          !< FFT preconditioner based on CRAYFISHPAK
+   TYPE (SCARC_MGM_TYPE)       :: MGM                          !< McKenney-Greengard-Mayo method 
+   TYPE (SCARC_MULTIGRID_TYPE) :: MG                           !< Multigrid method information
+#ifdef WITH_MKL
+   TYPE (SCARC_MKL_TYPE)       :: MKL                          !< MKL preconditioner based on Intel MKL
 #ifdef WITH_SCARC_POSTPROCESSING
    TYPE (SCARC_PRESSURE_TYPE)  :: PRESSURE                     !< Postprocessing of pressure information
 #endif
-#ifdef WITH_SCARC_MGM
-   TYPE (SCARC_MGM_TYPE)       :: MGM                          !< McKenney-Greengard-Mayo method 
-#endif
-#ifdef WITH_MKL
-   TYPE (SCARC_MKL_TYPE)       :: MKL                          !< MKL preconditioner based on Intel MKL
 #endif
 
    ! Coordinate information
@@ -1280,9 +1285,7 @@ TYPE (SCARC_STAGE_TYPE),  POINTER :: ST=>NULL()               !< Pointer to solv
 TYPE (SCARC_STAGE_TYPE),  POINTER :: STP=>NULL()              !< Pointer to parent solver stage structure
 
 TYPE (SCARC_FFT_TYPE), POINTER :: FFT=>NULL()                 !< Pointer to FFT structure
-#ifdef WITH_SCARC_MGM
 TYPE (SCARC_MGM_TYPE), POINTER :: MGM=>NULL()                 !< Pointer to McKeeney-Greengard-Mayo structure
-#endif
 
 TYPE (SCARC_BMATRIX_TYPE), POINTER :: AB=>NULL()       !< Pointer to bandwise matrix structure
 TYPE (SCARC_BMATRIX_TYPE), POINTER :: OAB=>NULL()      !< Pointer to neighboring bandwise matrix structure
@@ -1437,6 +1440,8 @@ PUBLIC :: SCARC_MULTIGRID_POSTSMOOTH       !< Number of postesmoothing iteration
 PUBLIC :: SCARC_MULTIGRID_RELAXING         !< Relaxing of nullspace
 PUBLIC :: SCARC_MULTIGRID_THETA            !< Optional relaxation parameter for multigrid
 
+PUBLIC :: SCARC_MGM_BC                     !< Boundary condition for MGM method
+
 PUBLIC :: SCARC_PRECON                     !< Selection parameter for preconditioner
 PUBLIC :: SCARC_PRECON_ACCURACY            !< Requested accuracy for preconditioner 
 PUBLIC :: SCARC_PRECON_ITERATIONS          !< Maximum number of allowed iterations for preconditioner
@@ -1475,6 +1480,7 @@ TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: COARSE_PARDISO      !< Solver structur
 
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_JAC          !< Solver structure for Jacobi preconditioner 
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_SSOR         !< Solver structure for SSOR preconditioner 
+TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_LU           !< Solver structure for ILU preconditioner 
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_ILU          !< Solver structure for ILU preconditioner 
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_FFT          !< Solver structure for FFT preconditioner 
 TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_FFTO         !< Solver structure for FFTO preconditioner (including overlap)
@@ -1537,6 +1543,7 @@ CALL SCARC_SETUP_NEIGHBORS                  ; IF (STOP_STATUS==SETUP_STOP) RETUR
 CALL SCARC_SETUP_FACES                      ; IF (STOP_STATUS==SETUP_STOP) RETURN
 CALL SCARC_SETUP_SUBDIVISION                ; IF (STOP_STATUS==SETUP_STOP) RETURN
 
+WRITE(*,*) 'A: NLEVEL_MIN, NLEVEL_MAX:', NLEVEL_MIN, NLEVEL_MAX
  
 ! Setup wall information according to specified discretization type/method
  
@@ -1550,16 +1557,21 @@ ELSE
    CALL SCARC_SETUP_WALLS                   ; IF (STOP_STATUS==SETUP_STOP) RETURN
 ENDIF
 
+WRITE(*,*) 'B: NLEVEL_MIN, NLEVEL_MAX:', NLEVEL_MIN, NLEVEL_MAX
 ! Setup information for data exchanges, matrix systems, aggregation zones, used methods and vectors
  
 CALL SCARC_SETUP_EXCHANGES                  ; IF (STOP_STATUS==SETUP_STOP) RETURN
 CALL SCARC_SETUP_SYSTEMS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
 
+WRITE(*,*) 'C: NLEVEL_MIN, NLEVEL_MAX:', NLEVEL_MIN, NLEVEL_MAX
 IF (HAS_AMG_LEVELS) &
    CALL SCARC_SETUP_ALGEBRAIC_MULTIGRID     ; IF (STOP_STATUS==SETUP_STOP) RETURN
 
 CALL SCARC_SETUP_METHODS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
+WRITE(*,*) 'D: NLEVEL_MIN, NLEVEL_MAX:', NLEVEL_MIN, NLEVEL_MAX
 CALL SCARC_SETUP_VECTORS                    ; IF (STOP_STATUS==SETUP_STOP) RETURN
+WRITE(*,*) 'E: NLEVEL_MIN, NLEVEL_MAX:', NLEVEL_MIN, NLEVEL_MAX
+
 
 ! Perform some error statistics for pressure if corresponding flag is set
  
@@ -1853,7 +1865,7 @@ SELECT CASE (TRIM(SCARC_METHOD))
             CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_KRYLOV_INTERPOL, NSCARC_NONE)
       END SELECT
 
-      ! Set type of preconditioner (JACOBI/SSOR/MGS/MSGS/MSOR/MSSOR/ILU/FFT/GMG/PARDISO/CLUSTER)
+      ! Set type of preconditioner (JACOBI/SSOR/MGS/MSGS/MSOR/MSSOR/ILU/LU/FFT/GMG/PARDISO/CLUSTER)
       SELECT CASE (TRIM(SCARC_PRECON))
          CASE ('JACOBI')                                    ! Jacobi preconditioner
             TYPE_PRECON = NSCARC_RELAX_JAC
@@ -1871,6 +1883,8 @@ SELECT CASE (TRIM(SCARC_METHOD))
             TYPE_PRECON = NSCARC_RELAX_MSSOR
          CASE ('ILU')                                       ! ILU preconditioner
             TYPE_PRECON = NSCARC_RELAX_ILU
+         CASE ('LU')                                        ! LU preconditioner
+            TYPE_PRECON = NSCARC_RELAX_LU
          CASE ('MULTIGRID')                                 ! Multigrid preconditioner
             TYPE_PRECON = NSCARC_RELAX_MULTIGRID
             SELECT CASE (TRIM(SCARC_SMOOTH))
@@ -2050,7 +2064,6 @@ SELECT CASE (TRIM(SCARC_METHOD))
       END SELECT
 #endif
 
-#ifdef WITH_SCARC_MGM
    ! ------------------------- McKenny-Greengard-Mayo solver -------------------------
    CASE ('MGM')
 
@@ -2059,9 +2072,19 @@ SELECT CASE (TRIM(SCARC_METHOD))
 
       TYPE_METHOD   = NSCARC_METHOD_MGM
       TYPE_TWOLEVEL = NSCARC_TWOLEVEL_NONE
-      TYPE_PRECON   = NSCARC_RELAX_FFT
       TYPE_SCOPE(1) = NSCARC_SCOPE_LOCAL
-#endif
+
+      ! set type of MGM boundary condition
+      SELECT CASE (TRIM(SCARC_MGM_BC))
+         CASE ('ZERO')
+            TYPE_MGM = NSCARC_MGM_ZERO
+         CASE ('SIMPLE')
+            TYPE_MGM = NSCARC_MGM_SIMPLE
+         CASE ('EXTRAPOLATION')
+            TYPE_MGM = NSCARC_MGM_EXTRAPOLATION
+         !CASE DEFAULT
+         !   CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_SMOOTH_SCOPE, NSCARC_NONE)
+      END SELECT
 
    CASE DEFAULT
       CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_METHOD, NSCARC_NONE)
@@ -2207,9 +2230,7 @@ IS_CG_COARSE = HAS_TWO_LEVELS .AND. (TYPE_TWOLEVEL == NSCARC_TWOLEVEL_COARSE)
 HAS_GMG_LEVELS = IS_GMG .OR. IS_CG_GMG .OR. HAS_TWO_LEVELS
 HAS_AMG_LEVELS = IS_AMG .OR. IS_CG_AMG 
 
-#ifdef WITH_SCARC_MGM
 IS_MGM = TYPE_METHOD == NSCARC_METHOD_MGM
-#endif
 
 END SUBROUTINE SCARC_PARSE_INPUT
 
@@ -2318,7 +2339,6 @@ SELECT_SCARC_METHOD: SELECT CASE (TYPE_METHOD)
       CALL SCARC_GET_NUMBER_OF_LEVELS(NSCARC_LEVEL_SINGLE)
       TYPE_MKL(NLEVEL_MIN) = TYPE_MKL(0)
 
-#ifdef WITH_SCARC_MGM
  
    ! ---------- Global McKenney-Greengard-Mayo method - only finest level 
  
@@ -2326,7 +2346,6 @@ SELECT_SCARC_METHOD: SELECT CASE (TYPE_METHOD)
 
       CALL SCARC_GET_NUMBER_OF_LEVELS(NSCARC_LEVEL_SINGLE)
 
-#endif
 
 END SELECT SELECT_SCARC_METHOD
 
@@ -5160,7 +5179,7 @@ END SUBROUTINE SCARC_SETUP_DIMENSIONS
 ! Define matrix stencils and initialize matrices and boundary conditions on all needed levels
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_SYSTEMS
-INTEGER :: NM, NL
+INTEGER :: NM, NL, TYPE_SCOPE_BACKUP, TYPE_GRID_BACKUP
   
 CROUTINE = 'SCARC_SETUP_SYSTEMS'
 
@@ -5201,7 +5220,6 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_POISSON_SIZES :', NL
             CALL SCARC_SETUP_POISSON_SIZES (NLEVEL_MIN)            ! AMG: setup sizes only on finest level
       END SELECT
    
-#ifdef WITH_SCARC_MGM
    ! -------- Global MGM method - currently just proof of concept
 
    CASE (NSCARC_METHOD_MGM)
@@ -5212,7 +5230,6 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_POISSON_SIZES :', NL
       CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)       ! Then process unstructured discretization
       CALL SCARC_SETUP_POISSON_SIZES (NLEVEL_MIN)         
    
-#endif
 
 END SELECT SELECT_SCARC_METHOD_SIZES
 
@@ -5301,7 +5318,6 @@ WRITE(MSG%LU_DEBUG,*) 'IS_CG_GMG:  ', NL
          ENDIF
 
 
-#ifdef WITH_SCARC_MGM
       ! ---------- McKenny-Greengard-Mayo method:
       ! Solving for the structured and unstructured Poisson matrix
       ! Assemble both, the structured and unstructured Poisson matrix
@@ -5318,6 +5334,7 @@ WRITE(MSG%LU_DEBUG,*) 'IS_CG_GMG:  ', NL
 WRITE(MSG%LU_DEBUG,*) '========================= SUSI: STRUCTURED'
 #endif
          CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_STRUCTURED)
+         TYPE_SCOPE(0) = NSCARC_SCOPE_GLOBAL
          CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
          CALL SCARC_SETUP_BOUNDARY(NM, NLEVEL_MIN)
 
@@ -5327,13 +5344,15 @@ WRITE(MSG%LU_DEBUG,*) '========================= SUSI: STRUCTURED'
 WRITE(MSG%LU_DEBUG,*) '========================= SUSI: UNSTRUCTURED'
 #endif
          CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)
+         TYPE_SCOPE(0) = NSCARC_SCOPE_LOCAL
          CALL SCARC_SETUP_POISSON (NM, NLEVEL_MIN)
          CALL SCARC_SETUP_BOUNDARY_LOCAL(NM, NLEVEL_MIN)
 #ifdef WITH_MKL
          TYPE_MKL(NLEVEL_MIN) = NSCARC_MKL_LOCAL
 #endif
 
-#endif
+         TYPE_SCOPE(0) = NSCARC_SCOPE_GLOBAL
+
 
    END SELECT SELECT_SCARC_METHOD
 
@@ -5347,21 +5366,27 @@ WRITE(MSG%LU_DEBUG,*) '========================= SUSI: CELL_MAPPING'
  
 IF (TYPE_MATRIX == NSCARC_MATRIX_COMPACT) THEN
    IF (IS_MGM) THEN
+      TYPE_SCOPE_BACKUP = TYPE_SCOPE(0)
+      TYPE_GRID_BACKUP  = TYPE_GRID
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '========================= SUSI: CELL_MAPPING, MGM1'
+WRITE(MSG%LU_DEBUG,*) '========================= SUSI: CELL_MAPPING, UNSTRUCTURED'
 #endif
+      TYPE_SCOPE = NSCARC_SCOPE_LOCAL
       CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)
       CALL SCARC_SETUP_GLOBAL_CELL_MAPPING(NLEVEL_MIN)
       CALL SCARC_SETUP_GLOBAL_POISSON_COLUMNS(NLEVEL_MIN)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '========================= SUSI: CELL_MAPPING, MGM2'
+WRITE(MSG%LU_DEBUG,*) '========================= SUSI: CELL_MAPPING, STRUCTURED'
 #endif
+      TYPE_SCOPE = NSCARC_SCOPE_GLOBAL
       CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_STRUCTURED)
       CALL SCARC_SETUP_GLOBAL_CELL_MAPPING(NLEVEL_MIN)
       CALL SCARC_SETUP_GLOBAL_POISSON_COLUMNS(NLEVEL_MIN)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) '========================= SUSI: CELL_MAPPING, MGM3'
+WRITE(MSG%LU_DEBUG,*) '========================= SUSI: CELL_MAPPING, FINISH'
 #endif
+      TYPE_SCOPE(0) = TYPE_SCOPE_BACKUP 
+      TYPE_GRID     = TYPE_GRID_BACKUP 
    ELSE
       CALL SCARC_SETUP_GLOBAL_CELL_MAPPING(NLEVEL_MIN)
       CALL SCARC_SETUP_GLOBAL_POISSON_COLUMNS(NLEVEL_MIN)
@@ -5393,7 +5418,12 @@ ENDIF MULTI_LEVEL_IF
 ! ------ IF MKL-solver is used on specific levels, then setup symmetric Poisson matrix there
   
 #ifdef WITH_MKL
-IF (IS_MGM) CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)        ! FFT is used for structured grid
+IF (IS_MGM) THEN
+   TYPE_SCOPE_BACKUP = TYPE_SCOPE(0)
+   TYPE_SCOPE(0) = NSCARC_SCOPE_LOCAL
+   CALL SCARC_ASSIGN_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)        
+ENDIF
+
 MESHES_MKL_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    IF (TYPE_MKL(NLEVEL_MIN) /= NSCARC_MKL_NONE) CALL SCARC_SETUP_POISSON_MKL(NM, NLEVEL_MIN)
    IF (HAS_GMG_LEVELS) THEN
@@ -5402,6 +5432,12 @@ MESHES_MKL_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       ENDDO
    ENDIF
 ENDDO MESHES_MKL_LOOP
+
+IF (IS_MGM) THEN
+   TYPE_SCOPE(0) = TYPE_SCOPE_BACKUP 
+   CALL SCARC_ASSIGN_GRID_TYPE (TYPE_GRID_BACKUP)        
+ENDIF
+
 #endif
 
 
@@ -5426,13 +5462,7 @@ INTEGER :: NM, NOM, IC, IW, ICE, ICN
 !IF (NMESHES == 1) RETURN
 CROUTINE = 'SCARC_SETUP_GLOBAL_CELL_MAPPING'
 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SETUP_GLOBAL_CELL_MAPPING:1:', TYPE_GRID
-#endif
 IF (IS_MGM .AND. IS_UNSTRUCTURED) RETURN
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SETUP_GLOBAL_CELL_MAPPING:2'
-#endif
 
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
@@ -5446,9 +5476,6 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    DO IC = 1, G%NC
       G%LOCAL_TO_GLOBAL(IC) = IC + G%NC_OFFSET(NM)
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'LOCAL_TO_GLOBAL(', IC,')=', G%LOCAL_TO_GLOBAL(IC), G%NCE
-#endif
    ENDDO
 
    DO IW = 1, G%NW
@@ -5457,9 +5484,6 @@ WRITE(MSG%LU_DEBUG,*) 'LOCAL_TO_GLOBAL(', IC,')=', G%LOCAL_TO_GLOBAL(IC), G%NCE
       ICE = G%WALL(IW)%ICE
       ICN = G%ICE_TO_ICN(ICE)
       G%LOCAL_TO_GLOBAL(ICE) = ICN + G%NC_OFFSET(NOM)
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'LOCAL_TO_GLOBAL(', ICE,')=', G%LOCAL_TO_GLOBAL(ICE), IW, ICE, ICN, NOM
-#endif
    ENDDO
 
 ENDDO
@@ -5478,9 +5502,6 @@ INTEGER :: NM, IC, ICOL, JC
 IF (NMESHES == 1) THEN
    CALL SCARC_POINT_TO_GRID (NMESHES, NL)                                 ! Sets grid pointer G
    A => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'SETTING UP GLOBAL_POISSON_COLUMNS FOR NMESHES == 1, ', TYPE_GRID
-#endif
    A%COLG = A%COL
 ELSE IF (IS_MGM .AND. IS_UNSTRUCTURED) THEN
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -5492,16 +5513,10 @@ ELSE
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
       A => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
-#ifdef WITH_SCARC_DEBUG
-   WRITE(MSG%LU_DEBUG,*) 'SETTING UP GLOBAL_POISSON_COLUMNS FOR NMESHES > 1,', TYPE_GRID
-#endif
       DO IC = 1, G%NC
          DO ICOL = A%ROW(IC), A%ROW(IC+1)-1
             JC = A%COL(ICOL)
             A%COLG(ICOL) = G%LOCAL_TO_GLOBAL(JC)
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'A%COLG(', ICOL,')=', IC, ICOL, JC, A%COLG(ICOL)
-#endif
          ENDDO
       ENDDO
    ENDDO
@@ -5807,12 +5822,12 @@ IF (IS_INTERNAL_CELL) THEN
 
 ! If IC is a boundary cell of the mesh, compute matrix contribution only if there is a neighbor for that cell
 
-ELSE IF (L%FACE(IOR0)%N_NEIGHBORS /= 0) THEN
+ELSE IF (TYPE_SCOPE(0) == NSCARC_SCOPE_GLOBAL .AND. L%FACE(IOR0)%N_NEIGHBORS /= 0) THEN
 
    IW = SCARC_ASSIGN_SUBDIAG_TYPE (IC, IOR0)           ! get IW of a possibly suitable neighbor at face IOR0
    IF (IW > 0) then                                    ! if available, build corresponding subdiagonal entry
       A%VAL(IP) = A%VAL(IP) + F%SCAL_FACE
-      A%COL(IP) = G%WALL(IW)%ICE                        ! store its extended number in matrix column pointers
+      A%COL(IP) = G%WALL(IW)%ICE                       ! store its extended number in matrix column pointers
       A%STENCIL(-IOR0) = A%VAL(IP)
       IP = IP + 1
    ENDIF
@@ -5990,6 +6005,7 @@ INTEGER :: ISYM, JSYM, NSYM
 REAL(EB) :: VAL = 0.0_EB, VALS = 0.0_EB, DIFF
 LOGICAL  :: BSYM, BCHECK_SYMMETRY = .FALSE.
 INTEGER, DIMENSION(:), ALLOCATABLE :: ICOL_AUX, IC_AUX
+INTEGER, POINTER, DIMENSION(:) :: ACOLG, ASCOLG
 
 CROUTINE = 'SCARC_SETUP_POISSON_MKL'
 
@@ -5997,10 +6013,18 @@ CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid 
 A  => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
 AS => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON_SYM)
 
+IF (NMESHES == 1 .OR. TYPE_SCOPE(0) == NSCARC_SCOPE_LOCAL) THEN
+   ACOLG  => A%COL
+ELSE
+   ACOLG  => A%COLG
+ENDIF
+
 #ifdef WITH_SCARC_DEBUG
 CALL SCARC_DEBUG_CMATRIX (A, 'POISSON', 'SETUP_MATRIX_MKL: BEGIN')
+WRITE(MSG%LU_DEBUG,*) 'TYPE_SCOPE(',0,')=', TYPE_SCOPE(0), NMESHES
 WRITE(MSG%LU_DEBUG,*) 'TYPE_MKL(',NL,')=', TYPE_MKL(NL)
 WRITE(MSG%LU_DEBUG,*) 'IS_MKL_LEVEL(',NL,') =', IS_MKL_LEVEL(NL)
+WRITE(MSG%LU_DEBUG,*) 'ACOLG:', ACOLG
 #endif
   
 ! ---------- Store only symmetric parts of matrix (diagonal and upper part)
@@ -6011,12 +6035,12 @@ IF (SCARC_MKL_MTYPE == 'SYMMETRIC') THEN
       ! First check whether symmetry of system matrix is guaranteed
       DO IC = 1, G%NC
          COLUMN_LOOP: DO ICOL = A%ROW(IC)+1, A%ROW(IC+1)-1
-            ICS = A%COLG(ICOL)
+            ICS = ACOLG(ICOL)
             VAL = A%VAL(ICOL)
             IF (ICS > IC .AND. ICS <= G%NC) THEN
                BSYM = .FALSE.
                DO JCOL = A%ROW(ICS)+1, A%ROW(ICS+1)-1
-                  JCS = A%COLG(JCOL)
+                  JCS = ACOLG(JCOL)
                   IF (JCS == IC) THEN
                      VALS = A%VAL(JCOL)
                      DIFF = ABS(VAL-VALS)
@@ -6039,13 +6063,13 @@ IF (SCARC_MKL_MTYPE == 'SYMMETRIC') THEN
    DO IC = 1, G%NC
       DO ICOL = A%ROW(IC), A%ROW(IC+1)-1
          IF (TYPE_MKL(NL) == NSCARC_MKL_LOCAL) THEN
-            JC = A%COLG(ICOL)
+            JC = ACOLG(ICOL)
             IF (JC >= IC .AND. JC <= G%NC) AS%N_VAL = AS%N_VAL+1
          ELSE IF (TYPE_MKL(NL) == NSCARC_MKL_GLOBAL) THEN
             IF (NL == NLEVEL_MIN) THEN
-               JCG = G%LOCAL_TO_GLOBAL(A%COLG(ICOL))
+               JCG = G%LOCAL_TO_GLOBAL(ACOLG(ICOL))
             ELSE
-               JCG = A%COLG(ICOL)
+               JCG = ACOLG(ICOL)
             ENDIF
             IF (JCG >= IC + G%NC_OFFSET(NM)) AS%N_VAL = AS%N_VAL+1
          ELSE
@@ -6064,6 +6088,16 @@ CALL SCARC_GET_MATRIX_STENCIL_MAX(A, G%NC)
 AS%N_ROW = G%NC + 1
 AS%N_VAL = A%N_STENCIL_MAX * G%NC
 CALL SCARC_ALLOCATE_CMATRIX (AS, NL, TYPE_MKL_PRECISION, NSCARC_MATRIX_FULL, 'G%AS', CROUTINE)
+
+WRITE(MSG%LU_DEBUG,*) 'TYPE_MKL(NL)=', TYPE_MKL(NL)
+
+IF (NMESHES == 1 .OR. TYPE_SCOPE(0) == NSCARC_SCOPE_LOCAL) THEN
+   ASCOLG  => AS%COL
+WRITE(MSG%LU_DEBUG,*) 'ALLOCATING AS-SINGLE:', ASCOLG
+ELSE
+   ASCOLG  => AS%COLG
+WRITE(MSG%LU_DEBUG,*) 'ALLOCATING AS-MULTI:', ASCOLG
+ENDIF
 
 ! If global MKL method is used, also allocate auxiliary space for computation of global numbering
 
@@ -6088,7 +6122,7 @@ DO IC = 1, AS%N_ROW - 1
             JC = A%COL(ICOL)
             IF (JC >= IC .AND. JC <= G%NC) THEN
                AS%COL(IAS) = A%COL(ICOL)
-               AS%COLG(IAS) = A%COLG(ICOL)
+               ASCOLG(IAS) = A%COL(ICOL)
                SELECT CASE (TYPE_MKL_PRECISION)
                   CASE (NSCARC_PRECISION_DOUBLE)
                      AS%VAL(IAS) = A%VAL(ICOL)
@@ -6109,9 +6143,9 @@ DO IC = 1, AS%N_ROW - 1
          ICOL_AUX = 0
          IC_AUX   = NSCARC_HUGE_INT
          ISYM = 1
-         JC0 = A%COLG(A%ROW(IC))
+         JC0 = ACOLG(A%ROW(IC))
          DO ICOL = A%ROW(IC), A%ROW(IC+1)-1
-             JC = A%COLG(ICOL)
+             JC = ACOLG(ICOL)
             IF (SCARC_MKL_MTYPE == 'SYMMETRIC') THEN
                IF (JC >= JC0) THEN
                   ICOL_AUX(ISYM) = ICOL
@@ -6143,7 +6177,7 @@ DO IC = 1, AS%N_ROW - 1
                      CASE (NSCARC_PRECISION_SINGLE)
                         AS%VAL_FB(IAS) = REAL(A%VAL(ICOL), FB)
                   END SELECT
-                  AS%COL(IAS) = A%COLG(ICOL)
+                  AS%COL(IAS) = ASCOLG(ICOL)
                   IC_AUX(ISYM) = NSCARC_HUGE_INT            ! mark entry as already used
                   IAS  = IAS  + 1
                ENDIF
@@ -6161,6 +6195,8 @@ IF (IS_MKL_LEVEL(NL)) THEN
    CALL SCARC_DEALLOCATE_INT1 (IC_AUX,  'IC_AUX', CROUTINE)
 ENDIF
 
+WRITE(MSG%LU_DEBUG,*) 'AS%COL=', AS%COL
+WRITE(MSG%LU_DEBUG,*) 'ASCOLG=', AS%COL
 CALL SCARC_REDUCE_CMATRIX (AS, 'AS', CROUTINE)
 
 #ifdef WITH_SCARC_DEBUG
@@ -6333,7 +6369,7 @@ END SUBROUTINE SCARC_SETUP_BOUNDARY
 
 
 SUBROUTINE SCARC_SETUP_BOUNDARY_LOCAL (NM, NL)
-USE SCARC_POINTERS, ONLY: L, G, F, GWC, A, AB
+USE SCARC_POINTERS, ONLY: L, G, F, GWC, A, AB, MGM
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: I, J, K, IOR0, IW, IC, NOM, IP
 
@@ -6346,9 +6382,11 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
    CASE (NSCARC_MATRIX_COMPACT)
 
       A => G%POISSON
+      MGM => L%MGM
 
       ! Set correct boundary conditions 
 
+      !DO IW = MGM%NW1, MGM%NW2
       DO IW = 1, G%NW
 
          GWC => G%WALL(IW)
@@ -6371,6 +6409,7 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
 
          IP = A%ROW(IC)
          IF (GWC%BTYPE == DIRICHLET .OR. GWC%BTYPE == INTERNAL) THEN
+         !IF (IW <= L%N_WALL_CELLS_EXT) THEN
             A%VAL(IP) = A%VAL(IP) - F%SCAL_BOUNDARY
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,7I6,E12.4)') 'A :DIRICHLET: IW, I, J, K, NOM, IC, BTYPE, A%VAL:', IW, I, J, K, NOM, IC, GWC%BTYPE, A%VAL(IP)
@@ -7386,6 +7425,13 @@ SELECT_METHOD: SELECT CASE(TYPE_METHOD)
             CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
             CALL SCARC_SETUP_MSSOR(NLEVEL_MIN, NLEVEL_MAX, NSTACK)
 
+         ! LU-preconditioning in matrix form (acting locally by default)
+
+         CASE (NSCARC_RELAX_LU)
+            STACK(NSTACK)%SOLVER => PRECON_LU
+            CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
+            CALL SCARC_SETUP_LU(NLEVEL_MIN, NLEVEL_MAX)
+
          ! ILU(0)-preconditioning in matrix form (acting locally by default)
 
          CASE (NSCARC_RELAX_ILU)
@@ -7638,7 +7684,6 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP COARSE_SOLVER'
        NSTACK = NSTACK + 1
        CALL SCARC_SETUP_COARSE_SOLVER(NSCARC_STAGE_ONE, NSCARC_SCOPE_GLOBAL, NSTACK, NLEVEL_MAX, NLEVEL_MAX)
 
-#ifdef WITH_SCARC_MGM
  
    ! ---------------- McKenny-Greengard-Mayo method (MGM) --------------------
  
@@ -7649,24 +7694,28 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP COARSE_SOLVER'
       CALL SCARC_SETUP_MGM(NLEVEL_MIN, NLEVEL_MIN)
 
       ! ------- First part of method: Setup CG solver for inhomogeneous problem on structured discretization
+      !         Use FFT-preconditioning by default
 
-      TYPE_GRID = NSCARC_GRID_STRUCTURED
+      TYPE_PRECON = NSCARC_RELAX_FFT
       CALL SCARC_ASSIGN_GRID_TYPE(NSCARC_GRID_STRUCTURED)
 
       NSTACK = NSCARC_STACK_ROOT
       STACK(NSTACK)%SOLVER => MAIN_CG_STRUCTURED
       CALL SCARC_SETUP_KRYLOV(NSCARC_SOLVER_MAIN, NSCARC_SCOPE_GLOBAL, NSCARC_STAGE_ONE, NSTACK, NLEVEL_MIN, NLEVEL_MIN)
 
-      ! Use FFT-preconditioning
-
       NSTACK = NSTACK + 1
       STACK(NSTACK)%SOLVER => PRECON_FFT
       CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
       CALL SCARC_SETUP_FFT(NLEVEL_MIN, NLEVEL_MIN)
 
-      ! ------- Second part of method: Setup CG solver for homogeneous problem on unstructured discretization
 
-      TYPE_GRID = NSCARC_GRID_UNSTRUCTURED
+      ! ------- Second part of method: Setup CG solver for homogeneous problem on unstructured discretization
+      !         Only working for compact matrix storage technique (because of the unstructured grid)
+      !         Use LU-preconditioning by default
+
+      TYPE_MATRIX = NSCARC_MATRIX_COMPACT
+      TYPE_PRECON = NSCARC_RELAX_SSOR
+WRITE(*,*) 'A: TYPE_PRECON = ', TYPE_PRECON
       CALL SCARC_ASSIGN_GRID_TYPE(NSCARC_GRID_UNSTRUCTURED)
 
       NSTACK = NSTACK + 1
@@ -7674,37 +7723,28 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP COARSE_SOLVER'
       CALL SCARC_SETUP_KRYLOV(NSCARC_SOLVER_MAIN, NSCARC_SCOPE_GLOBAL, NSCARC_STAGE_ONE, NSTACK, NLEVEL_MIN, NLEVEL_MIN)
 
       NSTACK = NSTACK + 1
-
+      IF (TYPE_PRECON == NSCARC_RELAX_MKL .AND. TYPE_MATRIX == NSCARC_MATRIX_COMPACT) THEN
 #ifdef WITH_MKL
-      IF (TYPE_MATRIX == NSCARC_MATRIX_COMPACT) THEN
+WRITE(*,*) 'B: TYPE_PRECON = ', TYPE_PRECON
          STACK(NSTACK)%SOLVER => PRECON_MKL
-         SELECT CASE(TYPE_SCOPE(1))
-
-            ! Globally acting - call global CLUSTER_SPARSE_SOLVER from MKL
-   
-            CASE (NSCARC_SCOPE_GLOBAL)
-               CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_GLOBAL)
-               CALL SCARC_SETUP_CLUSTER(NLEVEL_MIN, NLEVEL_MIN)
-   
-            ! Locally acting - call global PARDISO solver from MKL
-
-            CASE (NSCARC_SCOPE_LOCAL)
-               CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
-               CALL SCARC_SETUP_PARDISO(NLEVEL_MIN, NLEVEL_MIN)
-
-         END SELECT
-      ELSE
-         WRITE(*,*) 'MGM-method: MKL-preconditioning required, but storage technique bandwise, using SSOR instead'
+         CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
+         CALL SCARC_SETUP_PARDISO(NLEVEL_MIN, NLEVEL_MIN)          ! use global PARDISO from MKL
+#else
+WRITE(*,*) 'C: TYPE_PRECON = ', TYPE_PRECON
+         WRITE(*,*) 'MGM-method: MKL-preconditioning required, MKL library not available, using LU preconditioning'
          STACK(NSTACK)%SOLVER => PRECON_SSOR
          CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
-      ENDIF
-#else
-
-      STACK(NSTACK)%SOLVER => PRECON_SSOR
-      CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
+         !CALL SCARC_SETUP_LU(NLEVEL_MIN, NLEVEL_MIN)
 #endif
 
-#endif
+     ELSE
+WRITE(*,*) 'D: TYPE_PRECON = ', TYPE_PRECON
+         STACK(NSTACK)%SOLVER => PRECON_SSOR
+         CALL SCARC_SETUP_PRECON(NSTACK, NSCARC_SCOPE_LOCAL)
+         !CALL SCARC_SETUP_LU(NLEVEL_MIN, NLEVEL_MAX)
+     ENDIF
+
+
 
    ! ------------------ MKL method -------------------------------------
  
@@ -7819,6 +7859,8 @@ DO NSTACK = 1, N_STACK_TOTAL
    DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       DO NL = SV%TYPE_LEVEL(1), SV%TYPE_LEVEL(2)
 
+WRITE(*,*) '0: ', NL, SV%TYPE_LEVEL(1), SV%TYPE_LEVEL(2), NSTACK, N_STACK_TOTAL
+
          CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
          ST => SCARC(NM)%LEVEL(NL)%STAGE(SV%TYPE_STAGE)
 
@@ -7833,6 +7875,7 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_VECTORS: NC, NCE =', G%NC, G%NCE, SV%X, SV%B, SV%D
          IF (SV%Y /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%Y, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%Y', CROUTINE)
          IF (SV%Z /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%Z, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%Z', CROUTINE)
 
+WRITE(*,*) 'A'
 #ifdef WITH_SCARC_DEBUG
          IF (SV%E /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1(ST%E, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%E', CROUTINE)
 #endif
@@ -7843,6 +7886,7 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_VECTORS: NC, NCE =', G%NC, G%NCE, SV%X, SV%B, SV%D
             IF (SV%R_FB /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1_FB(ST%R_FB, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%R_FB', CROUTINE)
             IF (SV%V_FB /= NSCARC_UNDEF_INT) CALL SCARC_ALLOCATE_REAL1_FB(ST%V_FB, 1, G%NCE, NSCARC_INIT_ZERO, 'ST%V_FB', CROUTINE)
          ENDIF
+WRITE(*,*) 'B'
 
       ENDDO
    ENDDO
@@ -8181,6 +8225,8 @@ SELECT CASE(TYPE_PRECON)
       SV%CNAME = 'SCARC_PRECON_MSOR'
    CASE (NSCARC_RELAX_MSSOR)
       SV%CNAME = 'SCARC_PRECON_MSSOR'
+   CASE (NSCARC_RELAX_LU)
+      SV%CNAME = 'SCARC_PRECON_LU'
    CASE (NSCARC_RELAX_ILU)
       SV%CNAME = 'SCARC_PRECON_ILU'
       SV%OMEGA = 1.0_EB
@@ -8220,6 +8266,10 @@ SV%TYPE_RELAX         = SVP%TYPE_RELAX
 SV%TYPE_SOLVER        = SVP%TYPE_SOLVER
 SV%TYPE_STAGE         = SVP%TYPE_STAGE
  
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SETUP_PRECON: TYPE_RELAX =', SV%TYPE_RELAX
+#endif
+
 ! Preset pointers for preconditioner (use same as for alling solver)
  
 SV%X = SVP%X
@@ -8956,6 +9006,83 @@ END SUBROUTINE SCARC_SETUP_MSSOR
 !      enddo
 !   enddo
 ! ----------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_LU(NLMIN, NLMAX)
+USE SCARC_POINTERS, ONLY: G, A
+INTEGER, INTENT(IN) :: NLMIN, NLMAX
+INTEGER :: NM, NL, IC, JC, KC, IPTR, JPTR, KPTR, KPTR0
+
+CROUTINE = 'SCARC_SETUP_LU'
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '===============>> SETTING UP LU: ', NLMIN, NLMAX, LOWER_MESH_INDEX, UPPER_MESH_INDEX
+#endif
+MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   LEVEL_LOOP: DO NL = NLMIN, NLMAX
+
+      CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '===============>> SETTING UP LU: ', NM, NL
+#endif
+
+      A => G%POISSON
+      CALL SCARC_ALLOCATE_REAL1(A%RELAX, 1, A%N_VAL, NSCARC_INIT_ZERO, 'G%POISSON%RELAX', CROUTINE)
+      A%RELAX = A%VAL
+    
+      CELL_LOOP: DO IC = 2, G%NC
+   
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '===============>> SETTING UP LU: IC = ', IC
+#endif
+         COLUMN_LOOP: DO IPTR = A%ROW(IC), A%ROW(IC+1)-1
+  
+            KC = A%COL(IPTR)                         ! get number of neighboring cell
+            IF (KC >= IC) CYCLE                      ! only consider neighbors with lower cell numbers than IC
+            IF (A%RELAX(IPTR) == 0) CYCLE
+ 
+            KPTR = A%ROW(KC)                         ! get diagonal entry of neighbor
+            A%RELAX(IPTR) = A%RELAX(IPTR)/A%RELAX(KPTR)
+
+            DO JPTR = A%ROW(IC), A%ROW(IC+1)-1
+
+               JC = A%COL(JPTR)
+               IF (JC<=KC) CYCLE                     ! only consider neighbors with higher cell numbers than IC
+               IF (A%RELAX(JPTR) == 0) CYCLE
+
+               KPTR = -1
+               DO KPTR0 = A%ROW(KC), A%ROW(KC+1)-1
+                  IF (A%COL(KPTR0) == JC) THEN
+                    KPTR = KPTR0
+                  ENDIF
+               ENDDO
+               IF (KPTR>0) A%RELAX(JPTR) = A%RELAX(JPTR) - A%RELAX(IPTR) * A%RELAX(KPTR)
+
+            ENDDO
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'IPTR, KC, KPTR, JPTR : A%RELAX:', IPTR, KC, KPTR, JPTR, A%RELAX(IPTR)
+#endif
+
+         ENDDO COLUMN_LOOP
+      ENDDO CELL_LOOP
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_RELAX(A, 'RELAX', 'SETUP_LU')
+#endif
+   ENDDO LEVEL_LOOP
+ENDDO MESHES_LOOP
+
+END SUBROUTINE SCARC_SETUP_LU
+
+! ----------------------------------------------------------------------------------------------------
+!> \brief Allocate and initialize LU decomposition of Poisson matrix
+! L- and U-parts are stored in the same array, diagonal elements of L are supposed to be 1
+!   for i = 2 , ... , n do
+!      for k = 1 , ... , i-1 and for (i,k) do
+!         compute a_ik = a_ik / a_kk
+!         for j = k+1 , ... , n and for (i,j) do
+!            compute a_ij = a_ij - a_ik a_kj
+!         enddo
+!      enddo
+!   enddo
+! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_ILU(NLMIN, NLMAX)
 USE SCARC_POINTERS, ONLY: G, A, AB
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
@@ -9465,42 +9592,42 @@ WRITE(MSG%LU_DEBUG,*) ' ........... starting ScaRC ............', PREDICTOR
 WRITE(MSG%LU_DEBUG,*) ' ----------------------- PART1 of MGM '
 IF (NMESHES == 1) THEN
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: FVX'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((MESHES(MYID+1)%FVX(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+WRITE(MSG%LU_DEBUG,'(11E16.8)') ((MESHES(MYID+1)%FVX(I,1,K), I=0, IBAR), K=KBAR,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: FVZ'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((MESHES(MYID+1)%FVZ(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+WRITE(MSG%LU_DEBUG,'(11E16.8)') ((MESHES(MYID+1)%FVZ(I,1,K), I=0, IBAR), K=KBAR,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: U'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((MESHES(MYID+1)%U(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+WRITE(MSG%LU_DEBUG,'(11E16.8)') ((MESHES(MYID+1)%U(I,1,K), I=0, IBAR), K=KBAR,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: US'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((MESHES(MYID+1)%US(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+WRITE(MSG%LU_DEBUG,'(11E16.8)') ((MESHES(MYID+1)%US(I,1,K), I=0, IBAR), K=KBAR,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: W'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((MESHES(MYID+1)%W(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+WRITE(MSG%LU_DEBUG,'(11E16.8)') ((MESHES(MYID+1)%W(I,1,K), I=0, IBAR), K=KBAR,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: WS'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((MESHES(MYID+1)%WS(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+WRITE(MSG%LU_DEBUG,'(11E16.8)') ((MESHES(MYID+1)%WS(I,1,K), I=0, IBAR), K=KBAR,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: PRHS'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((MESHES(MYID+1)%PRHS(I,1,K), I=1, IBAR+1), K=KBAR+1,1,-1)
+WRITE(MSG%LU_DEBUG,'(11E16.8)') ((MESHES(MYID+1)%PRHS(I,1,K), I=1, IBAR+1), K=KBAR+1,1,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: H'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(12E16.8)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: HS'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(12E16.8)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
 ELSE
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: FVX'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((MESHES(MYID+1)%FVX(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+WRITE(MSG%LU_DEBUG,'(6E16.8)') ((MESHES(MYID+1)%FVX(I,1,K), I=0, IBAR), K=KBAR,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: FVZ'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((MESHES(MYID+1)%FVZ(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+WRITE(MSG%LU_DEBUG,'(6E16.8)') ((MESHES(MYID+1)%FVZ(I,1,K), I=0, IBAR), K=KBAR,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: U'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((MESHES(MYID+1)%U(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+WRITE(MSG%LU_DEBUG,'(6E16.8)') ((MESHES(MYID+1)%U(I,1,K), I=0, IBAR), K=KBAR,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: US'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((MESHES(MYID+1)%US(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+WRITE(MSG%LU_DEBUG,'(6E16.8)') ((MESHES(MYID+1)%US(I,1,K), I=0, IBAR), K=KBAR,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: W'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((MESHES(MYID+1)%W(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+WRITE(MSG%LU_DEBUG,'(6E16.8)') ((MESHES(MYID+1)%W(I,1,K), I=0, IBAR), K=KBAR,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: WS'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((MESHES(MYID+1)%WS(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+WRITE(MSG%LU_DEBUG,'(6E16.8)') ((MESHES(MYID+1)%WS(I,1,K), I=0, IBAR), K=KBAR,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: PRHS'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((MESHES(MYID+1)%PRHS(I,1,K), I=1, IBAR+1), K=KBAR+1,1,-1)
+WRITE(MSG%LU_DEBUG,'(6E16.8)') ((MESHES(MYID+1)%PRHS(I,1,K), I=1, IBAR+1), K=KBAR+1,1,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: H'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:1: HS'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
 ENDIF
 #endif
 
@@ -9512,7 +9639,7 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
       CALL SCARC_METHOD_KRYLOV (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
    
       DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-         IF (NM == 1) CALL SCARC_DUMP_VECTOR3 (MESHES(1)%HS, NM, NLEVEL_MIN, 'HS')
+         IF (NM == 1) CALL SCARC_DUMP_VECTOR3 (MESHES(1)%HS, 'HS')
       ENDDO
  
    ! ---------------- Multigrid method ---------------------------------------
@@ -9522,8 +9649,6 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
       CALL SCARC_METHOD_MULTIGRID(NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
    
 
-#ifdef WITH_SCARC_MGM
- 
    ! ---------------- McKenny-Greengard-Mayo method (MGM) --------------------
  
    CASE (NSCARC_METHOD_MGM)
@@ -9538,20 +9663,7 @@ WRITE(MSG%LU_DEBUG,*) ' ----------------------- PART1 of MGM '
       CALL SCARC_METHOD_KRYLOV (1, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
    
       CALL SCARC_MGM_PARTIAL_SOLUTION(NLEVEL_MIN, 1)
-      !CALL SCARC_MGM_UPDATE_GHOSTCELLS(NLEVEL_MIN, 1)
-
-      !PRES_ON_WHOLE_DOMAIN = .TRUE.
-      !DO NM=LOWER_MESH_INDEX,UPPER_MESH_INDEX
-!#ifdef WITH_SCARC_DEBUG
-!WRITE(MSG%LU_DEBUG,*) 'CALL MATCH_VELOCITY_FLUX(',NM,')'
-!#endif
-!         CALL MATCH_VELOCITY_FLUX(NM)
-!#ifdef WITH_SCARC_DEBUG
-!WRITE(MSG%LU_DEBUG,*) 'CALL NO_FLUX(',DT,',',NM,')'
-!#endif
-!         CALL NO_FLUX(DT,NM)
-!      ENDDO
-      !PRES_ON_WHOLE_DOMAIN = .TRUE.
+      CALL SCARC_EXCHANGE(NSCARC_EXCHANGE_MGM1, NSCARC_NONE, NLEVEL_MIN)
 
       CALL SCARC_MGM_SETUP_INTERNAL_VELOCITIES(NLEVEL_MIN)
    
@@ -9562,22 +9674,22 @@ WRITE(MSG%LU_DEBUG,*) ' ----------------------- PART1 of MGM '
 WRITE(MSG%LU_DEBUG,*) ' ----------------------- PART2 of MGM '
 IF (NMESHES == 1) THEN
 WRITE(MSG%LU_DEBUG,*) 'MGM-PART2:2: H'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=0,KBAR+1)
+WRITE(MSG%LU_DEBUG,'(12E16.8)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=0,KBAR+1)
 WRITE(MSG%LU_DEBUG,*) 'MGM-PART2:2: HS'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=0,KBAR+1)
+WRITE(MSG%LU_DEBUG,'(12E16.8)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=0,KBAR+1)
 WRITE(MSG%LU_DEBUG,*) 'MGM-PART2:2: MGM%H1'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MGM%H1(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(12E16.8)') ((MGM%H1(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'MGM-PART2:2: MGM%H2'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MGM%H2(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(12E16.8)') ((MGM%H2(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
 ELSE
 WRITE(MSG%LU_DEBUG,*) 'MGM-PART2:2: H'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=0,KBAR+1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=0,KBAR+1)
 WRITE(MSG%LU_DEBUG,*) 'MGM-PART2:2: HS'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=0,KBAR+1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=0,KBAR+1)
 WRITE(MSG%LU_DEBUG,*) 'MGM-PART2:2: MGM%H1'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MGM%H1(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MGM%H1(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'MGM-PART2:2: MGM%H2'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MGM%H2(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MGM%H2(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
 ENDIF
 #endif
 
@@ -9588,7 +9700,9 @@ ENDIF
          CALL SCARC_METHOD_MGM_LU(3, NM, NLEVEL_MIN)
       ENDDO
 
+      CALL SCARC_MGM_PARTIAL_SOLUTION(NLEVEL_MIN, 4)
       CALL SCARC_MGM_PARTIAL_SOLUTION(NLEVEL_MIN, 2)
+      CALL SCARC_EXCHANGE(NSCARC_EXCHANGE_MGM2, NSCARC_NONE, NLEVEL_MIN)
       CALL SCARC_MGM_PARTIAL_SOLUTION(NLEVEL_MIN, 3)
       
       TYPE_METHOD = NSCARC_METHOD_MGM
@@ -9604,29 +9718,27 @@ ENDIF
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) ' ----------------------- PART5 of MGM '
+IF (NMESHES == 1) THEN
 WRITE(MSG%LU_DEBUG,*) 'MGM-PART3:3: H'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=0,KBAR+1)
+WRITE(MSG%LU_DEBUG,'(12E16.8)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=0,KBAR+1)
 WRITE(MSG%LU_DEBUG,*) 'MGM-PART3:3: HS'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=0,KBAR+1)
+WRITE(MSG%LU_DEBUG,'(12E16.8)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=0,KBAR+1)
 WRITE(MSG%LU_DEBUG,*) 'MGM-PART2:3: MGM%H1'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MGM%H1(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(12E16.8)') ((MGM%H1(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'MGM-PART2:3: MGM%H2'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MGM%H2(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(12E16.8)') ((MGM%H2(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+ELSE
+WRITE(MSG%LU_DEBUG,*) 'MGM-PART3:3: H'
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=0,KBAR+1)
+WRITE(MSG%LU_DEBUG,*) 'MGM-PART3:3: HS'
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=0,KBAR+1)
+WRITE(MSG%LU_DEBUG,*) 'MGM-PART2:3: MGM%H1'
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MGM%H1(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,*) 'MGM-PART2:3: MGM%H2'
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MGM%H2(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+ENDIF
 #endif
 
-#ifdef WITH_SCARC_DEBUG
-      DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-         CALL SCARC_POINT_TO_GRID (NM, NLEVEL_MIN)                                   ! Sets grid pointer G
-         IF (PREDICTOR) THEN
-            HP => M%H
-         ELSE
-            HP => M%HS
-         ENDIF
-         CALL SCARC_DEBUG_VECTOR3_BIG (HP, NM, 'HP: UPDATE_GHOST_CELLS - AFTER EXCHANGE')
-      ENDDO
-#endif
-
-#endif
    
    ! ---------------- MKL method ---------------------------------------------
  
@@ -9650,14 +9762,14 @@ WRITE(MSG%LU_DEBUG,*) '=========================================================
 WRITE(MSG%LU_DEBUG,*) ' ........... leaving ScaRC ............', PREDICTOR
 IF (NMESHES == 1) THEN
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:2: H'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(12E16.8)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:2: HS'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(12E16.8)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
 ELSE
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:2: H'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MESHES(MYID+1)%H(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SCARC_SOLVER:2: HS'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MESHES(MYID+1)%HS(I,1,K), I=0, IBAR+1), K=KBAR+1,0,-1)
 ENDIF
 WRITE(MSG%LU_DEBUG,*) ' ----------------------- END of ScaRC '
 #endif
@@ -10219,6 +10331,9 @@ SELECT CASE (ITYPE)
  
    CASE (NSCARC_RELAX_JAC)
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) ' ===================== RELAX: JACOBI'
+#endif
       JACOBI_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
          CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
@@ -10257,6 +10372,9 @@ SELECT CASE (ITYPE)
  
    CASE (NSCARC_RELAX_SSOR)
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) ' ===================== RELAX: SSOR'
+#endif
       SSOR_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
          CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
@@ -10421,6 +10539,9 @@ SELECT CASE (ITYPE)
  
    CASE (NSCARC_RELAX_MGS, NSCARC_RELAX_MSGS, NSCARC_RELAX_MSOR, NSCARC_RELAX_MSSOR, NSCARC_RELAX_ILU)
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) ' ===================== RELAX: OTHER'
+#endif
       LU_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
          CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
@@ -10534,6 +10655,9 @@ SELECT CASE (ITYPE)
  
    CASE (NSCARC_RELAX_FFT)
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) ' ===================== RELAX: JACOBI'
+#endif
       DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
          CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
@@ -10727,6 +10851,9 @@ CALL SCARC_DEBUG_LEVEL (NV2, 'RELAX-FFT: NV2 EXIT ', NL)
  
    CASE (NSCARC_RELAX_MKL)
 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) ' ===================== RELAX: MKL'
+#endif
       ! Preconditioning by Cluster Sparse Solver from MKL
  
       MKL_SCOPE_IF: IF (STACK(NS)%SOLVER%TYPE_SCOPE(0) == NSCARC_SCOPE_GLOBAL) THEN
@@ -10909,9 +11036,9 @@ CALL SCARC_DEBUG_CMATRIX(AS, 'AS','CLUSTER')
 
 #ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'CLUSTER, POST, V1:'
-WRITE(MSG%LU_DEBUG,'(2E14.6)') V1
+WRITE(MSG%LU_DEBUG,'(2E16.8)') V1
 WRITE(MSG%LU_DEBUG,*) 'CLUSTER, POST, V2:'
-WRITE(MSG%LU_DEBUG,'(2E14.6)') V2
+WRITE(MSG%LU_DEBUG,'(2E16.8)') V2
 #endif
 ENDDO MESHES_LOOP
 
@@ -11000,9 +11127,9 @@ WRITE(MSG%LU_DEBUG,'(6E12.4)') V2
 
 #ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'PARDISO, POST, V1:'
-WRITE(MSG%LU_DEBUG,'(2E14.6)') V1
+WRITE(MSG%LU_DEBUG,'(2E16.8)') V1
 WRITE(MSG%LU_DEBUG,*) 'PARDISO, POST, V2:'
-WRITE(MSG%LU_DEBUG,'(2E14.6)') V2
+WRITE(MSG%LU_DEBUG,'(2E16.8)') V2
 #endif
 ENDDO MESHES_LOOP
 
@@ -11883,16 +12010,14 @@ END SUBROUTINE SCARC_RELEASE_SOLVER
 !> \brief Set initial solution corresponding to boundary data in BXS, BXF, ...
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_WORKSPACE(NS, NL, NRHS)
-USE SCARC_POINTERS, ONLY: M, L, F, G, SV, ST, STP, GWC, PRHS, HP
+USE SCARC_POINTERS, ONLY: M, L, F, G, SV, ST, STP, GWC, PRHS, HP, UU, VV, WW
 USE SCARC_ITERATION_ENVIRONMENT
-#ifdef WITH_SCARC_MGM
 USE SCARC_POINTERS, ONLY: MGM
-#endif
 #ifdef WITH_SCARC_POSTPROCESSING
 USE SCARC_POINTERS, ONLY: PR
 #endif
 INTEGER, INTENT(IN) :: NS, NL, NRHS
-INTEGER :: NM, IW, IW1, IW2, IOR0, I, J, K, IC
+INTEGER :: NM, IW, IW1, IW2, IOR0, I, J, K, IC, TYPE_MGM0
 REAL(EB) :: VAL
 
 #ifdef WITH_SCARC_DEBUG
@@ -11930,10 +12055,6 @@ WRITE(MSG%LU_DEBUG,*) 'LOOPING ', NM
             ENDIF
          ENDIF
 
-#ifdef WITH_SCARC_DEBUG        
-WRITE(MSG%LU_DEBUG,*) 'SET_WORKSPACE:1: HP, NC, NCE', G%NC, G%NCE, TYPE_GRID
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
-#endif
 
 #ifdef WITH_SCARC_POSTPROCESSING
          PR => L%PRESSURE
@@ -12008,7 +12129,7 @@ WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
                         END SELECT
          
                         ST%B(IC) = ST%B(IC) + F%SCAL_DIRICHLET * VAL
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A, 5I6,2E12.4)') 'SETUP_WORKSPACE: DIRICHLET: IW, I, J, K, IC, VAL, B(IC):', &
                                        IW, I, J, K, IC, VAL, ST%B(IC)
 #endif
@@ -12043,7 +12164,7 @@ WRITE(MSG%LU_DEBUG,'(A, 5I6,2E12.4)') 'SETUP_WORKSPACE: DIRICHLET: IW, I, J, K, 
          
                         ST%B(IC) = ST%B(IC) + F%SCAL_NEUMANN * VAL
 
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A, 5I6,2E12.4)') 'SETUP_WORKSPACE: NEUMANN  : IW, I, J, K, IC, VAL, B(IC):', &
                                        IW, I, J, K, IC, VAL, ST%B(IC)
 #endif
@@ -12056,7 +12177,6 @@ WRITE(MSG%LU_DEBUG,'(A, 5I6,2E12.4)') 'SETUP_WORKSPACE: NEUMANN  : IW, I, J, K, 
                ENDDO MAIN_INHOMOGENEOUS_LOOP
                !!$OMP END PARALLEL 
    
-#ifdef WITH_SCARC_MGM
 
             ! Solve problem with homegeneous boundary conditions (MGM only)
 
@@ -12071,8 +12191,188 @@ WRITE(MSG%LU_DEBUG,'(A, 5I6,2E12.4)') 'SETUP_WORKSPACE: NEUMANN  : IW, I, J, K, 
                ST%Z = 0.0_EB                             
   
                MGM => L%MGM
+              
+               IF (PREDICTOR) THEN
+                  HP => M%H
+                  UU => M%U
+                  VV => M%V
+                  WW => M%W
+               ELSE
+                  HP => M%HS
+                  UU => M%US
+                  VV => M%VS
+                  WW => M%WS
+               ENDIF
+               HP => MGM%H2
 
-               !$OMP PARALLEL DO PRIVATE(IW, GWC, I, J, K, IOR0, IC) SCHEDULE(STATIC)
+#ifdef WITH_SCARC_DEBUG        
+WRITE(MSG%LU_DEBUG,*) 'SET_WORKSPACE_MGM: NC, NCE', G%NC, G%NCE, TYPE_GRID
+WRITE(MSG%LU_DEBUG,*) 'MGM%H1'
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MGM%H1(I,1,K), I=0, L%NX+1), K=L%NZ+1,0,-1)
+WRITE(MSG%LU_DEBUG,*) 'MGM%H2'
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MGM%H2(I,1,K), I=0, L%NX+1), K=L%NZ+1,0,-1)
+WRITE(MSG%LU_DEBUG,*) 'MGM%H3'
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((MGM%H3(I,1,K), I=0, L%NX+1), K=L%NZ+1,0,-1)
+#endif
+        
+               TYPE_MGM0 = TYPE_MGM
+               IF (TYPE_MGM == NSCARC_MGM_EXTRAPOLATION) THEN
+                 IF (TOTAL_PRESSURE_ITERATIONS == 1) THEN
+                    TYPE_MGM0 = NSCARC_MGM_ZERO
+                 ELSE IF (TOTAL_PRESSURE_ITERATIONS == 2) THEN
+                    TYPE_MGM0 = NSCARC_MGM_SIMPLE
+                 ENDIF
+               ELSE IF (TYPE_MGM == NSCARC_MGM_SIMPLE) THEN
+                 IF (TOTAL_PRESSURE_ITERATIONS == 1) TYPE_MGM0 = NSCARC_MGM_ZERO
+               ENDIF
+
+               SELECT CASE (TYPE_MGM0)
+
+                  !
+                  ! --------------------- MGM - ZERO
+                  !
+                  CASE (NSCARC_MGM_ZERO)
+
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '%%%%%%%%%%%%%%%%% ZERO SETTING:', TOTAL_PRESSURE_ITERATIONS
+#endif
+                  !
+                  ! --------------------- MGM - Simple
+                  !
+                  CASE (NSCARC_MGM_SIMPLE)
+
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '%%%%%%%%%%%%%%%%% SIMPLE SETTING:', TOTAL_PRESSURE_ITERATIONS
+#endif
+                     DO IW = 1, L%N_WALL_CELLS_EXT
+      
+                        GWC => G%WALL(IW)
+                        IF (GWC%BTYPE /= INTERNAL) CYCLE
+         
+                        I = GWC%IXW
+                        J = GWC%IYW
+                        K = GWC%IZW
+         
+                        IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I, J, K)) CYCLE
+         
+                        IOR0 = GWC%IOR
+                        IF (IOR0 == 0) CYCLE
+                        F => SCARC(NM)%LEVEL(NL)%FACE(IOR0)
+      
+                        SELECT CASE (IOR0)
+                           CASE(1)
+                              VAL=  0.5_EB * (MGM%H2(I-1, J, K) + MGM%H2(I, J, K)) 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: SIMPLE: IOR =  1: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I-1,J,K), MGM%H2(I,J,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(-1)
+                              VAL=  0.5_EB * (MGM%H2(I, J, K) + MGM%H2(I+1, J, K))
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: SIMPLE: IOR = -1: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I+1,J,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(2)
+                              VAL=  0.5_EB * (MGM%H2(I, J-1, K) + MGM%H2(I, J, K))
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: SIMPLE: IOR =  2: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J-1,K), MGM%H2(I,J,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(-2)
+                              VAL=  0.5_EB * (MGM%H2(I, J, K) + MGM%H2(I, J+1, K))
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: SIMPLE: IOR = -2: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I,J+1,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(3)
+                              VAL=  0.5_EB * (MGM%H2(I, J, K-1) + MGM%H2(I, J, K))
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: SIMPLE: IOR =  3: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K-1), MGM%H2(I,J,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(-3)
+                              VAL=  0.5_EB * (MGM%H2(I, J, K) + MGM%H2(I, J, K+1))
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: SIMPLE: IOR = -3: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I,J,K+1), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                        END SELECT
+
+                        IC = G%CELL_NUMBER(I,J,K)
+                        ST%B(IC) = ST%B(IC) + F%SCAL_DIRICHLET * VAL
+
+                     ENDDO
+
+                  !
+                  ! --------------------- MGM - Linear Extrapolation
+                  !
+                  CASE (NSCARC_MGM_EXTRAPOLATION)
+   
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '%%%%%%%%%%%%%%%%% EXPOL SETTING:', TOTAL_PRESSURE_ITERATIONS
+#endif
+                     DO IW = 1, L%N_WALL_CELLS_EXT
+      
+                        GWC => G%WALL(IW)
+                        IF (GWC%BTYPE /= INTERNAL) CYCLE
+         
+                        I = GWC%IXW
+                        J = GWC%IYW
+                        K = GWC%IZW
+         
+                        IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I, J, K)) CYCLE
+         
+                        IOR0 = GWC%IOR
+                        IF (IOR0 == 0) CYCLE
+                        F => SCARC(NM)%LEVEL(NL)%FACE(IOR0)
+      
+                        SELECT CASE (IOR0)
+                           CASE(1)
+                              VAL =  MGM%H2(I-1, J, K) + MGM%H2(I, J, K) - 0.5_EB*(MGM%H3(I-1, J, K) + MGM%H3(I, J, K))  
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: EXPOL: IOR =  1: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I-1,J,K), MGM%H2(I,J,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(-1)
+                              VAL =  MGM%H2(I, J, K) + MGM%H2(I+1, J, K) - 0.5_EB*(MGM%H3(I, J, K) + MGM%H3(I+1, J, K))  
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: EXPOL: IOR = -1: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I+1,J,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(2)
+                              VAL =  MGM%H2(I, J-1, K) + MGM%H2(I, J, K) - 0.5_EB*(MGM%H3(I, J-1, K) + MGM%H3(I, J, K))  
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: EXPOL: IOR =  2: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J-1,K), MGM%H2(I,J,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(-2)
+                              VAL =  MGM%H2(I, J, K) + MGM%H2(I, J+1, K) - 0.5_EB*(MGM%H3(I, J, K) + MGM%H3(I, J+1, K))  
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: EXPOL: IOR = -2: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I,J+1,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(3)
+                              VAL =  MGM%H2(I, J, K-1) + MGM%H2(I, J, K) - 0.5_EB*(MGM%H3(I, J, K-1) + MGM%H3(I, J, K))  
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: EXPOL: IOR =  3: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K-1), MGM%H2(I,J,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(-3)
+                              VAL =  MGM%H2(I, J, K) + MGM%H2(I, J, K+1) - 0.5_EB*(MGM%H3(I, J, K) + MGM%H3(I, J, K+1))  
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: EXPOL: IOR = -3: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I,J,K+1), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                        END SELECT
+
+                        IC = G%CELL_NUMBER(I,J,K)
+                        ST%B(IC) = ST%B(IC) + F%SCAL_DIRICHLET * VAL
+
+                     ENDDO
+
+               END SELECT
+
+IF (NM ==1) WRITE(*,*) '%%%%%%%%%%%%%%%%% INTERNAL SETTING:', TOTAL_PRESSURE_ITERATIONS
                DO IW = L%N_WALL_CELLS_EXT+1, L%N_WALL_CELLS_EXT + L%N_WALL_CELLS_INT
    
                   GWC => G%WALL(IW)
@@ -12089,26 +12389,37 @@ WRITE(MSG%LU_DEBUG,'(A, 5I6,2E12.4)') 'SETUP_WORKSPACE: NEUMANN  : IW, I, J, K, 
                   SELECT CASE (IOR0)
                      CASE(1)
                         ST%B(IC) =  L%DXI * DTI * MGM%UU(IW)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,5i4,2E14.6)') 'MGM-BC: INTERNAL: IOR =  1: IW,I,J,K,IC,UU(IW),B(IC):', IW,I,J,K, IC, MGM%UU(IW), ST%B(IC)
+#endif
                      CASE(-1)
                         ST%B(IC) = -L%DXI * DTI * MGM%UU(IW)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,5i4,2E14.6)') 'MGM-BC: INTERNAL: IOR = -1: IW,I,J,K,IC,UU(IW),B(IC):', IW,I,J,K, IC, MGM%UU(IW), ST%B(IC)
+#endif
                      CASE(2)
                         ST%B(IC) =  L%DYI * DTI * MGM%VV(IW)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,5i4,2E14.6)') 'MGM-BC: INTERNAL: IOR =  2: IW,I,J,K,IC,VV(IW),B(IC):', IW,I,J,K, IC, MGM%VV(IW), ST%B(IC)
+#endif
                      CASE(-2)
                         ST%B(IC) = -L%DYI * DTI * MGM%VV(IW)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,5i4,2E14.6)') 'MGM-BC: INTERNAL: IOR = -2: IW,I,J,K,IC,VV(IW),B(IC):', IW,I,J,K, IC, MGM%VV(IW), ST%B(IC)
+#endif
                      CASE(3)
                         ST%B(IC) =  L%DZI * DTI * MGM%WW(IW)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,5i4,2E14.6)') 'MGM-BC: INTERNAL: IOR =  3: IW,I,J,K,IC,WW(IW),B(IC):', IW,I,J,K, IC, MGM%WW(IW), ST%B(IC)
+#endif
                      CASE(-3)
                         ST%B(IC) = -L%DZI * DTI * MGM%WW(IW)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,5i4,2E14.6)') 'MGM-BC: INTERNAL: IOR = -3: IW,I,J,K,IC,WW(IW),B(IC):', IW,I,J,K, IC, MGM%WW(IW), ST%B(IC)
+#endif
                   END SELECT
    
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,'(A, 6I4, 6E12.4)') &
-     'SETUP_WORKSPACE FOR MGM: IW, I, J, K, IOR0, IC, DXI, DZI, DTI, US, WS, ST%B(IC):', &
-      IW, I, J, K, IOR0, IC, L%DXI, L%DZI, DTI, MGM%UU(IW), MGM%WW(IW), ST%B(IC)
-#endif
                ENDDO
-               !$OMP END PARALLEL DO
-#endif
 #ifdef WITH_SCARC_DEBUG
                CALL SCARC_DEBUG_LEVEL_MESH(ST%B, 'RHS second pass MGM', NSCARC_GRID_UNSTRUCTURED, NM, NL)
 #endif
@@ -12119,11 +12430,6 @@ WRITE(MSG%LU_DEBUG,'(A, 6I4, 6E12.4)') &
          PR%B_NEW = ST%B
 #endif
    
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SET_WORKSPACE:2: HP'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
-#endif
-
       ENDDO MAIN_MESHES_LOOP
       
       ! In case of a Krylov method clear overlapping parts of auxiliary vectors
@@ -12213,7 +12519,6 @@ WRITE(MSG%LU_DEBUG,*) 'LEAVING SETUP_WORKSPACE ', NS, NL, NRHS
 #endif
 END SUBROUTINE SCARC_SETUP_WORKSPACE
 
-
 ! ------------------------------------------------------------------------------------------------
 !> \brief Check if solver converges or diverges and print out residual information
 ! ------------------------------------------------------------------------------------------------
@@ -12301,7 +12606,7 @@ WRITE(MSG%LU_DEBUG,2000) STACK(NS)%SOLVER%CNAME, ITE, CAPPA
 #endif
 
 #if defined (WITH_SCARC_DEBUG) || defined (WITH_SCARC_VERBOSE)
-2000 FORMAT (A30,': Iterations: ',i6,':   Convergence Rate =',e14.6,/)
+2000 FORMAT (A30,': Iterations: ',i6,':   Convergence Rate =',E16.8,/)
 #endif
 
 END SUBROUTINE SCARC_CONVERGENCE_RATE
@@ -12808,7 +13113,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'UPDATE_MAIN_CELLS:1: HP'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((HP(I,1,K), I=0, L%NX), K=0,L%NZ)
+WRITE(MSG%LU_DEBUG,'(6E16.8)') ((HP(I,1,K), I=0, L%NX), K=0,L%NZ)
 #endif
 
    HP = 0.0_EB
@@ -12824,7 +13129,7 @@ WRITE(MSG%LU_DEBUG,'(6E14.6)') ((HP(I,1,K), I=0, L%NX), K=0,L%NZ)
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'UPDATE_MAIN_CELLS:2: HP'
-WRITE(MSG%LU_DEBUG,'(6E14.6)') ((HP(I,1,K), I=0,L%NX+1), K=0,L%NZ+1)
+WRITE(MSG%LU_DEBUG,'(6E16.8)') ((HP(I,1,K), I=0,L%NX+1), K=0,L%NZ+1)
 #endif
 
 #ifdef WITH_SCARC_DEBUG
@@ -12861,7 +13166,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'UPDATE_GHOST_CELLS:1: HP'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
 #endif
    ! Compute ghost cell values
  
@@ -12928,7 +13233,7 @@ WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'UPDATE_GHOST_CELLS:2: HP'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
 #endif
 #ifdef WITH_SCARC_DEBUG
    CALL SCARC_DEBUG_VECTOR3_BIG (HP, NM, 'HP: UPDATE_GHOST_CELLS')
@@ -12981,7 +13286,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'UPDATE_MGM_GHOST_CELLS:1: HP'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
 #endif
     
       WALL_CELLS_LOOP: DO IW = 1, L%N_WALL_CELLS_EXT
@@ -13049,7 +13354,7 @@ WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'UPDATE_MGM_GHOST_CELLS:2: HP'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
 #endif
     
       WALL_CELLS_LOOP2: DO IW = 1, L%N_WALL_CELLS_EXT
@@ -13114,7 +13419,7 @@ WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
    ENDIF
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'UPDATE_GHOST_CELLS:2: HP'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((HP(I,1,K), I=0, L%NX+1), K=0,L%NZ+1)
 #endif
 #ifdef WITH_SCARC_DEBUG
    CALL SCARC_DEBUG_VECTOR3_BIG (HP, NM, 'HP: UPDATE_GHOST_CELLS')
@@ -13208,6 +13513,12 @@ RECEIVE_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
          CASE (NSCARC_EXCHANGE_PRESSURE)
             CALL SCARC_RECV_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_LAYER1, 'PRESSURE')
+
+         CASE (NSCARC_EXCHANGE_MGM1)
+            CALL SCARC_RECV_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_LAYER1, 'MGM1')
+
+         CASE (NSCARC_EXCHANGE_MGM2)
+            CALL SCARC_RECV_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_LAYER1, 'MGM2')
 
          CASE (NSCARC_EXCHANGE_LAYER2_NUMS)
             CALL SCARC_RECV_MESSAGE_INT (NM, NOM, NL, NSCARC_BUFFER_LAYER1, 'LAYER2_NUMS')
@@ -13303,6 +13614,14 @@ SEND_PACK_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
             CALL SCARC_PACK_PRESSURE(NM)
             CALL SCARC_SEND_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_LAYER1, 'PRESSURE')
 
+         CASE (NSCARC_EXCHANGE_MGM1)
+            CALL SCARC_PACK_MGM1(NM)
+            CALL SCARC_SEND_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_LAYER1, 'MGM1')
+
+         CASE (NSCARC_EXCHANGE_MGM2)
+            CALL SCARC_PACK_MGM2(NM)
+            CALL SCARC_SEND_MESSAGE_REAL (NM, NOM, NL, NSCARC_BUFFER_LAYER1, 'MGM2')
+
          CASE (NSCARC_EXCHANGE_LAYER2_NUMS)
             CALL SCARC_PACK_LAYER2_NUMS
             CALL SCARC_SEND_MESSAGE_INT (NM, NOM, NL, NSCARC_BUFFER_LAYER1, 'LAYER2_NUMS')
@@ -13396,6 +13715,12 @@ SEND_UNPACK_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
          CASE (NSCARC_EXCHANGE_PRESSURE)
             CALL SCARC_UNPACK_PRESSURE (NM, NOM)
+
+         CASE (NSCARC_EXCHANGE_MGM1)
+            CALL SCARC_UNPACK_MGM1 (NM, NOM)
+
+         CASE (NSCARC_EXCHANGE_MGM2)
+            CALL SCARC_UNPACK_MGM2 (NM, NOM)
 
          CASE (NSCARC_EXCHANGE_LAYER2_NUMS)
             CALL SCARC_UNPACK_LAYER2_NUMS (NM, NOM)
@@ -13809,6 +14134,103 @@ END SUBROUTINE SCARC_UNPACK_PRESSURE
 
 
 ! ------------------------------------------------------------------------------------------------
+!> \brief Pack overlapping parts of specified pressure vector (predictor/corrector)
+! Note: Vector VC is numbered via I, J, K values
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PACK_MGM1(NM)
+USE SCARC_POINTERS, ONLY: OL, OG, OS
+INTEGER, INTENT(IN) :: NM
+REAL(EB), DIMENSION(:,:,:), POINTER :: VC
+INTEGER :: IOR0, ICG, IWG
+
+VC => SCARC(NM)%LEVEL(NLEVEL_MIN)%MGM%H1
+OS%SEND_BUFFER_REAL = NSCARC_HUGE_REAL_EB
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
+   DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
+      IWG = OG%ICG_TO_IWG(ICG)
+      OS%SEND_BUFFER_REAL(ICG) = VC(G%WALL(IWG)%IXW, G%WALL(IWG)%IYW, G%WALL(IWG)%IZW)
+   ENDDO
+ENDDO
+END SUBROUTINE SCARC_PACK_MGM1
+
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Unpack overlapping parts of specified pressure vector (predictor/corrector)
+! Note: Vector VC is numbered via I, J, K values
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_UNPACK_MGM1(NM, NOM)
+USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_REAL
+INTEGER, INTENT(IN) :: NM, NOM
+REAL(EB), DIMENSION(:,:,:), POINTER :: VC
+INTEGER :: LL, IOR0, IWG, IXG, IYG, IZG, ICG
+
+RECV_BUFFER_REAL => SCARC_POINT_TO_BUFFER_REAL (NM, NOM, 1)
+VC => SCARC(NM)%LEVEL(NLEVEL_MIN)%MGM%H1
+LL = 1
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
+   UNPACK_MGM1: DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
+      IWG = OG%ICG_TO_IWG(ICG)
+      IXG=G%WALL(IWG)%IXG
+      IYG=G%WALL(IWG)%IYG
+      IZG=G%WALL(IWG)%IZG
+      VC(IXG, IYG, IZG) = RECV_BUFFER_REAL(LL)
+      LL = LL + 1
+   ENDDO UNPACK_MGM1
+ENDDO
+END SUBROUTINE SCARC_UNPACK_MGM1
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Pack overlapping parts of specified pressure vector (predictor/corrector)
+! Note: Vector VC is numbered via I, J, K values
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_PACK_MGM2(NM)
+USE SCARC_POINTERS, ONLY: OL, OG, OS
+INTEGER, INTENT(IN) :: NM
+REAL(EB), DIMENSION(:,:,:), POINTER :: VC
+INTEGER :: IOR0, ICG, IWG
+
+VC => SCARC(NM)%LEVEL(NLEVEL_MIN)%MGM%H2
+OS%SEND_BUFFER_REAL = NSCARC_HUGE_REAL_EB
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
+   DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
+      IWG = OG%ICG_TO_IWG(ICG)
+      OS%SEND_BUFFER_REAL(ICG) = VC(G%WALL(IWG)%IXW, G%WALL(IWG)%IYW, G%WALL(IWG)%IZW)
+   ENDDO
+ENDDO
+END SUBROUTINE SCARC_PACK_MGM2
+
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Unpack overlapping parts of specified pressure vector (predictor/corrector)
+! Note: Vector VC is numbered via I, J, K values
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_UNPACK_MGM2(NM, NOM)
+USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_REAL
+INTEGER, INTENT(IN) :: NM, NOM
+REAL(EB), DIMENSION(:,:,:), POINTER :: VC
+INTEGER :: LL, IOR0, IWG, IXG, IYG, IZG, ICG
+
+RECV_BUFFER_REAL => SCARC_POINT_TO_BUFFER_REAL (NM, NOM, 1)
+VC => SCARC(NM)%LEVEL(NLEVEL_MIN)%MGM%H2
+LL = 1
+DO IOR0 = -3, 3
+   IF (OL%GHOST_LASTW(IOR0) == 0) CYCLE
+   UNPACK_MGM1: DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
+      IWG = OG%ICG_TO_IWG(ICG)
+      IXG=G%WALL(IWG)%IXG
+      IYG=G%WALL(IWG)%IYG
+      IZG=G%WALL(IWG)%IZG
+      VC(IXG, IYG, IZG) = RECV_BUFFER_REAL(LL)
+      LL = LL + 1
+   ENDDO UNPACK_MGM1
+ENDDO
+END SUBROUTINE SCARC_UNPACK_MGM2
+
+
+! ------------------------------------------------------------------------------------------------
 !> \brief Pack overlapping auxiliary vector 
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PACK_AUXILIARY(NL)
@@ -13956,9 +14378,9 @@ OS%SEND_BUFFER_REAL = NSCARC_HUGE_REAL_EB
 
 #ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'PACK: SEND_BUFFER_REAL(1:8)=', SIZE(OS%SEND_BUFFER_REAL), SIZE(VC)
-WRITE(MSG%LU_DEBUG,'(4E14.6)') OS%SEND_BUFFER_REAL(1:8)
+WRITE(MSG%LU_DEBUG,'(4E16.8)') OS%SEND_BUFFER_REAL(1:8)
 WRITE(MSG%LU_DEBUG,*) 'PACK: VC='
-WRITE(MSG%LU_DEBUG,'(4E14.6)') VC
+WRITE(MSG%LU_DEBUG,'(4E16.8)') VC
 #endif
 
 DO IOR0 = -3, 3
@@ -13990,9 +14412,9 @@ VC => SCARC_POINT_TO_VECTOR(NM, NL, NVECTOR)
 
 #ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'UNPACK: RECV_BUFFER_REAL(1:8)=', SIZE(RECV_BUFFER_REAL), SIZE(VC)
-WRITE(MSG%LU_DEBUG,'(4E14.6)') RECV_BUFFER_REAL(1:8)
+WRITE(MSG%LU_DEBUG,'(4E16.8)') RECV_BUFFER_REAL(1:8)
 WRITE(MSG%LU_DEBUG,*) 'UNPACK: VC='
-WRITE(MSG%LU_DEBUG,'(4E14.6)') VC
+WRITE(MSG%LU_DEBUG,'(4E16.8)') VC
 #endif
 
 LL = 1
@@ -14170,8 +14592,14 @@ SUBROUTINE SCARC_PACK_MATRIX_COLSG(NMATRIX)
 USE SCARC_POINTERS, ONLY: OS, OL, OG, AC
 INTEGER, INTENT(IN) :: NMATRIX
 INTEGER :: IOR0, ICG, ICW, LL, ICOL
+INTEGER, POINTER, DIMENSION(:) :: COLG
 
 AC => SCARC_POINT_TO_CMATRIX(G, NMATRIX)
+IF (NMESHES == 1 .OR. TYPE_SCOPE(0) == NSCARC_SCOPE_LOCAL) THEN
+   COLG => AC%COL
+ELSE
+   COLG => AC%COLG
+ENDIF
 
 LL = 1
 OS%SEND_BUFFER_INT = NSCARC_HUGE_INT
@@ -14183,15 +14611,15 @@ DO IOR0 = -3, 3
       ICW = OG%ICG_TO_ICW(ICG, 1)
       IF (ICW < 0) CYCLE                               ! skip solid cells
       ICOL = AC%ROW(ICW)
-      OS%SEND_BUFFER_INT(LL) = -AC%COLG(ICOL)          ! send first element with negative sign (thus, mark beginning)
+      OS%SEND_BUFFER_INT(LL) = -COLG(ICOL)          ! send first element with negative sign (thus, mark beginning)
 #ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) 'PACK_MATRIX_COLSG:A: IOR0, ICG, ICW, ICOL, COLG:', IOR0, ICG, ICW, ICOL, -AC%COLG(ICOL)
+WRITE(MSG%LU_DEBUG,*) 'PACK_MATRIX_COLSG:A: IOR0, ICG, ICW, ICOL, COLG:', IOR0, ICG, ICW, ICOL, -COLG(ICOL)
 #endif
       LL = LL + 1                              
       DO ICOL = AC%ROW(ICW)+1, AC%ROW(ICW+1)-1
-         OS%SEND_BUFFER_INT(LL) = AC%COLG(ICOL)   
+         OS%SEND_BUFFER_INT(LL) = COLG(ICOL)   
 #ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) 'PACK_MATRIX_COLSG:B: IOR0, ICG, ICW, ICOL, COLG:', IOR0, ICG, ICW, ICOL, AC%COLG(ICOL)
+WRITE(MSG%LU_DEBUG,*) 'PACK_MATRIX_COLSG:B: IOR0, ICG, ICW, ICOL, COLG:', IOR0, ICG, ICW, ICOL, COLG(ICOL)
 #endif
          LL = LL + 1
       ENDDO
@@ -14208,9 +14636,15 @@ SUBROUTINE SCARC_UNPACK_MATRIX_COLSG(NM, NOM, NMATRIX)
 USE SCARC_POINTERS, ONLY: OL, OG, OAC, RECV_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM, NMATRIX
 INTEGER :: IOR0, ICG, LL, ICP
+INTEGER, POINTER, DIMENSION(:) :: COLG
 
 RECV_BUFFER_INT => SCARC_POINT_TO_BUFFER_INT (NM, NOM, 1)
 OAC => SCARC_POINT_TO_OTHER_CMATRIX(OG, NMATRIX)
+IF (NMESHES == 1 .OR. TYPE_SCOPE(0) == NSCARC_SCOPE_LOCAL) THEN
+   COLG => AC%COL
+ELSE
+   COLG => AC%COLG
+ENDIF
 
 LL = 1                                 
 DO IOR0 = -3, 3
@@ -14219,15 +14653,15 @@ DO IOR0 = -3, 3
    OAC%ROW(ICP) = LL
    DO ICG = OL%GHOST_FIRSTE(IOR0), OL%GHOST_LASTE(IOR0)
       IF (OG%ICG_TO_ICE(ICG,1) < 0) CYCLE                     ! skip solid cells
-      OAC%COLG(LL) = ABS(RECV_BUFFER_INT(LL))
+      COLG(LL) = ABS(RECV_BUFFER_INT(LL))
 #ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) 'UNPACK_MATRIX_COLSG:A: IOR0, ICP, ICG, LL, COLG:', IOR0, ICP, ICG, LL, OAC%COLG(LL)
+WRITE(MSG%LU_DEBUG,*) 'UNPACK_MATRIX_COLSG:A: IOR0, ICP, ICG, LL, COLG:', IOR0, ICP, ICG, LL, COLG(LL)
 #endif
       DO WHILE (RECV_BUFFER_INT(LL+1) > 0)
          LL = LL + 1
-         OAC%COLG(LL) = ABS(RECV_BUFFER_INT(LL))
+         COLG(LL) = ABS(RECV_BUFFER_INT(LL))
 #ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,*) 'UNPACK_MATRIX_COLSG:B: IOR0, ICP, ICG, LL, COLG:', IOR0, ICP, ICG, LL, OAC%COLG(LL)
+WRITE(MSG%LU_DEBUG,*) 'UNPACK_MATRIX_COLSG:B: IOR0, ICP, ICG, LL, COLG:', IOR0, ICP, ICG, LL, COLG(LL)
 #endif
       ENDDO
       LL = LL + 1
@@ -15385,7 +15819,7 @@ INTEGER::  I
 DO I = 1, N
   DY(I) = DY(I) + DA(I) * DX(I)
 #ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,'(A, I6, 3E14.6)') 'I, DX, DA, DY:', I, DX(I), DA(I), DY(I)
+WRITE(MSG%LU_DEBUG,'(A, I6, 3E16.8)') 'I, DX, DA, DY:', I, DX(I), DA(I), DY(I)
 #endif
 ENDDO
 !$OMP END PARALLEL DO 
@@ -15842,14 +16276,14 @@ WRITE(MSG%LU_DEBUG,*) 'GF%NCE', GF%NCE
    CALL SCARC_ALLOCATE_INT1(GC%LOCAL_TO_GLOBAL, 1, GF%NCE, NSCARC_INIT_ZERO, 'G%LOCAL_TO_GLOBAL', CROUTINE)
    DO IZL = 1, GC%NC
       GC%LOCAL_TO_GLOBAL(IZL) = IZL + GC%NC_OFFSET(NM)
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':GC%LOCAL_TO_GLOBAL(',IZL,')=',GC%LOCAL_TO_GLOBAL(IZL)
 #endif
    ENDDO
 
    DO IC = 1, GF%NC
       GF%ZONES_GLOBAL(IC) = GF%ZONES_LOCAL(IC) + GC%NC_OFFSET(NM)
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) 'NM=',NM,':GF%ZONES_GLOBAL(',IC,')=',GF%ZONES_GLOBAL(IC)
 #endif
    ENDDO
@@ -19001,14 +19435,21 @@ A%NTYPE = NTYPE
 A%NPREC = NPREC
 NDUMMY = NL
 
+ WRITE(MSG%LU_DEBUG,*) '1:ALLOCATING A%COLG FOR ', CNAME, CSCOPE
 CALL SCARC_UPDATE_MEMORY(NSCARC_DATA_CMATRIX, NSCARC_MEMORY_CREATE, -1, -1, -1, -1, -1, -1, -1, -1, CNAME, CSCOPE)
 
+ WRITE(MSG%LU_DEBUG,*) '2:ALLOCATING A%COLG FOR ', CNAME, CSCOPE
 CALL SCARC_ALLOCATE_INT1(A%ROW, 1, A%N_ROW, NSCARC_INIT_ZERO, 'A%ROW', CSCOPE)
 CALL SCARC_ALLOCATE_INT1(A%COL, 1, A%N_VAL, NSCARC_INIT_ZERO, 'A%COL', CSCOPE)
 
-IF (NTYPE == NSCARC_MATRIX_LIGHT .OR. NTYPE == NSCARC_MATRIX_FULL) &
+ WRITE(MSG%LU_DEBUG,*) '3:ALLOCATING A%COLG FOR ', CNAME, CSCOPE, NTYPE, TYPE_SCOPE(0)
+IF (TYPE_SCOPE(0) == NSCARC_SCOPE_GLOBAL .AND. (NTYPE == NSCARC_MATRIX_LIGHT .OR. NTYPE == NSCARC_MATRIX_FULL)) THEN
+   WRITE(MSG%LU_DEBUG,*) 'ALLOCATING A%COLG FOR ', CNAME, CSCOPE
    CALL SCARC_ALLOCATE_INT1(A%COLG, 1, A%N_VAL, NSCARC_INIT_ZERO, 'A%COLG', CSCOPE)
+ WRITE(MSG%LU_DEBUG,*) '4:ALLOCATING A%COLG FOR ', CNAME, CSCOPE, NTYPE, TYPE_SCOPE(0)
+ENDIF
 
+ WRITE(MSG%LU_DEBUG,*) '5:ALLOCATING A%COLG FOR ', CNAME, CSCOPE, NTYPE, TYPE_SCOPE(0)
 IF (NTYPE /= NSCARC_MATRIX_MINIMAL) THEN
    IF (NPREC == NSCARC_PRECISION_SINGLE) THEN
       CALL SCARC_ALLOCATE_REAL1_FB(A%VAL_FB, 1, A%N_VAL, NSCARC_INIT_ZERO, 'A%VAL_FB', CSCOPE)
@@ -19370,7 +19811,6 @@ CLOSE(MAGG)
 END SUBROUTINE SCARC_BLENDER_ZONES
 
 
-#ifdef WITH_SCARC_MGM
 ! ====================================================================================================
 ! Begin  SCARC_WITH_MGM - Part
 ! Collection of routines to experiment with McKeeney-Greengard-Mayo method 
@@ -19391,7 +19831,6 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    SELECT CASE(NTYPE)
       CASE (1)
-         MGM%X1(1:MGM%NCS) = ST%X(1:MGM%NCS)                  ! store structured ScaRC solution
          MGM%H1 = 0.0_EB
          DO IZ = 1, L%NZ
             DO IY = 1, L%NY
@@ -19399,21 +19838,20 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                   ICS = L%STRUCTURED%CELL_NUMBER(IX, IY, IZ)              ! structured cell number
                   MGM%H1(IX, IY, IZ) = ST%X(ICS) 
 
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A, 4I6,1E12.4)') 'MGM:1: IX, IY, IZ, ICS, H1:', &
                                               IX, IY, IZ, ICS, MGM%H1(IX,IY,IZ)
 #endif
                ENDDO
             ENDDO
          ENDDO
-         IF (PREDICTOR) THEN
-            MESHES(NM)%H = MGM%H1
-         ELSE
-            MESHES(NM)%HS = MGM%H1
-         ENDIF
+         !IF (PREDICTOR) THEN
+         !   MESHES(NM)%H = MGM%H1
+         !ELSE
+         !   MESHES(NM)%HS = MGM%H1
+         !ENDIF
 
       CASE (2)
-         MGM%X2(1:MGM%NCU) = ST%X(1:MGM%NCU)                   ! store unstructured ScaRC solution
          MGM%H2 = 0.0_EB
          DO IZ = 1, L%NZ
             DO IY = 1, L%NY
@@ -19423,7 +19861,7 @@ WRITE(MSG%LU_DEBUG,'(A, 4I6,1E12.4)') 'MGM:1: IX, IY, IZ, ICS, H1:', &
                   ICU = L%UNSTRUCTURED%CELL_NUMBER(IX, IY, IZ)              ! structured cell number
                   MGM%H2(IX, IY, IZ) = ST%X(ICU) 
 
-#ifdef WITH_SCARC_DEBUG2
+#ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A, 4I6,1E12.4)') 'MGM:2: IX, IY, IZ, ICU, H2:', &
                                               IX, IY, IZ, ICU, MGM%H2(IX,IY,IZ)
 #endif
@@ -19448,7 +19886,6 @@ WRITE(MSG%LU_DEBUG,'(A, 4I6,1E12.4)') 'MGM:2: IX, IY, IZ, ICU, H2:', &
 
                   ICS = L%STRUCTURED%CELL_NUMBER(IX, IY, IZ)              ! structured cell number
                   ICU = L%UNSTRUCTURED%CELL_NUMBER(IX, IY, IZ)            ! corresponding unstructured cell number
-                  !HP(IX, IY, IZ) = MGM%X1(ICS) + MGM%X2(ICU) 
                   HP(IX, IY, IZ) = MGM%H1(IX, IY, IZ) + MGM%H2(IX, IY, IZ)
 
 #ifdef WITH_SCARC_DEBUG
@@ -19458,10 +19895,26 @@ WRITE(MSG%LU_DEBUG,'(A, 5I6,3E12.4)') 'MGM:3: IX, IY, IZ, ICS, ICU, X1(ICS), X1(
                ENDDO
             ENDDO
          ENDDO
-         CALL SCARC_DUMP_VECTOR3 (MGM%H1, NM, NL, 'H1')
-         CALL SCARC_DUMP_VECTOR3 (MGM%H2, NM, NL, 'H2')
-         CALL SCARC_DUMP_VECTOR3 (HP, NM, NL, 'HP')
+         CALL SCARC_DUMP_VECTOR3 (MGM%H1,'H1')
+         CALL SCARC_DUMP_VECTOR3 (MGM%H2,'H2')
+         CALL SCARC_DUMP_VECTOR3 (HP, 'HP')
 
+      CASE (4)
+         DO IZ = 0, L%NZ+1
+            DO IY = 0, L%NY+1
+               DO IX = 0, L%NX+1
+              
+                  IF (L%IS_SOLID(IX, IY, IZ)) CYCLE
+                  ICU = L%UNSTRUCTURED%CELL_NUMBER(IX, IY, IZ)              ! structured cell number
+                  MGM%H3(IX, IY, IZ) = MGM%H2(IX, IY, IZ)  
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A, 4I6,1E12.4)') 'MGM:4: IX, IY, IZ, ICU, H3:', &
+                                              IX, IY, IZ, ICU, MGM%H3(IX,IY,IZ)
+#endif
+               ENDDO
+            ENDDO
+         ENDDO
    END SELECT
 
 ENDDO
@@ -19496,15 +19949,15 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '====================================================', PREDICTOR
 WRITE(MSG%LU_DEBUG,*) 'SET_INTERNAL_VELO: FVX'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((M%FVX(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((M%FVX(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SET_INTERNAL_VELO: FVZ'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((M%FVZ(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((M%FVZ(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SET_INTERNAL_VELO: UU'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((UU(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((UU(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SET_INTERNAL_VELO: WW'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((WW(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((WW(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SET_INTERNAL_VELO: HP-before'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((HP(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
 #endif
 
 #ifdef WITH_SCARC_DEBUG2
@@ -19516,8 +19969,11 @@ WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
 #endif
 
       DO IW = L%N_WALL_CELLS_EXT+1, L%N_WALL_CELLS_EXT + L%N_WALL_CELLS_INT
+      !DO IW = 1, L%N_WALL_CELLS_EXT + L%N_WALL_CELLS_INT
 
          GWC => L%STRUCTURED%WALL(IW)
+         !IF (IW <= L%N_WALL_CELLS_EXT .AND. GWC%BTYPE /= INTERNAL) CYCLE
+
          IOR0 = GWC%IOR
 
          I = GWC%IXW
@@ -19528,37 +19984,37 @@ WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
             CASE(1)
                MGM%UU(IW) = M%U(I-1,J,K) - DT*( M%FVX(I-1,J,K) + M%RDXN(I-1)*(HP(I,J,K) - HP(I-1,J,K)) )
 #ifdef WITH_SCARC_DEBUG
-  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,4E14.6,a,E14.6)') 'MGM:P:A : IW,IOR0 : I,J,K : U,FVX,HPP,HP : UU', &
+  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,4E16.8,a,E16.8)') 'MGM:P:A : IW,IOR0 : I,J,K : U,FVX,HPP,HP : UU', &
   IW, IOR0,' : ', I-1, J, K, ' : ',M%U(I-1,J,K), M%FVX(I-1,J,K), HP(I,J,K), HP(I-1,J,K), ' : ',MGM%UU(IW)
 #endif
             CASE(-1)
                MGM%UU(IW) = M%U(I,J,K) - DT*( M%FVX(I,J,K) + M%RDXN(I)*(HP(I+1,J,K) - HP(I,J,K)) )
 #ifdef WITH_SCARC_DEBUG
-  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,4E14.6,a,E14.6)') 'MGM:P:B : IW,IOR0 : I,J,K : U,FVX,HPP,HP : UU', &
+  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,4E16.8,a,E16.8)') 'MGM:P:B : IW,IOR0 : I,J,K : U,FVX,HPP,HP : UU', &
   IW, IOR0,' : ', I, J, K, ' : ',M%U(I,J,K), M%FVX(I,J,K), HP(I+1,J,K), HP(I,J,K), ' : ',MGM%UU(IW)
 #endif
             CASE(2)
                MGM%VV(IW) = M%V(I,J-1,K) - DT*( M%FVY(I,J-1,K) + M%RDYN(J-1)*(HP(I,J,K) - HP(I,J-1,K)) )
 #ifdef WITH_SCARC_DEBUG
-  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,4E14.6,a,E14.6)') 'MGM:P:C : IW,IOR0 : I,J,K : V,FVY,HPP,HP : VV', &
+  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,4E16.8,a,E16.8)') 'MGM:P:C : IW,IOR0 : I,J,K : V,FVY,HPP,HP : VV', &
   IW, IOR0,' : ', I, J-1, K, ' : ',M%V(I,J-1,K), M%FVY(I,J-1,K), HP(I,J,K), HP(I,J-1,K), ' : ',MGM%VV(IW)
 #endif
             CASE(-2)
                MGM%VV(IW) = M%V(I,J,K) - DT*( M%FVY(I,J,K) + M%RDYN(J)*(HP(I,J+1,K) - HP(I,J,K)) )
 #ifdef WITH_SCARC_DEBUG
-  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,4E14.6,a,E14.6)') 'MGM:P:D : IW,IOR0 : I,J,K : V,FVY,HPP,HP : VV', &
+  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,4E16.8,a,E16.8)') 'MGM:P:D : IW,IOR0 : I,J,K : V,FVY,HPP,HP : VV', &
   IW, IOR0,' : ', I, J, K, ' : ',M%V(I,J,K), M%FVY(I,J,K), HP(I,J+1,K), HP(I,J,K), ' : ',MGM%VV(IW)
 #endif
             CASE(3)
                MGM%WW(IW) = M%W(I,J,K-1) - DT*( M%FVZ(I,J,K-1) + M%RDZN(K-1)*(HP(I,J,K) - HP(I,J,K-1)) )
 #ifdef WITH_SCARC_DEBUG
-  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,4E14.6,a,E14.6)') 'MGM:P:E : IW,IOR0 : I,J,K : W,FVZ,HPP,HP : WW', &
+  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,4E16.8,a,E16.8)') 'MGM:P:E : IW,IOR0 : I,J,K : W,FVZ,HPP,HP : WW', &
   IW, IOR0,' : ', I, J, K-1, ' : ',M%W(I,J,K-1), M%FVZ(I,J,K-1), HP(I,J,K), HP(I,J,K-1), ' : ',MGM%WW(IW)
 #endif
             CASE(-3)
                MGM%WW(IW) = M%W(I,J,K) - DT*( M%FVZ(I,J,K) + M%RDZN(K)*(HP(I,J,K+1) - HP(I,J,K)) )
 #ifdef WITH_SCARC_DEBUG
-  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,4E14.6,a,E14.6)') 'MGM:P:F : IW,IOR0 : I,J,K : W,FVZ,HPP,HP : WW', &
+  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,4E16.8,a,E16.8)') 'MGM:P:F : IW,IOR0 : I,J,K : W,FVZ,HPP,HP : WW', &
   IW, IOR0,' : ', I, J, K, ' : ',M%W(I,J,K), M%FVZ(I,J,K), HP(I,J,K+1), HP(I,J,K), ' : ',MGM%WW(IW)
 #endif
          END SELECT
@@ -19577,19 +20033,19 @@ WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) '====================================================', CORRECTOR
 WRITE(MSG%LU_DEBUG,*) 'SET_INTERNAL_VELO: FVX'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((M%FVX(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((M%FVX(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SET_INTERNAL_VELO: FVZ'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((M%FVZ(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((M%FVZ(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SET_INTERNAL_VELO: M%U'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((M%U(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((M%U(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SET_INTERNAL_VELO: M%US'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((M%US(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((M%US(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SET_INTERNAL_VELO: M%W'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((M%W(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((M%W(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SET_INTERNAL_VELO: M%WS'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((M%WS(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((M%WS(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
 WRITE(MSG%LU_DEBUG,*) 'SET_INTERNAL_VELO: HP-before'
-WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
+WRITE(MSG%LU_DEBUG,'(7E16.8)') ((HP(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
 #endif
 
 #ifdef WITH_SCARC_DEBUG2
@@ -19613,37 +20069,37 @@ WRITE(MSG%LU_DEBUG,'(7E14.6)') ((HP(I,1,K), I=0, M%IBAR+1), K=M%KBAR+1,0,-1)
             CASE(1)
                MGM%UU(IW) = 0.5_EB * (M%U(I-1,J,K) + M%US(I-1,J,K) - DT*( M%FVX(I-1,J,K) + M%RDXN(I-1)*(HP(I,J,K) - HP(I-1,J,K)) ))
 #ifdef WITH_SCARC_DEBUG
-  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,5E14.6,a,E14.6)') 'MGM:C:A : IW,IOR0 : I,J,K : U,FVX,HPP,HP : UU', &
+  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,5E16.8,a,E16.8)') 'MGM:C:A : IW,IOR0 : I,J,K : U,FVX,HPP,HP : UU', &
   IW, IOR0,' : ', I-1, J, K, ' : ',M%U(I-1,J,K), M%US(I-1,J,K),M%FVX(I-1,J,K), HP(I,J,K), HP(I-1,J,K), ' : ',MGM%UU(IW)
 #endif
             CASE(-1)
                MGM%UU(IW) = 0.5_EB * (M%U(I,J,K)  + M%US(I,J,K) - DT*( M%FVX(I,J,K) + M%RDXN(I)*(HP(I+1,J,K) - HP(I,J,K)) ))
 #ifdef WITH_SCARC_DEBUG
-  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,5E14.6,a,E14.6)') 'MGM:C:B : IW,IOR0 : I,J,K : U,FVX,HPP,HP : UU', &
+  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,5E16.8,a,E16.8)') 'MGM:C:B : IW,IOR0 : I,J,K : U,FVX,HPP,HP : UU', &
   IW, IOR0,' : ', I, J, K, ' : ',M%U(I,J,K), M%US(I,J,K),M%FVX(I,J,K), HP(I+1,J,K), HP(I,J,K), ' : ',MGM%UU(IW)
 #endif
             CASE(2)
                MGM%VV(IW) = 0.5_EB * (M%V(I,J-1,K) + M%VS(I,J-1,K) - DT*( M%FVY(I,J-1,K) + M%RDYN(J-1)*(HP(I,J,K) - HP(I,J-1,K)) ))
 #ifdef WITH_SCARC_DEBUG
-  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,5E14.6,a,E14.6)') 'MGMC:C : IW,IOR0 : I,J,K : V,FVY,HPP,HP : VV', &
+  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,5E16.8,a,E16.8)') 'MGMC:C : IW,IOR0 : I,J,K : V,FVY,HPP,HP : VV', &
   IW, IOR0,' : ', I, J-1, K, ' : ',M%V(I,J-1,K), M%VS(I,J-1,K), M%FVY(I,J-1,K), HP(I,J,K), HP(I,J-1,K), ' : ',MGM%VV(IW)
 #endif
             CASE(-2)
                MGM%VV(IW) = 0.5_EB * (M%V(I,J,K) + M%VS(I,J,K) - DT*( M%FVY(I,J,K) + M%RDYN(J)*(HP(I,J+1,K) - HP(I,J,K)) ))
 #ifdef WITH_SCARC_DEBUG
-  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,5E14.6,a,E14.6)') 'MGM:C:D : IW,IOR0 : I,J,K : V,FVY,HPP,HP : VV', &
+  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,5E16.8,a,E16.8)') 'MGM:C:D : IW,IOR0 : I,J,K : V,FVY,HPP,HP : VV', &
   IW, IOR0,' : ', I, J, K, ' : ',M%V(I,J,K), M%VS(I,J,K), M%FVY(I,J,K), HP(I,J+1,K), HP(I,J,K), ' : ',MGM%VV(IW)
 #endif
             CASE(3)
                MGM%WW(IW) = 0.5_EB * (M%W(I,J,K-1) + M%WS(I,J,K-1) - DT*( M%FVZ(I,J,K-1) + M%RDZN(K-1)*(HP(I,J,K) - HP(I,J,K-1)) ))
 #ifdef WITH_SCARC_DEBUG
-  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,5E14.6,a,E14.6)') 'MGM:C:E : IW,IOR0 : I,J,K : W,FVZ,HPP,HP : WW', &
+  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,5E16.8,a,E16.8)') 'MGM:C:E : IW,IOR0 : I,J,K : W,FVZ,HPP,HP : WW', &
   IW, IOR0,' : ', I, J, K-1, ' : ',M%W(I,J,K-1), M%WS(I,J,K-1), M%FVZ(I,J,K-1), HP(I,J,K), HP(I,J,K-1), ' : ',MGM%WW(IW)
 #endif
             CASE(-3)
                MGM%WW(IW) = 0.5_EB * (M%W(I,J,K) + M%WS(I,J,K) - DT*( M%FVZ(I,J,K) + M%RDZN(K)*(HP(I,J,K+1) - HP(I,J,K)) ))
 #ifdef WITH_SCARC_DEBUG
-  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,5E14.6,a,E14.6)') 'MGM:C:F : IW,IOR0 : I,J,K : W,FVZ,HPP,HP : WW', &
+  WRITE(MSG%LU_DEBUG,'(a,2I4,a,3i4,a,5E16.8,a,E16.8)') 'MGM:C:F : IW,IOR0 : I,J,K : W,FVZ,HPP,HP : WW', &
   IW, IOR0,' : ', I, J, K, ' : ',M%W(I,J,K), M%WS(I,J,K), M%FVZ(I,J,K), HP(I,J,K+1), HP(I,J,K), ' : ',MGM%WW(IW)
 #endif
          END SELECT
@@ -19686,19 +20142,15 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       MGM%NWE = L%N_WALL_CELLS_EXT
       MGM%NWI = L%N_WALL_CELLS_INT
+      !MGM%NW1 = 1
       MGM%NW1 = L%N_WALL_CELLS_EXT + 1
       MGM%NW2 = L%N_WALL_CELLS_EXT + L%N_WALL_CELLS_INT
-
-      ! Allocate workspace for the storage of the different solution parts within the MGM methods
-
-      CALL SCARC_ALLOCATE_REAL1(MGM%X1, 1, MGM%NCS, NSCARC_INIT_ZERO, 'MGM%X1', CROUTINE)
-      CALL SCARC_ALLOCATE_REAL1(MGM%X2, 1, MGM%NCU, NSCARC_INIT_ZERO, 'MGM%X2', CROUTINE)
 
       ! Allocate workspace for the storage of the different pressure parts within the MGM methods
 
       CALL SCARC_ALLOCATE_REAL3(MGM%H1, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_ZERO, 'MGM%H1', CROUTINE)
       CALL SCARC_ALLOCATE_REAL3(MGM%H2, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_ZERO, 'MGM%H2', CROUTINE)
-      CALL SCARC_ALLOCATE_REAL3(MGM%H0, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_ZERO, 'MGM%H0', CROUTINE)
+      CALL SCARC_ALLOCATE_REAL3(MGM%H3, 0, L%NX+1, 0, L%NY+1, 0, L%NZ+1, NSCARC_INIT_ZERO, 'MGM%H3', CROUTINE)
 
       ! Allocate workspace for the velocity components along internal boundaries which will be needed 
 
@@ -19774,6 +20226,9 @@ G   => SCARC(NM)%LEVEL(NL)%UNSTRUCTURED
 MGM => SCARC(NM)%LEVEL(NL)%MGM
 A   => G%POISSON
 
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_CMATRIX (A, 'POISSON', 'SETUP_MGM_LU: INIT ')
+#endif
  
 ! Temporarily extract full matrix from compact storage technique - just for proof of concept
 ! Consider permutation in MGM%PERM
@@ -19976,13 +20431,14 @@ SUBROUTINE SCARC_METHOD_MGM_LU(NS, NM, NL)
 USE SCARC_POINTERS, ONLY: L, G, MGM, AC, ST
 INTEGER, INTENT(IN) :: NS, NM, NL
 INTEGER :: J, K, IC, N
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 INTEGER :: I
 #endif
 
 CALL SCARC_POINT_TO_GRID (NM, NL)   
 AC  => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
 MGM => L%MGM
+IF (.NOT. MGM%IS_LU_BASED) RETURN
 ST  => L%STAGE(STACK(NS)%SOLVER%TYPE_STAGE)
 
 N = G%NC
@@ -19991,7 +20447,7 @@ DO IC = 1, G%NC
    MGM%B(IC) = ST%B(IC)
 ENDDO
 
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) '=============================== A'
 DO I = 1, N
    WRITE(MSG%LU_DEBUG,'(24F8.2)') (MGM%A(I, J), J=1, 24)
@@ -20005,7 +20461,7 @@ DO I = 1, N
    WRITE(MSG%LU_DEBUG,'(24F8.2)') (MGM%U(I, J), J=1, 24)
 ENDDO
 WRITE(MSG%LU_DEBUG,*) '=============================== B'
-WRITE(MSG%LU_DEBUG,'(5E14.6)') (MGM%B(I), I=1, G%NC)
+WRITE(MSG%LU_DEBUG,'(5E16.8)') (MGM%B(I), I=1, G%NC)
 #endif
 
 DO J = 1, N
@@ -20023,11 +20479,11 @@ DO J = N, 1, -1
    MGM%X(J) = MGM%X(J)/MGM%A(J,J)
 ENDDO
 
-#ifdef WITH_SCARC_DEBUG
+#ifdef WITH_SCARC_DEBUG2
 WRITE(MSG%LU_DEBUG,*) '=============================== Y'
-WRITE(MSG%LU_DEBUG,'(5E14.6)') (MGM%Y(I), I=1, G%NC)
+WRITE(MSG%LU_DEBUG,'(5E16.8)') (MGM%Y(I), I=1, G%NC)
 WRITE(MSG%LU_DEBUG,*) '=============================== X'
-WRITE(MSG%LU_DEBUG,'(5E14.6)') (MGM%X(I), I=1, G%NC)
+WRITE(MSG%LU_DEBUG,'(5E16.8)') (MGM%X(I), I=1, G%NC)
 #endif
 
 END SUBROUTINE SCARC_METHOD_MGM_LU
@@ -20097,11 +20553,6 @@ WRITE(MSG%LU_DEBUG,'(16F8.2)') (MGM%X(I), I=1, G%NC)
 #endif
 
 END SUBROUTINE SCARC_METHOD_MGM_ILU
-
-! ====================================================================================================
-! End SCARC_WITH_MGM - Part
-! ====================================================================================================
-#endif
 
 
 #ifdef WITH_SCARC_VERBOSE
@@ -20298,10 +20749,9 @@ CLOSE(LU_DUMP)
 
 END SUBROUTINE SCARC_DUMP_VECTOR1
 
-SUBROUTINE SCARC_DUMP_VECTOR3 (HP, NM, NL, CNAME)
+SUBROUTINE SCARC_DUMP_VECTOR3 (HP, CNAME)
 USE SCARC_POINTERS, ONLY: L
 USE SCARC_ITERATION_ENVIRONMENT
-INTEGER, INTENT(IN) :: NM, NL
 REAL(EB), DIMENSION(0:,0:,0:), INTENT(IN) :: HP
 CHARACTER(*), INTENT(IN) :: CNAME
 CHARACTER(80) :: FN_DUMP
@@ -20344,7 +20794,7 @@ WRITE(MSG%LU_DEBUG,*) '=========================================================
 DO IZ = L%NZ, 1, -1
    IF (.NOT.TWO_D) WRITE(MSG%LU_DEBUG,*) '-------- IZ = ', IZ,' ------------------------------------------'
    DO IY = L%NY, 1, -1
-      WRITE(MSG%LU_DEBUG,'(8E14.6)') (VC(IX, IY, IZ), IX = 1, L%NX)
+      WRITE(MSG%LU_DEBUG,'(8E16.8)') (VC(IX, IY, IZ), IX = 1, L%NX)
    ENDDO
 ENDDO
 WRITE(MSG%LU_DEBUG,*) '============================================================='
@@ -20370,7 +20820,7 @@ DO IZ = MESHES(NM)%KBP1, 0, -1
    !WRITE(MSG%LU_DEBUG,*) '-------- IZ = ', IZ,' ------------------------------------------'
    !DO IY = MESHES(NM)%JBP1, 0, -1
    DO IY = MESHES(NM)%JBAR, 1, -1
-      WRITE(MSG%LU_DEBUG,'(10E14.6)') (HH(IX, IY, IZ), IX = 0, MESHES(NM)%IBP1)
+      WRITE(MSG%LU_DEBUG,'(10E16.8)') (HH(IX, IY, IZ), IX = 0, MESHES(NM)%IBP1)
    ENDDO
 ENDDO
 WRITE(MSG%LU_DEBUG,*) '============================================================='
@@ -20504,6 +20954,60 @@ ENDIF
 END SUBROUTINE SCARC_DEBUG_CMATRIX
 
 
+! ------------------------------------------------------------------------------------------------------
+!> \brief Debugging version only: Print out debug information for compactly stored matrix
+! ------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DEBUG_RELAX(A, CNAME, CTEXT)
+CHARACTER(*), INTENT(IN) :: CNAME, CTEXT
+TYPE (SCARC_CMATRIX_TYPE), INTENT(INOUT) :: A      
+INTEGER :: IC, ICOL
+CHARACTER(40) :: CFORM
+
+WRITE(MSG%LU_DEBUG,*)
+WRITE(MSG%LU_DEBUG,*) '============ START DEBUGGING RELAX ', CNAME, ' AT ', TRIM(CTEXT)
+WRITE(MSG%LU_DEBUG,*) 'INTERNAL NAME OF MATRIX :', A%CNAME
+WRITE(MSG%LU_DEBUG,*) 'REQUESTED SIZES N_ROW, N_VAL:', A%N_ROW, A%N_VAL
+WRITE(MSG%LU_DEBUG,*) 'ALLOCATED SIZES N_ROW, N_VAL:', SIZE(A%ROW), SIZE(A%VAL)
+
+WRITE(MSG%LU_DEBUG,*)
+WRITE(MSG%LU_DEBUG,*) "------------->", TRIM(CNAME),'%ROW:'
+WRITE(MSG%LU_DEBUG,'(8I12)') (A%ROW(IC), IC=1, A%N_ROW)
+WRITE(MSG%LU_DEBUG,*) "------------->", TRIM(CNAME),'%COL:'
+DO IC = 1, A%N_ROW-1
+   IF (A%ROW(IC) == 0) CYCLE
+   IF (A%ROW(IC+1)-A%ROW(IC) < 10) THEN
+      CFORM = "(I8,A,10I12)"
+   ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 20) THEN
+      CFORM = "(I8,A,20I12)"
+   ELSE IF (A%ROW(IC+1)-A%ROW(IC)  < 30) THEN
+      CFORM = "(I8,A,30I12)"
+   ELSE
+      CFORM = "(I8,A,40I12)"
+   ENDIF
+   WRITE(MSG%LU_DEBUG,CFORM) IC,':', (A%COL(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
+ENDDO
+IF (ALLOCATED(A%RELAX)) THEN
+WRITE(MSG%LU_DEBUG,*) "------------->", TRIM(CNAME),'%VAL:'
+DO IC = 1, A%N_ROW-1
+   IF (A%ROW(IC) == 0) CYCLE
+      IF (A%ROW(IC+1)-A%ROW(IC) < 10) THEN
+         CFORM = "(I8,A,10E10.2)"
+      ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 20) THEN
+         CFORM = "(I8,A,20E10.2)"
+      ELSE IF (A%ROW(IC+1)-A%ROW(IC) < 30) THEN
+         CFORM = "(I8,A,30E10.2)"
+      ELSE
+         CFORM = "(I8,A,40E10.2)"
+      ENDIF
+   WRITE(MSG%LU_DEBUG,*) IC,':', (A%RELAX(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
+   !WRITE(MSG%LU_DEBUG,CFORM) IC,':', (A%RELAX(ICOL), ICOL=A%ROW(IC), A%ROW(IC+1)-1)
+ENDDO
+WRITE(MSG%LU_DEBUG,*) '============ END DEBUGGING MATRIX ', CNAME, ' AT ', TRIM(CTEXT)
+ENDIF
+
+END SUBROUTINE SCARC_DEBUG_RELAX
+
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Debugging version only: Print out debug information for specified vector
 ! ------------------------------------------------------------------------------------------------
@@ -20531,7 +21035,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    WRITE(MSG%LU_DEBUG,*) '=========================================================='
    !IF ((IS_AMG.OR.IS_CG_AMG.OR.HAS_COARSENING_AMG) .AND. NL > NLEVEL_MIN) THEN
 
-   !   WRITE(MSG%LU_DEBUG, '(4E14.6)') VC
+   !   WRITE(MSG%LU_DEBUG, '(4E16.8)') VC
 
    !ELSE
    !IF (NL == NLEVEL_MIN) THEN
@@ -20550,13 +21054,13 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
                ENDIF
             ENDIF
          ENDDO
-         WRITE(MSG%LU_DEBUG, '(12E14.6)') (VALUES(II), II=1, NNX)
+         WRITE(MSG%LU_DEBUG, '(12E16.8)') (VALUES(II), II=1, NNX)
       ENDDO
       IF (.NOT. TWO_D) WRITE(MSG%LU_DEBUG, *) '----------------'
    ENDDO
    !ENDIF
    WRITE(MSG%LU_DEBUG, *) '---------------- Overlap ----------------'
-   WRITE(MSG%LU_DEBUG, '(4E14.6)') (VC(IC), IC = G%NC+1, G%NCE)
+   WRITE(MSG%LU_DEBUG, '(4E16.8)') (VC(IC), IC = G%NC+1, G%NCE)
    !ENDIF
 ENDDO
 
@@ -20603,12 +21107,12 @@ DO KK = NNZ, 1, - 1
             IF (ABS(X(IC))>1.0E-14_EB) VALUES(II)=X(IC)
          ENDIF
       ENDDO
-      WRITE(MSG%LU_DEBUG, '(12E14.6)') (VALUES(II), II=1, NNX)
+      WRITE(MSG%LU_DEBUG, '(12E16.8)') (VALUES(II), II=1, NNX)
    ENDDO
    IF (.NOT. TWO_D) WRITE(MSG%LU_DEBUG, *) '----------------'
 ENDDO
 WRITE(MSG%LU_DEBUG, *) '---------------- Overlap ----------------'
-WRITE(MSG%LU_DEBUG, '(4E14.6)') (X(IC), IC = GG%NC+1, GG%NCE)
+WRITE(MSG%LU_DEBUG, '(4E16.8)') (X(IC), IC = GG%NC+1, GG%NCE)
 
 2001 FORMAT('=== ',A,' on mesh ',I8,' on level ',I8)
 2002 FORMAT('=== NC = ',I6, ': NX, NY, NZ=',3I6,': Size=',I8)
@@ -20706,45 +21210,45 @@ SELECT CASE (NTYPE)
          IF (PREDICTOR) THEN
             WRITE(MSG%LU_DEBUG,*) 'RHO'
             DO KKK = NNZ+1, 0, -1
-               WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%RHO(III, 1, KKK), III=0,NNX+1)
+               WRITE(MSG%LU_DEBUG,'(I8,10E16.8)') KKK, (M%RHO(III, 1, KKK), III=0,NNX+1)
             ENDDO
             WRITE(MSG%LU_DEBUG,*) 'H'
             DO KKK = NNZ+1, 0, -1
-               WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%H(III, 1, KKK), III=0,NNX+1)
+               WRITE(MSG%LU_DEBUG,'(I8,10E16.8)') KKK, (M%H(III, 1, KKK), III=0,NNX+1)
             ENDDO
          ELSE
             WRITE(MSG%LU_DEBUG,*) 'RHOS'
             DO KKK = NNZ+1, 0, -1
-               WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%RHOS(III, 1, KKK), III=0,NNX+1)
+               WRITE(MSG%LU_DEBUG,'(I8,10E16.8)') KKK, (M%RHOS(III, 1, KKK), III=0,NNX+1)
             ENDDO
             WRITE(MSG%LU_DEBUG,*) 'HS'
             DO KKK = NNZ+1, 0, -1
-               WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%HS(III, 1, KKK), III=0,NNX+1)
+               WRITE(MSG%LU_DEBUG,'(I8,10E16.8)') KKK, (M%HS(III, 1, KKK), III=0,NNX+1)
             ENDDO
          ENDIF
          WRITE(MSG%LU_DEBUG,*) 'FVX'
          DO KKK = NNZ+1, 0, -1
-            WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%FVX(III, 1, KKK), III=0,NNX+1)
+            WRITE(MSG%LU_DEBUG,'(I8,10E16.8)') KKK, (M%FVX(III, 1, KKK), III=0,NNX+1)
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'FVY'
          DO KKK = NNZ+1, 0, -1
-            WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%FVY(III, 1, KKK), III=0,NNX+1)
+            WRITE(MSG%LU_DEBUG,'(I8,10E16.8)') KKK, (M%FVY(III, 1, KKK), III=0,NNX+1)
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'FVZ'
          DO KKK = NNZ+1, 0, -1
-            WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%FVZ(III, 1, KKK), III=0,NNX+1)
+            WRITE(MSG%LU_DEBUG,'(I8,10E16.8)') KKK, (M%FVZ(III, 1, KKK), III=0,NNX+1)
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'KRES'
          DO KKK = NNZ+1, 0, -1
-            WRITE(MSG%LU_DEBUG,'(I8,10E14.6)') KKK, (M%KRES(III, 1, KKK), III=0,NNX+1)
+            WRITE(MSG%LU_DEBUG,'(I8,10E16.8)') KKK, (M%KRES(III, 1, KKK), III=0,NNX+1)
          ENDDO
          WRITE(MSG%LU_DEBUG,*) 'M%PRHS'
          DO KKK = NNZ+1, 1, -1
-            WRITE(MSG%LU_DEBUG,'(I8,9E14.6)') KKK, (M%PRHS(III, 1, KKK), III=1,NNX+1)
+            WRITE(MSG%LU_DEBUG,'(I8,9E16.8)') KKK, (M%PRHS(III, 1, KKK), III=1,NNX+1)
          ENDDO
          !WRITE(MSG%LU_DEBUG,*) 'P%PRHS'
          !DO KKK = NNZ+1, 1, -1
-         !WRITE(MSG%LU_DEBUG,'(I8,9E14.6)') KKK, (P%PRHS(III, 1, KKK), III=1,NNX+1)
+         !WRITE(MSG%LU_DEBUG,'(I8,9E16.8)') KKK, (P%PRHS(III, 1, KKK), III=1,NNX+1)
          !ENDDO
 
       ENDDO
