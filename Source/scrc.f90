@@ -6446,8 +6446,8 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
          ! SPD-matrix with mixture of Dirichlet and Neumann BC's according to BTYPE
 
          IP = A%ROW(IC)
-         !IF (GWC%BTYPE == DIRICHLET .OR. GWC%BTYPE == INTERNAL) THEN
-         IF (IW <= L%N_WALL_CELLS_EXT) THEN
+         IF (GWC%BTYPE == DIRICHLET .OR. GWC%BTYPE == INTERNAL) THEN
+         !IF (IW <= L%N_WALL_CELLS_EXT) THEN
             A%VAL(IP) = A%VAL(IP) - F%SCAL_BOUNDARY
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,7I6,E12.4)') 'A :DIRICHLET: IW, I, J, K, NOM, IC, BTYPE, A%VAL:', IW, I, J, K, NOM, IC, GWC%BTYPE, A%VAL(IP)
@@ -9673,7 +9673,9 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
       CALL SCARC_METHOD_KRYLOV (NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
    
       DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+#ifdef WITH_SCARC_VERBOSE
          IF (NM == 1) CALL SCARC_DUMP_VECTOR3 (MESHES(1)%HS, 'HS')
+#endif
       ENDDO
  
    ! ---------------- Multigrid method ---------------------------------------
@@ -19982,9 +19984,11 @@ WRITE(MSG%LU_DEBUG,'(A, 5I6,3E16.8)') 'MGM:3: IX, IY, IZ, ICS, ICU, X1(ICS), X1(
                ENDDO
             ENDDO
          ENDDO
+#ifdef WITH_SCARC_VERBOSE
          CALL SCARC_DUMP_VECTOR3 (MGM%H1,'H1')
          CALL SCARC_DUMP_VECTOR3 (MGM%H2,'H2')
          CALL SCARC_DUMP_VECTOR3 (HP, 'HP')
+#endif
 
       CASE (4)
          DO IZ = 0, L%NZ+1
