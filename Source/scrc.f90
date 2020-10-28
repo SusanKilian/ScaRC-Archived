@@ -10,7 +10,7 @@
 ! ================================================================================================================
 !#undef WITH_MKL
 #undef WITH_SCARC_DEBUG
-#define WITH_SCARC_VERBOSE
+#undef WITH_SCARC_VERBOSE
 #undef WITH_SCARC_POSTPROCESSING
 
 
