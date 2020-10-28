@@ -1,4 +1,4 @@
-&HEAD CHID='pressure_iteration3d_mgm_simple',TITLE='Unstructured ScaRC-CG for 3D-cube with obstruction on 8 meshes' /
+&HEAD CHID='pressure_iteration3d_tight',TITLE='Tight FFT for 3D-cube with obstruction on 8 meshes' /
 
 &MESH IJK=16,16,16, XB=0.0,0.40,0.0,0.40,0.0,0.40, MULT_ID='mesh' /
 &MULT ID='mesh', DX=0.40, DY=0.40, DZ=0.40, I_UPPER=1, J_UPPER=1, K_UPPER=1 /
@@ -6,7 +6,7 @@
 &MISC NOISE = .FALSE.
       DNS   = .TRUE. /
 
-&PRES SOLVER = 'USCARC', SCARC_METHOD = 'MGM', SCARC_MGM_BC = 'SIMPLE'   /   
+&PRES VELOCITY_TOLERANCE=0.00001, MAX_PRESSURE_ITERATIONS=1000 /
 
 &SPEC ID='BACKGROUND'
       BACKGROUND=.TRUE./
