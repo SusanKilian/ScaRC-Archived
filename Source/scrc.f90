@@ -186,6 +186,7 @@ INTEGER, PARAMETER :: NSCARC_MKL_COARSE              =  3         !< Type of MKL
 INTEGER, PARAMETER :: NSCARC_MGM_ZERO                =  0         !< Type of MGM boundary condition: zero
 INTEGER, PARAMETER :: NSCARC_MGM_SIMPLE              =  1         !< Type of MGM boundary condition: simple
 INTEGER, PARAMETER :: NSCARC_MGM_EXTRAPOLATION       =  2         !< Type of MGM boundary condition: linear extrapolatioln
+INTEGER, PARAMETER :: NSCARC_MGM_TAYLOR              =  3         !< Type of MGM boundary condition: linear extrapolatioln
 
 INTEGER, PARAMETER :: NSCARC_MULTIGRID_GEOMETRIC     =  1         !< Type of multigrid method: geometric multigrid
 INTEGER, PARAMETER :: NSCARC_MULTIGRID_ALGEBRAIC     =  2         !< Type of multigrid method: algebraic multigrid
@@ -1053,6 +1054,8 @@ TYPE SCARC_LEVEL_TYPE
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: XMID, YMID, ZMID    !< Midpoint vectors in x-, y- and z-direction
    REAL(EB), ALLOCATABLE, DIMENSION (:) :: DXL, DYL, DZL       !< Step size vectors in x-, y- and z-direction
    REAL(EB) :: DX , DY , DZ                                    !< Step sizes in x-, y- and z-direction
+   REAL(EB) :: DX2, DY2, DZ2                                   !< Half step sizes in x-, y- and z-direction
+   REAL(EB) :: DXH, DYH, DZH                                   !< Half step sizes in x-, y- and z-direction
    REAL(EB) :: DXI, DYI, DZI                                   !< Inversed of step sizes in x-, y- and z-direction
    REAL(EB) :: DXI2, DYI2, DZI2                                !< Squared and inversed step sizes in x-, y- and z-direction
 
@@ -2077,6 +2080,8 @@ SELECT CASE (TRIM(SCARC_METHOD))
             TYPE_MGM = NSCARC_MGM_SIMPLE
          CASE ('EXTRAPOLATION')
             TYPE_MGM = NSCARC_MGM_EXTRAPOLATION
+         CASE ('TAYLOR')
+            TYPE_MGM = NSCARC_MGM_TAYLOR
          !CASE DEFAULT
          !   CALL SCARC_SHUTDOWN(NSCARC_ERROR_PARSE_INPUT, SCARC_SMOOTH_SCOPE, NSCARC_NONE)
       END SELECT
@@ -2550,9 +2555,9 @@ MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
       ! Get coordination information
 
-      L%DX = (S%XF-S%XS)/REAL(L%NX,EB)
-      L%DY = (S%YF-S%YS)/REAL(L%NY,EB)
-      L%DZ = (S%ZF-S%ZS)/REAL(L%NZ,EB)
+      L%DX = (S%XF-S%XS)/REAL(L%NX,EB) ; L%DXH = 0.5_EB*L%DX ; L%DX2 = L%DX
+      L%DY = (S%YF-S%YS)/REAL(L%NY,EB) ; L%DYH = 0.5_EB*L%DY ; L%DY2 = L%DY
+      L%DZ = (S%ZF-S%ZS)/REAL(L%NZ,EB) ; L%DZH = 0.5_EB*L%DZ ; L%DZ2 = L%DZ
 
       L%DXI  = 1.0_EB/L%DX;  L%DYI  = 1.0_EB/L%DY;  L%DZI =  1.0_EB/L%DZ
       L%DXI2 = L%DXI**2;     L%DYI2 = L%DYI**2;     L%DZI2 = L%DZI**2
@@ -6410,19 +6415,21 @@ SUBROUTINE SCARC_SETUP_BOUNDARY_LOCAL (NM, NL)
 USE SCARC_POINTERS, ONLY: L, G, F, GWC, A, AB, MGM
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: I, J, K, IOR0, IW, IC, NOM, IP
+REAL(EB) :: SCAL
 
 CALL SCARC_POINT_TO_GRID (NM, NL)       
 
-SELECT CASE (SCARC_MATRIX_LEVEL(NL))
+A => G%POISSON
+MGM => L%MGM
 
-   ! ---------- Matrix in compact storage technique
- 
-   CASE (NSCARC_MATRIX_COMPACT)
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_CMATRIX(A, 'POISSON', 'POISSON WITH BDRY LOCALLY')
+#endif
 
-      A => G%POISSON
-      MGM => L%MGM
+SELECT CASE (SCARC_MGM_BC)
 
-      ! Set correct boundary conditions 
+   ! --------------------------------------------------------------------------
+   CASE (NSCARC_MGM_TAYLOR)
 
       !DO IW = MGM%NW1, MGM%NW2
       DO IW = 1, G%NW
@@ -6443,7 +6450,54 @@ SELECT CASE (SCARC_MATRIX_LEVEL(NL))
          IC  = G%CELL_NUMBER(I, J, K)
          GWC%ICW = IC
 
-         ! SPD-matrix with mixture of Dirichlet and Neumann BC's according to BTYPE
+         IP = A%ROW(IC)
+         IF (GWC%BTYPE == DIRICHLET) THEN
+            A%VAL(IP) = A%VAL(IP) - F%SCAL_BOUNDARY
+         ELSE IF (GWC%BTYPE == NEUMANN) THEN
+            A%VAL(IP) = A%VAL(IP) + F%SCAL_BOUNDARY
+         ELSE IF (GWC%BTYPE == INTERNAL) THEN
+            SELECT CASE(IOR0)
+               CASE (1)
+                  SCAL =  0.25_EB * L%DX2
+               CASE (-1)
+                  SCAL = -0.25_EB * L%DX2
+               CASE (2)
+                  SCAL =  0.25_EB * L%DY2
+               CASE (-2)
+                  SCAL = -0.25_EB * L%DY2
+               CASE (3)
+                  SCAL =  0.25_EB * L%DZ2
+               CASE (-3)
+                  SCAL = -0.25_EB * L%DZ2
+            END SELECT
+            A%VAL(IP) = A%VAL(IP) + F%SCAL_BOUNDARY
+            DO IP = A%ROW(IC)+1, A%ROW(IC+1)-1
+            ENDDO
+         ENDIF
+
+      ENDDO 
+
+   ! --------------------------------------------------------------------------
+   CASE DEFAULT
+
+      !DO IW = MGM%NW1, MGM%NW2
+      DO IW = 1, G%NW
+
+         GWC => G%WALL(IW)
+         IOR0 = GWC%IOR
+         IF (TWO_D .AND. ABS(IOR0) == 2) CYCLE       
+
+         F  => L%FACE(IOR0)
+
+         I = GWC%IXW
+         J = GWC%IYW
+         K = GWC%IZW
+
+         IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I, J, K)) CYCLE
+
+         NOM = GWC%NOM
+         IC  = G%CELL_NUMBER(I, J, K)
+         GWC%ICW = IC
 
          IP = A%ROW(IC)
          IF (GWC%BTYPE == DIRICHLET .OR. GWC%BTYPE == INTERNAL) THEN
@@ -6461,54 +6515,7 @@ WRITE(MSG%LU_DEBUG,'(A,7I6,E12.4)') 'B :NEUMANN  : IW, I, J, K, NOM, IC, BTYPE, 
 
       ENDDO 
 
-#ifdef WITH_SCARC_DEBUG
-      CALL SCARC_DEBUG_CMATRIX(A, 'POISSON', 'POISSON WITH BDRY LOCALLY')
-#endif
 
- 
-   ! ---------- Matrix in bandwise storage technique
- 
-   CASE (NSCARC_MATRIX_BANDWISE)
-
-      ! Preset matrix switch if no Dirichlet BC's available
-
-      AB => G%POISSONB
-      IF (IS_PURE_NEUMANN) CALL SCARC_SETUP_BMATRIX_CONDENSED(NM)
-
-      ! Set right boundary conditions 
-
-      DO IW = 1, G%NW
-
-         GWC => G%WALL(IW)
-         IOR0 = GWC%IOR
-         IF (TWO_D .AND. ABS(IOR0) == 2) CYCLE     
-
-         F  => L%FACE(IOR0)
-
-         I = GWC%IXW
-         J = GWC%IYW
-         K = GWC%IZW
-
-         IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I, J, K)) CYCLE
-
-         NOM  = GWC%NOM
-         GWC%ICW =G%CELL_NUMBER(I, J, K)
-         IC = G%CELL_NUMBER(I, J, K)
-
-         ! SPD-matrix with mixture of Dirichlet and Neumann BC's according to the SETTING of BTYPE
-
-         SELECT CASE (GWC%BTYPE)
-            CASE (DIRICHLET)
-               AB%VAL(IC, AB%POS(0)) = AB%VAL(IC, AB%POS(0)) - F%SCAL_BOUNDARY
-            CASE (NEUMANN)
-               IF (IW > L%N_WALL_CELLS_EXT) THEN
-                  AB%VAL(IC, AB%POS(0)) = AB%VAL(IC, AB%POS(0)) + F%SCAL_BOUNDARY
-               ELSE
-                  AB%VAL(IC, AB%POS(0)) = AB%VAL(IC, AB%POS(0)) - F%SCAL_BOUNDARY
-               ENDIF
-         END SELECT
-
-      ENDDO 
    
 END SELECT 
 
@@ -12267,10 +12274,14 @@ ENDIF
                !  IF (TOTAL_PRESSURE_ITERATIONS == 1) TYPE_MGM0 = NSCARC_MGM_ZERO
                ENDIF
 
+
+               !
+               ! --------------------- MGM - External boundaries and mesh interfaces
+               !
                SELECT CASE (TYPE_MGM0)
 
                   !
-                  ! --------------------- MGM - ZERO
+                  ! --- ZERO boundary
                   !
                   CASE (NSCARC_MGM_ZERO)
 
@@ -12278,7 +12289,7 @@ ENDIF
    WRITE(MSG%LU_DEBUG,*) '%%%%%%%%%%%%%%%%% ZERO SETTING:', TOTAL_PRESSURE_ITERATIONS
 #endif
                   !
-                  ! --------------------- MGM - Simple
+                  ! --- Simple time delayed mean value
                   !
                   CASE (NSCARC_MGM_SIMPLE)
 
@@ -12345,7 +12356,7 @@ WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: SIMPLE: IOR = -3: IW,I,J,K, HPM, H
                      ENDDO
 
                   !
-                  ! --------------------- MGM - Linear Extrapolation
+                  ! --- Linear Extrapolation in time
                   !
                   CASE (NSCARC_MGM_EXTRAPOLATION)
    
@@ -12411,8 +12422,78 @@ WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: EXPOL: IOR = -3: IW,I,J,K, HPM, HP
 
                      ENDDO
 
+                  !
+                  ! --------------------- MGM - Linear Extrapolation
+                  !
+                  CASE (NSCARC_MGM_TAYLOR)
+   
+#ifdef WITH_SCARC_DEBUG
+   WRITE(MSG%LU_DEBUG,*) '%%%%%%%%%%%%%%%%% EXPOL SETTING:', TOTAL_PRESSURE_ITERATIONS
+#endif
+                     DO IW = 1, L%N_WALL_CELLS_EXT
+      
+                        GWC => G%WALL(IW)
+                        IF (GWC%BTYPE /= INTERNAL) CYCLE
+         
+                        I = GWC%IXW
+                        J = GWC%IYW
+                        K = GWC%IZW
+         
+                        IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I, J, K)) CYCLE
+                        IOR0 = GWC%IOR
+                        IF (IOR0 == 0) CYCLE
+                        F => SCARC(NM)%LEVEL(NL)%FACE(IOR0)
+      
+                        SELECT CASE (IOR0)
+                           CASE(1)
+                              VAL =  L%DXH * (MGM%H2(I, J, K) - MGM%H2(I-1, J, K))
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: EXPOL: IOR =  1: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I-1,J,K), MGM%H2(I,J,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(-1)
+                              VAL =  L%DXH * (MGM%H2(I+1, J, K) - MGM%H2(I, J, K))
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: EXPOL: IOR = -1: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I+1,J,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(2)
+                              VAL =  L%DYH * (MGM%H2(I, J, K) - MGM%H2(I, J-1, K))
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: EXPOL: IOR =  2: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J-1,K), MGM%H2(I,J,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(-2)
+                              VAL =  L%DYH * (MGM%H2(I, J+1, K) - MGM%H2(I, J, K))
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: EXPOL: IOR = -2: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I,J+1,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(3)
+                              VAL =  L%DZH * (MGM%H2(I, J, K) - MGM%H2(I, J, K-1))
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: EXPOL: IOR =  3: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K-1), MGM%H2(I,J,K), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                           CASE(-3)
+                              VAL =  L%DZH * (MGM%H2(I, J, K+1) - MGM%H2(I, J, K))
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: EXPOL: IOR = -3: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I,J,K+1), VAL, F%SCAL_DIRICHLET*VAL
+#endif
+                        END SELECT
+
+                        IC = G%CELL_NUMBER(I,J,K)
+                        ST%B(IC) = ST%B(IC) + F%SCAL_DIRICHLET * VAL
+
+         
+                     ENDDO
+
                END SELECT
 
+               !
+               ! --------------------- MGM - Internal obstructions
+               !
                DO IW = L%N_WALL_CELLS_EXT+1, L%N_WALL_CELLS_EXT + L%N_WALL_CELLS_INT
    
                   GWC => G%WALL(IW)
