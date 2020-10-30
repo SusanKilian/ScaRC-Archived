@@ -1,2 +1,0 @@
-&MESH IJK=160, 1, 20, XB=-3.2, -1.6, -0.01, 0.01, -0.1, 0.1, MULT_ID='mesh' /
-&MULT ID='mesh', DX=1.60, DY=0.02, DZ=0.20, I_UPPER=3, J_UPPER=0, K_UPPER=0 /
