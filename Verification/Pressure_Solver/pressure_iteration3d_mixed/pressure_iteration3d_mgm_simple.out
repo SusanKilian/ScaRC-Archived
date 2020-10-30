@@ -1,11 +1,11 @@
 
  Fire Dynamics Simulator
 
- Current Date     : October 28, 2020  15:46:12
- Revision         : -dirty-master
- Revision Date    : Wed Oct 28 15:04:48 2020 +0100
+ Current Date     : October 30, 2020  17:38:44
+ Revision         : -master
+ Revision Date    : Fri Oct 30 16:56:38 2020 +0100
  Compiler         : Intel ifort 18.0.1
- Compilation Date : Oct 28, 2020 15:16:47
+ Compilation Date : Oct 30, 2020 16:57:38
 
  MPI Enabled;    Number of MPI Processes:       8
  OpenMP Enabled; Number of OpenMP Threads:      2
@@ -307,10 +307,10 @@ Total Number of Grid Cells         32768
 
  Run Time Diagnostics
 
-       Time Step       1   October 28, 2020  15:46:37
+       Time Step       1   October 30, 2020  17:38:45
        Step Size:    0.264E-02 s, Total Time:      0.003 s
        Pressure Iterations:     10
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (  17   7   1)
+       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   5  17   1)
        Maximum Pressure Error:  0.10E+06 on Mesh   1 at (  13  13  13)
        ScaRC: iterations    39, residual  0.63E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -363,10 +363,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.33E+01 at (   1,   5,   1)
        Max VN number:   0.53E-03 at (  16,  16,  16)
  
-       Time Step       2   October 28, 2020  15:46:39
+       Time Step       2   October 30, 2020  17:38:45
        Step Size:    0.264E-02 s, Total Time:      0.005 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   1  17   2)
+       Maximum Velocity Error:  0.28E-16 on Mesh   1 at (  12  17  11)
        Maximum Pressure Error:  0.40E+04 on Mesh   1 at (  16  13  13)
        ScaRC: iterations    38, residual  0.95E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -419,10 +419,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.14E+01 at (   1,   5,   1)
        Max VN number:   0.54E-03 at (   1,   5,   1)
  
-       Time Step       3   October 28, 2020  15:46:42
+       Time Step       3   October 30, 2020  17:38:45
        Step Size:    0.264E-02 s, Total Time:      0.008 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   1  17   1)
+       Maximum Velocity Error:  0.28E-16 on Mesh   1 at (  15  17   1)
        Maximum Pressure Error:  0.71E+03 on Mesh   1 at (  16  13  16)
        ScaRC: iterations    38, residual  0.75E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -475,10 +475,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.60E+00 at (   1,   5,   1)
        Max VN number:   0.55E-03 at (   1,   5,   1)
  
-       Time Step       4   October 28, 2020  15:46:44
+       Time Step       4   October 30, 2020  17:38:45
        Step Size:    0.264E-02 s, Total Time:       0.01 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   1  17   1)
+       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (  17   2  16)
        Maximum Pressure Error:  0.35E+03 on Mesh   8 at (   4   4   4)
        ScaRC: iterations    38, residual  0.64E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -531,10 +531,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.33E+00 at (   1,   5,   1)
        Max VN number:   0.55E-03 at (   1,   5,   1)
  
-       Time Step       5   October 28, 2020  15:46:47
+       Time Step       5   October 30, 2020  17:38:45
        Step Size:    0.291E-02 s, Total Time:       0.01 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   1  17   2)
+       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   7  17   1)
        Maximum Pressure Error:  0.30E+03 on Mesh   8 at (   4   4   4)
        ScaRC: iterations    38, residual  0.56E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -587,10 +587,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.24E+00 at (   1,   5,   1)
        Max VN number:   0.60E-03 at (   1,   5,   1)
  
-       Time Step       6   October 28, 2020  15:46:50
+       Time Step       6   October 30, 2020  17:38:45
        Step Size:    0.291E-02 s, Total Time:       0.02 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   1  17   1)
+       Maximum Velocity Error:  0.28E-16 on Mesh   1 at (  14  17   8)
        Maximum Pressure Error:  0.26E+03 on Mesh   8 at (   4   4   4)
        ScaRC: iterations    38, residual  0.50E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -643,10 +643,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.18E+00 at (   1,   5,   1)
        Max VN number:   0.60E-03 at (   1,   5,   1)
  
-       Time Step       7   October 28, 2020  15:46:52
+       Time Step       7   October 30, 2020  17:38:45
        Step Size:    0.320E-02 s, Total Time:       0.02 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   1  17   2)
+       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   2  17   1)
        Maximum Pressure Error:  0.21E+03 on Mesh   8 at (   4   4   4)
        ScaRC: iterations    38, residual  0.46E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -699,10 +699,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.15E+00 at (   1,   5,   1)
        Max VN number:   0.66E-03 at (   1,   5,   1)
  
-       Time Step       8   October 28, 2020  15:46:55
+       Time Step       8   October 30, 2020  17:38:45
        Step Size:    0.320E-02 s, Total Time:       0.02 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   1  17   1)
+       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   2  17   1)
        Maximum Pressure Error:  0.19E+03 on Mesh   2 at (   1  13  13)
        ScaRC: iterations    38, residual  0.42E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -755,10 +755,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.12E+00 at (   1,   5,   1)
        Max VN number:   0.67E-03 at (   1,   5,   1)
  
-       Time Step       9   October 28, 2020  15:46:58
+       Time Step       9   October 30, 2020  17:38:45
        Step Size:    0.352E-02 s, Total Time:       0.03 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   2  17   2)
+       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (  10  17   1)
        Maximum Pressure Error:  0.22E+03 on Mesh   2 at (   1  13  13)
        ScaRC: iterations    37, residual  0.93E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -811,10 +811,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.11E+00 at (   1,   5,   1)
        Max VN number:   0.73E-03 at (   1,   5,   1)
  
-       Time Step      10   October 28, 2020  15:47:00
+       Time Step      10   October 30, 2020  17:38:46
        Step Size:    0.352E-02 s, Total Time:       0.03 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   1  17   2)
+       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   1  17   1)
        Maximum Pressure Error:  0.23E+03 on Mesh   2 at (   1  13  13)
        ScaRC: iterations    37, residual  0.85E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -867,10 +867,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.91E-01 at (   1,   5,   1)
        Max VN number:   0.73E-03 at (   1,   5,   1)
  
-       Time Step      20   October 28, 2020  15:47:26
+       Time Step      20   October 30, 2020  17:38:46
        Step Size:    0.469E-02 s, Total Time:       0.07 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (  17   3  10)
+       Maximum Velocity Error:  0.28E-16 on Mesh   1 at (  15  17  12)
        Maximum Pressure Error:  0.35E+03 on Mesh   2 at (   4  13  13)
        ScaRC: iterations    37, residual  0.38E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -923,10 +923,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.37E-01 at (   5,   1,   1)
        Max VN number:   0.98E-03 at (   1,   5,   1)
  
-       Time Step      30   October 28, 2020  15:47:52
+       Time Step      30   October 30, 2020  17:38:47
        Step Size:    0.469E-02 s, Total Time:       0.12 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (  17   3   9)
+       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (   1  17   1)
        Maximum Pressure Error:  0.69E+03 on Mesh   2 at (   4  13  13)
        ScaRC: iterations    36, residual  0.48E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -979,10 +979,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.34E-01 at (   1,   1,   5)
        Max VN number:   0.98E-03 at (   1,   5,   1)
  
-       Time Step      40   October 28, 2020  15:48:18
+       Time Step      40   October 30, 2020  17:38:47
        Step Size:    0.469E-02 s, Total Time:       0.17 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.69E-17 on Mesh   1 at (   1   1  17)
+       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (  17  14  11)
        Maximum Pressure Error:  0.11E+04 on Mesh   1 at (  13  13  13)
        ScaRC: iterations    35, residual  0.77E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -1035,10 +1035,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.11E+00 at (   1,   1,   5)
        Max VN number:   0.98E-03 at (   5,   1,   1)
  
-       Time Step      50   October 28, 2020  15:48:44
+       Time Step      50   October 30, 2020  17:38:48
        Step Size:    0.469E-02 s, Total Time:       0.21 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (  17   4   3)
+       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (  17  10   9)
        Maximum Pressure Error:  0.92E+03 on Mesh   3 at (  13   4  13)
        ScaRC: iterations    35, residual  0.84E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -1091,10 +1091,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.13E+00 at (   1,   1,   5)
        Max VN number:   0.99E-03 at (   5,   1,   1)
  
-       Time Step      60   October 28, 2020  15:49:12
+       Time Step      60   October 30, 2020  17:38:49
        Step Size:    0.421E-02 s, Total Time:       0.26 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (  17   1   1)
+       Maximum Velocity Error:  0.28E-16 on Mesh   1 at (  17   4  12)
        Maximum Pressure Error:  0.25E+04 on Mesh   1 at (  13  13  13)
        ScaRC: iterations    36, residual  0.49E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -1147,10 +1147,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.20E+00 at (   1,   1,   5)
        Max VN number:   0.90E-03 at (   5,   1,   1)
  
-       Time Step      70   October 28, 2020  15:49:38
+       Time Step      70   October 30, 2020  17:38:49
        Step Size:    0.421E-02 s, Total Time:       0.30 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.28E-16 on Mesh   1 at (  17   3  10)
+       Maximum Velocity Error:  0.28E-16 on Mesh   1 at (  13  17  12)
        Maximum Pressure Error:  0.30E+04 on Mesh   1 at (  13  13  13)
        ScaRC: iterations    36, residual  0.64E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -1203,10 +1203,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.27E+00 at (   1,   1,   5)
        Max VN number:   0.92E-03 at (   5,   1,   1)
  
-       Time Step      80   October 28, 2020  15:50:06
+       Time Step      80   October 30, 2020  17:38:50
        Step Size:    0.327E-02 s, Total Time:       0.33 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.28E-16 on Mesh   1 at (  17   3  10)
+       Maximum Velocity Error:  0.28E-16 on Mesh   1 at (  15  17  11)
        Maximum Pressure Error:  0.27E+04 on Mesh   1 at (  13  13  13)
        ScaRC: iterations    36, residual  0.80E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -1259,10 +1259,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.24E+00 at (   1,   1,   5)
        Max VN number:   0.72E-03 at (   1,   1,   5)
  
-       Time Step      90   October 28, 2020  15:50:32
+       Time Step      90   October 30, 2020  17:38:51
        Step Size:    0.327E-02 s, Total Time:       0.37 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.56E-16 on Mesh   1 at (  14   6  17)
+       Maximum Velocity Error:  0.56E-16 on Mesh   1 at (  12   2  17)
        Maximum Pressure Error:  0.24E+04 on Mesh   5 at (  13  13   2)
        ScaRC: iterations    36, residual  0.97E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -1315,10 +1315,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.28E+00 at (   1,   1,   5)
        Max VN number:   0.74E-03 at (   1,   1,   5)
  
-       Time Step     100   October 28, 2020  15:50:58
+       Time Step     100   October 30, 2020  17:38:51
        Step Size:    0.327E-02 s, Total Time:       0.40 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.14E-16 on Mesh   1 at (  17   2   1)
+       Maximum Velocity Error:  0.56E-16 on Mesh   2 at (   5   3  17)
        Maximum Pressure Error:  0.32E+04 on Mesh   5 at (  13  13   2)
        ScaRC: iterations    37, residual  0.46E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -1371,10 +1371,10 @@ Total Number of Grid Cells         32768
        Max div. error:  0.36E+00 at (   1,   1,   5)
        Max VN number:   0.75E-03 at (   1,   1,   5)
  
-       Time Step     131   October 28, 2020  15:52:20
+       Time Step     131   October 30, 2020  17:38:53
        Step Size:    0.195E-02 s, Total Time:       0.50 s
        Pressure Iterations:      1
-       Maximum Velocity Error:  0.28E-16 on Mesh   1 at (   6  10  17)
+       Maximum Velocity Error:  0.11E-15 on Mesh   2 at (   4   7  17)
        Maximum Pressure Error:  0.27E+04 on Mesh   1 at (  13  13  13)
        ScaRC: iterations    37, residual  0.75E-08, convergence rate   0.47E+00
        ---------------------------------------------------------------
@@ -1429,7 +1429,7 @@ Total Number of Grid Cells         32768
  
 
 
- Time Stepping Wall Clock Time (s):      367.048
- Total Elapsed Wall Clock Time (s):     1217.591
+ Time Stepping Wall Clock Time (s):        9.074
+ Total Elapsed Wall Clock Time (s):        9.628
 
 STOP: FDS completed successfully (CHID: pressure_iteration3d_mgm_simple)

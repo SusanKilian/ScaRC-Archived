@@ -1,11 +1,11 @@
 
  Fire Dynamics Simulator
 
- Current Date     : October 28, 2020  15:32:04
- Revision         : -dirty-master
- Revision Date    : Wed Oct 28 15:04:48 2020 +0100
+ Current Date     : October 30, 2020  17:41:18
+ Revision         : -master
+ Revision Date    : Fri Oct 30 16:56:38 2020 +0100
  Compiler         : Intel ifort 18.0.1
- Compilation Date : Oct 28, 2020 15:16:47
+ Compilation Date : Oct 30, 2020 16:57:38
 
  MPI Enabled;    Number of MPI Processes:       8
  OpenMP Enabled; Number of OpenMP Threads:      2
@@ -310,7 +310,7 @@ Total Number of Grid Cells         32768
 
  Run Time Diagnostics
 
-       Time Step       1   October 28, 2020  15:32:08
+       Time Step       1   October 30, 2020  17:41:18
        Step Size:    0.264E-02 s, Total Time:      0.003 s
        Pressure Iterations:      4
        Maximum Velocity Error:  0.96E-02 on Mesh   5 at (  16  13   4)
@@ -358,7 +358,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.59E-08 at (  16,  16,  16)
        Max VN number:   0.53E-03 at (  16,  16,  16)
  
-       Time Step       2   October 28, 2020  15:32:11
+       Time Step       2   October 30, 2020  17:41:18
        Step Size:    0.264E-02 s, Total Time:      0.005 s
        Pressure Iterations:      4
        Maximum Velocity Error:  0.90E-02 on Mesh   5 at (  16  13   4)
@@ -406,7 +406,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.58E-08 at (  16,  16,  13)
        Max VN number:   0.53E-03 at (  16,  16,  16)
  
-       Time Step       3   October 28, 2020  15:32:12
+       Time Step       3   October 30, 2020  17:41:18
        Step Size:    0.264E-02 s, Total Time:      0.008 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.87E-02 on Mesh   5 at (  16  13   4)
@@ -454,7 +454,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.59E-08 at (  16,  16,  13)
        Max VN number:   0.53E-03 at (  16,  16,  16)
  
-       Time Step       4   October 28, 2020  15:32:13
+       Time Step       4   October 30, 2020  17:41:18
        Step Size:    0.264E-02 s, Total Time:       0.01 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.32E-02 on Mesh   5 at (  16  13   4)
@@ -502,7 +502,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.59E-08 at (  16,  16,  13)
        Max VN number:   0.53E-03 at (  16,  16,  16)
  
-       Time Step       5   October 28, 2020  15:32:14
+       Time Step       5   October 30, 2020  17:41:18
        Step Size:    0.290E-02 s, Total Time:       0.01 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.11E-02 on Mesh   6 at (   1  13   4)
@@ -550,7 +550,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.59E-08 at (  16,  16,  13)
        Max VN number:   0.59E-03 at (  16,  16,  16)
  
-       Time Step       6   October 28, 2020  15:32:15
+       Time Step       6   October 30, 2020  17:41:18
        Step Size:    0.290E-02 s, Total Time:       0.02 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.20E-02 on Mesh   5 at (  16  13   4)
@@ -598,7 +598,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.59E-08 at (  16,  16,  13)
        Max VN number:   0.59E-03 at (  16,  16,  16)
  
-       Time Step       7   October 28, 2020  15:32:16
+       Time Step       7   October 30, 2020  17:41:19
        Step Size:    0.319E-02 s, Total Time:       0.02 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.10E-02 on Mesh   5 at (  16  13   4)
@@ -646,7 +646,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.60E-08 at (  16,  16,  13)
        Max VN number:   0.65E-03 at (  16,  16,  16)
  
-       Time Step       8   October 28, 2020  15:32:17
+       Time Step       8   October 30, 2020  17:41:19
        Step Size:    0.319E-02 s, Total Time:       0.02 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.12E-03 on Mesh   7 at (  13   4   1)
@@ -694,7 +694,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.60E-08 at (  16,  16,  13)
        Max VN number:   0.65E-03 at (  16,  16,  16)
  
-       Time Step       9   October 28, 2020  15:32:18
+       Time Step       9   October 30, 2020  17:41:19
        Step Size:    0.351E-02 s, Total Time:       0.03 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.45E-03 on Mesh   5 at (  16  13   4)
@@ -742,7 +742,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.60E-08 at (  16,  16,  13)
        Max VN number:   0.71E-03 at (  16,  16,  16)
  
-       Time Step      10   October 28, 2020  15:32:19
+       Time Step      10   October 30, 2020  17:41:19
        Step Size:    0.351E-02 s, Total Time:       0.03 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.27E-03 on Mesh   2 at (   4  14  15)
@@ -790,7 +790,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.60E-08 at (  16,  16,  13)
        Max VN number:   0.71E-03 at (  16,  16,  16)
  
-       Time Step      20   October 28, 2020  15:32:27
+       Time Step      20   October 30, 2020  17:41:19
        Step Size:    0.468E-02 s, Total Time:       0.07 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.68E-03 on Mesh   1 at (  13  16  13)
@@ -838,7 +838,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.62E-08 at (  16,  16,  12)
        Max VN number:   0.94E-03 at (  16,  16,  16)
  
-       Time Step      30   October 28, 2020  15:32:37
+       Time Step      30   October 30, 2020  17:41:19
        Step Size:    0.468E-02 s, Total Time:       0.12 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.34E-03 on Mesh   2 at (   4  13  16)
@@ -886,7 +886,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.54E-08 at (  16,  16,   1)
        Max VN number:   0.94E-03 at (  16,  16,  16)
  
-       Time Step      40   October 28, 2020  15:32:46
+       Time Step      40   October 30, 2020  17:41:20
        Step Size:    0.468E-02 s, Total Time:       0.17 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.51E-03 on Mesh   2 at (   4  16  13)
@@ -934,7 +934,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.47E-08 at (  16,  16,   1)
        Max VN number:   0.94E-03 at (  16,  16,  16)
  
-       Time Step      50   October 28, 2020  15:32:55
+       Time Step      50   October 30, 2020  17:41:20
        Step Size:    0.468E-02 s, Total Time:       0.21 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.29E-03 on Mesh   2 at (   4  13  16)
@@ -982,7 +982,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.69E-08 at (  16,  16,   8)
        Max VN number:   0.94E-03 at (  16,  16,  16)
  
-       Time Step      60   October 28, 2020  15:33:04
+       Time Step      60   October 30, 2020  17:41:21
        Step Size:    0.421E-02 s, Total Time:       0.26 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.39E-02 on Mesh   6 at (   2  13   2)
@@ -1030,7 +1030,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.82E-08 at (  16,  16,  13)
        Max VN number:   0.85E-03 at (  16,  16,  16)
  
-       Time Step      70   October 28, 2020  15:33:13
+       Time Step      70   October 30, 2020  17:41:21
        Step Size:    0.421E-02 s, Total Time:       0.30 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.10E-02 on Mesh   6 at (   2  13   2)
@@ -1078,7 +1078,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.10E-07 at (  16,  16,  16)
        Max VN number:   0.85E-03 at (  16,  16,  16)
  
-       Time Step      80   October 28, 2020  15:33:23
+       Time Step      80   October 30, 2020  17:41:22
        Step Size:    0.327E-02 s, Total Time:       0.33 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.18E-02 on Mesh   6 at (   2  13   2)
@@ -1126,7 +1126,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.12E-07 at (  16,  16,  16)
        Max VN number:   0.66E-03 at (  16,  16,  16)
  
-       Time Step      90   October 28, 2020  15:33:32
+       Time Step      90   October 30, 2020  17:41:22
        Step Size:    0.327E-02 s, Total Time:       0.37 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.17E-02 on Mesh   7 at (  13   2   2)
@@ -1174,7 +1174,7 @@ Total Number of Grid Cells         32768
        Min divergence:  0.14E-07 at (  16,  16,  16)
        Max VN number:   0.66E-03 at (  16,  16,  16)
  
-       Time Step     100   October 28, 2020  15:33:41
+       Time Step     100   October 30, 2020  17:41:23
        Step Size:    0.327E-02 s, Total Time:       0.40 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.27E-02 on Mesh   6 at (   3  13   3)
@@ -1222,7 +1222,7 @@ Total Number of Grid Cells         32768
        Min divergence: -0.20E-06 at (   1,   1,   5)
        Max VN number:   0.66E-03 at (  16,  16,  16)
  
-       Time Step     131   October 28, 2020  15:34:15
+       Time Step     131   October 30, 2020  17:41:24
        Step Size:    0.183E-02 s, Total Time:       0.50 s
        Pressure Iterations:      1
        Maximum Velocity Error:  0.17E-02 on Mesh   6 at (   4  13   3)
@@ -1272,7 +1272,7 @@ Total Number of Grid Cells         32768
  
 
 
- Time Stepping Wall Clock Time (s):      131.055
- Total Elapsed Wall Clock Time (s):      132.578
+ Time Stepping Wall Clock Time (s):        6.333
+ Total Elapsed Wall Clock Time (s):        6.957
 
 STOP: FDS completed successfully (CHID: pressure_iteration3d_scarc)
