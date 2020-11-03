@@ -6499,31 +6499,31 @@ SELECT CASE (TYPE_MGM_INTERNAL)
          ELSE IF (GWC%BTYPE == INTERNAL) THEN
             SELECT CASE(ABS(IOR0))
                CASE (1)
-                  A%VAL(IP) = -L%DXI2 - 5.0_EB/2.0_EB*L%DZI2
+                  A%VAL(IP) = A%VAL(IP) - L%DXI2 - 5.0_EB/2.0_EB*L%DZI2
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,7I6,E16.8)') 'A :MGM-TAYLOR: IOR0, IW, I, J, K, IC, IC, A%VAL :', IOR0, IW, I, J, K, IC, IC, A%VAL(IP)
+WRITE(MSG%LU_DEBUG,'(A,7I6,E16.8)') 'A :MGM-TAYLOR: IOR0, IW, I, J, K, IC, IC  , A%VAL :', IOR0, IW, I, J, K, IC, IC, A%VAL(IP)
 #endif
                   DO IP = A%ROW(IC)+1, A%ROW(IC+1)-1
                      IF (ICXM <= G%NC .AND. A%COL(IP) == ICXM) THEN
-                        A%VAL(IP) = L%DXI2 
+                        A%VAL(IP) = A%VAL(IP) + L%DXI2 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,7I6,E16.8)') 'A :MGM-TAYLOR:   " , IW, I, J, K, IC, ICXM, A%VAL :', IOR0, IW, I, J, K, IC, ICXM, A%VAL(IP)
 #endif
                      ENDIF
                      IF (ICXP <= G%NC .AND. A%COL(IP) == ICXP) THEN
-                        A%VAL(IP) = L%DXI2 
+                        A%VAL(IP) = A%VAL(IP) + L%DXI2 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,7I6,E16.8)') 'A :MGM-TAYLOR:   " , IW, I, J, K, IC, ICXP, A%VAL :', IOR0, IW, I, J, K, IC, ICXP, A%VAL(IP)
 #endif
                      ENDIF
                      IF (ICZM <= G%NC .AND. A%COL(IP) == ICZM) THEN
-                        A%VAL(IP) = 5.0_EB/4.0_EB*L%DZI2
+                        A%VAL(IP) = A%VAL(IP) + 5.0_EB/4.0_EB*L%DZI2
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,7I6,E16.8)') 'A :MGM-TAYLOR:   " , IW, I, J, K, IC, ICZM, A%VAL :', IOR0, IW, I, J, K, IC, ICZM, A%VAL(IP)
 #endif
                      ENDIF
                      IF (ICZP <= G%NC .AND. A%COL(IP) == ICZP) THEN
-                        A%VAL(IP) = 5.0_EB/4.0_EB*L%DZI2
+                        A%VAL(IP) = A%VAL(IP) + 5.0_EB/4.0_EB*L%DZI2
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,7I6,E16.8)') 'A :MGM-TAYLOR:   " , IW, I, J, K, IC, ICZP, A%VAL :', IOR0, IW, I, J, K, IC, ICZP, A%VAL(IP)
 #endif
@@ -6534,37 +6534,40 @@ WRITE(MSG%LU_DEBUG,'(A,7I6,E16.8)') 'A :MGM-TAYLOR:   " , IW, I, J, K, IC, ICZP,
                      WRITE(*,*) 'TAYLOR-3D: Not yet finished!'
                   ENDIF
                CASE (3)
-                  A%VAL(IP) = -L%DZI2 - 5.0_EB/2.0_EB*L%DXI2
+                  A%VAL(IP) = A%VAL(IP) - L%DZI2 - 5.0_EB/2.0_EB*L%DXI2
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,7I6,E16.8)') 'A :MGM-TAYLOR: IOR0, IW, I, J, K, IC, IC, A%VAL :', IOR0, IW, I, J, K, IC, IC, A%VAL(IP)
+WRITE(MSG%LU_DEBUG,'(A,7I6,E16.8)') 'A :MGM-TAYLOR: IOR0, IW, I, J, K, IC, IC  , A%VAL :', IOR0, IW, I, J, K, IC, IC, A%VAL(IP)
 #endif
                   DO IP = A%ROW(IC)+1, A%ROW(IC+1)-1
                      IF (ICZM <= G%NC .AND. A%COL(IP) == ICZM) THEN
-                        A%VAL(IP) = L%DZI2 
+                        A%VAL(IP) = A%VAL(IP) + L%DZI2 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,7I6,E16.8)') 'A :MGM-TAYLOR:   " , IW, I, J, K, IC, ICZM, A%VAL :', IOR0, IW, I, J, K, IC, ICZM, A%VAL(IP)
 #endif
                      ENDIF
                      IF (ICZP <= G%NC .AND. A%COL(IP) == ICZP) THEN
-                        A%VAL(IP) = L%DZI2 
+                        A%VAL(IP) = A%VAL(IP) + L%DZI2 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,7I6,E16.8)') 'A :MGM-TAYLOR:   " , IW, I, J, K, IC, ICZM, A%VAL :', IOR0, IW, I, J, K, IC, ICZM, A%VAL(IP)
 #endif
                      ENDIF
                      IF (ICXM <= G%NC .AND. A%COL(IP) == ICXM) THEN
-                        A%VAL(IP) = 5.0_EB/4.0_EB*L%DXI2
+                        A%VAL(IP) = A%VAL(IP) + 5.0_EB/4.0_EB*L%DXI2
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,7I6,E16.8)') 'A :MGM-TAYLOR:   " , IW, I, J, K, IC, ICXM, A%VAL :', IOR0, IW, I, J, K, IC, ICXM, A%VAL(IP)
 #endif
                      ENDIF
                      IF (ICXP <= G%NC .AND. A%COL(IP) == ICXP) THEN
-                        A%VAL(IP) = 5.0_EB/4.0_EB*L%DXI2
+                        A%VAL(IP) = A%VAL(IP) + 5.0_EB/4.0_EB*L%DXI2
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,'(A,7I6,E16.8)') 'A :MGM-TAYLOR:   " , IW, I, J, K, IC, ICXP, A%VAL :', IOR0, IW, I, J, K, IC, ICXP, A%VAL(IP)
 #endif
                      ENDIF
                   ENDDO
             END SELECT
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*)
+#endif
          ENDIF
 
       ENDDO 
@@ -7835,6 +7838,7 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP COARSE_SOLVER'
 
       TYPE_MATRIX = NSCARC_MATRIX_COMPACT
       TYPE_PRECON = NSCARC_RELAX_SSOR
+SCARC_KRYLOV_ITERATIONS = 100
       CALL SCARC_ASSIGN_GRID_TYPE(NSCARC_GRID_UNSTRUCTURED)
 
       NSTACK = NSTACK + 1
@@ -8101,7 +8105,10 @@ SV%TYPE_LEVEL(2) = NLMAX
 SV%TYPE_MATRIX   = TYPE_MATRIX
 
 ! Preset iteration parameters for Krylov method
- 
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SETUP_KRYLOV=', SCARC_KRYLOV_ITERATIONS, NSOLVER, NSCOPE, NSTAGE, NSTACK
+#endif
 SELECT CASE(NSOLVER)
 
    ! -------------- Krylov method is used as main solver
@@ -8112,6 +8119,9 @@ SELECT CASE(NSOLVER)
       SV%EPS = SCARC_KRYLOV_ACCURACY
       SV%NIT = SCARC_KRYLOV_ITERATIONS
    
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'SV%NIT=', SV%NIT,SCARC_KRYLOV_ITERATIONS
+#endif
       SV%TYPE_RELAX    = TYPE_PRECON
       SV%TYPE_TWOLEVEL = TYPE_TWOLEVEL
    
@@ -12461,40 +12471,40 @@ WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: EXPOL: IOR = -3: IW,I,J,K, HPM, HP
       
                         SELECT CASE (IOR0)
                            CASE(1)
-                              VAL =  -L%DXI2 * (MGM%H2(I, J, K) - MGM%H2(I-1, J, K))
+                              VAL = -L%DXI2 * (MGM%H2(I, J, K) - MGM%H2(I-1, J, K))
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: TAYLOR: IOR =  1: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
-                                    IW, I,J,K, MGM%H2(I-1,J,K), MGM%H2(I,J,K), VAL, F%SCAL_DIRICHLET*VAL
+WRITE(MSG%LU_DEBUG,'(A,4i4,3E14.6)') 'MGM-BC: TAYLOR: IOR =  1: IW,I,J,K, HPM, HPP, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I-1,J,K), MGM%H2(I,J,K), VAL
 #endif
                            CASE(-1)
                               VAL =  L%DXI2 * (MGM%H2(I+1, J, K) - MGM%H2(I, J, K))
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: TAYLOR: IOR = -1: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
-                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I+1,J,K), VAL, F%SCAL_DIRICHLET*VAL
+WRITE(MSG%LU_DEBUG,'(A,4i4,3E14.6)') 'MGM-BC: TAYLOR: IOR = -1: IW,I,J,K, HPM, HPP, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I+1,J,K), VAL
 #endif
                            CASE(2)
-                              VAL =  -L%DYI2 * (MGM%H2(I, J, K) - MGM%H2(I, J-1, K))
+                              VAL = -L%DYI2 * (MGM%H2(I, J, K) - MGM%H2(I, J-1, K))
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: TAYLOR: IOR =  2: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
-                                    IW, I,J,K, MGM%H2(I,J-1,K), MGM%H2(I,J,K), VAL, F%SCAL_DIRICHLET*VAL
+WRITE(MSG%LU_DEBUG,'(A,4i4,3E14.6)') 'MGM-BC: TAYLOR: IOR =  2: IW,I,J,K, HPM, HPP, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J-1,K), MGM%H2(I,J,K), VAL
 #endif
                            CASE(-2)
                               VAL =  L%DYI2 * (MGM%H2(I, J+1, K) - MGM%H2(I, J, K))
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: TAYLOR: IOR = -2: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
-                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I,J+1,K), VAL, F%SCAL_DIRICHLET*VAL
+WRITE(MSG%LU_DEBUG,'(A,4i4,3E14.6)') 'MGM-BC: TAYLOR: IOR = -2: IW,I,J,K, HPM, HPP, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I,J+1,K), VAL
 #endif
                            CASE(3)
-                              VAL =  -L%DZI2 * (MGM%H2(I, J, K) - MGM%H2(I, J, K-1))
+                              VAL = -L%DZI2 * (MGM%H2(I, J, K) - MGM%H2(I, J, K-1))
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: TAYLOR: IOR =  3: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
-                                    IW, I,J,K, MGM%H2(I,J,K-1), MGM%H2(I,J,K), VAL, F%SCAL_DIRICHLET*VAL
+WRITE(MSG%LU_DEBUG,'(A,4i4,3E14.6)') 'MGM-BC: TAYLOR: IOR =  3: IW,I,J,K, HPM, HPP, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K-1), MGM%H2(I,J,K), VAL
 #endif
                            CASE(-3)
-                              VAL =  L%DZI2 * (MGM%H2(I, J, K+1) - MGM%H2(I, J, K))
+                              VAL =  +L%DZI2 * (MGM%H2(I, J, K+1) - MGM%H2(I, J, K))
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,'(A,4i4,4E14.6)') 'MGM-BC: TAYLOR: IOR = -3: IW,I,J,K, HPM, HPP%, VAL, VAL2: ', &
-                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I,J,K+1), VAL, F%SCAL_DIRICHLET*VAL
+WRITE(MSG%LU_DEBUG,'(A,4i4,3E14.6)') 'MGM-BC: TAYLOR: IOR = -3: IW,I,J,K, HPM, HPP, VAL, VAL2: ', &
+                                    IW, I,J,K, MGM%H2(I,J,K), MGM%H2(I,J,K+1), VAL
 #endif
                         END SELECT
 
@@ -14463,7 +14473,7 @@ SUBROUTINE SCARC_PACK_MGM2(NM, NL)
 USE SCARC_POINTERS, ONLY: OL, OG, OS
 INTEGER, INTENT(IN) :: NM, NL
 REAL(EB), DIMENSION(:,:,:), POINTER :: H2
-INTEGER :: IOR0, ICG, ICW, IWG, IXG, IYG, IZG
+INTEGER :: IOR0, ICG, ICW, IWG, IXW, IYW, IZW
 
 H2 => SCARC(NM)%LEVEL(NL)%MGM%H2
 OS%SEND_BUFFER_REAL = NSCARC_HUGE_REAL_EB
@@ -14474,12 +14484,12 @@ DO IOR0 = -3, 3
       ICW = OG%ICG_TO_ICW(ICG, 1)
       IF (ICW < 0) CYCLE                                  ! skip solid cells
       IWG = OG%ICG_TO_IWG(ICG)
-      IXG=G%WALL(IWG)%IXG
-      IYG=G%WALL(IWG)%IYG
-      IZG=G%WALL(IWG)%IZG
-      OS%SEND_BUFFER_REAL(ICG) = H2(IXG, IYG, IZG)
+      IXW=G%WALL(IWG)%IXW
+      IYW=G%WALL(IWG)%IYW
+      IZW=G%WALL(IWG)%IZW
+      OS%SEND_BUFFER_REAL(ICG) = H2(IXW, IYW, IZW)
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'PACK_VECTOR_PLAIN: IOR0, ICG, ICW, REAL(ICG): ', IOR0, ICG, ICW, H2(IXG, IYG, IZG)
+WRITE(MSG%LU_DEBUG,*) 'PACK_MGM2: IOR0, ICG, ICW, IXW, IYW, IZW, REAL(ICG): ', IOR0, ICG, ICW, IXW, IYW, IZW, H2(IXW, IYW, IZW)
 #endif
    ENDDO
 ENDDO
@@ -14487,8 +14497,6 @@ ENDDO
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'PACK: Sizes SEND_BUFFER_REAL, VC=', SIZE(OS%SEND_BUFFER_REAL), SIZE(H2)
 WRITE(MSG%LU_DEBUG,'(8E16.8)') OS%SEND_BUFFER_REAL(1:16)
-WRITE(MSG%LU_DEBUG,*) 'PACK: H2=', NM, NL
-WRITE(MSG%LU_DEBUG,'(8E16.8)') H2
 #endif
 
 END SUBROUTINE SCARC_PACK_MGM2
@@ -14509,8 +14517,7 @@ RECV_BUFFER_REAL => SCARC_POINT_TO_BUFFER_REAL (NM, NOM, 1)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'UNPACK: Sizes RECV_BUFFER_REAL, VC=', SIZE(RECV_BUFFER_REAL), SIZE(H2)
 WRITE(MSG%LU_DEBUG,'(8E16.8)') RECV_BUFFER_REAL(1:16)
-WRITE(MSG%LU_DEBUG,*) 'UNPACK: VC=', NM, NOM, NL
-WRITE(MSG%LU_DEBUG,'(8E16.8)') H2
+WRITE(MSG%LU_DEBUG,*) 'UNPACK: MGM2=', NM, NOM, NL
 #endif
 
 LL = 1
