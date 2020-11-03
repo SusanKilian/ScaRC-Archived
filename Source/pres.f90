@@ -548,6 +548,7 @@ ENDIF
 
 VELOCITY_ERROR_MAX(NM) = 0._EB
 WALL_WORK1 = 0._EB
+UN_NEW_OTHER = 0.0_EB
 
 ! Solve Laplace equation for pressure correction, H_PRIME, and add to H or HS.
 
@@ -588,16 +589,22 @@ CHECK_WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
       SELECT CASE(IOR)
          CASE( 1)
             UN_NEW = U(II,JJ,KK)   - DT*(FVX(II,JJ,KK)   + RDXN(II)  *(H(II+1,JJ,KK)-H(II,JJ,KK))*DHFCT)
+IF (NM == 1) WRITE(*,'(A,4i4,6E16.8)') 'P 1: ',IW,II,JJ,KK,U(II,JJ,KK), FVX(II,JJ,KK), H(II+1,JJ,KK), H(II,JJ,KK), DHFCT, UN_NEW
          CASE(-1)
             UN_NEW = U(II-1,JJ,KK) - DT*(FVX(II-1,JJ,KK) + RDXN(II-1)*(H(II,JJ,KK)-H(II-1,JJ,KK))*DHFCT)
+IF (NM == 1) WRITE(*,'(A,4i4,6E16.8)') 'P-1: ',IW,II,JJ,KK,U(II,JJ,KK), FVX(II-1,JJ,KK), H(II,JJ,KK), H(II-1,JJ,KK), DHFCT, UN_NEW
          CASE( 2)
             UN_NEW = V(II,JJ,KK)   - DT*(FVY(II,JJ,KK)   + RDYN(JJ)  *(H(II,JJ+1,KK)-H(II,JJ,KK))*DHFCT)
+IF (NM == 1) WRITE(*,'(A,4i4,6E16.8)') 'P 2: ',IW,II,JJ,KK,U(II,JJ,KK), FVY(II,JJ,KK), H(II,JJ+1,KK), H(II,JJ,KK), DHFCT, UN_NEW
          CASE(-2)
             UN_NEW = V(II,JJ-1,KK) - DT*(FVY(II,JJ-1,KK) + RDYN(JJ-1)*(H(II,JJ,KK)-H(II,JJ-1,KK))*DHFCT)
+IF (NM == 1) WRITE(*,'(A,4i4,6E16.8)') 'P-2: ',IW,II,JJ,KK,U(II,JJ,KK), FVY(II,JJ-1,KK), H(II,JJ,KK), H(II,JJ-1,KK), DHFCT, UN_NEW
          CASE( 3)
             UN_NEW = W(II,JJ,KK)   - DT*(FVZ(II,JJ,KK)   + RDZN(KK)  *(H(II,JJ,KK+1)-H(II,JJ,KK))*DHFCT)
+IF (NM == 1) WRITE(*,'(A,4i4,6E16.8)') 'P 3: ',IW,II,JJ,KK,U(II,JJ,KK), FVZ(II,JJ,KK), H(II,JJ,KK+1), H(II,JJ,KK), DHFCT, UN_NEW
          CASE(-3)
             UN_NEW = W(II,JJ,KK-1) - DT*(FVZ(II,JJ,KK-1) + RDZN(KK-1)*(H(II,JJ,KK)-H(II,JJ,KK-1))*DHFCT)
+IF (NM == 1) WRITE(*,'(A,4i4,6E16.8)') 'P-3: ',IW,II,JJ,KK,U(II,JJ,KK), FVZ(II,JJ,KK-1), H(II,JJ,KK), H(II,JJ,KK-1), DHFCT, UN_NEW
       END SELECT
    ELSE
       SELECT CASE(IOR)
@@ -615,6 +622,8 @@ CHECK_WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
             UN_NEW = 0.5_EB*(W(II,JJ,KK-1)+WS(II,JJ,KK-1) - DT*(FVZ(II,JJ,KK-1) + RDZN(KK-1)*(HS(II,JJ,KK)-HS(II,JJ,KK-1))*DHFCT))
       END SELECT
    ENDIF
+!IF (NM == 1) WRITE(*,*) '---------------------------------------------------------------------', DHFCT
+!IF (NM == 1) WRITE(*,'(A,4i4,E16.8)') 'PRES:A : AFTER MESH BDRY: UN_NEW =', IW, II, JJ, KK, UN_NEW
 
    ! At interpolated boundaries, compare updated normal component of velocity with that of the other mesh
 
@@ -638,6 +647,7 @@ CHECK_WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
                      DO IIO=IIO1,IIO2
                         DUDT = -OM%FVX(IIO,JJO,KKO)   - M2%RDXN(IIO)  *(OM%H(IIO+1,JJO,KKO)-OM%H(IIO,JJO,KKO))
                         UN_NEW_OTHER = UN_NEW_OTHER + OM%U(IIO,JJO,KKO)   + DT*DUDT
+IF (NM == 1) WRITE(*,'(A,4i4,3E16.8)') 'PRES: 1: ', IW, IIO, JJO, KKO, UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
                      ENDDO
                   ENDDO
                ENDDO
@@ -647,6 +657,7 @@ CHECK_WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
                      DO IIO=IIO1,IIO2
                         DUDT = -OM%FVX(IIO-1,JJO,KKO) - M2%RDXN(IIO-1)*(OM%H(IIO,JJO,KKO)-OM%H(IIO-1,JJO,KKO))
                         UN_NEW_OTHER = UN_NEW_OTHER + OM%U(IIO-1,JJO,KKO) + DT*DUDT
+IF (NM == 1) WRITE(*,'(A,4i4,3E16.8)') 'PRES:-1: ', IW, IIO, JJO, KKO, UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
                      ENDDO
                   ENDDO
                ENDDO
@@ -656,6 +667,7 @@ CHECK_WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
                      DO IIO=IIO1,IIO2
                         DVDT = -OM%FVY(IIO,JJO,KKO)   - M2%RDYN(JJO)  *(OM%H(IIO,JJO+1,KKO)-OM%H(IIO,JJO,KKO))
                         UN_NEW_OTHER = UN_NEW_OTHER + OM%V(IIO,JJO,KKO)   + DT*DVDT
+IF (NM == 1) WRITE(*,'(A,4i4,3E16.8)') 'PRES: 2: ', IW, IIO, JJO, KKO, UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
                      ENDDO
                   ENDDO
                ENDDO
@@ -665,6 +677,7 @@ CHECK_WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
                      DO IIO=IIO1,IIO2
                         DVDT = -OM%FVY(IIO,JJO-1,KKO) - M2%RDYN(JJO-1)*(OM%H(IIO,JJO,KKO)-OM%H(IIO,JJO-1,KKO))
                         UN_NEW_OTHER = UN_NEW_OTHER + OM%V(IIO,JJO-1,KKO) + DT*DVDT
+IF (NM == 1) WRITE(*,'(A,4i4,3E16.8)') 'PRES:-2: ', IW, IIO, JJO, KKO, UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
                      ENDDO
                   ENDDO
                ENDDO
@@ -674,6 +687,7 @@ CHECK_WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
                      DO IIO=IIO1,IIO2
                         DWDT = -OM%FVZ(IIO,JJO,KKO)   - M2%RDZN(KKO)  *(OM%H(IIO,JJO,KKO+1)-OM%H(IIO,JJO,KKO))
                         UN_NEW_OTHER = UN_NEW_OTHER + OM%W(IIO,JJO,KKO)   + DT*DWDT
+IF (NM == 1) WRITE(*,'(A,4i4,3E16.8)') 'PRES: 3: ', IW, IIO, JJO, KKO, UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
                      ENDDO
                   ENDDO
                ENDDO
@@ -683,6 +697,7 @@ CHECK_WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
                      DO IIO=IIO1,IIO2
                         DWDT = -OM%FVZ(IIO,JJO,KKO-1) - M2%RDZN(KKO-1)*(OM%H(IIO,JJO,KKO)-OM%H(IIO,JJO,KKO-1))
                         UN_NEW_OTHER = UN_NEW_OTHER + OM%W(IIO,JJO,KKO-1) + DT*DWDT
+IF (NM == 1) WRITE(*,'(A,4i4,3E16.8)') 'PRES:-3: ', IW, IIO, JJO, KKO, UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
                      ENDDO
                   ENDDO
                ENDDO
@@ -751,15 +766,20 @@ CHECK_WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
 
    ENDIF
 
+
    ! At solid boundaries, compare updated normal velocity with specified normal velocity
 
    IF (WC%BOUNDARY_TYPE==SOLID_BOUNDARY) THEN
       IF (PREDICTOR) THEN
          UN_NEW_OTHER = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL_S
+IF (NM == 1) WRITE(*,'(A,4I4, 3E16.8)') 'PRES:SP: ',  IW, II, JJ, KK, UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
       ELSE
          UN_NEW_OTHER = -SIGN(1._EB,REAL(IOR,EB))*WC%ONE_D%U_NORMAL
+IF (NM == 1) WRITE(*,'(A,4I4, 3E16.8)') 'PRES:SC: ',  IW, II, JJ, KK, UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
       ENDIF
    ENDIF
+
+
 
    ! Compute velocity difference
 

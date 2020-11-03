@@ -1556,6 +1556,8 @@ OBST_LOOP: DO N=1,N_OBST
                   DUUDT = -RFODT*(U(I,J,K)+US(I,J,K))
                ENDIF
                FVX(I,J,K) = -RDXN(I)*(HP(I+1,J,K)-HP(I,J,K)) - DUUDT
+IF (MYID == 0) WRITE(*,'(A,3I4,4E16.8)') &
+   'NO_FLUX:X: I, J, K, HPP, HP, DVVDT, FVX:', I, J, K, HP(I+1,J,K), HP(I,J,K), DUUDT, FVX(I,J,K)
             ENDIF
          ENDDO
       ENDDO
@@ -1573,6 +1575,8 @@ OBST_LOOP: DO N=1,N_OBST
                   DVVDT = -RFODT*(V(I,J,K)+VS(I,J,K))
                ENDIF
                FVY(I,J,K) = -RDYN(J)*(HP(I,J+1,K)-HP(I,J,K)) - DVVDT
+IF (MYID == 0) WRITE(*,'(A,3I4,4E16.8)') &
+   'NO_FLUX:Y: I, J, K, HPP, HP, DVVDT, FVY:', I, J, K, HP(I,J+1,K), HP(I,J,K), DVVDT, FVY(I,J,K)
             ENDIF
          ENDDO
       ENDDO
@@ -1590,6 +1594,8 @@ OBST_LOOP: DO N=1,N_OBST
                   DWWDT = -RFODT*(W(I,J,K)+WS(I,J,K))
                ENDIF
                FVZ(I,J,K) = -RDZN(K)*(HP(I,J,K+1)-HP(I,J,K)) - DWWDT
+IF (MYID == 0) WRITE(*,'(A,3I4,4E16.8)') &
+   'NO_FLUX:Z: I, J, K, HPP, HP, DVVDT, FVX:', I, J, K, HP(I,J,K+1), HP(I,J,K), DWWDT, FVZ(I,J,K)
             ENDIF
          ENDDO
       ENDDO
@@ -1638,6 +1644,8 @@ WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
                DUUDT = 2._EB*RFODT*(UN-0.5_EB*(U(II,JJ,KK)+US(II,JJ,KK)) )
             ENDIF
             FVX(II,JJ,KK) = -RDXN(II)*(HP(II+1,JJ,KK)-HP(II,JJ,KK))*DHFCT - DUUDT
+IF (MYID == 0) WRITE(*,'(A,3I4,4E16.8)') &
+   'NO_FLUX: 1: II, JJ, KK, HPP, HP, DUUDT, FVX:', II, JJ, KK, HP(II+1,JJ,KK), HP(II,JJ,KK), DHFCT, DUUDT
          CASE(-1)
             IF (PREDICTOR) THEN
                DUUDT = RFODT*(UN-U(II-1,JJ,KK))
@@ -1645,6 +1653,8 @@ WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
                DUUDT = 2._EB*RFODT*(UN-0.5_EB*(U(II-1,JJ,KK)+US(II-1,JJ,KK)) )
             ENDIF
             FVX(II-1,JJ,KK) = -RDXN(II-1)*(HP(II,JJ,KK)-HP(II-1,JJ,KK))*DHFCT - DUUDT
+IF (MYID == 0) WRITE(*,'(A,3I4,4E16.8)') &
+   'NO_FLUX:-1: II, JJ, KK, HPP, HP, DUUDT, FVX:', II, JJ, KK, HP(II,JJ,KK), HP(II-1,JJ,KK), DHFCT, DUUDT
          CASE( 2)
             IF (PREDICTOR) THEN
                DVVDT = RFODT*(UN-V(II,JJ,KK))
@@ -1652,6 +1662,8 @@ WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
                DVVDT = 2._EB*RFODT*(UN-0.5_EB*(V(II,JJ,KK)+VS(II,JJ,KK)) )
             ENDIF
             FVY(II,JJ,KK) = -RDYN(JJ)*(HP(II,JJ+1,KK)-HP(II,JJ,KK))*DHFCT - DVVDT
+IF (MYID == 0) WRITE(*,'(A,3I4,4E16.8)') &
+   'NO_FLUX: 2: II, JJ, KK, HPP, HP, DUUDT, FVY:', II, JJ, KK, HP(II,JJ+1,KK), HP(II,JJ,KK), DHFCT, DVVDT
          CASE(-2)
             IF (PREDICTOR) THEN
                DVVDT = RFODT*(UN-V(II,JJ-1,KK))
@@ -1659,6 +1671,8 @@ WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
                DVVDT = 2._EB*RFODT*(UN-0.5_EB*(V(II,JJ-1,KK)+VS(II,JJ-1,KK)) )
             ENDIF
             FVY(II,JJ-1,KK) = -RDYN(JJ-1)*(HP(II,JJ,KK)-HP(II,JJ-1,KK))*DHFCT - DVVDT
+IF (MYID == 0) WRITE(*,'(A,3I4,4E16.8)') &
+   'NO_FLUX:-2: II, JJ, KK, HPP, HP, DUUDT, FVY:', II, JJ, KK, HP(II,JJ,KK), HP(II,JJ-1,KK), DHFCT, DVVDT
          CASE( 3)
             IF (PREDICTOR) THEN
                DWWDT = RFODT*(UN-W(II,JJ,KK))
@@ -1666,6 +1680,8 @@ WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
                DWWDT = 2._EB*RFODT*(UN-0.5_EB*(W(II,JJ,KK)+WS(II,JJ,KK)) )
             ENDIF
             FVZ(II,JJ,KK) = -RDZN(KK)*(HP(II,JJ,KK+1)-HP(II,JJ,KK))*DHFCT - DWWDT
+IF (MYID == 0) WRITE(*,'(A,3I4,4E16.8)') &
+   'NO_FLUX: 3: II, JJ, KK, HPP, HP, DUUDT, FVZ:', II, JJ, KK, HP(II,JJ,KK+1), HP(II,JJ,KK), DHFCT, DWWDT
          CASE(-3)
             IF (PREDICTOR) THEN
                DWWDT = RFODT*(UN-W(II,JJ,KK-1))
@@ -1673,6 +1689,8 @@ WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
                DWWDT = 2._EB*RFODT*(UN-0.5_EB*(W(II,JJ,KK-1)+WS(II,JJ,KK-1)) )
             ENDIF
             FVZ(II,JJ,KK-1) = -RDZN(KK-1)*(HP(II,JJ,KK)-HP(II,JJ,KK-1))*DHFCT - DWWDT
+IF (MYID == 0) WRITE(*,'(A,3I4,4E16.8)') &
+   'NO_FLUX:-3: II, JJ, KK, HPP, HP, DUUDT, FVZ:', II, JJ, KK, HP(II,JJ,KK), HP(II,JJ,KK-1), DHFCT, DWWDT
       END SELECT
    ENDIF
 
@@ -1734,6 +1752,8 @@ ELSE FREEZE_VELOCITY_IF
       DO J=1,JBAR
          DO I=0,IBAR
             US(I,J,K) = U(I,J,K) - DT*( FVX(I,J,K) + RDXN(I)*(H(I+1,J,K)-H(I,J,K)) )
+IF (MYID == 0) WRITE(*,'(A,3I4,4E16.8)') &
+   'VELO_PRED: US: I, J, K, FVX, HP, H, US:', I, J, K, FVX(I,J,K), H(I+1,J,K), H(I,J,K), US(I,J,K)
          ENDDO
       ENDDO
    ENDDO
@@ -1742,6 +1762,8 @@ ELSE FREEZE_VELOCITY_IF
       DO J=0,JBAR
          DO I=1,IBAR
             VS(I,J,K) = V(I,J,K) - DT*( FVY(I,J,K) + RDYN(J)*(H(I,J+1,K)-H(I,J,K)) )
+IF (MYID == 0) WRITE(*,'(A,3I4,4E16.8)') &
+   'VELO_PRED: VS: I, J, K, FVY, HP, H, VS:', I, J, K, FVY(I,J,K), H(I,J+1,K), H(I,J,K), VS(I,J,K)
          ENDDO
       ENDDO
    ENDDO
@@ -1750,6 +1772,8 @@ ELSE FREEZE_VELOCITY_IF
       DO J=1,JBAR
          DO I=1,IBAR
             WS(I,J,K) = W(I,J,K) - DT*( FVZ(I,J,K) + RDZN(K)*(H(I,J,K+1)-H(I,J,K)) )
+IF (MYID == 0) WRITE(*,'(A,3I4,4E16.8)') &
+   'VELO_PRED: WS: I, J, K, FVW, HP, H, WS:', I, J, K, FVZ(I,J,K), H(I,J,K+1), H(I,J,K), WS(I,J,K)
          ENDDO
       ENDDO
    ENDDO
