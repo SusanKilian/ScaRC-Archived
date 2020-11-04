@@ -1424,6 +1424,7 @@ PRESSURE_ITERATION_LOOP: DO
 IF (DEBUG) THEN
    WRITE(*,*) '================================= TOTAL_PRESSURE_ITERATIONS = ', TOTAL_PRESSURE_ITERATIONS, PRESSURE_ITERATIONS
    WRITE(*,*) 'ITERATE_PRESSURE =', ITERATE_PRESSURE
+   WRITE(*,*) 'PREDICTOR =', PREDICTOR
 ENDIF
 
    ! The following loops and exchange always get executed the first pass through the PRESSURE_ITERATION_LOOP.
