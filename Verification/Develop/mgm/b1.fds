@@ -1,12 +1,12 @@
 &HEAD CHID='b1',TITLE='ScaRC-GMG for 2D-square with obstruction on 8 meshes' /
 
-&MESH IJK=10,1,10, XB=0.0,1.0,-0.01,0.01,0.0,1.0 /
+&MESH IJK=5,1,5, XB=0.0,1.0,-0.01,0.01,0.0,1.0 /
 
 &MISC NOISE = .FALSE. 
       BAROCLINIC = .FALSE.
       DNS   = .TRUE./
 
-&PRES SOLVER          = 'USCARC'
+&PRES SOLVER          = 'SCARC'
       SCARC_KRYLOV_ACCURACY = 1E-16
       SCARC_METHOD    = 'MGM'   /
 
