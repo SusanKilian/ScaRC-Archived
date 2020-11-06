@@ -2094,7 +2094,6 @@ EDGE_LOOP: DO IE=1,N_EDGES
    JJO(2) = IJKE(15,IE)
    KKO(2) = IJKE(16,IE)
 
-IF (NM == 1) WRITE(*,*) '---------------- VELOCITY_BC: II, JJ, KK:', II, JJ, KK
 
    ! Get the velocity components at the appropriate cell faces
 
@@ -3494,38 +3493,38 @@ PREDICTOR_COND : IF (PREDICTOR) THEN
      CASE( IAXIS)
         US(IIG-1,JJG  ,KKG  ) = (U(IIG-1,JJG  ,KKG  ) - DT*( FVX(IIG-1,JJG  ,KKG  ) + DHDN ))
 
-IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
-   'WALL_NO_GRADH: US: 1', IIG-1, JJG, KKG, FVX(IIG-1, JJG, KKG), US(IIG-1, JJG, KKG), U(IIG-1, JJG, KKG)
+!IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   !'WALL_NO_GRADH: US: 1', IIG-1, JJG, KKG, FVX(IIG-1, JJG, KKG), US(IIG-1, JJG, KKG), U(IIG-1, JJG, KKG)
 
      CASE(-IAXIS)
         US(IIG  ,JJG  ,KKG  ) = (U(IIG  ,JJG  ,KKG  ) - DT*( FVX(IIG  ,JJG  ,KKG  ) + DHDN ))
 
-IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
-   'WALL_NO_GRADH: US:-1', IIG, JJG, KKG, FVX(IIG, JJG, KKG), US(IIG, JJG, KKG), U(IIG, JJG, KKG)
+!IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   !'WALL_NO_GRADH: US:-1', IIG, JJG, KKG, FVX(IIG, JJG, KKG), US(IIG, JJG, KKG), U(IIG, JJG, KKG)
 
      CASE( JAXIS)
         VS(IIG  ,JJG-1,KKG  ) = (V(IIG  ,JJG-1,KKG  ) - DT*( FVY(IIG  ,JJG-1,KKG  ) + DHDN ))
 
-IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
-   'WALL_NO_GRADH: VS: 2', IIG, JJG-1, KKG, FVY(IIG, JJG-1, KKG), VS(IIG, JJG-1, KKG), V(IIG, JJG-1, KKG)
+!IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   !'WALL_NO_GRADH: VS: 2', IIG, JJG-1, KKG, FVY(IIG, JJG-1, KKG), VS(IIG, JJG-1, KKG), V(IIG, JJG-1, KKG)
 
      CASE(-JAXIS)
         VS(IIG  ,JJG  ,KKG  ) = (V(IIG  ,JJG  ,KKG  ) - DT*( FVY(IIG  ,JJG  ,KKG  ) + DHDN ))
 
-IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
-   'WALL_NO_GRADH: VS:-2', IIG, JJG, KKG, FVY(IIG, JJG, KKG), VS(IIG, JJG, KKG), V(IIG, JJG, KKG)
+!IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   !'WALL_NO_GRADH: VS:-2', IIG, JJG, KKG, FVY(IIG, JJG, KKG), VS(IIG, JJG, KKG), V(IIG, JJG, KKG)
 
      CASE( KAXIS)
         WS(IIG  ,JJG  ,KKG-1) = (W(IIG  ,JJG  ,KKG-1) - DT*( FVZ(IIG  ,JJG  ,KKG-1) + DHDN ))
 
-IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
-   'WALL_NO_GRADH: WS: 3', IIG, JJG, KKG-1, FVZ(IIG, JJG, KKG-1), WS(IIG, JJG, KKG-1), W(IIG, JJG, KKG-1)
+!IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   !'WALL_NO_GRADH: WS: 3', IIG, JJG, KKG-1, FVZ(IIG, JJG, KKG-1), WS(IIG, JJG, KKG-1), W(IIG, JJG, KKG-1)
 
      CASE(-KAXIS)
         WS(IIG  ,JJG  ,KKG  ) = (W(IIG  ,JJG  ,KKG  ) - DT*( FVZ(IIG  ,JJG  ,KKG  ) + DHDN ))
 
-IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
-   'WALL_NO_GRADH: WS:-3', IIG, JJG, KKG, FVZ(IIG, JJG, KKG), WS(IIG, JJG, KKG), W(IIG, JJG, KKG)
+!IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   !'WALL_NO_GRADH: WS:-3', IIG, JJG, KKG, FVZ(IIG, JJG, KKG), WS(IIG, JJG, KKG), W(IIG, JJG, KKG)
 
      END SELECT
 
@@ -3555,43 +3554,43 @@ ELSE ! Corrector
          U(IIG-1,JJG  ,KKG  ) = 0.5_EB*(                      VEL_N + US(IIG-1,JJG  ,KKG  ) - &
                                         DT*( FVX(IIG-1,JJG  ,KKG  ) + DHDN ))
 
-IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
-   'WALL_NO_GRADH: U: 1', IIG-1, JJG, KKG, FVX(IIG-1, JJG, KKG), US(IIG-1, JJG, KKG), U(IIG-1, JJG, KKG)
+!IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   !'WALL_NO_GRADH: U: 1', IIG-1, JJG, KKG, FVX(IIG-1, JJG, KKG), US(IIG-1, JJG, KKG), U(IIG-1, JJG, KKG)
 
      CASE(-IAXIS)
          U(IIG  ,JJG  ,KKG  ) = 0.5_EB*(                      VEL_N + US(IIG  ,JJG  ,KKG  ) - &
                                         DT*( FVX(IIG  ,JJG  ,KKG  ) + DHDN ))
 
-IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
-   'WALL_NO_GRADH: U:-1', IIG, JJG, KKG, FVX(IIG, JJG, KKG), US(IIG, JJG, KKG), U(IIG, JJG, KKG)
+!IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   !'WALL_NO_GRADH: U:-1', IIG, JJG, KKG, FVX(IIG, JJG, KKG), US(IIG, JJG, KKG), U(IIG, JJG, KKG)
 
      CASE( JAXIS)
          V(IIG  ,JJG-1,KKG  ) = 0.5_EB*(                      VEL_N + VS(IIG  ,JJG-1,KKG  ) - &
                                         DT*( FVY(IIG  ,JJG-1,KKG  ) + DHDN ))
 
-IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
-   'WALL_NO_GRADH: V: 2', IIG, JJG-1, KKG, FVY(IIG, JJG-1, KKG), VS(IIG, JJG-1, KKG), V(IIG, JJG-1, KKG)
+!IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   !'WALL_NO_GRADH: V: 2', IIG, JJG-1, KKG, FVY(IIG, JJG-1, KKG), VS(IIG, JJG-1, KKG), V(IIG, JJG-1, KKG)
 
      CASE(-JAXIS)
          V(IIG  ,JJG  ,KKG  ) = 0.5_EB*(                      VEL_N + VS(IIG  ,JJG  ,KKG  ) - &
                                         DT*( FVY(IIG  ,JJG  ,KKG  ) + DHDN ))
 
-IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
-   'WALL_NO_GRADH: V:-2', IIG, JJG, KKG, FVY(IIG, JJG, KKG), VS(IIG, JJG, KKG), V(IIG, JJG, KKG)
+!IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   !'WALL_NO_GRADH: V:-2', IIG, JJG, KKG, FVY(IIG, JJG, KKG), VS(IIG, JJG, KKG), V(IIG, JJG, KKG)
 
      CASE( KAXIS)
          W(IIG  ,JJG  ,KKG-1) = 0.5_EB*(                      VEL_N + WS(IIG  ,JJG  ,KKG-1) - &
                                         DT*( FVZ(IIG  ,JJG  ,KKG-1) + DHDN ))
 
-IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
-   'WALL_NO_GRADH: W: 3', IIG, JJG, KKG-1, FVZ(IIG, JJG, KKG-1), WS(IIG, JJG, KKG-1), W(IIG, JJG, KKG-1)
+!IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   !'WALL_NO_GRADH: W: 3', IIG, JJG, KKG-1, FVZ(IIG, JJG, KKG-1), WS(IIG, JJG, KKG-1), W(IIG, JJG, KKG-1)
 
      CASE(-KAXIS)
          W(IIG  ,JJG  ,KKG  ) = 0.5_EB*(                      VEL_N + WS(IIG  ,JJG  ,KKG  ) - &
                                         DT*( FVZ(IIG  ,JJG  ,KKG  ) + DHDN ))
 
-IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
-   'WALL_NO_GRADH: W:-3', IIG, JJG, KKG, FVZ(IIG, JJG, KKG), WS(IIG, JJG, KKG), W(IIG, JJG, KKG)
+!IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   !'WALL_NO_GRADH: W:-3', IIG, JJG, KKG, FVZ(IIG, JJG, KKG), WS(IIG, JJG, KKG), W(IIG, JJG, KKG)
 
      END SELECT
 
