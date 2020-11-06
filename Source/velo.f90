@@ -708,6 +708,23 @@ ELSE
    ENDDO
 ENDIF
 
+IF (NM == 1) THEN
+   WRITE(*,*) 'VELO-INFO:FVX(.,0,.):'
+   WRITE(*,'(9E14.6)') ((FVX(I,0,K), I=0, IBAR), K=KBAR,0,-1)
+   WRITE(*,*) 'VELO-INFO:FVY(.,1,.):'
+   WRITE(*,'(9E14.6)') ((FVY(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+   WRITE(*,*) 'VELO-INFO:FVZ(.,2,.):'
+   WRITE(*,'(9E14.6)') ((FVZ(I,2,K), I=0, IBAR), K=KBAR,0,-1)
+   WRITE(*,*) 'VELO-INFO:UU(.,0,.):'
+   WRITE(*,'(9E14.6)') ((UU(I,0,K), I=0, IBAR), K=KBAR,0,-1)
+   WRITE(*,*) 'VELO-INFO:UU(.,2,.):'
+   WRITE(*,'(9E14.6)') ((UU(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+   WRITE(*,*) 'VELO-INFO:UU(.,3,.):'
+   WRITE(*,'(9E14.6)') ((UU(I,2,K), I=0, IBAR), K=KBAR,0,-1)
+ENDIF
+
+
+IF (NM==1) WRITE(*,*) '=================== FVX:'
 ! Compute x-direction flux term FVX
 
 !$OMP PARALLEL PRIVATE(WP, WM, VP, VM, UP, UM, &
@@ -767,11 +784,13 @@ DO K=1,KBAR
          DTXZDZ= RDZ(K) *(TXZP-TXZM)
          VTRM  = DTXXDX + DTXYDY + DTXZDZ
          FVX(I,J,K) = 0.25_EB*(WOMY - VOMZ) - GX(I) + RRHO*(GX(I)*RHO_0(K) - VTRM)
+IF (NM==1) WRITE(*,'(A,3i4,7E14.6)') 'I,J,K,VP,VM,WP,WM,DVDY,DWDZ,FVX:', I, J, K, VP,VM, WP,WM,DVDY,DWDZ,FVX(I,J,K)
       ENDDO
    ENDDO
 ENDDO
 !$OMP END DO NOWAIT
 
+IF (NM==1) WRITE(*,*) '=================== FVY:'
 ! Compute y-direction flux term FVY
 
 !$OMP DO SCHEDULE(static) &
@@ -826,6 +845,7 @@ DO K=1,KBAR
          DTYZDZ= RDZ(K) *(TYZP-TYZM)
          VTRM  = DTXYDX + DTYYDY + DTYZDZ
          FVY(I,J,K) = 0.25_EB*(UOMZ - WOMX) - GY(I) + RRHO*(GY(I)*RHO_0(K) - VTRM)
+IF (NM==1) WRITE(*,'(A,3i4,7E14.6)') 'I,J,K,UP,UM,WP,WM,DUDX,DWDZ,FVY:', I, J, K, UP,UM, WP,WM,DUDX, DWDZ, FVY(I,J,K)
       ENDDO
    ENDDO
 ENDDO
@@ -833,6 +853,7 @@ ENDDO
 
 ! Compute z-direction flux term FVZ
 
+IF (NM==1) WRITE(*,*) '=================== FVZ:'
 !$OMP DO SCHEDULE(static) &
 !$OMP& PRIVATE(UOMY, VOMX, TZZP, TZZM, DTXZDX, DTYZDY, DTZZDZ)
 DO K=0,KBAR
@@ -885,12 +906,14 @@ DO K=0,KBAR
          DTZZDZ= RDZN(K)*(TZZP-TZZM)
          VTRM  = DTXZDX + DTYZDY + DTZZDZ
          FVZ(I,J,K) = 0.25_EB*(VOMX - UOMY) - GZ(I) + RRHO*(GZ(I)*0.5_EB*(RHO_0(K)+RHO_0(K+1)) - VTRM)
+IF (NM==1) WRITE(*,'(A,3i4,7E14.6)') 'I,J,K,UP,UM,VP,VM,DUDX,DVDY,FVZ:', I, J, K, UP,UM, VP,VM,DUDX, DVDY, FVZ(I,J,K)
       ENDDO
    ENDDO
 ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
 
+IF (NM==1) WRITE(*,*) '=================== READY:'
 IF (EVACUATION_ONLY(NM)) THEN
    FVZ = 0._EB
    RETURN
@@ -1741,6 +1764,14 @@ ENDIF
 
 T_NOW=CURRENT_TIME()
 CALL POINT_TO_MESH(NM)
+ 
+
+   WRITE(*,*) 'VELO_PRED:A: US(.,0,1):'
+   WRITE(*,'(9E14.6)') ((US(I,0,K), I=0, IBAR), K=KBAR,0,-1)
+   WRITE(*,*) 'VELO_PRED:A: US(.,1,1):'
+   WRITE(*,'(9E14.6)') ((US(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+   WRITE(*,*) 'VELO_PRED:A: US(.,2,1):'
+   WRITE(*,'(9E14.6)') ((US(I,2,K), I=0, IBAR), K=KBAR,0,-1)
 
 FREEZE_VELOCITY_IF: IF (FREEZE_VELOCITY) THEN
    US = U
@@ -1778,10 +1809,24 @@ IF (MYID == 0) WRITE(*,'(A,3I4,4E16.8)') &
       ENDDO
    ENDDO
 
+   WRITE(*,*) 'VELO_PRED:B: US(.,0,1):', PRES_METHOD
+   WRITE(*,'(9E14.6)') ((US(I,0,K), I=0, IBAR), K=KBAR,0,-1)
+   WRITE(*,*) 'VELO_PRED:B: US(.,1,1):', PRES_METHOD
+   WRITE(*,'(9E14.6)') ((US(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+   WRITE(*,*) 'VELO_PRED:B: US(.,2,1):', PRES_METHOD
+   WRITE(*,'(9E14.6)') ((US(I,2,K), I=0, IBAR), K=KBAR,0,-1)
+
    IF (PRES_METHOD == 'GLMAT' .OR. PRES_METHOD == 'USCARC') CALL WALL_VELOCITY_NO_GRADH(DT,.FALSE.)
    IF (CC_IBM) CALL CCIBM_VELOCITY_NO_GRADH(DT,.FALSE.)
 
 ENDIF FREEZE_VELOCITY_IF
+
+   WRITE(*,*) 'VELO_PRED:C: US(.,0,1):'
+   WRITE(*,'(9E14.6)') ((US(I,0,K), I=0, IBAR), K=KBAR,0,-1)
+   WRITE(*,*) 'VELO_PRED:C: US(.,1,1):'
+   WRITE(*,'(9E14.6)') ((US(I,1,K), I=0, IBAR), K=KBAR,0,-1)
+   WRITE(*,*) 'VELO_PRED:C: US(.,2,1):'
+   WRITE(*,'(9E14.6)') ((US(I,2,K), I=0, IBAR), K=KBAR,0,-1)
 
 ! Manufactured solution (debug)
 
@@ -2049,6 +2094,8 @@ EDGE_LOOP: DO IE=1,N_EDGES
    JJO(2) = IJKE(15,IE)
    KKO(2) = IJKE(16,IE)
 
+IF (NM == 1) WRITE(*,*) '---------------- VELOCITY_BC: II, JJ, KK:', II, JJ, KK
+
    ! Get the velocity components at the appropriate cell faces
 
    COMPONENT: SELECT CASE(IEC)
@@ -2224,11 +2271,13 @@ EDGE_LOOP: DO IE=1,N_EDGES
                      IF (II==IBAR .AND. IOR==-1) WW(IBP1,JJ,KK) = WW(IBAR,JJ,KK)
                      IF (KK==0    .AND. IOR== 3) UU(II,JJ,0)    = UU(II,JJ,1)
                      IF (KK==KBAR .AND. IOR==-3) UU(II,JJ,KBP1) = UU(II,JJ,KBAR)
+!IF (NM == 1) WRITE(*,*) '         A  IEC = 2:', UU(II,JJ,0), UU(II,JJ, KBP1)
                   CASE(3)
                      IF (II==0    .AND. IOR== 1) VV(0,JJ,KK)    = VV(1,JJ,KK)
                      IF (II==IBAR .AND. IOR==-1) VV(IBP1,JJ,KK) = VV(IBAR,JJ,KK)
                      IF (JJ==0    .AND. IOR== 2) UU(II,0,KK)    = UU(II,1,KK)
                      IF (JJ==JBAR .AND. IOR==-2) UU(II,JBP1,KK) = UU(II,JBAR,KK)
+!IF (NM == 1) WRITE(*,*) '         A  IEC = 3:', UU(II,0,KK), UU(II,JBP1, KK)
                END SELECT
 
             ELSE WIND_NO_WIND_IF  ! For upwind, inflow boundaries, use the specified wind field for tangential velocity components
@@ -2244,11 +2293,13 @@ EDGE_LOOP: DO IE=1,N_EDGES
                      IF (II==IBAR .AND. IOR==-1) WW(IBP1,JJ,KK) = WBAR
                      IF (KK==0    .AND. IOR== 3) UU(II,JJ,0)    = UBAR
                      IF (KK==KBAR .AND. IOR==-3) UU(II,JJ,KBP1) = UBAR
+!IF (NM == 1) WRITE(*,*) '         B  IEC = 2:', UU(II,JJ,0), UU(II,JJ, KBP1)
                   CASE(3)
                      IF (II==0    .AND. IOR== 1) VV(0,JJ,KK)    = VBAR
                      IF (II==IBAR .AND. IOR==-1) VV(IBP1,JJ,KK) = VBAR
                      IF (JJ==0    .AND. IOR== 2) UU(II,0,KK)    = UBAR
                      IF (JJ==JBAR .AND. IOR==-2) UU(II,JBP1,KK) = UBAR
+!IF (NM == 1) WRITE(*,*) '         B  IEC = 3:', UU(II,JJ,0), UU(II,JJ, KBP1)
                END SELECT
 
             ENDIF WIND_NO_WIND_IF
@@ -2584,6 +2635,7 @@ EDGE_LOOP: DO IE=1,N_EDGES
                IF (II==IBAR .AND. IOR==-1) WW(II+1,JJ,KK) = VEL_GHOST
                IF (KK==0    .AND. IOR== 3) UU(II,JJ,KK)   = VEL_GHOST
                IF (KK==KBAR .AND. IOR==-3) UU(II,JJ,KK+1) = VEL_GHOST
+!IF (NM == 1) WRITE(*,*) '         C  IEC = 2:', UU(II,JJ,KK), UU(II,JJ,KK+1)
                IF (CORRECTOR .AND. II>0 .AND. II<IBAR .AND. KK>0 .AND. KK<KBAR) THEN
                  IF (ICD==1) THEN
                     U_Z(II,JJ,KK) = 0.5_EB*(VEL_GHOST+VEL_GAS)
@@ -2596,6 +2648,7 @@ EDGE_LOOP: DO IE=1,N_EDGES
                IF (II==IBAR .AND. IOR==-1) VV(II+1,JJ,KK) = VEL_GHOST
                IF (JJ==0    .AND. IOR== 2) UU(II,JJ,KK)   = VEL_GHOST
                IF (JJ==JBAR .AND. IOR==-2) UU(II,JJ+1,KK) = VEL_GHOST
+!IF (NM == 1) WRITE(*,*) '         C  IEC = 2:', UU(II,JJ,KK), UU(II,JJ,KK+1)
                IF (CORRECTOR .AND. II>0 .AND. II<IBAR .AND. JJ>0 .AND. JJ<JBAR) THEN
                  IF (ICD==1) THEN
                     V_X(II,JJ,KK) = 0.5_EB*(VEL_GHOST+VEL_GAS)
@@ -3440,16 +3493,40 @@ PREDICTOR_COND : IF (PREDICTOR) THEN
      SELECT CASE(IOR)
      CASE( IAXIS)
         US(IIG-1,JJG  ,KKG  ) = (U(IIG-1,JJG  ,KKG  ) - DT*( FVX(IIG-1,JJG  ,KKG  ) + DHDN ))
+
+IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   'WALL_NO_GRADH: US: 1', IIG-1, JJG, KKG, FVX(IIG-1, JJG, KKG), US(IIG-1, JJG, KKG), U(IIG-1, JJG, KKG)
+
      CASE(-IAXIS)
         US(IIG  ,JJG  ,KKG  ) = (U(IIG  ,JJG  ,KKG  ) - DT*( FVX(IIG  ,JJG  ,KKG  ) + DHDN ))
+
+IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   'WALL_NO_GRADH: US:-1', IIG, JJG, KKG, FVX(IIG, JJG, KKG), US(IIG, JJG, KKG), U(IIG, JJG, KKG)
+
      CASE( JAXIS)
         VS(IIG  ,JJG-1,KKG  ) = (V(IIG  ,JJG-1,KKG  ) - DT*( FVY(IIG  ,JJG-1,KKG  ) + DHDN ))
+
+IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   'WALL_NO_GRADH: VS: 2', IIG, JJG-1, KKG, FVY(IIG, JJG-1, KKG), VS(IIG, JJG-1, KKG), V(IIG, JJG-1, KKG)
+
      CASE(-JAXIS)
         VS(IIG  ,JJG  ,KKG  ) = (V(IIG  ,JJG  ,KKG  ) - DT*( FVY(IIG  ,JJG  ,KKG  ) + DHDN ))
+
+IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   'WALL_NO_GRADH: VS:-2', IIG, JJG, KKG, FVY(IIG, JJG, KKG), VS(IIG, JJG, KKG), V(IIG, JJG, KKG)
+
      CASE( KAXIS)
         WS(IIG  ,JJG  ,KKG-1) = (W(IIG  ,JJG  ,KKG-1) - DT*( FVZ(IIG  ,JJG  ,KKG-1) + DHDN ))
+
+IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   'WALL_NO_GRADH: WS: 3', IIG, JJG, KKG-1, FVZ(IIG, JJG, KKG-1), WS(IIG, JJG, KKG-1), W(IIG, JJG, KKG-1)
+
      CASE(-KAXIS)
         WS(IIG  ,JJG  ,KKG  ) = (W(IIG  ,JJG  ,KKG  ) - DT*( FVZ(IIG  ,JJG  ,KKG  ) + DHDN ))
+
+IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   'WALL_NO_GRADH: WS:-3', IIG, JJG, KKG, FVZ(IIG, JJG, KKG), WS(IIG, JJG, KKG), W(IIG, JJG, KKG)
+
      END SELECT
 
   ENDDO WALL_CELL_LOOP_1
@@ -3477,21 +3554,45 @@ ELSE ! Corrector
                                                   ! V   => Store the untouched U normal on internal WALLs.
          U(IIG-1,JJG  ,KKG  ) = 0.5_EB*(                      VEL_N + US(IIG-1,JJG  ,KKG  ) - &
                                         DT*( FVX(IIG-1,JJG  ,KKG  ) + DHDN ))
+
+IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   'WALL_NO_GRADH: U: 1', IIG-1, JJG, KKG, FVX(IIG-1, JJG, KKG), US(IIG-1, JJG, KKG), U(IIG-1, JJG, KKG)
+
      CASE(-IAXIS)
          U(IIG  ,JJG  ,KKG  ) = 0.5_EB*(                      VEL_N + US(IIG  ,JJG  ,KKG  ) - &
                                         DT*( FVX(IIG  ,JJG  ,KKG  ) + DHDN ))
+
+IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   'WALL_NO_GRADH: U:-1', IIG, JJG, KKG, FVX(IIG, JJG, KKG), US(IIG, JJG, KKG), U(IIG, JJG, KKG)
+
      CASE( JAXIS)
          V(IIG  ,JJG-1,KKG  ) = 0.5_EB*(                      VEL_N + VS(IIG  ,JJG-1,KKG  ) - &
                                         DT*( FVY(IIG  ,JJG-1,KKG  ) + DHDN ))
+
+IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   'WALL_NO_GRADH: V: 2', IIG, JJG-1, KKG, FVY(IIG, JJG-1, KKG), VS(IIG, JJG-1, KKG), V(IIG, JJG-1, KKG)
+
      CASE(-JAXIS)
          V(IIG  ,JJG  ,KKG  ) = 0.5_EB*(                      VEL_N + VS(IIG  ,JJG  ,KKG  ) - &
                                         DT*( FVY(IIG  ,JJG  ,KKG  ) + DHDN ))
+
+IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   'WALL_NO_GRADH: V:-2', IIG, JJG, KKG, FVY(IIG, JJG, KKG), VS(IIG, JJG, KKG), V(IIG, JJG, KKG)
+
      CASE( KAXIS)
          W(IIG  ,JJG  ,KKG-1) = 0.5_EB*(                      VEL_N + WS(IIG  ,JJG  ,KKG-1) - &
                                         DT*( FVZ(IIG  ,JJG  ,KKG-1) + DHDN ))
+
+IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   'WALL_NO_GRADH: W: 3', IIG, JJG, KKG-1, FVZ(IIG, JJG, KKG-1), WS(IIG, JJG, KKG-1), W(IIG, JJG, KKG-1)
+
      CASE(-KAXIS)
          W(IIG  ,JJG  ,KKG  ) = 0.5_EB*(                      VEL_N + WS(IIG  ,JJG  ,KKG  ) - &
                                         DT*( FVZ(IIG  ,JJG  ,KKG  ) + DHDN ))
+
+IF (MYID == 0) WRITE(*,'(A,3I4,3E16.8)') &
+   'WALL_NO_GRADH: W:-3', IIG, JJG, KKG, FVZ(IIG, JJG, KKG), WS(IIG, JJG, KKG), W(IIG, JJG, KKG)
+
      END SELECT
 
   ENDDO WALL_CELL_LOOP_2
