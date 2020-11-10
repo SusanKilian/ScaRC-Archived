@@ -532,7 +532,8 @@ TYPE(OMESH_TYPE), POINTER :: OM
 TYPE(MESH_TYPE), POINTER :: M2
 TYPE(WALL_TYPE), POINTER :: WC
 TYPE(EXTERNAL_WALL_TYPE), POINTER :: EWC
-LOGICAL :: GLMAT_ON_WHOLE_DOMAIN
+LOGICAL :: GLMAT_ON_WHOLE_DOMAIN !, SCARC_ON_WHOLE_DOMAIN
+CHARACTER(20) :: CFORM1, CFORM2, CFORM3, CFORM4
 
 IF (SOLID_PHASE_ONLY) RETURN
 IF (FREEZE_VELOCITY)  RETURN
@@ -556,19 +557,41 @@ IF (EXTERNAL_BOUNDARY_CORRECTION) CALL LAPLACE_EXTERNAL_VELOCITY_CORRECTION(DT,N
 
 ! Logical to define not to apply pressure gradient on external mesh boundaries for GLMAT.
 GLMAT_ON_WHOLE_DOMAIN = (PRES_METHOD=='GLMAT') .AND. PRES_ON_WHOLE_DOMAIN
+!SCARC_ON_WHOLE_DOMAIN = (PRES_METHOD=='SCARC') .AND. PRES_ON_WHOLE_DOMAIN
 
 ! Loop over wall cells and check velocity error.
 
 IF (NM == 1) THEN
-   WRITE(*,*) 'PRES-INFO:FVX:', N_EXTERNAL_WALL_CELLS, N_INTERNAL_WALL_CELLS
-   WRITE(*,'(8I5)') (WALL(IW)%BOUNDARY_TYPE, IW = 1, N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS)
-   WRITE(*,'(9E14.6)') ((MESHES(1)%FVX(III,1,KKK), III=0, MESHES(1)%IBAR), KKK=MESHES(1)%KBAR,0,-1)
-   WRITE(*,*) 'PRES-INFO:H'
-   WRITE(*,'(10E14.6)') ((MESHES(1)%H(III,1,KKK), III=0, MESHES(1)%IBAR+1), KKK=MESHES(1)%KBAR+1,0,-1)
+   IF (IBAR < 10) THEN
+      CFORM1 = "( E14.6)"  ; WRITE(CFORM1(2:2),'(I1.1)') IBAR
+      CFORM4 = "( I5)"  ; WRITE(CFORM4(2:2),'(I1.1)') IBAR
+   ELSE
+      CFORM1 = "(  E14.6)" ; WRITE(CFORM1(2:3),'(I2.2)') IBAR
+      CFORM4 = "(  I5)"  ; WRITE(CFORM4(2:3),'(I2.2)') IBAR
+   ENDIF
+   IF (IBAR+1 < 10) THEN
+      CFORM2 = "( E14.6)"  ; WRITE(CFORM2(2:2),'(I1.1)') IBAR+1
+   ELSE
+      CFORM2 = "(  E14.6)" ; WRITE(CFORM2(2:3),'(I2.2)') IBAR+1
+   ENDIF
+   IF (IBAR+2 < 10) THEN
+      CFORM3 = "( E14.6)"  ; WRITE(CFORM3(2:2),'(I1.1)') IBAR+2
+   ELSE
+      CFORM3 = "(  E14.6)" ; WRITE(CFORM3(2:3),'(I2.2)') IBAR+2
+   ENDIF
+   WRITE(*,*) '=======================> XXXX:COMPUTE_VELOCITY_ERROR'
+   WRITE(*,*) 'WALL(.)%BOUNDARY_TYPE:', N_EXTERNAL_WALL_CELLS, N_INTERNAL_WALL_CELLS
+   WRITE(*,CFORM4) (WALL(IW)%BOUNDARY_TYPE, IW = 1, N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS)
+   WRITE(*,*) 'FVX:'
+   WRITE(*,CFORM2) ((FVX(III,1,KKK), III=0, IBAR), KKK=KBAR,0,-1)
    WRITE(*,*) 'PRES-INFO:U'
-   WRITE(*,'(10E14.6)') ((MESHES(1)%U(III,1,KKK), III=0, MESHES(1)%IBAR), KKK=MESHES(1)%KBAR,0,-1)
-!   WRITE(*,*) 'PRES-INFO:US'
-!   WRITE(*,'(10E14.6)') ((MESHES(1)%US(III,1,KKK), III=0, MESHES(1)%IBAR), KKK=MESHES(1)%KBAR,0,-1)
+   WRITE(*,CFORM3) ((U(III,1,KKK), III=0, IBAR), KKK=KBAR,0,-1)
+   WRITE(*,*) 'PRES-INFO:US'
+   WRITE(*,CFORM3) ((US(III,1,KKK), III=0, IBAR), KKK=KBAR,0,-1)
+   WRITE(*,*) 'PRES-INFO:H'
+   WRITE(*,CFORM3) ((H(III,1,KKK), III=0, IBAR+1), KKK=KBAR+1,0,-1)
+   WRITE(*,*) 'PRES-INFO:HS'
+   WRITE(*,CFORM3) ((HS(III,1,KKK), III=0, IBAR+1), KKK=KBAR+1,0,-1)
 ENDIF
 
 CHECK_WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
@@ -592,7 +615,8 @@ CHECK_WALL_LOOP: DO IW=1,N_EXTERNAL_WALL_CELLS+N_INTERNAL_WALL_CELLS
 
    DHFCT = 1._EB
    IF (WC%BOUNDARY_TYPE==SOLID_BOUNDARY) THEN
-      IF ( (.NOT.PRES_ON_WHOLE_DOMAIN) .OR. (GLMAT_ON_WHOLE_DOMAIN .AND.  IW<=N_EXTERNAL_WALL_CELLS) ) DHFCT = 0._EB
+      IF ( (.NOT.PRES_ON_WHOLE_DOMAIN) &
+             .OR. ((GLMAT_ON_WHOLE_DOMAIN)  .AND.  IW<=N_EXTERNAL_WALL_CELLS)) DHFCT = 0._EB
    ENDIF
 
    ! Update normal component of velocity at the mesh boundary
@@ -665,7 +689,8 @@ IF (NM == 1) WRITE(*,'(A,4i4,6E14.6)') 'C-3: ',IW,II,JJ,KK,W(II,JJ,KK-1), FVZ(II
                      DO IIO=IIO1,IIO2
                         DUDT = -OM%FVX(IIO,JJO,KKO)   - M2%RDXN(IIO)  *(OM%H(IIO+1,JJO,KKO)-OM%H(IIO,JJO,KKO))
                         UN_NEW_OTHER = UN_NEW_OTHER + OM%U(IIO,JJO,KKO)   + DT*DUDT
-!IF (NM == 1) WRITE(*,'(A,4i4,3E14.6)') 'PRES: 1: ', IW, IIO, JJO, KKO, UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
+IF (NM == 1) WRITE(*,'(A,10i4,3E14.6)') 'PRES: 1: ', IW, II, JJ, KK, IIO, JJO, KKO, IIO+1, JJO, KKO, &
+                                                    UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
                      ENDDO
                   ENDDO
                ENDDO
@@ -675,7 +700,8 @@ IF (NM == 1) WRITE(*,'(A,4i4,6E14.6)') 'C-3: ',IW,II,JJ,KK,W(II,JJ,KK-1), FVZ(II
                      DO IIO=IIO1,IIO2
                         DUDT = -OM%FVX(IIO-1,JJO,KKO) - M2%RDXN(IIO-1)*(OM%H(IIO,JJO,KKO)-OM%H(IIO-1,JJO,KKO))
                         UN_NEW_OTHER = UN_NEW_OTHER + OM%U(IIO-1,JJO,KKO) + DT*DUDT
-!IF (NM == 1) WRITE(*,'(A,4i4,3E14.6)') 'PRES:-1: ', IW, IIO, JJO, KKO, UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
+IF (NM == 1) WRITE(*,'(A,10i4,3E14.6)') 'PRES:-1: ', IW, II, JJ, KK, IIO-1, JJO, KKO, IIO, JJO, KKO, &
+                                                    UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
                      ENDDO
                   ENDDO
                ENDDO
@@ -685,7 +711,8 @@ IF (NM == 1) WRITE(*,'(A,4i4,6E14.6)') 'C-3: ',IW,II,JJ,KK,W(II,JJ,KK-1), FVZ(II
                      DO IIO=IIO1,IIO2
                         DVDT = -OM%FVY(IIO,JJO,KKO)   - M2%RDYN(JJO)  *(OM%H(IIO,JJO+1,KKO)-OM%H(IIO,JJO,KKO))
                         UN_NEW_OTHER = UN_NEW_OTHER + OM%V(IIO,JJO,KKO)   + DT*DVDT
-!IF (NM == 1) WRITE(*,'(A,4i4,3E14.6)') 'PRES: 2: ', IW, IIO, JJO, KKO, UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
+IF (NM == 1) WRITE(*,'(A,10i4,3E14.6)') 'PRES: 1: ', IW, II, JJ, KK, IIO, JJO, KKO, IIO, JJO+1, KKO, &
+                                                    UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
                      ENDDO
                   ENDDO
                ENDDO
@@ -695,7 +722,8 @@ IF (NM == 1) WRITE(*,'(A,4i4,6E14.6)') 'C-3: ',IW,II,JJ,KK,W(II,JJ,KK-1), FVZ(II
                      DO IIO=IIO1,IIO2
                         DVDT = -OM%FVY(IIO,JJO-1,KKO) - M2%RDYN(JJO-1)*(OM%H(IIO,JJO,KKO)-OM%H(IIO,JJO-1,KKO))
                         UN_NEW_OTHER = UN_NEW_OTHER + OM%V(IIO,JJO-1,KKO) + DT*DVDT
-!IF (NM == 1) WRITE(*,'(A,4i4,3E14.6)') 'PRES:-2: ', IW, IIO, JJO, KKO, UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
+IF (NM == 1) WRITE(*,'(A,10i4,3E14.6)') 'PRES: 1: ', IW, II, JJ, KK, IIO, JJO-1, KKO, IIO, JJO, KKO, &
+                                                    UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
                      ENDDO
                   ENDDO
                ENDDO
@@ -705,7 +733,8 @@ IF (NM == 1) WRITE(*,'(A,4i4,6E14.6)') 'C-3: ',IW,II,JJ,KK,W(II,JJ,KK-1), FVZ(II
                      DO IIO=IIO1,IIO2
                         DWDT = -OM%FVZ(IIO,JJO,KKO)   - M2%RDZN(KKO)  *(OM%H(IIO,JJO,KKO+1)-OM%H(IIO,JJO,KKO))
                         UN_NEW_OTHER = UN_NEW_OTHER + OM%W(IIO,JJO,KKO)   + DT*DWDT
-!IF (NM == 1) WRITE(*,'(A,4i4,3E14.6)') 'PRES: 3: ', IW, IIO, JJO, KKO, UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
+IF (NM == 1) WRITE(*,'(A,10i4,3E14.6)') 'PRES: 1: ', IW, II, JJ, KK, IIO, JJO, KKO, IIO, JJO, KKO+1, &
+                                                    UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
                      ENDDO
                   ENDDO
                ENDDO
@@ -715,7 +744,8 @@ IF (NM == 1) WRITE(*,'(A,4i4,6E14.6)') 'C-3: ',IW,II,JJ,KK,W(II,JJ,KK-1), FVZ(II
                      DO IIO=IIO1,IIO2
                         DWDT = -OM%FVZ(IIO,JJO,KKO-1) - M2%RDZN(KKO-1)*(OM%H(IIO,JJO,KKO)-OM%H(IIO,JJO,KKO-1))
                         UN_NEW_OTHER = UN_NEW_OTHER + OM%W(IIO,JJO,KKO-1) + DT*DWDT
-!IF (NM == 1) WRITE(*,'(A,4i4,3E14.6)') 'PRES:-3: ', IW, IIO, JJO, KKO, UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
+IF (NM == 1) WRITE(*,'(A,10i4,3E14.6)') 'PRES: 1: ', IW, II, JJ, KK, IIO, JJO, KKO-1, IIO, JJO, KKO, &
+                                                    UN_NEW, UN_NEW_OTHER, UN_NEW - UN_NEW_OTHER
                      ENDDO
                   ENDDO
                ENDDO
@@ -824,7 +854,7 @@ IF (NM == 1) WRITE(*,'(A,4I4, 3E14.6)') 'PRES:SC: ',  IW, II, JJ, KK, UN_NEW, UN
       VELOCITY_ERROR_MAX(NM)       = ABS(VELOCITY_ERROR)
    ENDIF
 
- WRITE(*,'(A,4I4, 3E14.6)') '--------------> FINAL : ',  IW, II, JJ, KK, VELOCITY_ERROR, VELOCITY_ERROR_MAX(NM)
+IF (NM == 1)  WRITE(*,'(A,4I4, 3E14.6)') '--------------> FINAL : ',  IW, II, JJ, KK, VELOCITY_ERROR, VELOCITY_ERROR_MAX(NM)
 
 ENDDO CHECK_WALL_LOOP
 
