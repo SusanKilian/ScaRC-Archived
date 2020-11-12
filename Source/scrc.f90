@@ -13591,6 +13591,10 @@ WRITE(MSG%LU_DEBUG,MSG%CFORM3) ((HP(I,1,K), I=0, L%NX+1), K=L%NZ+1,0,-1)
             CASE ( 1)
                IF (GWC%BTYPE == INTERNAL) THEN
                   HP(IXG,IYW,IZW) = -HP(IXW,IYW,IZW) + 2.0_EB * MGM%BC(IW)
+#ifdef WITH_SCARC_DEBUG
+         WRITE(MSG%LU_DEBUG,'(A, 5I6, 2E12.4)') 'MGM_UPDATE: INTERNAL:: IW, IOR0, IXW, IYW, IZG, HP:',&
+                                                IW, IOR0, IXW, IYW, IZG, MGM%BC(IW), HP(IXW, IYW, IZG)
+#endif
                ELSE IF (GWC%BTYPE == DIRICHLET) THEN
                   HP(IXG,IYW,IZW) = -HP(IXW,IYW,IZW) 
                ELSE IF (GWC%BTYPE == NEUMANN) THEN
@@ -13599,6 +13603,10 @@ WRITE(MSG%LU_DEBUG,MSG%CFORM3) ((HP(I,1,K), I=0, L%NX+1), K=L%NZ+1,0,-1)
             CASE (-1)
                IF (GWC%BTYPE == INTERNAL) THEN
                   HP(IXG,IYW,IZW) = -HP(IXW,IYW,IZW) + 2.0_EB * MGM%BC(IW)
+#ifdef WITH_SCARC_DEBUG
+         WRITE(MSG%LU_DEBUG,'(A, 5I6, 2E12.4)') 'MGM_UPDATE: INTERNAL:: IW, IOR0, IXW, IYW, IZG, HP:',&
+                                                IW, IOR0, IXW, IYW, IZG, MGM%BC(IW), HP(IXW, IYW, IZG)
+#endif
                ELSE IF (GWC%BTYPE == DIRICHLET) THEN
                   HP(IXG,IYW,IZW) = -HP(IXW,IYW,IZW) 
                ELSE IF (GWC%BTYPE == NEUMANN) THEN
@@ -13607,6 +13615,10 @@ WRITE(MSG%LU_DEBUG,MSG%CFORM3) ((HP(I,1,K), I=0, L%NX+1), K=L%NZ+1,0,-1)
             CASE ( 2)
                IF (GWC%BTYPE == INTERNAL) THEN
                   HP(IXW,IYG,IZW) = -HP(IXW,IYW,IZW) + 2.0_EB * MGM%BC(IW)
+#ifdef WITH_SCARC_DEBUG
+         WRITE(MSG%LU_DEBUG,'(A, 5I6, 2E12.4)') 'MGM_UPDATE: INTERNAL:: IW, IOR0, IXW, IYW, IZG, HP:',&
+                                                IW, IOR0, IXW, IYW, IZG, MGM%BC(IW), HP(IXW, IYW, IZG)
+#endif
                ELSE IF (GWC%BTYPE==DIRICHLET) THEN
                   HP(IXW,IYG,IZW) = -HP(IXW,IYW,IZW) 
                ELSE IF (GWC%BTYPE==NEUMANN) THEN
@@ -13615,6 +13627,10 @@ WRITE(MSG%LU_DEBUG,MSG%CFORM3) ((HP(I,1,K), I=0, L%NX+1), K=L%NZ+1,0,-1)
             CASE (-2)
                IF (GWC%BTYPE == INTERNAL) THEN
                   HP(IXW,IYG,IZW) = -HP(IXW,IYW,IZW) + 2.0_EB * MGM%BC(IW)
+#ifdef WITH_SCARC_DEBUG
+         WRITE(MSG%LU_DEBUG,'(A, 5I6, 2E12.4)') 'MGM_UPDATE: INTERNAL:: IW, IOR0, IXW, IYW, IZG, HP:',&
+                                                IW, IOR0, IXW, IYW, IZG, MGM%BC(IW), HP(IXW, IYW, IZG)
+#endif
                ELSE IF (GWC%BTYPE==DIRICHLET) THEN
                   HP(IXW,IYG,IZW) = -HP(IXW,IYW,IZW) 
                ELSE IF (GWC%BTYPE==NEUMANN) THEN
@@ -13623,6 +13639,10 @@ WRITE(MSG%LU_DEBUG,MSG%CFORM3) ((HP(I,1,K), I=0, L%NX+1), K=L%NZ+1,0,-1)
             CASE ( 3)
                IF (GWC%BTYPE == INTERNAL) THEN
                   HP(IXW,IYW,IZG) = -HP(IXW,IYW,IZW) + 2.0_EB * MGM%BC(IW)
+#ifdef WITH_SCARC_DEBUG
+         WRITE(MSG%LU_DEBUG,'(A, 5I6, 2E12.4)') 'MGM_UPDATE: INTERNAL:: IW, IOR0, IXW, IYW, IZG, HP:',&
+                                                IW, IOR0, IXW, IYW, IZG, MGM%BC(IW), HP(IXW, IYW, IZG)
+#endif
                ELSE IF (GWC%BTYPE==DIRICHLET) THEN
                   HP(IXW,IYW,IZG) = -HP(IXW,IYW,IZW) 
                ELSE IF (GWC%BTYPE==NEUMANN) THEN
@@ -13631,16 +13651,16 @@ WRITE(MSG%LU_DEBUG,MSG%CFORM3) ((HP(I,1,K), I=0, L%NX+1), K=L%NZ+1,0,-1)
             CASE (-3)
                IF (GWC%BTYPE == INTERNAL) THEN
                   HP(IXW,IYW,IZG) = -HP(IXW,IYW,IZW) + 2.0_EB * MGM%BC(IW)
+#ifdef WITH_SCARC_DEBUG
+         WRITE(MSG%LU_DEBUG,'(A, 5I6, 2E12.4)') 'MGM_UPDATE: INTERNAL:: IW, IOR0, IXW, IYW, IZG, HP:',&
+                                                IW, IOR0, IXW, IYW, IZG, MGM%BC(IW), HP(IXW, IYW, IZG)
+#endif
                ELSE IF (GWC%BTYPE==DIRICHLET) THEN
                   HP(IXW,IYW,IZG) = -HP(IXW,IYW,IZW) 
                ELSE IF (GWC%BTYPE==NEUMANN) THEN
                   HP(IXW,IYW,IZG) =  HP(IXW,IYW,IZW) 
                ENDIF
          END SELECT
-#ifdef WITH_SCARC_DEBUG2
-         WRITE(MSG%LU_DEBUG,'(A, 5I6, E12.4)') 'UPDATE_GHOST_CELLS: IW, IOR0, IXW, IYW, IZG, HP:',&
-                                                IW, IOR0, IXW, IYW, IZG, HP(IXW, IYW, IZG)
-#endif
    
       ENDDO WALL_CELLS_LOOP_LAPLACE
 
@@ -20907,7 +20927,7 @@ SUBROUTINE SCARC_MGM_COMPUTE_VELOCITY_ERROR(NL, NTYPE)
 USE SCARC_ITERATION_ENVIRONMENT
 USE SCARC_POINTERS, ONLY: M, L, MGM, GWC, HP, UU, VV, WW
 INTEGER, INTENT(IN) :: NL, NTYPE
-INTEGER :: NM, I, J, K, IW, IOR0, III, KKK, IIO1, IIO2, JJO1, JJO2, KKO1, KKO2, IIO, JJO, KKO
+INTEGER :: NM, I, J, K, IW, IOR0, III, KKK, IIO1, IIO2, JJO1, JJO2, KKO1, KKO2, IIO, JJO, KKO, NOM
 REAL(EB) :: UN_NEW_OTHER, UN_NEW, DHFCT, DUDT, DVDT, DWDT
 TYPE(MESH_TYPE), POINTER :: M2
 TYPE(OMESH_TYPE), POINTER :: OM
@@ -21039,13 +21059,19 @@ WRITE(MSG%LU_DEBUG,'(A,4i4,6E14.6)') 'ERR-C-3: ',IW,I,J,K,WW(I,J,K-1), M%FVZ(I,J
          END SELECT
       ENDIF
 
-      IF (GWC%BOUNDARY_TYPE==INTERPOLATED_BOUNDARY .AND. NTYPE == NSCARC_MGM_POISSON) THEN
+      IF (M%WALL(IW)%BOUNDARY_TYPE==INTERPOLATED_BOUNDARY .AND. NTYPE == NSCARC_MGM_POISSON) THEN
    
          UN_NEW_OTHER = 0._EB
    
          EWC => M%EXTERNAL_WALL(IW)
-         OM => M%OMESH(EWC%NOM)
-         M2 => MESHES(EWC%NOM)
+
+         NOM = EWC%NOM
+
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '=================== IW, IOR0, NOM:', IW, IOR0, NOM
+#endif
+         OM => M%OMESH(NOM)
+         M2 => MESHES(NOM)
 
          IIO1 = EWC%IIO_MIN
          JJO1 = EWC%JJO_MIN
@@ -21137,7 +21163,7 @@ WRITE(MSG%LU_DEBUG,'(A,7i4,3E14.6)') 'P:PRES: 1: ', IW, IIO, JJO, KKO-1, IIO, JJ
             END SELECT IOR_SELECT_1
 !         ENDIF
 
-      ELSE IF (GWC%BOUNDARY_TYPE==INTERPOLATED_BOUNDARY .AND. NTYPE == NSCARC_MGM_MERGE) THEN
+      ELSE IF (M%WALL(IW)%BOUNDARY_TYPE==INTERPOLATED_BOUNDARY .AND. NTYPE == NSCARC_MGM_MERGE) THEN
    
          UN_NEW_OTHER = 0._EB
    
