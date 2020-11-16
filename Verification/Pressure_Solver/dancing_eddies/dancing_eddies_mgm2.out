@@ -1204,3 +1204,31 @@ Total Number of Grid Cells         12000
        Min divergence: -0.23E-11 at (  48,   1,  39)
        Max VN number:   0.24E-01 at (  75,   1,  24)
  
+       Time Step    1800   November 16, 2020  16:52:11
+       Step Size:    0.412E-03 s, Total Time:       1.20 s
+       Pressure Iterations:      1
+       Maximum Velocity Error:  0.30E-03 on Mesh   2 at (   0   1  20)
+       Maximum Pressure Error:  0.85E+06 on Mesh   1 at (  21   1  25)
+       ScaRC: iterations    13, residual  0.13E-08, convergence rate   0.11E+00
+       ---------------------------------------------------------------
+       Mesh    1
+       Max CFL number:  0.33E+00 at (  20,   1,  25)
+       Max divergence:  0.85E-12 at (  16,   1,  25)
+       Min divergence: -0.14E-11 at (  73,   1,  40)
+       Max VN number:   0.24E-01 at (  72,   1,  25)
+       Mesh    2
+       Max CFL number:  0.49E+00 at (  25,   1,  14)
+       Max divergence:  0.22E-11 at (  73,   1,  25)
+       Min divergence: -0.50E-11 at (  27,   1,  15)
+       Max VN number:   0.24E-01 at (  74,   1,  14)
+       Mesh    3
+       Max CFL number:  0.46E+00 at (  14,   1,   8)
+       Max divergence:  0.34E-11 at (  11,   1,  18)
+       Min divergence: -0.35E-11 at (  11,   1,   2)
+       Max VN number:   0.24E-01 at (  29,   1,  29)
+       Mesh    4
+       Max CFL number:  0.21E+00 at (   1,   1,  32)
+       Max divergence:  0.46E-12 at (  51,   1,   1)
+       Min divergence: -0.24E-11 at (  48,   1,   5)
+       Max VN number:   0.24E-01 at (  75,   1,  22)
+ 
