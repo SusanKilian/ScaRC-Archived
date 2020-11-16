@@ -1219,3 +1219,99 @@ Total Number of Grid Cells         32768
        Min divergence: -0.19E-06 at (   1,   1,   5)
        Max VN number:   0.65E-03 at (  16,  16,  16)
  
+       Time Step     200   November 16, 2020  17:03:20
+       Step Size:    0.253E-02 s, Total Time:       0.70 s
+       Pressure Iterations:      1
+       Maximum Velocity Error:  0.80E-03 on Mesh   1 at (  16  17  12)
+       Maximum Pressure Error:  0.50E+04 on Mesh   2 at (   1  13  13)
+       ScaRC: iterations    10, residual  0.11E-08, convergence rate   0.71E-01
+       ---------------------------------------------------------------
+       Mesh    1
+       Max CFL number:  0.42E+00 at (   8,  11,  16)
+       Max divergence:  0.12E-03 at (  13,  14,   8)
+       Min divergence: -0.14E-03 at (  16,  10,  10)
+       Max VN number:   0.51E-03 at (   9,  16,  16)
+       Mesh    2
+       Max CFL number:  0.36E+00 at (   5,  11,  15)
+       Max divergence:  0.12E-03 at (   4,  13,  10)
+       Min divergence: -0.17E-03 at (   1,  11,   9)
+       Max VN number:   0.51E-03 at (   1,   9,  16)
+       Mesh    3
+       Max CFL number:  0.41E+00 at (  12,   9,   8)
+       Max divergence:  0.11E-03 at (  12,   2,  10)
+       Min divergence: -0.15E-03 at (  12,   8,   8)
+       Max VN number:   0.51E-03 at (   8,   1,  16)
+       Mesh    4
+       Max CFL number:  0.36E+00 at (   4,   4,  12)
+       Max divergence:  0.13E-03 at (   2,   8,  13)
+       Min divergence: -0.71E-04 at (   1,   1,  10)
+       Max VN number:   0.51E-03 at (  16,  16,  16)
+       Mesh    5
+       Max CFL number:  0.38E+00 at (  12,  10,   1)
+       Max divergence:  0.15E-03 at (  12,  13,  13)
+       Min divergence: -0.87E-04 at (  11,  16,   8)
+       Max VN number:   0.51E-03 at (  16,   1,  16)
+       Mesh    6
+       Max CFL number:  0.38E+00 at (   1,  13,   9)
+       Max divergence:  0.13E-03 at (   1,  13,   8)
+       Min divergence: -0.66E-04 at (   4,   9,   6)
+       Max VN number:   0.51E-03 at (  16,   1,  16)
+       Mesh    7
+       Max CFL number:  0.31E+00 at (  13,   9,   2)
+       Max divergence:  0.13E-03 at (  13,   4,  13)
+       Min divergence: -0.70E-04 at (  11,   3,   9)
+       Max VN number:   0.51E-03 at (   1,  16,  16)
+       Mesh    8
+       Max CFL number:  0.15E+00 at (   3,   1,  10)
+       Max divergence:  0.37E-04 at (   3,   1,  11)
+       Min divergence: -0.20E-04 at (   1,   1,   7)
+       Max VN number:   0.51E-03 at (  16,  16,  16)
+ 
+       Time Step     300   November 16, 2020  17:08:32
+       Step Size:    0.177E-02 s, Total Time:       0.94 s
+       Pressure Iterations:      1
+       Maximum Velocity Error:  0.56E-03 on Mesh   1 at (  12  17  16)
+       Maximum Pressure Error:  0.66E+04 on Mesh   2 at (   4  13  13)
+       ScaRC: iterations    10, residual  0.11E-08, convergence rate   0.71E-01
+       ---------------------------------------------------------------
+       Mesh    1
+       Max CFL number:  0.48E+00 at (   8,  12,  16)
+       Max divergence:  0.20E-03 at (  16,  15,   2)
+       Min divergence: -0.22E-03 at (  16,  12,   9)
+       Max VN number:   0.36E-03 at (  16,   8,  16)
+       Mesh    2
+       Max CFL number:  0.33E+00 at (   4,  14,  10)
+       Max divergence:  0.18E-03 at (   3,  15,   2)
+       Min divergence: -0.16E-03 at (   1,  12,   7)
+       Max VN number:   0.36E-03 at (   1,  11,  16)
+       Mesh    3
+       Max CFL number:  0.34E+00 at (  12,   6,  11)
+       Max divergence:  0.19E-03 at (  13,   1,   2)
+       Min divergence: -0.17E-03 at (   9,   1,   8)
+       Max VN number:   0.36E-03 at (  10,   1,  16)
+       Mesh    4
+       Max CFL number:  0.30E+00 at (   9,   9,  13)
+       Max divergence:  0.18E-03 at (   3,   3,   2)
+       Min divergence: -0.70E-04 at (   8,   8,  13)
+       Max VN number:   0.36E-03 at (  16,  16,  16)
+       Mesh    5
+       Max CFL number:  0.31E+00 at (  11,  13,   6)
+       Max divergence:  0.16E-03 at (  12,  14,   9)
+       Min divergence: -0.11E-03 at (   7,  16,   6)
+       Max VN number:   0.36E-03 at (  16,   1,  16)
+       Mesh    6
+       Max CFL number:  0.29E+00 at (   4,  12,   1)
+       Max divergence:  0.13E-03 at (  12,  13,   1)
+       Min divergence: -0.73E-04 at (   4,  11,   7)
+       Max VN number:   0.36E-03 at (  16,   1,  16)
+       Mesh    7
+       Max CFL number:  0.31E+00 at (   4,   1,   1)
+       Max divergence:  0.12E-03 at (  12,   1,   7)
+       Min divergence: -0.10E-03 at (   9,   2,   7)
+       Max VN number:   0.36E-03 at (   1,  16,  16)
+       Mesh    8
+       Max CFL number:  0.23E+00 at (  13,   1,   1)
+       Max divergence:  0.12E-03 at (   1,   1,  15)
+       Min divergence: -0.28E-04 at (   1,   9,   1)
+       Max VN number:   0.36E-03 at (  16,  16,  16)
+ 
