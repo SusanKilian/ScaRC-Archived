@@ -1,0 +1,74 @@
+Analysiere /home/skil/GIT/Github/ScaRC/Verification/Lunarc/Flufra/Frap_303a_FDS674_M16_BO-1_v01bv.out
+Analyse durchgeführt.
+16 Meshes
+63000 Zeitschritte
+Kein passender DEVC für VENT ENT_288m3h mit Koordinate 46.25,46.25,-8.75,-8.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_680m3h mit Koordinate 38.25,38.75,25.5,26.25,4.0,4.0 gefunden
+Kein passender DEVC für VENT ENT_720m3h mit Koordinate 44.25,44.25,-6.75,-6.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_864m3h mit Koordinate 59.0,59.0,7.75,8.75,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_864m3h mit Koordinate 59.0,59.0,25.75,26.5,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_864m3h mit Koordinate 71.25,71.25,21.0,22.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_936m3h mit Koordinate 45.0,45.0,5.25,6.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_936m3h mit Koordinate 59.0,59.0,10.75,11.75,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_936m3h mit Koordinate 59.0,59.0,22.75,23.5,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_936m3h mit Koordinate 70.25,70.25,13.0,14.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_936m3h mit Koordinate 70.25,70.25,22.75,23.75,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_936m3h mit Koordinate 59.0,59.0,13.75,14.75,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1008m3h mit Koordinate 59.0,59.0,18.25,19.25,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1008m3h mit Koordinate 70.25,70.25,17.25,18.25,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1008m3h mit Koordinate 41.75,41.75,-3.5,-2.5,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1008m3h mit Koordinate 45.0,45.0,2.75,3.75,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1080m3h mit Koordinate 49.5,49.5,-5.75,-5.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1080m3h mit Koordinate 56.0,56.0,15.75,16.75,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1152m3h mit Koordinate 41.75,41.75,10.5,11.5,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1152m3h mit Koordinate 41.75,41.75,0.25,1.25,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1152m3h mit Koordinate 45.0,45.0,-4.440892e-16,1.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1224m3h mit Koordinate 34.75,34.75,19.25,20.25,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1224m3h mit Koordinate 45.5,45.5,9.0,10.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1224m3h mit Koordinate 45.5,45.5,11.0,12.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1224m3h mit Koordinate 41.75,41.75,16.0,17.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1224m3h mit Koordinate 38.75,38.75,21.75,22.75,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1224m3h mit Koordinate 51.75,51.75,22.75,23.75,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1224m3h mit Koordinate 56.0,56.0,18.5,19.5,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1224m3h mit Koordinate 41.75,41.75,4.75,5.75,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1224m3h mit Koordinate 56.0,56.0,13.0,14.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1296m3h mit Koordinate 37.0,37.0,15.5,16.5,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1296m3h mit Koordinate 42.75,42.75,-12.0,-11.25,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1296m3h mit Koordinate 47.25,47.25,-3.75,-3.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1296m3h mit Koordinate 45.5,45.5,13.5,14.5,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1296m3h mit Koordinate 45.5,45.5,15.25,16.25,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1296m3h mit Koordinate 45.5,45.5,16.75,17.75,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1296m3h mit Koordinate 49.25,49.25,21.5,22.5,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1296m3h mit Koordinate 48.0,49.25,25.5,26.25,4.0,4.0 gefunden
+Kein passender DEVC für VENT ENT_1296m3h mit Koordinate 56.0,56.0,11.25,12.25,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1296m3h mit Koordinate 58.5,58.5,3.0,3.75,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1368m3h mit Koordinate 30.25,30.25,15.5,16.5,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1368m3h mit Koordinate 30.25,30.25,11.0,12.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1368m3h mit Koordinate 37.0,37.0,11.0,12.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1368m3h mit Koordinate 56.0,56.0,9.75,10.5,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1368m3h mit Koordinate 51.0,51.0,26.25,27.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1368m3h mit Koordinate 51.75,51.75,24.0,24.75,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1368m3h mit Koordinate 30.25,30.25,5.0,6.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1512m3h mit Koordinate 30.25,30.25,-4.5,-3.5,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1512m3h mit Koordinate 30.25,30.25,0.25,1.25,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1512m3h mit Koordinate 37.0,37.0,5.25,6.25,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1512m3h mit Koordinate 40.75,40.75,-10.0,-9.25,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1656m3h mit Koordinate 30.25,30.25,-8.75,-7.75,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1656m3h mit Koordinate 30.25,30.25,-7.25,-6.25,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1728m3h mit Koordinate 37.0,37.0,-6.75,-5.75,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1728m3h mit Koordinate 56.0,56.0,8.75,9.5,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_1872m3h mit Koordinate 37.0,37.0,1.0,2.0,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_2160m3h mit Koordinate 37.0,37.0,-3.5,-2.5,4.0,4.5 gefunden
+Kein passender DEVC für VENT ENT_2160m3h mit Koordinate 56.75,56.75,4.5,5.25,4.0,4.5 gefunden
+Dump /home/skil/GIT/Github/ScaRC/Verification/Lunarc/Flufra/Auswertung/Ergebnisse/Frap_303a_FDS674_M16_BO-1_v01bv_vent.txt
+Plot /home/skil/GIT/Github/ScaRC/Verification/Lunarc/Flufra/Auswertung/Ergebnisse/Frap_303a_FDS674_M16_BO-1_v01bv_Burner_alt.png
+Plot /home/skil/GIT/Github/ScaRC/Verification/Lunarc/Flufra/Auswertung/Ergebnisse/Frap_303a_FDS674_M16_BO-1_v01bv_Burner_alt_hrr.png
+Plot /home/skil/GIT/Github/ScaRC/Verification/Lunarc/Flufra/Auswertung/Ergebnisse/Frap_303a_FDS674_M16_BO-1_v01bv_step.png
+Plot /home/skil/GIT/Github/ScaRC/Verification/Lunarc/Flufra/Auswertung/Ergebnisse/Frap_303a_FDS674_M16_BO-1_v01bv_stepratio.png
+Plot /home/skil/GIT/Github/ScaRC/Verification/Lunarc/Flufra/Auswertung/Ergebnisse/Frap_303a_FDS674_M16_BO-1_v01bv_stepsize.png
+Plot /home/skil/GIT/Github/ScaRC/Verification/Lunarc/Flufra/Auswertung/Ergebnisse/Frap_303a_FDS674_M16_BO-1_v01bv_pres_iterations.png
+Plot /home/skil/GIT/Github/ScaRC/Verification/Lunarc/Flufra/Auswertung/Ergebnisse/Frap_303a_FDS674_M16_BO-1_v01bv_max_vel_err.png
+->/home/skil/GIT/Github/ScaRC/Verification/Lunarc/Flufra/flipcolorbar.ini
+"/home/skil/FDS/FDS6/smvbin/smokeview" /home/skil/GIT/Github/ScaRC/Verification/Lunarc/Flufra/Frap_303a_FDS674_M16_BO-1_v01bv.smv -script Frap_303a_FDS674_M16_BO-1_v01bv.ssf
+->/home/skil/GIT/Github/ScaRC/Verification/Lunarc/Flufra/flipcolorbar.ini
+"/home/skil/FDS/FDS6/smvbin/smokeview" /home/skil/GIT/Github/ScaRC/Verification/Lunarc/Flufra/Frap_303a_FDS674_M16_BO-1_v01bv.smv -script Frap_303a_FDS674_M16_BO-1_v01bv.ssf
