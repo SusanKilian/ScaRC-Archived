@@ -160,7 +160,7 @@ INTEGER, PARAMETER :: NSCARC_MATRIX_POISSON          =  9         !< Flag for ma
 INTEGER, PARAMETER :: NSCARC_MATRIX_POISSON_PROL     = 10         !< Flag for matrix selection: Poisson times Prolongation 
 INTEGER, PARAMETER :: NSCARC_MATRIX_POISSON_SYM      = 11         !< Flag for matrix selection: symmetric Poisson 
 INTEGER, PARAMETER :: NSCARC_MATRIX_LAPLACE          = 12         !< Flag for matrix selection: Poisson 
-INTEGER, PARAMETER :: NSCARC_MATRIX_MGM_LAPLACE         = 18         !< Flag for matrix selection: Poisson 
+INTEGER, PARAMETER :: NSCARC_MATRIX_LAPLACEP         = 18         !< Flag for matrix selection: Poisson 
 INTEGER, PARAMETER :: NSCARC_MATRIX_PROLONGATION     = 13         !< Flag for matrix selection: Prolongation (AMG only)
 INTEGER, PARAMETER :: NSCARC_MATRIX_RESTRICTION      = 14         !< Flag for matrix selection: Restriction (AMG only)
 INTEGER, PARAMETER :: NSCARC_MATRIX_ZONES            = 15         !< Flag for matrix selection: Aggregation zones (AMG only)
@@ -5401,6 +5401,7 @@ WRITE(MSG%LU_DEBUG,*) 'TTTTT: SETUP_SYSTEM:B: TYPE_SCOPE:', TYPE_SCOPE(0)
       CALL SCARC_SETUP_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)       ! Then process unstructured discretization
       CALL SCARC_SETUP_POISSON_SIZES (NLEVEL_MIN)                 ! ... for global Poisson matrix
       CALL SCARC_SETUP_LAPLACE_SIZES (NLEVEL_MIN)                 ! ... for local Laplace matrices
+      CALL SCARC_MGM_SETUP_LAPLACE_SIZES (NLEVEL_MIN)                 ! ... for local Laplace matrices
    
 END SELECT SELECT_SCARC_METHOD_SIZES
 
@@ -5515,6 +5516,7 @@ WRITE(MSG%LU_DEBUG,*) '========================= MGM: UNSTRUCTURED'
 
          TYPE_SCOPE(0) = NSCARC_SCOPE_LOCAL
          CALL SCARC_SETUP_LAPLACE (NM, NLEVEL_MIN)
+         CALL SCARC_MGM_SETUP_LAPLACE (NM, NLEVEL_MIN)
          CALL SCARC_MGM_SETUP_BOUNDARY(NM, NLEVEL_MIN) 
 
 #ifdef WITH_MKL
@@ -5976,10 +5978,10 @@ CALL SCARC_DEBUG_CMATRIX (A, 'LAPLACE', 'SETUP_LAPLACE: NO BDRY')
  
 END SUBROUTINE SCARC_SETUP_LAPLACE
 
-SUBROUTINE SCARC_SETUP_MGM_LAPLACE (NM)
+SUBROUTINE SCARC_MGM_SETUP_LAPLACE (NM, NL)
 USE SCARC_POINTERS, ONLY: L, G, A, MGM
 INTEGER, INTENT(IN) :: NM, NL
-INTEGER :: IX, IY, IZ, IC, IP, JC, I, J, K, IOR0
+INTEGER :: IX, IY, IZ, IC, IP, JC, KC, I, J, K, IOR0, IW
 
 CROUTINE = 'SCARC_SETUP_LAPLACE'
  
@@ -5990,7 +5992,7 @@ WRITE(MSG%LU_DEBUG,*) 'SETUP_POISSON: TYPE_SCOPE:', TYPE_SCOPE(0)
 #endif
 CALL SCARC_SETUP_GRID_TYPE(NSCARC_GRID_UNSTRUCTURED)
 CALL SCARC_POINT_TO_GRID (NM, NL)              
-A => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_MGM_LAPLACE)
+A => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_LAPLACEP)
 CALL SCARC_ALLOCATE_CMATRIX (A, NL, NSCARC_PRECISION_DOUBLE, NSCARC_MATRIX_FULL, 'G%POISSON', CROUTINE)
 
 !
@@ -6088,23 +6090,38 @@ WRITE(MSG%LU_DEBUG,*) 'AFTER FINAL FILL: PERMA:', KC, JC
 WRITE(MSG%LU_DEBUG,'(8I4)') MGM%PERMA
 WRITE(MSG%LU_DEBUG,*) 'AFTER FINAL FILL: PERMB:'
 WRITE(MSG%LU_DEBUG,'(8I4)') MGM%PERMB
+WRITE(MSG%LU_DEBUG,*) 'G%ICX'
+WRITE(MSG%LU_DEBUG,'(8I4)') G%ICX
+WRITE(MSG%LU_DEBUG,*) 'G%ICY'
+WRITE(MSG%LU_DEBUG,'(8I4)') G%ICY
+WRITE(MSG%LU_DEBUG,*) 'G%ICZ'
+WRITE(MSG%LU_DEBUG,'(8I4)') G%ICZ
 #endif
 
 !
 ! Assemble permuted Laplace matrix which will be stored in LAPLACEP
 !
 #ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SETUP_POISSON:B: TYPE_SCOPE:', TYPE_SCOPE(0)
+WRITE(MSG%LU_DEBUG,*) 'SETUP_POISSON:B: TYPE_SCOPE:', TYPE_SCOPE(0), G%NC
 #endif
-IP = 1P
-DO IC = 1, G%NC
-         IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(IX, IY, IZ)) CYCLE
-         IC = G%CELL_NUMBER(IX, IY, IZ)
+IP = 1
+DO IZ = 1, L%NZ
+   DO IY = 1, L%NY
+      DO IX = 1, L%NX
+
+         JC = G%CELL_NUMBER(IX, IY, IZ)
+         IC = MGM%PERMA(JC)
 
          ! Main diagonal 
 
+         IX = G%ICX(JC)
+         IY = G%ICY(JC)
+         IZ = G%ICZ(JC)
+#ifdef WITH_SCARC_DEBUG
+      WRITE(MSG%LU_DEBUG,*) 'JC, IC, IX, IY, IZ:', JC, IC, IX, IY, IZ
+#endif
          CALL SCARC_SETUP_MAINDIAG (IC, IX, IY, IZ, IP)
-
+      
          ! Lower subdiagonals
 
          IF (IS_VALID_DIRECTION(IX, IY, IZ,  3)) CALL SCARC_SETUP_SUBDIAG(IC, IX, IY, IZ, IX  , IY  , IZ-1, IP,  3)
@@ -6118,7 +6135,7 @@ DO IC = 1, G%NC
          IF (IS_VALID_DIRECTION(IX, IY, IZ, -3)) CALL SCARC_SETUP_SUBDIAG(IC, IX, IY, IZ, IX  , IY  , IZ+1, IP, -3)
 
       ENDDO
-   ENDDO
+      ENDDO
 ENDDO
    
 A%ROW(G%NC+1) = IP
@@ -6127,10 +6144,10 @@ A%N_VAL = IP
 CALL SCARC_GET_MATRIX_STENCIL_MAX(A, G%NC)
 
 #ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_CMATRIX (A, 'LAPLACE', 'SETUP_LAPLACE: NO BDRY')
+CALL SCARC_DEBUG_CMATRIX (A, 'LAPLACE', 'MGM_SETUP_LAPLACE: NO BDRY')
 #endif
  
-END SUBROUTINE SCARC_SETUP_MGM_LAPLACE
+END SUBROUTINE SCARC_MGM_SETUP_LAPLACE
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Check if a subdiagonal entry must be computed in a specified coordinate direction
@@ -10000,6 +10017,34 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 ENDDO MESHES_LOOP
    
 END SUBROUTINE SCARC_SETUP_LAPLACE_SIZES
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Define sizes for system matrix A (including extended regions related to overlaps)
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_MGM_SETUP_LAPLACE_SIZES(NL)
+USE SCARC_POINTERS, ONLY: G, A
+INTEGER, INTENT(IN) :: NL
+INTEGER :: NM
+
+MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   
+   CALL SCARC_POINT_TO_GRID (NM, NL)                                  
+   A => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_LAPLACEP)
+
+   IF (TWO_D) THEN
+      A%N_STENCIL = 5
+      A%POS(-3:3) = (/1,0,2,3,4,0,5/)     
+   ELSE
+      A%N_STENCIL = 7
+      A%POS(-3:3) = (/1,2,3,4,5,6,7/)
+   ENDIF
+
+   A%N_VAL  = G%NC * A%N_STENCIL
+   A%N_ROW  = G%NC + 1
+
+ENDDO MESHES_LOOP
+   
+END SUBROUTINE SCARC_MGM_SETUP_LAPLACE_SIZES
 
 
 ! ------------------------------------------------------------------------------------------------------
@@ -16362,7 +16407,7 @@ SELECT CASE(NTYPE)
 #endif
    CASE (NSCARC_MATRIX_LAPLACE)
       SCARC_POINT_TO_CMATRIX => G%LAPLACE
-   CASE (NSCARC_MATRIX_MGM_LAPLACE)
+   CASE (NSCARC_MATRIX_LAPLACEP)
       SCARC_POINT_TO_CMATRIX => G%LAPLACEP
    CASE (NSCARC_MATRIX_PROLONGATION)
       SCARC_POINT_TO_CMATRIX => G%PROLONGATION
