@@ -1075,7 +1075,7 @@ TYPE SCARC_MGM_TYPE
    REAL(EB), ALLOCATABLE, DIMENSION (:)     :: OU3, OV3, OW3       !< Velocity components along external boundaries
    REAL(EB), ALLOCATABLE, DIMENSION (:)     :: OH1, OH2, OH3       !< Other mesh H3 vector
    REAL(EB), ALLOCATABLE, DIMENSION (:)     :: BC                  !< Boundary conditions along internal mesh interfaces
-   REAL(EB), ALLOCATABLE, DIMENSION (:)     :: X, Y                !< RHS and solution vectors of LU (experimental)
+   REAL(EB), ALLOCATABLE, DIMENSION (:)     :: X, Y, B             !< RHS and solution vectors of LU (experimental)
    REAL(EB), ALLOCATABLE, DIMENSION (:,:)   :: ASQ                 !< Matrix for LU-decomposition (experimental)
    REAL(EB), ALLOCATABLE, DIMENSION (:,:)   :: LSQ                 !< Lower part of LU-decomposition (experimental)
    REAL(EB), ALLOCATABLE, DIMENSION (:,:)   :: USQ                 !< Upper part of LU-decomposition (experimental)
@@ -1092,6 +1092,7 @@ TYPE SCARC_MGM_TYPE
    INTEGER :: NEIGHBORS(8,-3:3)
    INTEGER :: NCS, NCU                                             !< Number of cells for structured/unstructured grid
    INTEGER :: NW1, NW2, NWI, NWE                                   !< Range of IW's with non-zero B-values
+   INTEGER :: NONZERO
 
    INTEGER :: ITE = 0
    INTEGER :: ITE_POISSON = 0
@@ -5401,7 +5402,7 @@ WRITE(MSG%LU_DEBUG,*) 'TTTTT: SETUP_SYSTEM:B: TYPE_SCOPE:', TYPE_SCOPE(0)
       CALL SCARC_SETUP_GRID_TYPE (NSCARC_GRID_UNSTRUCTURED)       ! Then process unstructured discretization
       CALL SCARC_SETUP_POISSON_SIZES (NLEVEL_MIN)                 ! ... for global Poisson matrix
       CALL SCARC_SETUP_LAPLACE_SIZES (NLEVEL_MIN)                 ! ... for local Laplace matrices
-      CALL SCARC_MGM_SETUP_LAPLACE_SIZES (NLEVEL_MIN)                 ! ... for local Laplace matrices
+      CALL SCARC_SETUP_MGM_LAPLACE_SIZES (NLEVEL_MIN)                 ! ... for local Laplace matrices
    
 END SELECT SELECT_SCARC_METHOD_SIZES
 
@@ -5516,7 +5517,7 @@ WRITE(MSG%LU_DEBUG,*) '========================= MGM: UNSTRUCTURED'
 
          TYPE_SCOPE(0) = NSCARC_SCOPE_LOCAL
          CALL SCARC_SETUP_LAPLACE (NM, NLEVEL_MIN)
-         CALL SCARC_MGM_SETUP_LAPLACE (NM, NLEVEL_MIN)
+         CALL SCARC_SETUP_MGM_LAPLACE (NM, NLEVEL_MIN)
          CALL SCARC_MGM_SETUP_BOUNDARY(NM, NLEVEL_MIN) 
 
 #ifdef WITH_MKL
@@ -5920,6 +5921,7 @@ END SUBROUTINE SCARC_SETUP_POISSON
 
 
 
+! ---------------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_LAPLACE (NM, NL)
 USE SCARC_POINTERS, ONLY: L, G, A
 INTEGER, INTENT(IN) :: NM, NL
@@ -5978,18 +5980,19 @@ CALL SCARC_DEBUG_CMATRIX (A, 'LAPLACE', 'SETUP_LAPLACE: NO BDRY')
  
 END SUBROUTINE SCARC_SETUP_LAPLACE
 
-SUBROUTINE SCARC_MGM_SETUP_LAPLACE (NM, NL)
+! ---------------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_MGM_LAPLACE (NM, NL)
 USE SCARC_POINTERS, ONLY: L, G, A, MGM
 INTEGER, INTENT(IN) :: NM, NL
-INTEGER :: IX, IY, IZ, IC, IP, JC, KC, I, J, K, IOR0, IW
+INTEGER :: IX, IY, IZ, IC, JC, KC, IP, I, J, K, IOR0, IW, KKC(-3:3), JJC(-3:3)
+INTEGER :: TYPE_SCOPE_SAVE
 
 CROUTINE = 'SCARC_SETUP_LAPLACE'
+TYPE_SCOPE_SAVE = TYPE_SCOPE(0)
+TYPE_SCOPE(0) = NSCARC_SCOPE_LOCAL
  
 ! Allocate main matrix on non-overlapping part of mesh
 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SETUP_POISSON: TYPE_SCOPE:', TYPE_SCOPE(0)
-#endif
 CALL SCARC_SETUP_GRID_TYPE(NSCARC_GRID_UNSTRUCTURED)
 CALL SCARC_POINT_TO_GRID (NM, NL)              
 A => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_LAPLACEP)
@@ -6007,6 +6010,7 @@ CALL SCARC_ALLOCATE_INT1 (MGM%PERMB , 1, G%NC, NSCARC_INIT_ZERO, 'MGM%PERMB', CR
 !
 MGM%PERMA = 0
 JC = G%NC
+
 DO IW = L%N_WALL_CELLS_EXT+1, L%N_WALL_CELLS_EXT + L%N_WALL_CELLS_INT
    
    GWC => G%WALL(IW)
@@ -6036,7 +6040,6 @@ WRITE(MSG%LU_DEBUG,'(8I4)') MGM%PERMA
 WRITE(MSG%LU_DEBUG,*) 'AFTER OBSTRUCTION: PERMB:'
 WRITE(MSG%LU_DEBUG,'(8I4)') MGM%PERMB
 #endif
-
 
 !
 ! Interface cells are numbered second last
@@ -6084,6 +6087,7 @@ DO IC = 1, G%NC
 ENDDO
 IF (KC /= JC + 1) WRITE(*,*) 'ERROR IN MGM PERMUTATION: KC=', KC,': JC=', JC
 
+MGM%NONZERO = KC
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'AFTER FINAL FILL: PERMA:', KC, JC
@@ -6096,46 +6100,75 @@ WRITE(MSG%LU_DEBUG,*) 'G%ICY'
 WRITE(MSG%LU_DEBUG,'(8I4)') G%ICY
 WRITE(MSG%LU_DEBUG,*) 'G%ICZ'
 WRITE(MSG%LU_DEBUG,'(8I4)') G%ICZ
-#endif
-
-!
-! Assemble permuted Laplace matrix which will be stored in LAPLACEP
-!
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'SETUP_POISSON:B: TYPE_SCOPE:', TYPE_SCOPE(0), G%NC
-#endif
-IP = 1
 DO IZ = 1, L%NZ
    DO IY = 1, L%NY
-      DO IX = 1, L%NX
-
-         JC = G%CELL_NUMBER(IX, IY, IZ)
-         IC = MGM%PERMA(JC)
-
-         ! Main diagonal 
-
-         IX = G%ICX(JC)
-         IY = G%ICY(JC)
-         IZ = G%ICZ(JC)
-#ifdef WITH_SCARC_DEBUG
-      WRITE(MSG%LU_DEBUG,*) 'JC, IC, IX, IY, IZ:', JC, IC, IX, IY, IZ
+      WRITE(MSG%LU_DEBUG,*) (L%IS_SOLID(IX, IY, IZ), IX=1, L%NX)
+   ENDDO
+ENDDO
 #endif
-         CALL SCARC_SETUP_MAINDIAG (IC, IX, IY, IZ, IP)
+!
+! Assemble permuted Laplace matrix which will be stored in LAPLACEP,
+! determine the permuted cells that belong to the matrix stencil in a given cell
+!
+IP = 1
+DO IC = 1, G%NC
+
+   JJC = -1
+   KKC = -1
+
+   JJC(0) = MGM%PERMB(IC);  KKC(0) = MGM%PERMA(JJC(0))
+   
+   IX = G%ICX(JJC(0)); IY = G%ICY(JJC(0)); IZ = G%ICZ(JJC(0))
+
+   JJC(-3) = G%CELL_NUMBER(IX  , IY, IZ+1)     ; KKC(-3) = GET_PERM(JJC(-3))  
+   JJC(-1) = G%CELL_NUMBER(IX+1, IY, IZ  )     ; KKC(-1) = GET_PERM(JJC(-1))   
+   JJC( 1) = G%CELL_NUMBER(IX-1, IY, IZ  )     ; KKC( 1) = GET_PERM(JJC( 1))    
+   JJC( 3) = G%CELL_NUMBER(IX  , IY, IZ-1)     ; KKC( 3) = GET_PERM(JJC( 3))     
+   IF (.NOT.TWO_D) THEN
+     JJC(-2) = G%CELL_NUMBER(IX, IY+1, IZ)     ; KKC(-2) = GET_PERM(JJC(-2))     
+     JJC( 2) = G%CELL_NUMBER(IX, IY-1, IZ)     ; KKC( 2) = GET_PERM(JJC( 2))     
+   ENDIF
+
+   ! Main diagonal 
+   CALL SCARC_SETUP_MAINDIAG (IC, IX, IY, IZ, IP)
+#ifdef WITH_SCARC_DEBUG
+      WRITE(MSG%LU_DEBUG,*) '======================================='
+      WRITE(MSG%LU_DEBUG,*) 'JJC = ', JJC
+      WRITE(MSG%LU_DEBUG,*) 'KKC = ', KKC
+      WRITE(MSG%LU_DEBUG,*) 'IX, IY, IZ=', IX, IY, IZ
+#endif
+
       
-         ! Lower subdiagonals
+   ! Lower subdiagonals
 
-         IF (IS_VALID_DIRECTION(IX, IY, IZ,  3)) CALL SCARC_SETUP_SUBDIAG(IC, IX, IY, IZ, IX  , IY  , IZ-1, IP,  3)
-         IF (IS_VALID_DIRECTION(IX, IY, IZ,  2)) CALL SCARC_SETUP_SUBDIAG(IC, IX, IY, IZ, IX  , IY-1, IZ  , IP,  2)
-         IF (IS_VALID_DIRECTION(IX, IY, IZ,  1)) CALL SCARC_SETUP_SUBDIAG(IC, IX, IY, IZ, IX-1, IY  , IZ  , IP,  1)
+   IF (IS_VALID_DIRECTION(IX, IY, IZ,  3)) CALL SCARC_SETUP_MGM_SUBDIAG(IX, IY, IZ, IX  , IY  , IZ-1, KKC( 3), IP,  3)
+   IF (IS_VALID_DIRECTION(IX, IY, IZ,  2)) CALL SCARC_SETUP_MGM_SUBDIAG(IX, IY, IZ, IX  , IY-1, IZ  , KKC( 2), IP,  2)
+   IF (IS_VALID_DIRECTION(IX, IY, IZ,  1)) CALL SCARC_SETUP_MGM_SUBDIAG(IX, IY, IZ, IX-1, IY  , IZ  , KKC( 1), IP,  1)
 
-         ! Upper subdiagonals
+   ! Upper subdiagonals
 
-         IF (IS_VALID_DIRECTION(IX, IY, IZ, -1)) CALL SCARC_SETUP_SUBDIAG(IC, IX, IY, IZ, IX+1, IY  , IZ  , IP, -1)
-         IF (IS_VALID_DIRECTION(IX, IY, IZ, -2)) CALL SCARC_SETUP_SUBDIAG(IC, IX, IY, IZ, IX  , IY+1, IZ  , IP, -2)
-         IF (IS_VALID_DIRECTION(IX, IY, IZ, -3)) CALL SCARC_SETUP_SUBDIAG(IC, IX, IY, IZ, IX  , IY  , IZ+1, IP, -3)
+   IF (IS_VALID_DIRECTION(IX, IY, IZ, -1)) CALL SCARC_SETUP_MGM_SUBDIAG(IX, IY, IZ, IX+1, IY  , IZ  , KKC(-1), IP, -1)
+   IF (IS_VALID_DIRECTION(IX, IY, IZ, -2)) CALL SCARC_SETUP_MGM_SUBDIAG(IX, IY, IZ, IX  , IY+1, IZ  , KKC(-2), IP, -2)
+   IF (IS_VALID_DIRECTION(IX, IY, IZ, -3)) CALL SCARC_SETUP_MGM_SUBDIAG(IX, IY, IZ, IX  , IY  , IZ+1, KKC(-3), IP, -3)
 
-      ENDDO
-      ENDDO
+   ! Lower subdiagonals
+
+   !IF (IS_VALID_DIRECTION(IX, IY, IZ, 3)) &
+   !   CALL SCARC_SETUP_SUBDIAG(KC, G%ICX(KC), G%ICY(KC), G%ICZ(KC), G%ICX(KC), G%ICY(KC), G%ICZ(KS), IP,  3)
+   !IF (IS_VALID_DIRECTION(IX, IY, IZ, 2)) &
+   !   CALL SCARC_SETUP_SUBDIAG(KC, G%ICX(KC), G%ICY(KC), G%ICZ(KC), G%ICX(KC), G%ICY(KF), G%ICZ(KC), IP,  2)
+   !IF (IS_VALID_DIRECTION(IX, IY, IZ, 1)) &
+   !   CALL SCARC_SETUP_SUBDIAG(KC, G%ICX(KC), G%ICY(KC), G%ICZ(KC), G%ICX(KW), G%ICY(KC), G%ICZ(KC), IP,  1)
+
+   ! Upper subdiagonals
+
+   !IF (IS_VALID_DIRECTION(IX, IY, IZ, -1)) &
+   !   CALL SCARC_SETUP_SUBDIAG(KC, G%ICX(KC), G%ICY(KC), G%ICZ(KC), G%ICX(KE), G%ICY(KC), G%ICZ(KC), IP, -1)
+   !IF (IS_VALID_DIRECTION(IX, IY, IZ, -2)) &
+   !   CALL SCARC_SETUP_SUBDIAG(KC, G%ICX(KC), G%ICY(KC), G%ICZ(KC), G%ICX(KC), G%ICY(KB), G%ICZ(KC), IP, -2)
+   !IF (IS_VALID_DIRECTION(IX, IY, IZ, -3)) &
+   !   CALL SCARC_SETUP_SUBDIAG(KC, G%ICX(KC), G%ICY(KC), G%ICZ(KC), G%ICX(KC), G%ICY(KC), G%ICZ(KN), IP, -3)
+
 ENDDO
    
 A%ROW(G%NC+1) = IP
@@ -6143,11 +6176,22 @@ A%N_VAL = IP
    
 CALL SCARC_GET_MATRIX_STENCIL_MAX(A, G%NC)
 
+TYPE_SCOPE(0) = TYPE_SCOPE_SAVE
+
 #ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_CMATRIX (A, 'LAPLACE', 'MGM_SETUP_LAPLACE: NO BDRY')
+CALL SCARC_DEBUG_CMATRIX (A, 'LAPLACE', 'SETUP_MGM_LAPLACE: NO BDRY')
 #endif
  
-END SUBROUTINE SCARC_MGM_SETUP_LAPLACE
+END SUBROUTINE SCARC_SETUP_MGM_LAPLACE
+
+INTEGER FUNCTION GET_PERM(JC)
+USE SCARC_POINTERS, ONLY : G, MGM
+INTEGER, INTENT(IN) :: JC
+
+GET_PERM = -1
+IF (JC > 0 .AND. JC <= G%NC) GET_PERM = MGM%PERMA(JC)
+
+END FUNCTION GET_PERM
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Check if a subdiagonal entry must be computed in a specified coordinate direction
@@ -6251,6 +6295,10 @@ IF (IS_INTERNAL_CELL) THEN
       A%STENCIL(-IOR0) = A%VAL(IP)
       IP = IP + 1
    ELSE
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'IX1, IY1, IZ1, IX2, IY2, IZ2, L%IS_SOLID(IX2, IY2, IZ2):', &
+                       IX1, IY1, IZ1, IX2, IY2, IZ2, L%IS_SOLID(IX2, IY2, IZ2)
+#endif
       CALL SCARC_SHUTDOWN(NSCARC_ERROR_MATRIX_SUBDIAG, SCARC_NONE, NSCARC_NONE)
    ENDIF
 
@@ -6269,6 +6317,46 @@ ELSE IF (TYPE_SCOPE(0) == NSCARC_SCOPE_GLOBAL .AND. L%FACE(IOR0)%N_NEIGHBORS /= 
 ENDIF
 
 END SUBROUTINE SCARC_SETUP_SUBDIAG
+
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Set subdigonal entries for Poisson matrix in compact storage technique on specified face
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_MGM_SUBDIAG (IX1, IY1, IZ1, IX2, IY2, IZ2, ICOL, IP, IOR0)
+USE SCARC_POINTERS, ONLY: L, F, A
+INTEGER, INTENT(IN) :: IX1, IY1, IZ1, IX2, IY2, IZ2, IOR0, ICOL
+INTEGER, INTENT(INOUT) :: IP
+LOGICAL :: IS_INTERNAL_CELL
+
+!A => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_POISSON)
+
+! Decide wheter cell is interior or exterior cell
+
+F => L%FACE(IOR0)
+SELECT CASE (IOR0)
+   CASE ( 1)
+      IS_INTERNAL_CELL = IX1 > 1
+   CASE (-1)
+      IS_INTERNAL_CELL = IX1 < F%NOP
+   CASE ( 2)
+      IS_INTERNAL_CELL = IY1 > 1
+   CASE (-2)
+      IS_INTERNAL_CELL = IY1 < F%NOP
+   CASE ( 3)
+      IS_INTERNAL_CELL = IZ1 > 1
+   CASE (-3)
+      IS_INTERNAL_CELL = IZ1 < F%NOP
+END SELECT
+
+! If IC is an internal cell of the mesh, compute usual matrix contribution for corresponding subdiagonal
+IF (IS_INTERNAL_CELL .AND. .NOT.L%IS_SOLID(IX2, IY2, IZ2)) THEN
+   A%VAL(IP) = A%VAL(IP) + F%INCR_INSIDE
+   A%COL(IP) = ICOL
+   A%STENCIL(-IOR0) = A%VAL(IP)
+   IP = IP + 1
+ENDIF
+
+END SUBROUTINE SCARC_SETUP_MGM_SUBDIAG
 
 
 ! ------------------------------------------------------------------------------------------------
@@ -6805,7 +6893,8 @@ INTEGER :: ICXM, ICXP, ICYM, ICYP, ICZM, ICZP
 
 CALL SCARC_POINT_TO_GRID (NM, NL)       
 
-A => G%LAPLACE
+!A => G%LAPLACE
+A => G%LAPLACEP
 MGM => L%MGM
 
 
@@ -6938,8 +7027,9 @@ WRITE(MSG%LU_DEBUG,*)
          IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I, J, K)) CYCLE
 
          NOM = GWC%NOM
-         IC  = G%CELL_NUMBER(I, J, K)
-         GWC%ICW = IC
+         !IC  = G%CELL_NUMBER(I, J, K)
+         IC  = MGM%PERMA(G%CELL_NUMBER(I, J, K))
+         !GWC%ICW = IC
 
          IP = A%ROW(IC)
          SELECT CASE (GWC%BTYPE)
@@ -10021,7 +10111,7 @@ END SUBROUTINE SCARC_SETUP_LAPLACE_SIZES
 ! ------------------------------------------------------------------------------------------------
 !> \brief Define sizes for system matrix A (including extended regions related to overlaps)
 ! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_MGM_SETUP_LAPLACE_SIZES(NL)
+SUBROUTINE SCARC_SETUP_MGM_LAPLACE_SIZES(NL)
 USE SCARC_POINTERS, ONLY: G, A
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM
@@ -10044,7 +10134,7 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
 ENDDO MESHES_LOOP
    
-END SUBROUTINE SCARC_MGM_SETUP_LAPLACE_SIZES
+END SUBROUTINE SCARC_SETUP_MGM_LAPLACE_SIZES
 
 
 ! ------------------------------------------------------------------------------------------------------
@@ -22596,6 +22686,7 @@ WRITE(MSG%LU_DEBUG,*) 'UM%N_ROW =', UM%N_ROW
          CALL SCARC_ALLOCATE_REAL2(MGM%LSQ, 1, G%NC, 1, G%NC, NSCARC_INIT_ZERO, 'MGM%LSQ', CROUTINE)
          CALL SCARC_ALLOCATE_REAL2(MGM%USQ, 1, G%NC, 1, G%NC, NSCARC_INIT_ZERO, 'MGM%USQ', CROUTINE)
    
+         CALL SCARC_ALLOCATE_REAL1(MGM%B, 1, G%NC, NSCARC_INIT_ZERO, 'B', CROUTINE)
          CALL SCARC_ALLOCATE_REAL1(MGM%Y, 1, G%NC, NSCARC_INIT_ZERO, 'Y', CROUTINE)
          CALL SCARC_ALLOCATE_REAL1(MGM%X, 1, G%NC, NSCARC_INIT_ZERO, 'X', CROUTINE)
    
@@ -22627,16 +22718,19 @@ TYPE_SCOPE(0) = NSCARC_SCOPE_LOCAL
 L   => SCARC(NM)%LEVEL(NL)
 G   => L%UNSTRUCTURED
 MGM => L%MGM
-A   => G%LAPLACE
+!A   => G%LAPLACE
+A   => G%LAPLACEP
 
 
 #ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_CMATRIX (A, 'LAPLACE', 'SETUP_MGM_LU: INIT ')
+CALL SCARC_DEBUG_CMATRIX (A, 'LAPLACEP', 'SETUP_MGM_LU: INIT ')
 WRITE(MSG%LU_DEBUG,*) 'G%NC =', G%NC
+CALL SCARC_MATLAB_MATRIX(A%VAL, A%ROW, A%COL, G%NC, G%NC, NM, NL, 'laplacep')
 #endif
  
 DO IC = 1, G%NC
-   JC = MGM%PERMA(IC)
+   !JC = MGM%PERMA(IC)
+   JC = IC
 
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) 'PERMUTATION  --- IC =', IC, '-----------> JC=',JC
@@ -22669,7 +22763,8 @@ LM  => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_LM)
 UM  => SCARC_POINT_TO_CMATRIX (G, NSCARC_MATRIX_UM)
 
 DO JC = 1, G%NC
-   IC = MGM%PERMA(JC)
+   !IC = MGM%PERMA(JC)
+   IC = JC
    UM%ROW(IC) = IC
    UM%COL(IC) = IC
    LM%ROW(IC) = IC
@@ -22683,7 +22778,11 @@ NMAX_L = G%NC
 
 ROW_LOOP: DO IC0 = 1, G%NC  
 
-   IC = MGM%PERMA(IC0)
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) '==================================> IC0=', IC0
+#endif
+   !IC = MGM%PERMA(IC0)
+   IC = IC0
 
    VAL = 1.0_EB
    MGM%LSQ(IC,IC) = VAL
@@ -22804,6 +22903,9 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    N = G%NC
 
+   DO J = 1, N
+      MGM%B(J) = ST%B(MGM%PERMB(J))
+   ENDDO
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,*) '=============================== A'
    DO I = 1, N
@@ -22817,14 +22919,21 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    DO I = 1, N
       WRITE(MSG%LU_DEBUG,'(24F8.2)') (MGM%USQ(I, J), J=1, 24)
    ENDDO
-   WRITE(MSG%LU_DEBUG,*) '=============================== B'
+   WRITE(MSG%LU_DEBUG,*) '=============================== MGM%PERMA'
+   WRITE(MSG%LU_DEBUG,'(I5)') (MGM%PERMA(I), I=1, G%NC)
+   WRITE(MSG%LU_DEBUG,*) '=============================== MGM%PERMB'
+   WRITE(MSG%LU_DEBUG,'(I5)') (MGM%PERMB(I), I=1, G%NC)
+   WRITE(MSG%LU_DEBUG,*) '=============================== ST%B'
    WRITE(MSG%LU_DEBUG,'(5E14.6)') (ST%B(I), I=1, G%NC)
+   WRITE(MSG%LU_DEBUG,*) '=============================== MGM%B'
+   WRITE(MSG%LU_DEBUG,'(5E14.6)') (MGM%B(I), I=1, G%NC)
    CALL SCARC_DEBUG_CMATRIX (LM, 'MGM%L', 'METHOD_MGM_LU ')
    CALL SCARC_DEBUG_CMATRIX (UM, 'MGM%U', 'METHOD_MGM_LU ')
 #endif
 
-   DO J = 1, N
-      MGM%Y(J) = ST%B(J)
+
+   DO J = MGM%NONZERO, N
+      MGM%Y(J) = MGM%B(J)
       DO K = 1, J-1
          VAL = SCARC_EVALUATE_CMATRIX(LM, J, K)
          MGM%Y(J) = MGM%Y(J) - VAL*MGM%Y(K)
@@ -23843,7 +23952,6 @@ INTEGER :: IC, JC, ICOL, MMATRIX
 CHARACTER(60) :: CFILE, CFORM
 REAL(EB) :: MATRIX_LINE(1000)
 
-RETURN
 WRITE (CFILE, '(A,A,A,i2.2,A,i2.2,A)') 'matlab/',TRIM(CNAME),'_mesh',NM,'_level',NL,'_mat.txt'
 !WRITE (CFORM, '(A,I3, 2A)' ) "(", NC2-1, "(F9.3,','),F9.3,';')"
 !WRITE (CFORM, '(A,I3, 2A)' ) "(", NC2-1, "(F9.3,' '),F9.3,' ')"
