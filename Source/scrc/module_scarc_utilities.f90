@@ -2,6 +2,7 @@ MODULE SCARC_UTILITIES
   
 USE MESH_VARIABLES, ONLY: MESHES
 USE SCARC_CONSTANTS
+USE SCARC_VARIABLES, ONLY: NLEVEL_MAX, TYPE_COARSE
 
 CONTAINS
 
@@ -97,6 +98,19 @@ IF (NSTATE == NSCARC_MEMORY_REMOVE) SCARC_GET_INIT_TYPE = ' '
 
 END FUNCTION SCARC_GET_INIT_TYPE
 
+! ------------------------------------------------------------------------------------------------
+!> \brief Get type of matrix storage scheme for specified grid level
+! ------------------------------------------------------------------------------------------------
+INTEGER FUNCTION SCARC_GET_MATRIX_TYPE(NL)
+INTEGER, INTENT(IN) :: NL
+
+IF (NL == NLEVEL_MAX .AND. TYPE_COARSE == NSCARC_COARSE_DIRECT) THEN
+   SCARC_GET_MATRIX_TYPE = NSCARC_MATRIX_COMPACT
+ELSE
+   SCARC_GET_MATRIX_TYPE = TYPE_MATRIX
+ENDIF
+
+END FUNCTION SCARC_GET_MATRIX_TYPE
 
 
 END MODULE SCARC_UTILITIES
