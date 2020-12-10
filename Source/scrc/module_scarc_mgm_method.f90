@@ -1,17 +1,21 @@
-!MODULE SCARC_MGM
+MODULE SCARC_MGM
 
-!USE PRECISION_PARAMETERS
-!USE GLOBAL_CONSTANTS
-!USE MESH_VARIABLES
-!USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
-!USE COMP_FUNCTIONS, ONLY: CURRENT_TIME, GET_FILE_NUMBER, SHUTDOWN
-!!USE MPI
-!USE SCARC_CONSTANTS
-!USE SCARC_TYPES
-!USE SCARC_VARIABLES
-!USE SCRC
-!
-!CONTAINS
+USE PRECISION_PARAMETERS
+USE GLOBAL_CONSTANTS
+USE MESH_VARIABLES
+USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
+USE COMP_FUNCTIONS, ONLY: CURRENT_TIME, GET_FILE_NUMBER, SHUTDOWN
+USE MPI
+USE SCARC_CONSTANTS
+USE SCARC_TYPES
+USE SCARC_VARIABLES
+USE SCARC_UTILITIES, ONLY: IS_VALID_DIRECTION
+USE SCARC_MPI
+USE SCARC_MEMORY_MANAGER
+USE SCARC_ITERATION_MANAGER
+USE SCARC_KRYLOV_METHOD
+
+CONTAINS
 
 
 ! ================================================================================================
@@ -925,7 +929,6 @@ END SUBROUTINE SCARC_MGM_DUMP
 !> \brief Perform global conjugate gradient method based on global Possion-matrix
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_METHOD_MGM
-USE SCARC_ITERATION_ENVIRONMENT
 INTEGER :: ITE_MGM, STATE_MGM
 LOGICAL :: COMPARE_SCARC_VS_USCARC = .TRUE., USE_OVERLAPS = .TRUE.
 
@@ -1108,11 +1111,10 @@ END SUBROUTINE SCARC_METHOD_MGM
 ! ------------------------------------------------------------------------------------------------------
 REAL(EB) FUNCTION SCARC_MGM_CONVERGENCE_STATE(ITE_MGM)
 USE SCARC_POINTERS, ONLY: MGM
-USE SCARC_ITERATION_ENVIRONMENT
 INTEGER, INTENT(IN) :: ITE_MGM
 INTEGER :: NM
 
-! Note: Convergence history of previous Krylov method is available in ITE and CAPPA in SCARC_ITERATION_ENVIRONMENT
+! Note: Convergence history of previous Krylov method is available in ITE and CAPPA 
 
 SCARC_MGM_CONVERGENCE_STATE = NSCARC_MGM_CONV_FAILURE
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
@@ -1135,7 +1137,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       CASE (0)
          MGM%ITE = 0
          MGM%ITE_LAPLACE = 0
-         MGM%ITE_POISSON = ITE                   ! Use ITE from SCARC_ITERATION_ENVIRONMENT
+         MGM%ITE_POISSON = ITE                 
          MGM%CAPPA_POISSON = CAPPA
 #ifdef WITH_SCARC_DEBUG
    WRITE(MSG%LU_DEBUG,1100)   ICYC, PRESSURE_ITERATIONS, TOTAL_PRESSURE_ITERATIONS, &
@@ -1780,7 +1782,6 @@ END SUBROUTINE SCARC_MGM_COPY
 !> \brief Set internal boundary conditions for unstructured, homogeneous part of McKeeney-Greengard-Mayo method
 ! ---------------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_MGM_WORKSPACE(NL)
-USE SCARC_ITERATION_ENVIRONMENT
 USE SCARC_POINTERS, ONLY: M, L, MGM
 INTEGER, INTENT(IN) :: NL
 INTEGER  :: NM
@@ -1828,7 +1829,6 @@ END SUBROUTINE SCARC_SETUP_MGM_WORKSPACE
 !> \brief Set interface boundary conditions for unstructured, homogeneous part of McKeeney-Greengard-Mayo method
 ! ---------------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_MGM_INTERFACES(NM, NL)
-USE SCARC_ITERATION_ENVIRONMENT
 USE SCARC_POINTERS, ONLY: L, G, F, MGM, GWC, OL, OG, OH1, OH2, H2, ST
 USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_OTHER_GRID
 INTEGER, INTENT(IN) :: NM, NL
@@ -2175,7 +2175,6 @@ END SUBROUTINE SCARC_SETUP_MGM_INTERFACES
 !> \brief Set BC's along internal obstructions for MGM method
 ! ---------------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_MGM_OBSTRUCTIONS
-USE SCARC_ITERATION_ENVIRONMENT
 USE SCARC_POINTERS, ONLY: L, G, MGM, ST, UU, VV, WW, GWC
 INTEGER :: IW, I, J, K, IOR0, IC
 REAL(EB) :: VAL
@@ -2258,7 +2257,6 @@ END SUBROUTINE SCARC_SETUP_MGM_OBSTRUCTIONS
 !> \brief Set internal boundary conditions for unstructured, homogeneous part of McKeeney-Greengard-Mayo method
 ! ---------------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_MGM_UPDATE_VELOCITY(NTYPE)
-USE SCARC_ITERATION_ENVIRONMENT
 USE SCARC_POINTERS, ONLY: M, L, G, GWC, MGM, UU, VV, WW, HP
 INTEGER, INTENT(IN) :: NTYPE
 INTEGER  :: NM, I, J, K, IW, IOR0
@@ -2484,7 +2482,6 @@ END SUBROUTINE SCARC_MGM_UPDATE_VELOCITY
 !> \brief Set internal boundary conditions for unstructured, homogeneous part of McKeeney-Greengard-Mayo method
 ! ---------------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_MGM_COMPUTE_VELOCITY_ERROR(NTYPE)
-USE SCARC_ITERATION_ENVIRONMENT
 USE SCARC_POINTERS, ONLY: M, L, G, MGM, GWC, EWC, HP, UU, VV, WW
 INTEGER, INTENT(IN) ::  NTYPE
 INTEGER :: NM, I, J, K, IW, IOR0, IIO1, IIO2, JJO1, JJO2, KKO1, KKO2, IIO, JJO, KKO, ITYPE
@@ -2926,4 +2923,4 @@ END SUBROUTINE SCARC_METHOD_MGM_LU
 ! End MGM routines
 ! ====================================================================================================
 
-!END MODULE SCARC_MGM
+END MODULE SCARC_MGM

@@ -1,8 +1,9 @@
 MODULE SCARC_UTILITIES
   
+USE GLOBAL_CONSTANTS
 USE MESH_VARIABLES, ONLY: MESHES
 USE SCARC_CONSTANTS
-USE SCARC_VARIABLES, ONLY: NLEVEL_MAX, TYPE_COARSE
+USE SCARC_VARIABLES
 
 CONTAINS
 
@@ -111,6 +112,118 @@ ELSE
 ENDIF
 
 END FUNCTION SCARC_GET_MATRIX_TYPE
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Check if a subdiagonal entry must be computed in a specified coordinate direction
+! If a structured discretization is used, then subdiagonals are built in every direction
+! Else check the type of the neighboring cell in direction IOR0
+! ------------------------------------------------------------------------------------------------
+LOGICAL FUNCTION IS_VALID_DIRECTION(IX, IY, IZ, IOR0)
+USE SCARC_POINTERS, ONLY: L, G
+INTEGER, INTENT(IN)  :: IX, IY, IZ, IOR0
+INTEGER :: IC_INDEX, IW_INDEX
+
+IS_VALID_DIRECTION = .FALSE.
+IF (TWO_D .AND. ABS(IOR0) == 2) RETURN
+
+SELECT CASE (TYPE_GRID)
+   CASE (NSCARC_GRID_STRUCTURED)
+      IS_VALID_DIRECTION = .TRUE.                                                ! always build subdiagonals
+      RETURN
+   CASE (NSCARC_GRID_UNSTRUCTURED)
+      IC_INDEX = L%CELL_INDEX_PTR(IX, IY, IZ)                               ! cell index of corresponding cell
+      IW_INDEX = 0
+      IF (IC_INDEX /= 0) IW_INDEX  = L%WALL_INDEX_PTR(IC_INDEX, -IOR0)      ! check its wall index
+
+      IF (IW_INDEX == 0) THEN                                               ! if zero, build subdiagonal
+         IS_VALID_DIRECTION = .TRUE.
+         RETURN
+      ELSE                                                                  ! if not, only build along interfaces
+         IF (TYPE_SCOPE(0) == NSCARC_SCOPE_GLOBAL .AND. G%WALL(IW_INDEX)%BOUNDARY_TYPE== INTERPOLATED_BOUNDARY) THEN
+            IS_VALID_DIRECTION = .TRUE.
+            RETURN
+         ENDIF
+      ENDIF
+END SELECT
+RETURN
+
+END FUNCTION IS_VALID_DIRECTION
+
+
+! ----------------------------------------------------------------------------------------------------
+!> \brief Filter out mean value
+! ----------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_FILTER_MEANVALUE(NV, NL)
+USE SCARC_POINTERS, ONLY: L, G, VC
+USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
+INTEGER, INTENT(IN) :: NV, NL
+INTEGER :: NM, IC, I, J, K
+
+MESH_REAL = 0.0_EB
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+   VC => SCARC_POINT_TO_VECTOR(NM, NL, NV)
+   DO IC = 1, G%NC
+      MESH_REAL(NM) = MESH_REAL(NM) + VC(IC)
+   ENDDO
+ENDDO
+
+IF (N_MPI_PROCESSES > 1) &
+   CALL MPI_ALLGATHERV(MPI_IN_PLACE,1,MPI_INTEGER,MESH_REAL,COUNTS,DISPLS,&
+                       MPI_DOUBLE_PRECISION,MPI_COMM_WORLD,IERROR)
+
+GLOBAL_REAL = SUM(MESH_REAL(1:NMESHES))/REAL(NC_GLOBAL(NL))
+
+DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+   VC  => SCARC_POINT_TO_VECTOR(NM, NL, NV)
+   DO K = 1, L%NZ
+      DO J = 1, L%NY
+         DO I = 1, L%NX
+            IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I, J, K)) CYCLE
+            IC = G%CELL_NUMBER(I,J,K)
+            VC(IC) = VC(IC) - GLOBAL_REAL
+         ENDDO
+      ENDDO
+   ENDDO
+ENDDO
+
+END SUBROUTINE SCARC_FILTER_MEANVALUE
+
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Restore last cell of last mesh
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_RESTORE_LAST_CELL (XX, NL)
+USE SCARC_POINTERS, ONLY: S, VC
+USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_VECTOR
+INTEGER, INTENT(IN) :: XX, NL
+
+IF (UPPER_MESH_INDEX /= NMESHES .OR. TYPE_RELAX == NSCARC_RELAX_FFT) RETURN
+S => SCARC(UPPER_MESH_INDEX)
+
+VC => SCARC_POINT_TO_VECTOR (UPPER_MESH_INDEX, NL, XX)
+VC(S%NC) = S%RHS_END
+
+END SUBROUTINE SCARC_RESTORE_LAST_CELL
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Check if difference of two values is less than a given tolerance
+! ------------------------------------------------------------------------------------------------
+LOGICAL FUNCTION MATCH (VAL1, VAL2)
+REAL (EB), INTENT(IN) :: VAL1, VAL2
+REAL (EB) :: TOL
+TOL = 1.0E-10_EB
+MATCH = .FALSE.
+IF (Abs(VAL1-VAL2) <= TOL) MATCH = .TRUE.
+RETURN
+END FUNCTION MATCH
+
+
+
+
+
+
 
 
 END MODULE SCARC_UTILITIES

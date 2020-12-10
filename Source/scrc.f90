@@ -15,21 +15,21 @@
 #include "scrc/module_scarc_constants.f90"
 #include "scrc/module_scarc_types.f90"
 #include "scrc/module_scarc_variables.f90"
-#include "scrc/module_scarc_iteration_environment.f90"
 #include "scrc/module_scarc_pointers.f90"
 #include "scrc/module_scarc_pointer_routines.f90"
 #include "scrc/module_scarc_message_services.f90"
+#include "scrc/module_scarc_iteration_manager.f90"
 #include "scrc/module_scarc_error_manager.f90"
 #include "scrc/module_scarc_time_measurement.f90"
 #include "scrc/module_scarc_utilities.f90"
 #include "scrc/module_scarc_memory_manager.f90"
-#include "scrc/module_scarc_data_exchange.f90"
+#include "scrc/module_scarc_mpi.f90"
 #include "scrc/module_scarc_stack_operations.f90"
 #include "scrc/module_scarc_linear_algebra.f90"
 #include "scrc/module_scarc_relaxation_method.f90"
 #include "scrc/module_scarc_krylov_method.f90"
 #include "scrc/module_scarc_multigrid_method.f90"
-
+#include "scrc/module_scarc_mgm_method.f90"
 
 MODULE SCRC
 
@@ -42,18 +42,18 @@ USE MPI
 USE SCARC_CONSTANTS
 USE SCARC_TYPES
 USE SCARC_VARIABLES
-USE SCARC_ITERATION_ENVIRONMENT
+USE SCARC_ITERATION_MANAGER
 USE SCARC_MESSAGE_SERVICES
 USE SCARC_ERROR_MANAGER
 USE SCARC_TIME_MEASUREMENT
 USE SCARC_MEMORY_MANAGER
 USE SCARC_UTILITIES
-USE SCARC_DATA_EXCHANGE
+USE SCARC_MPI
 USE SCARC_STACK_OPERATIONS
 USE SCARC_LINEAR_ALGEBRA
-USE SCARC_RELAXATION_METHODS
-USE SCARC_KRYLOV_METHODS
-USE SCARC_MULTIGRID_METHODS
+USE SCARC_RELAXATION_METHOD
+USE SCARC_KRYLOV_METHOD
+USE SCARC_MULTIGRID_METHOD
 
 #ifdef WITH_MKL
 USE MKL_PARDISO
@@ -65,7 +65,6 @@ IMPLICIT NONE
 PUBLIC :: SCARC_SETUP, SCARC_SOLVER
 
 CONTAINS
-
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Initialize ScaRC structures based on SCARC-input parameters from &PRES namelist
@@ -4047,43 +4046,6 @@ CALL SCARC_DEBUG_CMATRIX (A, 'LAPLACE', 'SETUP_LAPLACE: NO BDRY')
 END SUBROUTINE SCARC_SETUP_LAPLACE
 
 ! ------------------------------------------------------------------------------------------------
-!> \brief Check if a subdiagonal entry must be computed in a specified coordinate direction
-! If a structured discretization is used, then subdiagonals are built in every direction
-! Else check the type of the neighboring cell in direction IOR0
-! ------------------------------------------------------------------------------------------------
-LOGICAL FUNCTION IS_VALID_DIRECTION(IX, IY, IZ, IOR0)
-USE SCARC_POINTERS, ONLY: L, G
-INTEGER, INTENT(IN)  :: IX, IY, IZ, IOR0
-INTEGER :: IC_INDEX, IW_INDEX
-
-IS_VALID_DIRECTION = .FALSE.
-IF (TWO_D .AND. ABS(IOR0) == 2) RETURN
-
-SELECT CASE (TYPE_GRID)
-   CASE (NSCARC_GRID_STRUCTURED)
-      IS_VALID_DIRECTION = .TRUE.                                                ! always build subdiagonals
-      RETURN
-   CASE (NSCARC_GRID_UNSTRUCTURED)
-      IC_INDEX = L%CELL_INDEX_PTR(IX, IY, IZ)                               ! cell index of corresponding cell
-      IW_INDEX = 0
-      IF (IC_INDEX /= 0) IW_INDEX  = L%WALL_INDEX_PTR(IC_INDEX, -IOR0)      ! check its wall index
-
-      IF (IW_INDEX == 0) THEN                                               ! if zero, build subdiagonal 
-         IS_VALID_DIRECTION = .TRUE.
-         RETURN
-      ELSE                                                                  ! if not, only build along interfaces
-         IF (TYPE_SCOPE(0) == NSCARC_SCOPE_GLOBAL .AND. G%WALL(IW_INDEX)%BOUNDARY_TYPE== INTERPOLATED_BOUNDARY) THEN
-            IS_VALID_DIRECTION = .TRUE.
-            RETURN
-         ENDIF
-      ENDIF
-END SELECT
-RETURN
-
-END FUNCTION IS_VALID_DIRECTION
-
-
-! ------------------------------------------------------------------------------------------------
 !> \brief Set main diagonal entry for Poisson matrix in compact storage technique
 ! These values correspond to the full matrix of the global problem
 ! In case of an equidistant grid, we get the usual 5-point (2d) and 7-point (3d) stencil
@@ -6380,7 +6342,6 @@ END SUBROUTINE SCARC_SETUP_POISSON_SIZES
 ! ------------------------------------------------------------------------------------------------------
 !SUBROUTINE SCARC_SOLVER(DT_CURRENT, PRES_ITE, TOTAL_PRES_ITE)
 SUBROUTINE SCARC_SOLVER(DT_CURRENT)
-USE SCARC_ITERATION_ENVIRONMENT
 USE VELO, ONLY: NO_FLUX
 !INTEGER, INTENT(IN) :: PRES_ITE, TOTAL_PRES_ITE
 REAL (EB), INTENT(IN) :: DT_CURRENT
@@ -6460,7 +6421,6 @@ END SUBROUTINE SCARC_SOLVER
 SUBROUTINE SCARC_METHOD_FFT
 USE MESH_POINTERS
 USE POIS, ONLY: H2CZSS, H3CZSS
-USE SCARC_ITERATION_ENVIRONMENT
 REAL(EB), POINTER, DIMENSION(:,:,:) :: HP
 INTEGER :: NM, I, J, K
 LOGICAL :: WITH_BDRY = .FALSE.
@@ -6547,7 +6507,6 @@ SUBROUTINE SCARC_METHOD_CLUSTER(NSTACK, NPARENT, NLEVEL)
 USE SCARC_POINTERS, ONLY: L, G, MKL, V1, V2, AS, V1_FB, V2_FB
 USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR, SCARC_POINT_TO_VECTOR_FB, &
                                   SCARC_POINT_TO_CMATRIX
-USE SCARC_ITERATION_ENVIRONMENT
 INTEGER, INTENT(IN) :: NSTACK, NPARENT, NLEVEL
 INTEGER ::  NM, NS, NP, NL
 REAL (EB) :: TNOW
@@ -6631,7 +6590,6 @@ SUBROUTINE SCARC_METHOD_PARDISO(NSTACK, NPARENT, NLEVEL)
 USE SCARC_POINTERS, ONLY: L, G, MKL, AS, V1, V2, V1_FB, V2_FB
 USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR, SCARC_POINT_TO_VECTOR_FB, &
                                   SCARC_POINT_TO_CMATRIX
-USE SCARC_ITERATION_ENVIRONMENT
 INTEGER, INTENT(IN) :: NSTACK, NPARENT, NLEVEL
 INTEGER ::  NM, NS, NP, NL
 REAL (EB) :: TNOW
@@ -6715,36 +6673,6 @@ END SUBROUTINE SCARC_METHOD_PARDISO
 
 
 ! ------------------------------------------------------------------------------------------------
-!> \brief Increase corresponding iteration count (just for visualization of convergence behavior)
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_INCREASE_ITERATION_COUNTS(ITE0)
-USE SCARC_ITERATION_ENVIRONMENT
-INTEGER, INTENT(IN) :: ITE0
-
-SELECT CASE (TYPE_SOLVER)
-   CASE (NSCARC_SOLVER_MAIN)
-      SELECT CASE (TYPE_METHOD)
-         CASE (NSCARC_METHOD_KRYLOV)
-            ITE_CG = ITE0
-         CASE (NSCARC_METHOD_MULTIGRID)
-            ITE_MG = ITE0
-         CASE (NSCARC_METHOD_LU)
-            ITE_LU = ITE0
-      END SELECT
-   CASE (NSCARC_SOLVER_PRECON)
-      ITE_MG = ITE0
-   CASE (NSCARC_SOLVER_SMOOTH)
-      ITE_SMOOTH = ITE0
-   CASE (NSCARC_SOLVER_COARSE)
-      ITE_COARSE = ITE0
-END SELECT
-ITE_TOTAL = ITE_TOTAL + 1
-
-END SUBROUTINE SCARC_INCREASE_ITERATION_COUNTS
-
-
-
-! ------------------------------------------------------------------------------------------------
 !> \brief Perform requested coarse grid solver (iterative/direct)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_METHOD_COARSE(NSTACK, NPARENT, NLEVEL)
@@ -6779,7 +6707,6 @@ END SUBROUTINE SCARC_METHOD_COARSE
 ! i.e. set pointers to used vectors related to current position in stack
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_SOLVER(NS, NP)
-USE SCARC_ITERATION_ENVIRONMENT
 USE SCARC_POINTERS, ONLY: SV, SVP
 INTEGER, INTENT(IN) :: NS, NP                          ! references to current stack and parent
  
@@ -6852,7 +6779,6 @@ END SUBROUTINE SCARC_SETUP_SOLVER
 !> \brief Reset environment of calling routine when leaving solver
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_RELEASE_SOLVER(NS, NP)
-USE SCARC_ITERATION_ENVIRONMENT
 USE SCARC_POINTERS, ONLY: SV, SVP
 INTEGER, INTENT(IN)  :: NS, NP                            ! references to current stack and parent
 
@@ -6933,7 +6859,6 @@ END SUBROUTINE SCARC_RELEASE_SOLVER
 SUBROUTINE SCARC_SETUP_WORKSPACE(NS, NL, NRHS)
 USE SCARC_POINTERS, ONLY: M, L, F, G, SV, ST, STP, GWC, PRHS, HP
 USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
-USE SCARC_ITERATION_ENVIRONMENT
 #ifdef WITH_SCARC_POSTPROCESSING
 USE SCARC_POINTERS, ONLY: PR
 #endif
@@ -7205,98 +7130,6 @@ WRITE(MSG%LU_DEBUG,*) 'LEAVING SETUP_WORKSPACE ', NS, NL, NRHS
 END SUBROUTINE SCARC_SETUP_WORKSPACE
 
 
-
-! ------------------------------------------------------------------------------------------------
-!> \brief Check if solver converges or diverges and print out residual information
-! ------------------------------------------------------------------------------------------------
-INTEGER FUNCTION SCARC_CONVERGENCE_STATE(ISM, NS, NL)
-USE SCARC_ITERATION_ENVIRONMENT
-INTEGER, INTENT(IN) :: NL, NS, ISM
-INTEGER :: NSTATE
-
-NSTATE = NSCARC_STATE_PROCEED
-
-SELECT CASE (TYPE_ACCURACY)
-   CASE (NSCARC_ACCURACY_RELATIVE)
-      IF (RES <= RESIN*EPS .OR. RES <= NSCARC_THRESHOLD_CONVERGENCE) NSTATE = NSCARC_STATE_CONV
-   CASE (NSCARC_ACCURACY_ABSOLUTE)
-      IF (RES <= EPS .AND. RES <= RESIN) THEN
-         IF (ITE == 0) THEN
-            NSTATE = NSCARC_STATE_CONV_INITIAL
-         ELSE
-            NSTATE = NSCARC_STATE_CONV
-         ENDIF
-         NIT = 0
-      ENDIF
-END SELECT
-IF (RES > NSCARC_THRESHOLD_DIVGERGENCE) NSTATE = NSCARC_STATE_DIVG
-
-SCARC_CONVERGENCE_STATE = NSTATE
-
-IF (HAS_CSV_DUMP) CALL SCARC_DUMP_CSV(ISM, NS, NL)
-
-#ifdef WITH_SCARC_VERBOSE2
-IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) &
-   WRITE(MSG%LU_VERBOSE,1100) STACK(NS)%SOLVER%CNAME, NL, ITE, RES
-1100 FORMAT (A30,': Level=',I4,': Iteration = ',I8,': Residual =',E14.6)
-#endif
-
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG, 1000) STACK(NS)%SOLVER%CNAME, NL, ITE, RES
-1000 FORMAT (A30,': Level=',I4,': Iteration = ',I8,': Residual =',e25.16)
-#endif
-
-END FUNCTION SCARC_CONVERGENCE_STATE
-
-
-! ------------------------------------------------------------------------------------------------
-!> \brief Compute convergence rate and print out residual information for final loop
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_CONVERGENCE_RATE(NSTATE, NS, NL)
-USE SCARC_ITERATION_ENVIRONMENT
-INTEGER, INTENT(IN) :: NSTATE, NS, NL
-
-IF (NSTATE == NSCARC_STATE_DIVG) THEN
-   ITE   = - 1
-   CAPPA = 1.0_EB
-ELSE
-   IF (NSTATE == NSCARC_STATE_CONV_INITIAL) THEN
-      ITE= 0
-   ELSE IF (NSTATE == NSCARC_STATE_CONV) THEN
-      ITE= ITE
-   ELSE
-      ITE= ITE-1
-   ENDIF
-   IF (RESIN >= TWO_EPSILON_EB) THEN
-      IF (ITE== 0) THEN
-         CAPPA = 0.0_EB
-      ELSE
-         IF (NSTATE == NSCARC_STATE_CONV_INITIAL) THEN
-            CAPPA = 0.0E0
-         ELSE
-            CAPPA = (RES/RESIN) ** (1.0_EB/ITE)
-         ENDIF
-      ENDIF
-   ELSE
-      CAPPA = 0.0_EB
-   ENDIF
-ENDIF
-
-CALL SCARC_DUMP_CSV(0, NS, NL)
-
-#ifdef WITH_SCARC_VERBOSE2
-IF (TYPE_SOLVER == NSCARC_SOLVER_MAIN) WRITE(MSG%LU_VERBOSE,2000) STACK(NS)%SOLVER%CNAME, ITE, CAPPA
-#endif
-
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,2000) STACK(NS)%SOLVER%CNAME, ITE, CAPPA
-#endif
-
-#if defined (WITH_SCARC_DEBUG) || defined (WITH_SCARC_VERBOSE)
-2000 FORMAT (A30,': Iterations: ',i6,':   Convergence Rate =',E14.6,/)
-#endif
-
-END SUBROUTINE SCARC_CONVERGENCE_RATE
 
 
 ! ------------------------------------------------------------------------------------------------
@@ -8048,112 +7881,6 @@ END SUBROUTINE SCARC_RESTORE_LAST_CELL
 
 
 
-
-! ================================================================================================
-! ================================================================================================
-! Bundle of routines for different vector-operations, also based on use of OpenMP
-! ================================================================================================
-! ================================================================================================
-
-! ------------------------------------------------------------------------------------------------
-!> \brief Vector multiplied with a constant scalar is added to another vector 
-!     DY(I) = DA * DX(I) + DY(I) 
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DAXPY_CONSTANT(N, DA, DX, DY)
-REAL(EB), INTENT(IN):: DA
-REAL(EB), INTENT(IN), DIMENSION(:):: DX
-REAL(EB), INTENT(INOUT), DIMENSION(:):: DY
-INTEGER, INTENT(IN)::  N
-INTEGER::  I
-
-!$OMP PARALLEL DO PRIVATE(I) SCHEDULE(STATIC)
-DO I = 1, N
-  DY(I) = DY(I) + DA * DX(I)
-ENDDO
-!$OMP END PARALLEL DO 
-
-END SUBROUTINE SCARC_DAXPY_CONSTANT
-
-
-! ------------------------------------------------------------------------------------------------
-!> \brief Vector multiplied with a constant scalar is added to vector multiplied with another scalar
-!     DY(I) = DA1 * DX(I) + DA2 * DY(I) 
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DAXPY_CONSTANT_DOUBLE(N, DA1, DX, DA2, DY)
-REAL(EB), INTENT(IN):: DA1, DA2
-REAL(EB), INTENT(IN), DIMENSION(:):: DX
-REAL(EB), INTENT(INOUT), DIMENSION(:):: DY
-INTEGER, INTENT(IN)::  N
-INTEGER::  I
-
-!$OMP PARALLEL DO PRIVATE(I) SCHEDULE(STATIC)
-DO I = 1, N
-  DY(I) = DA1 * DX(I) + DA2 * DY(I)
-ENDDO
-!$OMP END PARALLEL DO 
-
-END SUBROUTINE SCARC_DAXPY_CONSTANT_DOUBLE
-
-
-! ------------------------------------------------------------------------------------------------
-!> \brief Vector multiplied with variable scalars (componentwise) is added to another vector 
-!     DY(I) = DA(I)*DX(I) + DY(I)
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_DAXPY_VARIABLE(N, DA, DX, DY)
-REAL(EB), INTENT(IN), DIMENSION(:):: DA, DX
-REAL(EB), INTENT(INOUT), DIMENSION(:):: DY
-INTEGER, INTENT(IN)::  N
-INTEGER::  I
-
-!$OMP PARALLEL DO PRIVATE(I) SCHEDULE(STATIC)
-DO I = 1, N
-  DY(I) = DY(I) + DA(I) * DX(I)
-#ifdef WITH_SCARC_DEBUG2
-WRITE(MSG%LU_DEBUG,'(A, I6, 3E14.6)') 'I, DX, DA, DY:', I, DX(I), DA(I), DY(I)
-#endif
-ENDDO
-!$OMP END PARALLEL DO 
-
-END SUBROUTINE SCARC_DAXPY_VARIABLE
-
-
-! ------------------------------------------------------------------------------------------------
-!> \brief Vector is multiplied with a constant scalar 
-!     DY(I) = DA(I)*DX(I) 
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SCALING_CONSTANT(N, SCAL, DX, DY)
-REAL(EB), INTENT(IN), DIMENSION(:):: DX
-REAL(EB), INTENT(INOUT), DIMENSION(:):: DY
-REAL(EB), INTENT(IN) :: SCAL
-INTEGER, INTENT(IN)::  N
-INTEGER::  I
-
-!$OMP PARALLEL DO PRIVATE(I) SCHEDULE(STATIC)
-DO I = 1, N
-  DY(I) =  SCAL * DX(I)
-ENDDO
-!$OMP END PARALLEL DO 
-
-END SUBROUTINE SCARC_SCALING_CONSTANT
-
-
-! ------------------------------------------------------------------------------------------------
-!> \brief Vector is multiplied with variable scalars (componentwise)
-!     DY(I) = DA(I)*DX(I) 
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SCALING_VARIABLE(N, DA, DX, DY)
-REAL(EB), INTENT(IN), DIMENSION(:):: DA, DX
-REAL(EB), INTENT(INOUT), DIMENSION(:):: DY
-INTEGER, INTENT(IN)::  N
-INTEGER::  I
-
-!$OMP PARALLEL DO PRIVATE(I) SCHEDULE(STATIC)
-DO I = 1, N
-  DY(I) = DA(I) * DX(I)
-ENDDO
-!$OMP END PARALLEL DO
-
-END SUBROUTINE SCARC_SCALING_VARIABLE
 
 
 ! ====================================================================================================
@@ -10737,9 +10464,6 @@ ENDDO
 END SUBROUTINE SCARC_RESORT_MATRIX_ROWS
 
 
-
-
-#include "scrc/routines_scarc_mgm.f90"
 
 END MODULE SCRC
 

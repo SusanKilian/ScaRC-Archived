@@ -3,16 +3,117 @@ MODULE SCARC_LINEAR_ALGEBRA
 USE GLOBAL_CONSTANTS
 USE PRECISION_PARAMETERS, ONLY: EB, FB
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
+USE COMP_FUNCTIONS, ONLY: CURRENT_TIME
 USE MPI
 USE SCARC_CONSTANTS
 USE SCARC_VARIABLES
 USE SCARC_TYPES
 USE SCARC_UTILITIES
-USE SCARC_MESSAGE_SERVICES, ONLY: MSG
-USE SCARC_TIME_MEASUREMENT, ONLY: CPU
-
+USE SCARC_MESSAGE_SERVICES
+USE SCARC_TIME_MEASUREMENT
+USE SCARC_MPI
 
 CONTAINS
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Vector multiplied with a constant scalar is added to another vector 
+!     DY(I) = DA * DX(I) + DY(I) 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DAXPY_CONSTANT(N, DA, DX, DY)
+REAL(EB), INTENT(IN):: DA
+REAL(EB), INTENT(IN), DIMENSION(:):: DX
+REAL(EB), INTENT(INOUT), DIMENSION(:):: DY
+INTEGER, INTENT(IN)::  N
+INTEGER::  I
+
+!$OMP PARALLEL DO PRIVATE(I) SCHEDULE(STATIC)
+DO I = 1, N
+  DY(I) = DY(I) + DA * DX(I)
+ENDDO
+!$OMP END PARALLEL DO 
+
+END SUBROUTINE SCARC_DAXPY_CONSTANT
+
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Vector multiplied with a constant scalar is added to vector multiplied with another scalar
+!     DY(I) = DA1 * DX(I) + DA2 * DY(I) 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DAXPY_CONSTANT_DOUBLE(N, DA1, DX, DA2, DY)
+REAL(EB), INTENT(IN):: DA1, DA2
+REAL(EB), INTENT(IN), DIMENSION(:):: DX
+REAL(EB), INTENT(INOUT), DIMENSION(:):: DY
+INTEGER, INTENT(IN)::  N
+INTEGER::  I
+
+!$OMP PARALLEL DO PRIVATE(I) SCHEDULE(STATIC)
+DO I = 1, N
+  DY(I) = DA1 * DX(I) + DA2 * DY(I)
+ENDDO
+!$OMP END PARALLEL DO 
+
+END SUBROUTINE SCARC_DAXPY_CONSTANT_DOUBLE
+
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Vector multiplied with variable scalars (componentwise) is added to another vector 
+!     DY(I) = DA(I)*DX(I) + DY(I)
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_DAXPY_VARIABLE(N, DA, DX, DY)
+REAL(EB), INTENT(IN), DIMENSION(:):: DA, DX
+REAL(EB), INTENT(INOUT), DIMENSION(:):: DY
+INTEGER, INTENT(IN)::  N
+INTEGER::  I
+
+!$OMP PARALLEL DO PRIVATE(I) SCHEDULE(STATIC)
+DO I = 1, N
+  DY(I) = DY(I) + DA(I) * DX(I)
+#ifdef WITH_SCARC_DEBUG2
+WRITE(MSG%LU_DEBUG,'(A, I6, 3E14.6)') 'I, DX, DA, DY:', I, DX(I), DA(I), DY(I)
+#endif
+ENDDO
+!$OMP END PARALLEL DO 
+
+END SUBROUTINE SCARC_DAXPY_VARIABLE
+
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Vector is multiplied with a constant scalar 
+!     DY(I) = DA(I)*DX(I) 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SCALING_CONSTANT(N, SCAL, DX, DY)
+REAL(EB), INTENT(IN), DIMENSION(:):: DX
+REAL(EB), INTENT(INOUT), DIMENSION(:):: DY
+REAL(EB), INTENT(IN) :: SCAL
+INTEGER, INTENT(IN)::  N
+INTEGER::  I
+
+!$OMP PARALLEL DO PRIVATE(I) SCHEDULE(STATIC)
+DO I = 1, N
+  DY(I) =  SCAL * DX(I)
+ENDDO
+!$OMP END PARALLEL DO 
+
+END SUBROUTINE SCARC_SCALING_CONSTANT
+
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Vector is multiplied with variable scalars (componentwise)
+!     DY(I) = DA(I)*DX(I) 
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SCALING_VARIABLE(N, DA, DX, DY)
+REAL(EB), INTENT(IN), DIMENSION(:):: DA, DX
+REAL(EB), INTENT(INOUT), DIMENSION(:):: DY
+INTEGER, INTENT(IN)::  N
+INTEGER::  I
+
+!$OMP PARALLEL DO PRIVATE(I) SCHEDULE(STATIC)
+DO I = 1, N
+  DY(I) = DA(I) * DX(I)
+ENDDO
+!$OMP END PARALLEL DO
+
+END SUBROUTINE SCARC_SCALING_VARIABLE
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Compute global matrix-vector product A*x = y on grid level NL
@@ -488,7 +589,7 @@ END FUNCTION RHS
 SUBROUTINE SCARC_PRESET_EXACT (NE, NL)
 USE SCARC_POINTERS, ONLY: M, L, G, VC, XMID, ZMID
 USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
-USE SCARC_ITERATION_ENVIRONMENT, ONLY: ITE_TOTAL
+USE SCARC_ITERATION_MANAGER, ONLY: ITE_TOTAL
 INTEGER, INTENT(IN) :: NE, NL
 INTEGER :: IC, NM, I, K
 
