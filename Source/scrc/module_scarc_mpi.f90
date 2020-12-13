@@ -7,14 +7,149 @@ USE COMP_FUNCTIONS, ONLY: CURRENT_TIME
 USE MPI
 USE SCARC_CONSTANTS
 USE SCARC_VARIABLES
-USE SCARC_TYPES
 USE SCARC_UTILITIES
-USE SCARC_ERROR_MANAGER
+USE SCARC_ERROR_HANDLING
 USE SCARC_MEMORY_MANAGER
-USE SCARC_MESSAGE_SERVICES, ONLY: MSG
-USE SCARC_TIME_MEASUREMENT, ONLY: CPU
+USE SCARC_MESSAGE_SERVICES
 
 CONTAINS
+
+! -------------------------------------------------------------------------------------------------
+!> \brief Setup dimensions for data exchanges
+! -------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_EXCHANGE_DIMENSIONS(G, OG, NOM, IREFINE)
+USE SCARC_POINTERS, ONLY: GWC
+TYPE (SCARC_GRID_TYPE), POINTER, INTENT(IN) :: G, OG
+INTEGER, INTENT(IN) :: NOM, IREFINE
+INTEGER :: IMIN, IMAX, JMIN, JMAX, KMIN, KMAX, IW
+LOGICAL :: FOUND
+
+IMIN=0
+IMAX=MESHES(NOM)%IBAR/IREFINE+1
+IF (TWO_D) THEN 
+   JMIN=0
+   JMAX=2
+ELSE
+   JMIN=0
+   JMAX=MESHES(NOM)%JBAR/IREFINE+1
+ENDIF
+KMIN=0
+KMAX=MESHES(NOM)%KBAR/IREFINE+1
+
+FOUND = .FALSE.
+SEARCH_LOOP: DO IW=1, OG%NCG
+
+   GWC => G%WALL(IW)
+   IF (GWC%NOM/=NOM) CYCLE SEARCH_LOOP
+   FOUND = .TRUE.
+
+   SELECT CASE (GWC%IOR)
+      CASE ( 1) 
+         IMIN=MAX(IMIN,GWC%IXN(1)-1)
+      CASE (-1) 
+         IMAX=MIN(IMAX,GWC%IXN(2)+1)
+      CASE ( 2) 
+         JMIN=MAX(JMIN,GWC%IYN(1)-1)
+      CASE (-2) 
+         JMAX=MIN(JMAX,GWC%IYN(2)+1)
+      CASE ( 3) 
+         KMIN=MAX(KMIN,GWC%IZN(1)-1)
+      CASE (-3) 
+         KMAX=MIN(KMAX,GWC%IZN(2)+1)
+   END SELECT
+ENDDO SEARCH_LOOP
+
+N_EXCHANGES = N_EXCHANGES+1
+
+END SUBROUTINE SCARC_SETUP_EXCHANGE_DIMENSIONS
+
+! ----------------------------------------------------------------------------------------------------------
+!> \brief Get information about global numbers of unknowns for unstructured discretization
+! ----------------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_DIMENSIONS(NL)
+USE SCARC_POINTERS, ONLY: G
+USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+INTEGER, INTENT(IN) :: NL
+INTEGER :: NM, NM2
+
+! Preset communication array MESH_INT with local numbers of cells for all meshes depending on type of discretization
+MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+   MESH_INT(NM) = G%NC_LOCAL(NM)
+
+!   DO NM2 = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+!      MESH_INT(NM2) = G%NC_LOCAL(NM2)
+!   ENDDO
+
+ENDDO MESHES_LOOP1
+
+
+! Broadcast number of local mesh cells on level NL to all and build global sum
+IF (N_MPI_PROCESSES > 1) &
+   CALL MPI_ALLGATHERV(MPI_IN_PLACE,1,MPI_INTEGER,MESH_INT,COUNTS,DISPLS, MPI_INTEGER,MPI_COMM_WORLD,IERROR)
+NC_GLOBAL(NL) = SUM(MESH_INT(1:NMESHES))
+
+! Store information on local and global cells numbers on data structure of corresponding discretization type
+MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+
+   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+
+   G%NC_LOCAL(1:NMESHES) = MESH_INT(1:NMESHES)
+   G%NC_GLOBAL = SUM(MESH_INT(1:NMESHES))
+
+   ! compute offset between local grid numberings
+   IF (NMESHES > 1) THEN
+      DO NM2=2,NMESHES
+         G%NC_OFFSET(NM2) = G%NC_OFFSET(NM2-1) + G%NC_LOCAL(NM2-1)
+      ENDDO
+   ENDIF
+
+ENDDO MESHES_LOOP2
+
+IF (NL == NLEVEL_MIN) THEN
+   DO NM = 1, NMESHES
+      SCARC(NM)%NC = MESH_INT(NM)
+   ENDDO
+ENDIF
+
+END SUBROUTINE SCARC_SETUP_DIMENSIONS
+
+! ----------------------------------------------------------------------------------------------------
+!> \brief Allocate several global structures for data exchange
+! ----------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SETUP_GLOBALS
+INTEGER :: NM, NP
+
+CROUTINE = 'SCARC_SETUP_GLOBALS'
+
+IF (N_MPI_PROCESSES > 1) THEN
+
+   ! Allocate and preset counter and displacement vector for global data exchanges
+   CALL SCARC_ALLOCATE_INT1 (COUNTS, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'COUNTS', CROUTINE)
+   CALL SCARC_ALLOCATE_INT1 (DISPLS, 0, N_MPI_PROCESSES-1, NSCARC_INIT_ZERO, 'DISPLS', CROUTINE)
+
+   ! Get number of data to send per process
+   DO NP = 0, N_MPI_PROCESSES-1
+      DO NM = 1, NMESHES
+         IF (PROCESS(NM)==NP) COUNTS(NP) = COUNTS(NP) + 1
+      ENDDO
+   ENDDO
+
+   ! Get displacements on communication vector for all meshes
+   DO NP = 1, N_MPI_PROCESSES-1
+      DISPLS(NP) = COUNTS(NP-1) + DISPLS(NP-1)
+   ENDDO
+
+ENDIF
+
+CALL SCARC_ALLOCATE_INT1 (MESH_INT , 1, NMESHES, NSCARC_INIT_ZERO, 'MESH_INT', CROUTINE)
+CALL SCARC_ALLOCATE_REAL1(MESH_REAL, 1, NMESHES, NSCARC_INIT_ZERO, 'MESH_REAL', CROUTINE)
+
+CALL SCARC_SETUP_DIMENSIONS(NLEVEL_MIN)
+
+END SUBROUTINE SCARC_SETUP_GLOBALS
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Setup neighborship structure for data exchanges along mesh interfaces
@@ -210,7 +345,7 @@ ENDDO
  
 IF (NMESHES > 1) THEN
 
-   IF (IS_MGM) CALL SCARC_SETUP_GRID_TYPE(NSCARC_GRID_STRUCTURED)
+   IF (IS_MGM) CALL SCARC_SET_GRID_TYPE(NSCARC_GRID_STRUCTURED)
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,*) 'SETTING UP EXCHANGE_CELL_NUMBERS, TYPE_GRID =', TYPE_GRID
 #endif
@@ -474,8 +609,6 @@ SEND_PACK_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    ENDDO SEND_PACK_OMESHES_LOOP
 ENDDO SEND_PACK_MESHES_LOOP
 
-CPU(MYID)%BUFFER_PACKING = CPU(MYID)%BUFFER_PACKING   + CURRENT_TIME() - TNOW
-
 
  
 ! ---------- Wait for all meshes to have sent and received their data
@@ -570,8 +703,6 @@ SEND_UNPACK_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
       END SELECT SEND_UNPACK_OMESHES_SELECT
    ENDDO SEND_UNPACK_OMESHES_LOOP
 ENDDO SEND_UNPACK_MESHES_LOOP
-
-CPU(MYID)%BUFFER_UNPACKING = CPU(MYID)%BUFFER_UNPACKING   + CURRENT_TIME() - TNOW
 
 END SUBROUTINE SCARC_EXCHANGE
 

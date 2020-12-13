@@ -7,10 +7,9 @@ USE COMP_FUNCTIONS, ONLY: CURRENT_TIME
 USE MPI
 USE SCARC_CONSTANTS
 USE SCARC_VARIABLES
-USE SCARC_TYPES
 USE SCARC_UTILITIES
 USE SCARC_MESSAGE_SERVICES
-USE SCARC_TIME_MEASUREMENT
+USE SCARC_TIMINGS
 USE SCARC_MPI
 
 CONTAINS
@@ -114,228 +113,6 @@ ENDDO
 !$OMP END PARALLEL DO
 
 END SUBROUTINE SCARC_SCALING_VARIABLE
-
-! ------------------------------------------------------------------------------------------------
-!> \brief Compute global matrix-vector product A*x = y on grid level NL
-! where NV1 is a reference to X and NV2 is a reference to Y
-! including data exchange along internal boundaries
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_MATVEC_PRODUCT(NV1, NV2, NL)
-USE SCARC_POINTERS, ONLY: L, OL, G, F, OG, GWC, A, AB, V1, V2
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, SCARC_POINT_TO_VECTOR, &
-                                  SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_BMATRIX
-INTEGER, INTENT(IN) :: NV1, NV2, NL           
-REAL(EB) :: TNOW
-INTEGER :: NM, NOM, IC, JC, IOR0, ICOL, INBR, ICE, ICW, ICG
-INTEGER :: I, J, K, IW, IS=0, IT=0, IL=0, INUM1, INUM2
-REAL(EB) :: TMP, VSAVE
-#ifdef WITH_MKL
-EXTERNAL :: DAXPBY
-#endif
-
-TNOW = CURRENT_TIME()
-
-! If this call is related to a globally acting solver, exchange internal boundary values of
-! vector1 such that the ghost values contain the corresponding overlapped values of adjacent neighbor
- 
-#ifdef WITH_SCARC_DEBUG
-WRITE(MSG%LU_DEBUG,*) 'CALLING MATVEC_PRODUCT FOR ', NV1, NV2, NL, TYPE_MATVEC
-CALL SCARC_DEBUG_LEVEL (NV1, 'MATVEC: NV1 INIT0 ', NL)
-CALL SCARC_DEBUG_LEVEL (NV2, 'MATVEC: NV2 INIT0 ', NL)
-#endif
-
-IF (TYPE_MATVEC == NSCARC_MATVEC_GLOBAL) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_VECTOR_PLAIN, NV1, NL)
-
-! Perform global matrix-vector product:
-! Note: - matrix already contains subdiagonal values from neighbor along internal boundaries
-!       - if vector1 contains neighboring values, then correct values of global matvec are achieved
- 
-SELECT_MATRIX_TYPE: SELECT CASE (SCARC_GET_MATRIX_TYPE(NL))
-
-   ! ------------- COMPACT storage technique
- 
-   CASE (NSCARC_MATRIX_COMPACT)
-   
-
-      MESHES_COMPACT_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-   
-         CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-         IF (IS_LAPLACE) THEN
-            A => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_LAPLACE)
-         ELSE
-            A => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_POISSON)
-         ENDIF
-         
-         V1 => SCARC_POINT_TO_VECTOR (NM, NL, NV1)
-         V2 => SCARC_POINT_TO_VECTOR (NM, NL, NV2)
-   
-         IF (NL == NLEVEL_MIN) THEN
-            DO IC = 1, G%NC
-               ICOL = A%ROW(IC)                                                ! diagonal entry
-               JC   = A%COL(ICOL)
-               V2(IC) = A%VAL(ICOL)* V1(JC)
-               DO ICOL = A%ROW(IC)+1, A%ROW(IC+1)-1                            ! subdiagonal entries
-                  JC = A%COL(ICOL)
-                  V2(IC) =  V2(IC) + A%VAL(ICOL) * V1(JC)
-               ENDDO
-            ENDDO
-         ELSE
-            DO IC = 1, G%NC
-               ICOL = A%ROW(IC)                                                ! diagonal entry
-               JC   = A%COL(ICOL)
-               V2(IC) = A%VAL(ICOL)* V1(JC)
-               DO ICOL = A%ROW(IC)+1, A%ROW(IC+1)-1                            ! subdiagonal entries
-                  JC = A%COL(ICOL)
-                  IF (JC == 0) CYCLE
-                  V2(IC) =  V2(IC) + A%VAL(ICOL) * V1(JC)
-               ENDDO
-            ENDDO
-         ENDIF
-   
-      ENDDO MESHES_COMPACT_LOOP
-   
-   ! ------------- bandwise storage technique
-   ! matrix diagonals are supposed to be constant
-   ! matrix-vector multiplication is based on daxpy-routines using the constant matrix stencil
-   ! the 'wrong' entries due to boundary conditions and zero entries in subdiagonals are explicitly corrected 
- 
-   CASE (NSCARC_MATRIX_BANDWISE)
-   
-      SELECT_STENCIL_TYPE: SELECT CASE (TYPE_STENCIL)
-
-         ! ---------- Variable entries with own implementation of daxpyv 
-         !            matrix-vector multiplication is based on variable matrix stencil
- 
-         CASE (NSCARC_STENCIL_VARIABLE)
-         
-            MESHES_BANDWISE_VARIABLE_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-         
-               CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-               AB => SCARC_POINT_TO_BMATRIX(G, NSCARC_MATRIX_POISSON)
-         
-               V1 => SCARC_POINT_TO_VECTOR (NM, NL, NV1)               ! point to X-vector
-               V2 => SCARC_POINT_TO_VECTOR (NM, NL, NV2)               ! point to Y-vector
-               V2 = 0.0_EB
-         
-               !!$OMP PARALLEL default(none) PRIVATE(IOR0, IL, IS, IT) SHARED(AB, V1, V2) 
-               DO IOR0 = 3, -3, -1
-
-                  IF (AB%POS(IOR0) == 0) CYCLE
-
-                  IL = AB%LENGTH(IOR0) 
-                  IS = AB%SOURCE(IOR0)
-                  IT = AB%TARGET(IOR0)
-
-                  CALL SCARC_DAXPY_VARIABLE(IL, AB%VAL(IT:IT+IL-1,AB%POS(IOR0)), V1(IS:IS+IL-1), V2(IT:IT+IL-1))
-
-               ENDDO
-               !!$OMP END PARALLEL
-
-               IF (NM==NMESHES) VSAVE = V2(G%NC)                        ! save value in case of pure Neumann bdry
-
-               DO IOR0 = 3, -3, -1
-                  F => L%FACE(IOR0)
-                  DO INBR = 1, F%N_NEIGHBORS
-                     NOM = F%NEIGHBORS(INBR)
-                     CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
-                     DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
-                        ICW = OG%ICG_TO_ICW(ICG, 1)
-                        ICE = OG%ICG_TO_ICE(ICG, 1)
-                        V2(ICW) = V2(ICW) + F%INCR_FACE * V1(ICE)
-                     ENDDO
-                  ENDDO
-               ENDDO
-
-               IF (IS_PURE_NEUMANN.AND.NM==NMESHES) V2(G%NC) = VSAVE   ! restore value in last cell
-
-            ENDDO MESHES_BANDWISE_VARIABLE_LOOP
-
- 
-         ! ---------- Storage of constant matrix entries - with corrections at subdiagonals and diagonal (BC's)
- 
-         CASE (NSCARC_STENCIL_CONSTANT)
-
-            MESHES_BANDWISE_CONSTANT_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-         
-               CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-               AB => G%POISSONB
-         
-               V1 => SCARC_POINT_TO_VECTOR (NM, NL, NV1)               ! point to X-vector
-               V2 => SCARC_POINT_TO_VECTOR (NM, NL, NV2)               ! point to Y-vector
-               V2 = 0.0_EB
-         
-               DO IOR0 = 3, -3, -1
-
-                  IF (AB%POS(IOR0) == 0) CYCLE
-                  AB%AUX(1:G%NC)=0.0_EB
-                  AB%AUX(1:AB%LENGTH(IOR0)) = V1(AB%SOURCE(IOR0):AB%SOURCE(IOR0)+AB%LENGTH(IOR0)-1)
-
-                  IF (ABS(IOR0) == 1) THEN
-                     DO IC = 1, G%NC
-                        IF (MOD(IC,L%NX)==0) AB%AUX(IC)=0.0_EB
-                     ENDDO
-                  ELSE IF (ABS(IOR0) == 2) THEN
-                     INUM1 = L%NX*L%NY
-                     INUM2 = L%NX*L%NY - L%NX
-                     DO IC = 1, G%NC
-                        IF (MOD(IC,INUM1) > INUM2) AB%AUX(IC)=0.0_EB
-                     ENDDO
-                  ENDIF
-
-                  IS = AB%SOURCE(IOR0)
-                  IT = AB%TARGET(IOR0)
-                  IL = AB%LENGTH(IOR0)
-
-#ifdef WITH_MKL
-                  CALL DAXPY(IL, AB%STENCIL(IOR0), AB%AUX(1:IL), 1, V2(IT:IT+IL-1), 1)
-#else
-                  WRITE(*,*) 'TODO: MATVEC: CONSTANT: NO-MKL: CHECK HERE'
-                  V2(IT:IT+IL-1) = AB%STENCIL(IOR0) * AB%AUX(1:IL)
-#endif
-
-               ENDDO
-               WALL_CELLS_BANDWISE_LOOP: DO IW = 1, G%NW 
-
-                  IOR0 = G%WALL(IW)%IOR
-                  IF (TWO_D .AND. ABS(IOR0) == 2) CYCLE              ! cycle boundaries in y-direction for 2D-cases
-
-                  GWC => G%WALL(IW)
-                  F  => L%FACE(IOR0)
-            
-                  I = GWC%IXW
-                  J = GWC%IYW
-                  K = GWC%IZW
-            
-                  IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I, J, K)) CYCLE 
-            
-                  IC  = G%CELL_NUMBER(I, J, K) 
-            
-                  ! SPD-matrix with mixture of Dirichlet and Neumann BC's according to the SETTING of BTYPE
-
-                  IF (N_DIRIC_GLOBAL(NLEVEL_MIN) > 0) THEN
-                     TMP = V2(IC)
-                     SELECT CASE (GWC%BTYPE)
-                        CASE (DIRICHLET)
-                           V2(IC) = V2(IC) - F%INCR_BOUNDARY * V1(IC)
-                        CASE (NEUMANN)
-                           V2(IC) = V2(IC) + F%INCR_BOUNDARY * V1(IC)
-                     END SELECT
-                  ENDIF 
-            
-               ENDDO WALL_CELLS_BANDWISE_LOOP
-         
-            ENDDO MESHES_BANDWISE_CONSTANT_LOOP
-
-      END SELECT SELECT_STENCIL_TYPE
-END SELECT SELECT_MATRIX_TYPE
-
-#ifdef WITH_SCARC_DEBUG
-CALL SCARC_DEBUG_LEVEL (NV1, 'MATVEC: NV1 EXIT1 ', NL)
-CALL SCARC_DEBUG_LEVEL (NV2, 'MATVEC: NV2 EXIT1 ', NL)
-#endif
-
-CPU(MYID)%MATVEC_PRODUCT =CPU(MYID)%MATVEC_PRODUCT+CURRENT_TIME()-TNOW
-END SUBROUTINE SCARC_MATVEC_PRODUCT
 
 
 ! ------------------------------------------------------------------------------------------------
@@ -696,4 +473,225 @@ ENDDO
 
 END SUBROUTINE SCARC_PRESET_RHS
 
+! ------------------------------------------------------------------------------------------------
+!> \brief Compute global matrix-vector product A*x = y on grid level NL
+! where NV1 is a reference to X and NV2 is a reference to Y
+! including data exchange along internal boundaries
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_MATVEC_PRODUCT(NV1, NV2, NL)
+USE SCARC_POINTERS, ONLY: L, OL, G, F, OG, GWC, A, AB, V1, V2
+USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, SCARC_POINT_TO_VECTOR, &
+                                  SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_BMATRIX
+INTEGER, INTENT(IN) :: NV1, NV2, NL           
+REAL(EB) :: TNOW
+INTEGER :: NM, NOM, IC, JC, IOR0, ICOL, INBR, ICE, ICW, ICG
+INTEGER :: I, J, K, IW, IS=0, IT=0, IL=0, INUM1, INUM2
+REAL(EB) :: TMP, VSAVE
+#ifdef WITH_MKL
+EXTERNAL :: DAXPBY
+#endif
+
+TNOW = CURRENT_TIME()
+
+! If this call is related to a globally acting solver, exchange internal boundary values of
+! vector1 such that the ghost values contain the corresponding overlapped values of adjacent neighbor
+ 
+#ifdef WITH_SCARC_DEBUG
+WRITE(MSG%LU_DEBUG,*) 'CALLING MATVEC_PRODUCT FOR ', NV1, NV2, NL, TYPE_MATVEC
+CALL SCARC_DEBUG_LEVEL (NV1, 'MATVEC: NV1 INIT0 ', NL)
+CALL SCARC_DEBUG_LEVEL (NV2, 'MATVEC: NV2 INIT0 ', NL)
+#endif
+
+IF (TYPE_MATVEC == NSCARC_MATVEC_GLOBAL) CALL SCARC_EXCHANGE (NSCARC_EXCHANGE_VECTOR_PLAIN, NV1, NL)
+
+! Perform global matrix-vector product:
+! Note: - matrix already contains subdiagonal values from neighbor along internal boundaries
+!       - if vector1 contains neighboring values, then correct values of global matvec are achieved
+ 
+SELECT_MATRIX_TYPE: SELECT CASE (SCARC_GET_MATRIX_TYPE(NL))
+
+   ! ------------- COMPACT storage technique
+ 
+   CASE (NSCARC_MATRIX_COMPACT)
+   
+
+      MESHES_COMPACT_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   
+         CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+         IF (IS_LAPLACE) THEN
+            A => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_LAPLACE)
+         ELSE
+            A => SCARC_POINT_TO_CMATRIX(G, NSCARC_MATRIX_POISSON)
+         ENDIF
+         
+         V1 => SCARC_POINT_TO_VECTOR (NM, NL, NV1)
+         V2 => SCARC_POINT_TO_VECTOR (NM, NL, NV2)
+   
+         IF (NL == NLEVEL_MIN) THEN
+            DO IC = 1, G%NC
+               ICOL = A%ROW(IC)                                                ! diagonal entry
+               JC   = A%COL(ICOL)
+               V2(IC) = A%VAL(ICOL)* V1(JC)
+               DO ICOL = A%ROW(IC)+1, A%ROW(IC+1)-1                            ! subdiagonal entries
+                  JC = A%COL(ICOL)
+                  V2(IC) =  V2(IC) + A%VAL(ICOL) * V1(JC)
+               ENDDO
+            ENDDO
+         ELSE
+            DO IC = 1, G%NC
+               ICOL = A%ROW(IC)                                                ! diagonal entry
+               JC   = A%COL(ICOL)
+               V2(IC) = A%VAL(ICOL)* V1(JC)
+               DO ICOL = A%ROW(IC)+1, A%ROW(IC+1)-1                            ! subdiagonal entries
+                  JC = A%COL(ICOL)
+                  IF (JC == 0) CYCLE
+                  V2(IC) =  V2(IC) + A%VAL(ICOL) * V1(JC)
+               ENDDO
+            ENDDO
+         ENDIF
+   
+      ENDDO MESHES_COMPACT_LOOP
+   
+   ! ------------- bandwise storage technique
+   ! matrix diagonals are supposed to be constant
+   ! matrix-vector multiplication is based on daxpy-routines using the constant matrix stencil
+   ! the 'wrong' entries due to boundary conditions and zero entries in subdiagonals are explicitly corrected 
+ 
+   CASE (NSCARC_MATRIX_BANDWISE)
+   
+      SELECT_STENCIL_TYPE: SELECT CASE (TYPE_STENCIL)
+
+         ! ---------- Variable entries with own implementation of daxpyv 
+         !            matrix-vector multiplication is based on variable matrix stencil
+ 
+         CASE (NSCARC_STENCIL_VARIABLE)
+         
+            MESHES_BANDWISE_VARIABLE_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+         
+               CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+               AB => SCARC_POINT_TO_BMATRIX(G, NSCARC_MATRIX_POISSON)
+         
+               V1 => SCARC_POINT_TO_VECTOR (NM, NL, NV1)               ! point to X-vector
+               V2 => SCARC_POINT_TO_VECTOR (NM, NL, NV2)               ! point to Y-vector
+               V2 = 0.0_EB
+         
+               !!$OMP PARALLEL default(none) PRIVATE(IOR0, IL, IS, IT) SHARED(AB, V1, V2) 
+               DO IOR0 = 3, -3, -1
+
+                  IF (AB%POS(IOR0) == 0) CYCLE
+
+                  IL = AB%LENGTH(IOR0) 
+                  IS = AB%SOURCE(IOR0)
+                  IT = AB%TARGET(IOR0)
+
+                  CALL SCARC_DAXPY_VARIABLE(IL, AB%VAL(IT:IT+IL-1,AB%POS(IOR0)), V1(IS:IS+IL-1), V2(IT:IT+IL-1))
+
+               ENDDO
+               !!$OMP END PARALLEL
+
+               IF (NM==NMESHES) VSAVE = V2(G%NC)                        ! save value in case of pure Neumann bdry
+
+               DO IOR0 = 3, -3, -1
+                  F => L%FACE(IOR0)
+                  DO INBR = 1, F%N_NEIGHBORS
+                     NOM = F%NEIGHBORS(INBR)
+                     CALL SCARC_POINT_TO_OTHER_GRID(NM, NOM, NL)
+                     DO ICG = OL%GHOST_FIRSTW(IOR0), OL%GHOST_LASTW(IOR0)
+                        ICW = OG%ICG_TO_ICW(ICG, 1)
+                        ICE = OG%ICG_TO_ICE(ICG, 1)
+                        V2(ICW) = V2(ICW) + F%INCR_FACE * V1(ICE)
+                     ENDDO
+                  ENDDO
+               ENDDO
+
+               IF (IS_PURE_NEUMANN.AND.NM==NMESHES) V2(G%NC) = VSAVE   ! restore value in last cell
+
+            ENDDO MESHES_BANDWISE_VARIABLE_LOOP
+
+ 
+         ! ---------- Storage of constant matrix entries - with corrections at subdiagonals and diagonal (BC's)
+ 
+         CASE (NSCARC_STENCIL_CONSTANT)
+
+            MESHES_BANDWISE_CONSTANT_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+         
+               CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+               AB => G%POISSONB
+         
+               V1 => SCARC_POINT_TO_VECTOR (NM, NL, NV1)               ! point to X-vector
+               V2 => SCARC_POINT_TO_VECTOR (NM, NL, NV2)               ! point to Y-vector
+               V2 = 0.0_EB
+         
+               DO IOR0 = 3, -3, -1
+
+                  IF (AB%POS(IOR0) == 0) CYCLE
+                  AB%AUX(1:G%NC)=0.0_EB
+                  AB%AUX(1:AB%LENGTH(IOR0)) = V1(AB%SOURCE(IOR0):AB%SOURCE(IOR0)+AB%LENGTH(IOR0)-1)
+
+                  IF (ABS(IOR0) == 1) THEN
+                     DO IC = 1, G%NC
+                        IF (MOD(IC,L%NX)==0) AB%AUX(IC)=0.0_EB
+                     ENDDO
+                  ELSE IF (ABS(IOR0) == 2) THEN
+                     INUM1 = L%NX*L%NY
+                     INUM2 = L%NX*L%NY - L%NX
+                     DO IC = 1, G%NC
+                        IF (MOD(IC,INUM1) > INUM2) AB%AUX(IC)=0.0_EB
+                     ENDDO
+                  ENDIF
+
+                  IS = AB%SOURCE(IOR0)
+                  IT = AB%TARGET(IOR0)
+                  IL = AB%LENGTH(IOR0)
+
+#ifdef WITH_MKL
+                  CALL DAXPY(IL, AB%STENCIL(IOR0), AB%AUX(1:IL), 1, V2(IT:IT+IL-1), 1)
+#else
+                  WRITE(*,*) 'TODO: MATVEC: CONSTANT: NO-MKL: CHECK HERE'
+                  V2(IT:IT+IL-1) = AB%STENCIL(IOR0) * AB%AUX(1:IL)
+#endif
+
+               ENDDO
+               WALL_CELLS_BANDWISE_LOOP: DO IW = 1, G%NW 
+
+                  IOR0 = G%WALL(IW)%IOR
+                  IF (TWO_D .AND. ABS(IOR0) == 2) CYCLE              ! cycle boundaries in y-direction for 2D-cases
+
+                  GWC => G%WALL(IW)
+                  F  => L%FACE(IOR0)
+            
+                  I = GWC%IXW
+                  J = GWC%IYW
+                  K = GWC%IZW
+            
+                  IF (IS_UNSTRUCTURED .AND. L%IS_SOLID(I, J, K)) CYCLE 
+            
+                  IC  = G%CELL_NUMBER(I, J, K) 
+            
+                  ! SPD-matrix with mixture of Dirichlet and Neumann BC's according to the SETTING of BTYPE
+
+                  IF (N_DIRIC_GLOBAL(NLEVEL_MIN) > 0) THEN
+                     TMP = V2(IC)
+                     SELECT CASE (GWC%BTYPE)
+                        CASE (DIRICHLET)
+                           V2(IC) = V2(IC) - F%INCR_BOUNDARY * V1(IC)
+                        CASE (NEUMANN)
+                           V2(IC) = V2(IC) + F%INCR_BOUNDARY * V1(IC)
+                     END SELECT
+                  ENDIF 
+            
+               ENDDO WALL_CELLS_BANDWISE_LOOP
+         
+            ENDDO MESHES_BANDWISE_CONSTANT_LOOP
+
+      END SELECT SELECT_STENCIL_TYPE
+END SELECT SELECT_MATRIX_TYPE
+
+#ifdef WITH_SCARC_DEBUG
+CALL SCARC_DEBUG_LEVEL (NV1, 'MATVEC: NV1 EXIT1 ', NL)
+CALL SCARC_DEBUG_LEVEL (NV2, 'MATVEC: NV2 EXIT1 ', NL)
+#endif
+
+CPU(MYID)%MATVEC_PRODUCT =CPU(MYID)%MATVEC_PRODUCT+CURRENT_TIME()-TNOW
+END SUBROUTINE SCARC_MATVEC_PRODUCT
 END MODULE SCARC_LINEAR_ALGEBRA

@@ -6,11 +6,40 @@ USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 USE COMP_FUNCTIONS, ONLY: GET_FILE_NUMBER
 USE MESH_VARIABLES, ONLY: MESHES
 USE SCARC_CONSTANTS
-USE SCARC_VARIABLES
-USE SCARC_TYPES
 
-!TYPE (SCARC_MESSAGE_TYPE), SAVE, TARGET :: MSG
-TYPE (SCARC_MESSAGE_TYPE) :: MSG
+!> \brief Messaging and debugging mechanisms
+
+TYPE SCARC_MESSAGE_TYPE
+
+   CHARACTER(60) :: FILE_CPU                               !< Output file name for CPU measurements
+   CHARACTER(60) :: FILE_MEM                               !< Output file name for memory management information
+   CHARACTER(60) :: FILE_STAT                              !< Output file name for convergence statistcis
+   INTEGER :: LU_CPU                                       !< Logical unit for CPU measurements
+   INTEGER :: LU_MEM                                       !< Logical unit for memory management information
+   INTEGER :: LU_STAT                                      !< Logical unit for convergence statistics
+
+#ifdef WITH_SCARC_DEBUG
+   CHARACTER(60) :: FILE_DEBUG                             !< Output file name for debugging information
+   CHARACTER(60) :: FILE_DUMP                              !< Output file name for dumping information
+   INTEGER :: LU_DEBUG                                     !< Logical unit for debugging information
+   INTEGER :: LU_DUMP                                      !< Logical unit for dumping information
+   CHARACTER(20) :: CFORM1, CFORM2, CFORM3, CFORM4
+#endif
+
+#ifdef WITH_SCARC_VERBOSE
+   CHARACTER(60)  :: FILE_VERBOSE                          !< Output file name for verbose messages
+   INTEGER :: LU_VERBOSE                                   !< Logical unit for verbose messages
+#endif
+
+#ifdef WITH_SCARC_POSTPROCESSING
+   INTEGER :: LU_SCARC                                                !< Logical unit for dump of complete ScaRC environment
+   INTEGER :: LU_POST, LU_POST1, LU_POST2, LU_POST3                   !< Logical unit for dump of selected data
+   CHARACTER(120) :: FILE_SCARC                                       !< Output file name for dumpcomplete ScaRC environment
+   CHARACTER(60)  :: FILE_POST, FILE_POST1, FILE_POST2, FILE_POST3    !< Output file names for dumpof selected data
+#endif
+
+END TYPE SCARC_MESSAGE_TYPE
+
 
 CONTAINS
 
@@ -367,7 +396,7 @@ END SUBROUTINE SCARC_VERBOSE_CMATRIX
 !> \brief Debugging version only: Dump out information for specified quantity
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_VERBOSE_VECTOR1 (VC, NM, NL, NG, CNAME)
-USE SCARC_POINTERs, ONLY: L
+USE SCARC_POINTERS, ONLY: L
 USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NM, NL, NG
 REAL(EB), DIMENSION(:), INTENT(IN) :: VC
@@ -806,7 +835,9 @@ CHARACTER (*), INTENT(IN) :: CVEC
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
+WRITE(*,*) 'NM, NL, NV:', NM, NL, NV
    VC => SCARC_POINT_TO_VECTOR (NM, NL, NV)
+WRITE(*,*) 'VC:', VC
 
    NNX=MIN(10,L%NX)
    NNY=MIN(10,L%NY)
@@ -815,7 +846,7 @@ DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    WRITE(MSG%LU_DEBUG,*) 'IS_UNSTRUCTURED =', IS_UNSTRUCTURED
    WRITE(MSG%LU_DEBUG,*) '=========================================================='
    WRITE(MSG%LU_DEBUG,2001) CVEC, NM, NL
-   WRITE(MSG%LU_DEBUG,2002) G%NC, NNX, NNY, NNZ, NV, SIZE(VC), TYPE_GRID
+   WRITE(MSG%LU_DEBUG,2002) G%NC, NNX, NNY, NNZ, NV, TYPE_GRID
    WRITE(MSG%LU_DEBUG,*) '=========================================================='
    !IF ((IS_AMG.OR.IS_CG_AMG.OR.HAS_COARSENING_AMG) .AND. NL > NLEVEL_MIN) THEN
 
@@ -851,7 +882,7 @@ ENDDO
 !CALL SCARC_MATLAB_VECTOR(NV, CVEC, NL)
 
 2001 FORMAT('=== ',A,' on mesh ',I8,' on level ',I8)
-2002 FORMAT('=== NC = ',I6, ': NX, NY, NZ=',3I6,': NV=',I6,': Size=',I8,': GRID=', I6)
+2002 FORMAT('=== NC = ',I6, ': NX, NY, NZ=',3I6,': NV=',I6,': GRID=', I6)
 END SUBROUTINE SCARC_DEBUG_LEVEL
 
 ! ------------------------------------------------------------------------------------------------

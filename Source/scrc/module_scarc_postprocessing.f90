@@ -6,14 +6,29 @@ USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 USE MPI
 USE SCARC_CONSTANTS
 USE SCARC_VARIABLES
-USE SCARC_TYPES
-USE SCARC_MESSAGE_SERVICES, ONLY: MSG
+USE SCARC_MESSAGE_SERVICES
 USE SCARC_ITERATION_MANAGER
 
 CONTAINS
 
+!> \brief Pressure information (only available if POSTPROCESSING directive is set)
 
-#ifdef WITH_SCARC_POSTPROCESSING
+TYPE SCARC_PRESSURE_TYPE
+
+   REAL(EB), ALLOCATABLE, DIMENSION (:)       :: B_OLD     !< Old right hand side 
+   REAL(EB), ALLOCATABLE, DIMENSION (:)       :: B_NEW     !< New right hand side 
+   REAL(EB), ALLOCATABLE, DIMENSION (:, :, :) :: H_OLD     !< Old predictor pressure vectors 
+   REAL(EB), ALLOCATABLE, DIMENSION (:, :, :) :: HS_OLD    !< Old corrector pressure vectors 
+   REAL(EB), ALLOCATABLE, DIMENSION (:, :, :) :: H_NEW     !< New predictor pressure vectors 
+   REAL(EB), ALLOCATABLE, DIMENSION (:, :, :) :: HS_NEW    !< New corrector pressure vectors 
+   REAL(EB), ALLOCATABLE, DIMENSION (:, :, :) :: H_DIFF    !< Difference vector of subsequent predictor vectors
+   REAL(EB), ALLOCATABLE, DIMENSION (:, :, :) :: HS_DIFF   !< Difference vector of subsequent corrector vectors
+   REAL(EB) :: DIFF_H  = 0.0_EB                            !< Norm of predictor difference vectors
+   REAL(EB) :: DIFF_HS = 0.0_EB                            !< Norm of corrector difference vectors
+
+END TYPE SCARC_PRESSURE_TYPE
+
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief POSTPROCESSING version only: Dump matrix and vectors belonging to pressure system 
 ! ------------------------------------------------------------------------------------------------
@@ -827,7 +842,6 @@ WRITE(MSG%LU_DEBUG,*) 'Differences of pressure vectors on mesh ', NM,' : ', PR%D
 #endif
 
 END SUBROUTINE SCARC_PRESSURE_DIFFERENCE
-#endif
 
 
 END MODULE SCARC_POSTPROCESSING

@@ -40,7 +40,82 @@ INTEGER  :: Z                                   !< Handle for auxiliary one-dime
 INTEGER  :: E                                   !< Handle for one-dimensional error vector (debugging only)
 #endif
 
+TYPE SCARC_SOLVER_TYPE
+
+   CHARACTER(30) :: CNAME = 'NONE'                             !< Name of current solver
+
+   ! Types of different solver components
+   INTEGER :: TYPE_ACCURACY      = NSCARC_ACCURACY_ABSOLUTE    !< Type of requested accuracy
+   INTEGER :: TYPE_COARSE        = NSCARC_COARSE_DIRECT        !< Type of coarse grid solver for multilevel methods
+   INTEGER :: TYPE_COARSENING    = NSCARC_COARSENING_CUBIC     !< Type of grid coarsening 
+   INTEGER :: TYPE_CYCLING       = NSCARC_CYCLING_V            !< Type of cycling for multigrid method
+   INTEGER :: TYPE_GRID          = NSCARC_GRID_STRUCTURED      !< Type of discretization
+   INTEGER :: TYPE_EXCHANGE      = NSCARC_UNDEF_INT            !< Type of data exchange
+   INTEGER :: TYPE_INTERPOL      = NSCARC_INTERPOL_CONSTANT    !< Type of interpolation method
+   INTEGER :: TYPE_LEVEL(0:2)    = NSCARC_UNDEF_INT            !< Type of levels
+   INTEGER :: TYPE_MATRIX        = NSCARC_MATRIX_COMPACT       !< Type of storage for matrix
+   INTEGER :: TYPE_METHOD        = NSCARC_METHOD_KRYLOV        !< Type of ScaRC method
+   INTEGER :: TYPE_MKL(0:10)     = NSCARC_UNDEF_INT            !< Type of MKL for single levels
+   INTEGER :: TYPE_MKL_PRECISION = NSCARC_PRECISION_DOUBLE     !< Type of precision for MKL solver
+   INTEGER :: TYPE_MULTIGRID     = NSCARC_MULTIGRID_GEOMETRIC  !< Type of multigrid method
+   INTEGER :: TYPE_PARENT        = NSCARC_UNDEF_INT            !< Type of parent (calling) solver
+   INTEGER :: TYPE_PRECON        = NSCARC_UNDEF_INT            !< Type of preconditioner for iterative solver
+   INTEGER :: TYPE_RELAX         = NSCARC_UNDEF_INT            !< Type of preconditioner for iterative solver
+   INTEGER :: TYPE_SCOPE(0:2)    = NSCARC_SCOPE_GLOBAL         !< Type of solver scopes
+   INTEGER :: TYPE_SMOOTH        = NSCARC_UNDEF_INT            !< Type of smoother for multigrid method
+   INTEGER :: TYPE_SOLVER        = NSCARC_SOLVER_MAIN          !< Type of surrounding solver stage
+   INTEGER :: TYPE_STAGE         = NSCARC_STAGE_ONE            !< Type of surrounding solver stage
+   INTEGER :: TYPE_STENCIL       = NSCARC_STENCIL_CONSTANT     !< Type of storage for matrix
+   INTEGER :: TYPE_TWOLEVEL      = NSCARC_TWOLEVEL_NONE        !< Type of two-level method
+   INTEGER :: TYPE_VECTOR        = NSCARC_UNDEF_INT            !< Type of vector to point to
+
+   ! References to different vectors which are needed for the current solver
+   INTEGER :: X = NSCARC_UNDEF_INT                             !< Reference to local X-vector, double precision
+   INTEGER :: B = NSCARC_UNDEF_INT                             !< Reference to local B-vector, double precision
+   INTEGER :: D = NSCARC_UNDEF_INT                             !< Reference to local D-vector, double precision
+   INTEGER :: R = NSCARC_UNDEF_INT                             !< Reference to local R-vector, double precision
+   INTEGER :: V = NSCARC_UNDEF_INT                             !< Reference to local V-vector, double precision
+   INTEGER :: Y = NSCARC_UNDEF_INT                             !< Reference to local Y-vector, double precision
+   INTEGER :: Z = NSCARC_UNDEF_INT                             !< Reference to local Z-vector, double precision
+
+   INTEGER :: X_FB = NSCARC_UNDEF_INT                          !< Reference to local X-vector, single precision
+   INTEGER :: B_FB = NSCARC_UNDEF_INT                          !< Reference to local B-vector, single precision
+   INTEGER :: R_FB = NSCARC_UNDEF_INT                          !< Reference to local R-vector, single precision
+   INTEGER :: V_FB = NSCARC_UNDEF_INT                          !< Reference to local V-vector, single precision
+
+#ifdef WITH_SCARC_DEBUG
+   INTEGER :: E = NSCARC_UNDEF_INT                             !< Reference to local E-vector, double precision
+#endif
+
+   ! Converegence requirements for current solver
+   INTEGER  :: NIT   = NSCARC_UNDEF_INT                        !< Maximum iteration number
+   INTEGER  :: ITE   = NSCARC_UNDEF_INT                        !< Current iteration number
+   REAL(EB) :: EPS   = NSCARC_UNDEF_REAL_EB                    !< Required accuracy
+   REAL(EB) :: RES   = NSCARC_UNDEF_REAL_EB                    !< Current residual
+   REAL(EB) :: RESIN = NSCARC_UNDEF_REAL_EB                    !< Initial residual
+   REAL(EB) :: ERR   = NSCARC_UNDEF_REAL_EB                    !< Initial residual
+   REAL(EB) :: OMEGA = NSCARC_UNDEF_REAL_EB                    !< Relaxation parameter
+   REAL(EB) :: CAPPA = NSCARC_UNDEF_REAL_EB                    !< Convergence rate
+
+END TYPE SCARC_SOLVER_TYPE
+
+
 CONTAINS
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Set current iteration state
+! ------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SET_ITERATION_STATE (DT_CURRENT)
+REAL(EB), INTENT(IN) :: DT_CURRENT
+
+DT  = DT_CURRENT
+DTI = 1.0_EB/DT_CURRENT
+
+ITE_PRES = ITE_PRES + 1
+ITE_GLOBAL = ICYC
+
+END SUBROUTINE SCARC_SET_ITERATION_STATE
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Check if solver converges or diverges and print out residual information

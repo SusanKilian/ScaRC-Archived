@@ -22,6 +22,63 @@ IF (OM%NIC_R == 0 .AND. OM%NIC_S == 0) ARE_NEIGHBORS = .FALSE.
 END FUNCTION ARE_NEIGHBORS
 
 
+! ----------------------------------------------------------------------------------------------------
+!> \brief Assign handles to currently used grid type
+!  This routine assumes, that L already points to the correct level NL of mesh NL and
+!  additionally sets the requested discretization type
+! ----------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SET_GRID_TYPE(NTYPE)
+INTEGER, INTENT(IN) :: NTYPE
+
+SELECT CASE (NTYPE)
+   CASE (NSCARC_GRID_STRUCTURED)
+      PRES_ON_WHOLE_DOMAIN = .TRUE.
+      TYPE_GRID = NSCARC_GRID_STRUCTURED
+      IS_STRUCTURED   = .TRUE.
+      IS_UNSTRUCTURED = .FALSE.
+   CASE (NSCARC_GRID_UNSTRUCTURED)
+      PRES_ON_WHOLE_DOMAIN = .FALSE.
+      TYPE_GRID = NSCARC_GRID_UNSTRUCTURED
+      IS_STRUCTURED   = .FALSE.
+      IS_UNSTRUCTURED = .TRUE.
+END SELECT
+
+END SUBROUTINE SCARC_SET_GRID_TYPE
+
+
+! ----------------------------------------------------------------------------------------------------
+!> \brief Assign handles to currently used grid type
+!  This routine assumes, that L already points to the correct level NL of mesh NL and
+!  additionally sets the requested discretization type
+! ----------------------------------------------------------------------------------------------------
+SUBROUTINE SCARC_SET_SYSTEM_TYPE(NGRID, NMATRIX)
+INTEGER, INTENT(IN) :: NGRID, NMATRIX
+
+SELECT CASE (NMATRIX)
+   CASE (NSCARC_MATRIX_POISSON)
+      IS_POISSON = .TRUE.
+      IS_LAPLACE = .FALSE.
+   CASE (NSCARC_MATRIX_LAPLACE)
+      IS_POISSON = .FALSE.
+      IS_LAPLACE = .TRUE.
+END SELECT
+
+SELECT CASE (NGRID)
+   CASE (NSCARC_GRID_STRUCTURED)
+      PRES_ON_WHOLE_DOMAIN = .TRUE.
+      TYPE_GRID = NSCARC_GRID_STRUCTURED
+      IS_STRUCTURED   = .TRUE.
+      IS_UNSTRUCTURED = .FALSE.
+   CASE (NSCARC_GRID_UNSTRUCTURED)
+      PRES_ON_WHOLE_DOMAIN = .FALSE.
+      TYPE_GRID = NSCARC_GRID_UNSTRUCTURED
+      IS_STRUCTURED   = .FALSE.
+      IS_UNSTRUCTURED = .TRUE.
+END SELECT
+
+END SUBROUTINE SCARC_SET_SYSTEM_TYPE
+
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Get full text information about the data type of the currently processed array
 ! ------------------------------------------------------------------------------------------------
@@ -67,6 +124,7 @@ END SELECT
 
 END FUNCTION SCARC_GET_DIMENSION
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Get full text information about the initialization type of the currently processed array
 ! ------------------------------------------------------------------------------------------------
@@ -99,6 +157,7 @@ IF (NSTATE == NSCARC_MEMORY_REMOVE) SCARC_GET_INIT_TYPE = ' '
 
 END FUNCTION SCARC_GET_INIT_TYPE
 
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Get type of matrix storage scheme for specified grid level
 ! ------------------------------------------------------------------------------------------------
@@ -112,6 +171,7 @@ ELSE
 ENDIF
 
 END FUNCTION SCARC_GET_MATRIX_TYPE
+
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Check if a subdiagonal entry must be computed in a specified coordinate direction
@@ -148,6 +208,17 @@ END SELECT
 RETURN
 
 END FUNCTION IS_VALID_DIRECTION
+
+
+! ----------------------------------------------------------------------------------------------------
+!> \brief Get grid permutation (MGM only)
+! ----------------------------------------------------------------------------------------------------
+INTEGER FUNCTION GET_PERM(JC)
+USE SCARC_POINTERS, ONLY : G
+INTEGER, INTENT(IN) :: JC
+GET_PERM = -1
+IF (JC > 0 .AND. JC <= G%NC) GET_PERM = G%PERM_FW(JC)
+END FUNCTION GET_PERM
 
 
 ! ----------------------------------------------------------------------------------------------------
@@ -207,6 +278,28 @@ VC(S%NC) = S%RHS_END
 
 END SUBROUTINE SCARC_RESTORE_LAST_CELL
 
+
+! ------------------------------------------------------------------------------------------------
+!> \brief Determine if cell should be considered during packing of zone numbers
+! ------------------------------------------------------------------------------------------------
+LOGICAL FUNCTION SCARC_FORBIDDEN_ZONE(SEND_BUFFER_INT, IZ, ICG1, ICG2)
+INTEGER, DIMENSION(:), INTENT(IN) :: SEND_BUFFER_INT
+INTEGER, INTENT(IN) :: IZ, ICG1, ICG2
+INTEGER :: LL, ICG
+
+SCARC_FORBIDDEN_ZONE = .FALSE.
+LL = 5
+DO ICG = ICG1, ICG2
+   IF (SEND_BUFFER_INT(LL) == IZ) THEN
+      SCARC_FORBIDDEN_ZONE = .TRUE.
+      RETURN
+   ENDIF
+   LL = LL + 4
+ENDDO
+END FUNCTION SCARC_FORBIDDEN_ZONE
+
+
+
 ! ------------------------------------------------------------------------------------------------
 !> \brief Check if difference of two values is less than a given tolerance
 ! ------------------------------------------------------------------------------------------------
@@ -220,10 +313,87 @@ RETURN
 END FUNCTION MATCH
 
 
+! ------------------------------------------------------------------------------------------------
+!> \brief Control multigrid cycling (F/V/W)
+! Note: NLEVEL_MIN corresponds to finest level, NLEVEL_MAX to coarsest level
+! ------------------------------------------------------------------------------------------------
+INTEGER FUNCTION SCARC_CYCLING_CONTROL(NTYPE, NL)
+USE SCARC_POINTERS, ONLY: MG
+INTEGER, INTENT(IN) :: NTYPE, NL
+INTEGER :: NM, IL, ICYCLE
 
+SELECT CASE (NTYPE)
 
+   ! Initialize cycle counts at beginning of multigrid method
+ 
+   CASE (NSCARC_CYCLING_SETUP)
+   
+      DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   
+         MG => SCARC(NM)%LEVEL(NL)%MG
+         MG%CYCLING(2)=1
+   
+         DO IL = NLEVEL_MIN+1, NLEVEL_MAX - 1
+            MG => SCARC(NM)%LEVEL(IL)%MG
+            IF (TYPE_CYCLING==NSCARC_CYCLING_F) THEN
+               MG%CYCLING(2)=2
+            ELSE
+               MG%CYCLING(2)=TYPE_CYCLING
+            ENDIF
+         ENDDO
+      ENDDO
+   
+      ICYCLE = NSCARC_CYCLING_NEXT
+   
+ 
+   ! Reset cycle counts at beginning of each new multigrid iteration
+ 
+   CASE (NSCARC_CYCLING_RESET)
+   
+      DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+         DO IL = NLEVEL_MIN, NLEVEL_MAX
+            MG => SCARC(NM)%LEVEL(IL)%MG
+            MG%CYCLING(1)=MG%CYCLING(2)
+         ENDDO
+      ENDDO
+      ICYCLE = NSCARC_CYCLING_NEXT
+   
+ 
+   ! Determine where to proceed with cycling
+ 
+   CASE (NSCARC_CYCLING_PROCEED)
+   
+      DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
+   
+         MG => SCARC(NM)%LEVEL(NL)%MG
+         MG%CYCLING(1)=MG%CYCLING(1)-1
+   
+         IF (MG%CYCLING(1)==0) THEN
+            IF (TYPE_CYCLING==NSCARC_CYCLING_F) THEN
+               MG%CYCLING(1)=1
+            ELSE
+               MG%CYCLING(1)=MG%CYCLING(2)
+            ENDIF
+            IF (NL == NLEVEL_MIN) THEN
+               ICYCLE = NSCARC_CYCLING_EXIT
+            ELSE
+               ICYCLE = NSCARC_CYCLING_POSTSMOOTH
+            ENDIF
+         ELSE
+            IF (NL == NLEVEL_MIN) THEN
+               ICYCLE = NSCARC_CYCLING_EXIT
+            ELSE
+               ICYCLE = NSCARC_CYCLING_NEXT
+            ENDIF
+         ENDIF
+   
+      ENDDO
+   
+END SELECT
 
+SCARC_CYCLING_CONTROL = ICYCLE
+RETURN
 
-
+END FUNCTION SCARC_CYCLING_CONTROL
 
 END MODULE SCARC_UTILITIES

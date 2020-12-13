@@ -4,10 +4,56 @@ USE GLOBAL_CONSTANTS
 USE PRECISION_PARAMETERS, ONLY: EB, FB
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 USE SCARC_CONSTANTS
-USE SCARC_TYPES
+USE SCARC_VARIABLES
 USE SCARC_MESSAGE_SERVICES
-USE SCARC_ERROR_MANAGER
+USE SCARC_ERROR_HANDLING
 USE SCARC_UTILITIES
+
+!> \brief Detailed information about arrays created within the ScaRC memory manager
+
+TYPE SCARC_ALLOCATION_TYPE
+
+   INTEGER :: NTYPE  = NSCARC_INIT_NONE               !< Data type of array
+   INTEGER :: NDIM   = NSCARC_INIT_NONE               !< Dimension of array
+   INTEGER :: NINIT  = NSCARC_INIT_NONE               !< Initialization type of array
+   INTEGER :: NRANK  = NSCARC_INIT_NONE               !< Rank of array (order of allocation)
+   INTEGER :: NSTATE = NSCARC_INIT_NONE               !< State of array (allocated/removed)
+
+   INTEGER :: LBND(3) = NSCARC_INIT_NONE              !< Left bounds of array for x-,y- and z-direction
+   INTEGER :: RBND(3) = NSCARC_INIT_NONE              !< Right bounds of array for x-,y- and z-direction
+
+   CHARACTER(60) :: CNAME                             !< Name of array
+   CHARACTER(60) :: CSCOPE                            !< Name of allocating routine 
+
+END TYPE SCARC_ALLOCATION_TYPE
+
+!> \brief ScaRC memory manager type
+
+TYPE SCARC_MEMORY_TYPE
+
+   TYPE (SCARC_ALLOCATION_TYPE), ALLOCATABLE, DIMENSION(:) :: ALLOCATION_LIST  !< Administrative list of allocated structures
+
+   INTEGER :: IP                                           !< Pointer to current array entry
+   INTEGER :: IRANK                                        !< Rank of memory accesses
+
+   INTEGER :: NSUM_INT     = NSCARC_INIT_ZERO              !< Total sum of all allocated integer data
+   INTEGER :: NSUM_REAL_EB = NSCARC_INIT_ZERO              !< Total sum of all allocated double precision data
+   INTEGER :: NSUM_REAL_FB = NSCARC_INIT_ZERO              !< Total sum of all allocated single precision data
+
+   INTEGER :: N_ARRAYS  = NSCARC_INIT_ZERO                 !< Number of allocated arrays
+   INTEGER :: N_BMATRIX = NSCARC_INIT_ZERO                 !< Number of allocated bandwise stored matrices
+   INTEGER :: N_CMATRIX = NSCARC_INIT_ZERO                 !< Number of allocated compactly stored matrices
+   INTEGER :: N_INT     = NSCARC_INIT_ZERO                 !< Number of allocated integer data
+   INTEGER :: N_LOG     = NSCARC_INIT_ZERO                 !< Number of allocated logical data
+   INTEGER :: N_REAL_EB = NSCARC_INIT_ZERO                 !< Number of allocated double precision data
+   INTEGER :: N_REAL_FB = NSCARC_INIT_ZERO                 !< Number of allocated single precision data
+
+   INTEGER :: NWORK_INT     = NSCARC_INIT_ZERO             !< Workspace occupied by integer arrays
+   INTEGER :: NWORK_LOG     = NSCARC_INIT_ZERO             !< Workspace occupied by logical arrays
+   INTEGER :: NWORK_REAL_EB = NSCARC_INIT_ZERO             !< Workspace occupied by double precision arrays
+   INTEGER :: NWORK_REAL_FB = NSCARC_INIT_ZERO             !< Workspace occupied by single precision arrays
+
+END TYPE SCARC_MEMORY_TYPE
 
 CONTAINS
 
