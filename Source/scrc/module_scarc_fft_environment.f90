@@ -24,8 +24,7 @@ CONTAINS
 ! New here: Perform own initialization of FFT based on H2CZIS/H3CZIS and use own SAVE and WORK arrays
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_FFT(NLMIN, NLMAX)
-USE SCARC_POINTERS, ONLY: M, S, L, FFT
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: M, S, L, FFT, SCARC_POINT_TO_GRID
 USE POIS, ONLY: H2CZIS, H3CZIS
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL
@@ -139,8 +138,7 @@ END SUBROUTINE SCARC_SETUP_FFT
 ! New here: Perform own initialization of FFT based on H2CZIS/H3CZIS and use own SAVE and WORK arrays
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_FFTO(NLMIN, NLMAX)
-USE SCARC_POINTERS, ONLY: M, S, L, FFT
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: M, S, L, FFT, SCARC_POINT_TO_GRID
 USE POIS, ONLY: H2CZIS, H3CZIS
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL

@@ -17,7 +17,6 @@
 #include "scrc/module_scarc_types.f90"
 #include "scrc/module_scarc_variables.f90"
 #include "scrc/module_scarc_pointers.f90"
-#include "scrc/module_scarc_pointer_routines.f90"
 #include "scrc/module_scarc_message_services.f90"
 #include "scrc/module_scarc_error_handling.f90"
 #include "scrc/module_scarc_utilities.f90"

@@ -70,8 +70,7 @@ END SUBROUTINE SCARC_SETUP_EXCHANGE_DIMENSIONS
 !> \brief Get information about global numbers of unknowns for unstructured discretization
 ! ----------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_DIMENSIONS(NL)
-USE SCARC_POINTERS, ONLY: G
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: G, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, NM2
 
@@ -228,8 +227,7 @@ END SUBROUTINE SCARC_SETUP_NEIGHBORS
 !> \brief Allocate workspace for data exchanges of different data types and sizes and perform basic exchanges
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_EXCHANGES
-USE SCARC_POINTERS, ONLY:  S, OS, OL, OG, OGF
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID
+USE SCARC_POINTERS, ONLY: S, OS, OL, OG, OGF, SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID
 INTEGER :: NL, NM, NOM, NLEN
 INTEGER :: INBR
 
@@ -405,7 +403,7 @@ END SUBROUTINE SCARC_SETUP_EXCHANGES
 ! 
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_EXCHANGE (NTYPE, NPARAM, NL)
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID
+USE SCARC_POINTERS, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID
 INTEGER, INTENT(IN) :: NTYPE, NPARAM, NL
 REAL(EB) :: TNOW
 INTEGER :: NM, NOM
@@ -942,8 +940,7 @@ END SUBROUTINE SCARC_PACK_CELL_NUMBERS
 !> \brief Unpack numbers of cells which are overlapped by neighbor
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_CELL_NUMBERS (NM, NOM)
-USE SCARC_POINTERS, ONLY: L, G, OL, OG, RECV_BUFFER_INT
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_INT
+USE SCARC_POINTERS, ONLY: L, G, OL, OG, RECV_BUFFER_INT, SCARC_POINT_TO_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM
 INTEGER :: LL, IOR0, ICG, ICE, IWG, IXG, IYG, IZG
 
@@ -993,8 +990,7 @@ END SUBROUTINE SCARC_PACK_CELL_SIZES
 !> \brief Unpack cell width information 
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_CELL_SIZES (NM, NOM)
-USE SCARC_POINTERS, ONLY: L, OL, RECV_BUFFER_REAL           
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_REAL
+USE SCARC_POINTERS, ONLY: L, OL, RECV_BUFFER_REAL, SCARC_POINT_TO_BUFFER_REAL
 INTEGER, INTENT(IN) :: NM, NOM
 
 RECV_BUFFER_REAL => SCARC_POINT_TO_BUFFER_REAL (NM, NOM, 0)
@@ -1025,8 +1021,7 @@ END SUBROUTINE SCARC_PACK_BASIC_SIZES
 !> \brief Unpack initial exchange sizes along interfaces
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_BASIC_SIZES (NM, NOM)
-USE SCARC_POINTERS, ONLY: OG, RECV_BUFFER_INT
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_INT
+USE SCARC_POINTERS, ONLY: OG, RECV_BUFFER_INT, SCARC_POINT_TO_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM
 
 RECV_BUFFER_INT => SCARC_POINT_TO_BUFFER_INT (NM, NOM, 0)
@@ -1042,8 +1037,7 @@ END SUBROUTINE SCARC_UNPACK_BASIC_SIZES
 ! Note: Vector VC is numbered via I, J, K values
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PACK_PRESSURE(NM)
-USE SCARC_POINTERS, ONLY: G, OS, OL, OG, OS
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_HVECTOR
+USE SCARC_POINTERS, ONLY: G, OS, OL, OG, OS, SCARC_POINT_TO_HVECTOR
 INTEGER, INTENT(IN) :: NM
 REAL(EB), DIMENSION(:,:,:), POINTER :: VC
 INTEGER :: IOR0, ICG, IWG
@@ -1069,8 +1063,7 @@ END SUBROUTINE SCARC_PACK_PRESSURE
 ! Note: Vector VC is numbered via I, J, K values
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_PRESSURE(NM, NOM)
-USE SCARC_POINTERS, ONLY: G, OL, OG, RECV_BUFFER_REAL
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_REAL, SCARC_POINT_TO_HVECTOR
+USE SCARC_POINTERS, ONLY: G, OL, OG, RECV_BUFFER_REAL, SCARC_POINT_TO_BUFFER_REAL, SCARC_POINT_TO_HVECTOR
 INTEGER, INTENT(IN) :: NM, NOM
 REAL(EB), DIMENSION(:,:,:), POINTER :: VC
 INTEGER :: LL, IOR0, IWG, IXG, IYG, IZG, ICG
@@ -1176,8 +1169,8 @@ END SUBROUTINE SCARC_PACK_MGM_TRUE
 !> \brief Unpack overlapping parts of specified pressure vector (predictor/corrector)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_MGM_TRUE(NM, NOM)
-USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_REAL, OH1, OH2
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_REAL
+USE SCARC_POINTERS, ONLY: 
+USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_REAL, OH1, OH2, SCARC_POINT_TO_BUFFER_REAL
 INTEGER, INTENT(IN) :: NM, NOM
 INTEGER :: LL, IOR0, ICG, IWG
 
@@ -1239,8 +1232,7 @@ END SUBROUTINE SCARC_PACK_MGM_MEAN
 !> \brief Unpack overlapping parts of specified vector VC (numbered via IC values)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_MGM_MEAN(NM, NOM)
-USE SCARC_POINTERS, ONLY: OL, OG, OH1, OH1, RECV_BUFFER_REAL
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_REAL
+USE SCARC_POINTERS, ONLY: OL, OG, OH1, OH1, RECV_BUFFER_REAL, SCARC_POINT_TO_BUFFER_REAL
 INTEGER, INTENT(IN) :: NM, NOM
 INTEGER :: IOR0, ICG, IWG, LL
 
@@ -1414,8 +1406,7 @@ END SUBROUTINE SCARC_PACK_MGM_VELO2
 !> \brief Unpack overlapping parts of specified pressure vector (predictor/corrector)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_MGM_VELO(NM, NOM)
-USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_REAL
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_REAL
+USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_REAL, SCARC_POINT_TO_BUFFER_REAL
 INTEGER, INTENT(IN) :: NM, NOM
 REAL(EB), DIMENSION(:), POINTER :: OV
 INTEGER :: LL, IOR0, ICG, IWG
@@ -1449,8 +1440,7 @@ END SUBROUTINE SCARC_UNPACK_MGM_VELO
 !> \brief Unpack overlapping parts of specified pressure vector (predictor/corrector)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_MGM_VELO2(NM, NOM)
-USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_REAL
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_REAL
+USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_REAL, SCARC_POINT_TO_BUFFER_REAL
 INTEGER, INTENT(IN) :: NM, NOM
 REAL(EB), DIMENSION(:), POINTER :: OH3, OV
 INTEGER :: LL, IOR0, ICG, IWG
@@ -1523,8 +1513,7 @@ END SUBROUTINE SCARC_PACK_AUXILIARY
 !> \brief Unpack overlapping auxiliary vector 
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_AUXILIARY (NM, NOM, NL)
-USE SCARC_POINTERS, ONLY: G, OL, OG, RECV_BUFFER_REAL
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_REAL
+USE SCARC_POINTERS, ONLY: G, OL, OG, RECV_BUFFER_REAL, SCARC_POINT_TO_BUFFER_REAL
 INTEGER, INTENT(IN) :: NM, NOM, NL
 INTEGER :: IOR0, ICG, ICE1, ICE2, LL
 
@@ -1591,8 +1580,7 @@ END SUBROUTINE SCARC_PACK_NULLSPACE
 !> \brief Unpack overlapping nullspace vector 
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_NULLSPACE (NM, NOM, NL)
-USE SCARC_POINTERS, ONLY: G, OL, OG, RECV_BUFFER_REAL
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_REAL
+USE SCARC_POINTERS, ONLY: G, OL, OG, RECV_BUFFER_REAL, SCARC_POINT_TO_BUFFER_REAL
 INTEGER, INTENT(IN) :: NM, NOM, NL
 INTEGER :: IOR0, ICG, ICE1, ICE2, LL
 
@@ -1622,8 +1610,7 @@ END SUBROUTINE SCARC_UNPACK_NULLSPACE
 !> \brief Pack overlapping parts of specified vector VC (numbered via IC values)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PACK_VECTOR_PLAIN(NM, NL, NV)
-USE SCARC_POINTERS, ONLY: OL, OG, OS
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: OL, OG, OS, SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NM, NL, NV
 REAL(EB), DIMENSION(:), POINTER :: VC
 INTEGER :: IOR0, ICG, ICW
@@ -1657,8 +1644,7 @@ END SUBROUTINE SCARC_PACK_VECTOR_PLAIN
 !> \brief Unpack overlapping parts of specified vector VC (numbered via IC values)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_VECTOR_PLAIN(NM, NOM, NL, NVECTOR)
-USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_REAL
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_REAL, SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_REAL, SCARC_POINT_TO_BUFFER_REAL, SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NM, NOM, NL, NVECTOR
 REAL(EB), DIMENSION(:), POINTER :: VC
 INTEGER :: IOR0, LL, ICG, ICE
@@ -1694,8 +1680,7 @@ END SUBROUTINE SCARC_UNPACK_VECTOR_PLAIN
 !> \brief Pack overlapping and internal parts of specified vector
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PACK_VECTOR_MEAN(NM, NL, NVECTOR)
-USE SCARC_POINTERS, ONLY: OL, OG, OS
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: OL, OG, OS, SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NM, NL, NVECTOR
 REAL(EB), DIMENSION(:), POINTER :: VC
 INTEGER :: IOR0, ICG, ICW, ICE, LL
@@ -1726,8 +1711,7 @@ END SUBROUTINE SCARC_PACK_VECTOR_MEAN
 !> \brief Unpack overlapping and internal parts of specified vector
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_VECTOR_MEAN(NM, NOM, NL, NVECTOR)
-USE SCARC_POINTERS, ONLY: G, OG, OL, RECV_BUFFER_REAL
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_VECTOR, SCARC_POINT_TO_BUFFER_REAL
+USE SCARC_POINTERS, ONLY: G, OG, OL, RECV_BUFFER_REAL, SCARC_POINT_TO_VECTOR, SCARC_POINT_TO_BUFFER_REAL
 INTEGER, INTENT(IN) :: NM, NOM, NL, NVECTOR
 REAL(EB), DIMENSION(:), POINTER :: VC
 INTEGER :: IOR0, LL, ICG, ICW, ICE
@@ -1760,8 +1744,7 @@ END SUBROUTINE SCARC_UNPACK_VECTOR_MEAN
 !> \brief Pack overlapping information about matrix columns (compact storage technique only)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PACK_MATRIX_COLS(NMATRIX)                
-USE SCARC_POINTERS, ONLY: G, OS, OL, OG, AC
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: G, OS, OL, OG, AC, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NMATRIX
 INTEGER :: IOR0, LL, ICOL, ICG, ICW
 
@@ -1802,8 +1785,7 @@ END SUBROUTINE SCARC_PACK_MATRIX_COLS
 !> \brief Unpack overlapping information about matrix columns (compact storage technique only)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_MATRIX_COLS(NM, NOM, NMATRIX)
-USE SCARC_POINTERS, ONLY: OL, OG, OAC, RECV_BUFFER_INT
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_OTHER_CMATRIX, SCARC_POINT_TO_BUFFER_INT
+USE SCARC_POINTERS, ONLY: OL, OG, OAC, RECV_BUFFER_INT, SCARC_POINT_TO_OTHER_CMATRIX, SCARC_POINT_TO_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM, NMATRIX
 INTEGER :: IOR0, ICG, LL, ICP
 
@@ -1849,8 +1831,7 @@ END SUBROUTINE SCARC_UNPACK_MATRIX_COLS
 !> \brief Pack overlapping information about matrix columns (compact storage technique only)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PACK_MATRIX_COLSG(NMATRIX)                
-USE SCARC_POINTERS, ONLY: G, OS, OL, OG, AC
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: G, OS, OL, OG, AC, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NMATRIX
 INTEGER :: IOR0, ICG, ICW, LL, ICOL
 INTEGER, POINTER, DIMENSION(:) :: COLG
@@ -1894,8 +1875,7 @@ END SUBROUTINE SCARC_PACK_MATRIX_COLSG
 !> \brief Unpack overlapping information about matrix columns (compact storage technique only)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_MATRIX_COLSG(NM, NOM, NMATRIX)
-USE SCARC_POINTERS, ONLY: OL, OG, OAC, RECV_BUFFER_INT
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_OTHER_CMATRIX, SCARC_POINT_TO_BUFFER_INT
+USE SCARC_POINTERS, ONLY: OL, OG, OAC, RECV_BUFFER_INT, SCARC_POINT_TO_OTHER_CMATRIX, SCARC_POINT_TO_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM, NMATRIX
 INTEGER :: IOR0, ICG, LL, ICP
 INTEGER, POINTER, DIMENSION(:) :: COLG
@@ -1944,8 +1924,7 @@ END SUBROUTINE SCARC_UNPACK_MATRIX_COLSG
 !> \brief Pack overlapping information about matrix values (both storage techniques)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PACK_MATRIX_VALS(NMATRIX, NL)
-USE SCARC_POINTERS, ONLY:  G, AB, AC, OS, OL, OG
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BMATRIX, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: G, AB, AC, OS, OL, OG, SCARC_POINT_TO_BMATRIX, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NMATRIX, NL
 INTEGER :: IOR0, ICG, ICW, LL, ID, ICOL
 
@@ -1993,9 +1972,8 @@ END SUBROUTINE SCARC_PACK_MATRIX_VALS
 !> \brief Unpack overlapping information about matrix values (both storage techniques)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_MATRIX_VALS(NM, NOM, NL, NMATRIX)
-USE SCARC_POINTERS, ONLY: OL, OG, OAB, OAC, RECV_BUFFER_REAL
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_OTHER_BMATRIX, SCARC_POINT_TO_OTHER_CMATRIX, &
-                                  SCARC_POINT_TO_BUFFER_REAL
+USE SCARC_POINTERS, ONLY: OL, OG, OAB, OAC, RECV_BUFFER_REAL, &
+                          SCARC_POINT_TO_OTHER_BMATRIX, SCARC_POINT_TO_OTHER_CMATRIX, SCARC_POINT_TO_BUFFER_REAL
 INTEGER, INTENT(IN) :: NM, NOM, NL, NMATRIX
 INTEGER :: IOR0, ICG, ICOL, ID, LL
 
@@ -2068,8 +2046,7 @@ END SUBROUTINE SCARC_PACK_MATRIX_SIZES
 !> \brief Unpack information about matrix sizes into send vector
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_MATRIX_SIZES(NM, NOM, NL)
-USE SCARC_POINTERS, ONLY: OG, RECV_BUFFER_INT
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_INT
+USE SCARC_POINTERS, ONLY: OG, RECV_BUFFER_INT, SCARC_POINT_TO_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM, NL
 
 RECV_BUFFER_INT => SCARC_POINT_TO_BUFFER_INT (NM, NOM, 0)
@@ -2091,8 +2068,7 @@ END SUBROUTINE SCARC_UNPACK_MATRIX_SIZES
 !> \brief Pack overlapping information about matrix diagonals (compact storage technique only)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PACK_MATRIX_DIAGS(NTYPE)
-USE SCARC_POINTERS, ONLY:  G, AC, OS, OL, OG
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: G, AC, OS, OL, OG, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NTYPE
 INTEGER :: IOR0, ICG, ICW, ICOL
 
@@ -2120,8 +2096,7 @@ END SUBROUTINE SCARC_PACK_MATRIX_DIAGS
 !> \brief Unpack overlapping information about matrix diagonals (compact storage technique only)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_MATRIX_DIAGS(NM, NOM)
-USE SCARC_POINTERS, ONLY: G, OL, OG, RECV_BUFFER_REAL
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_REAL
+USE SCARC_POINTERS, ONLY: G, OL, OG, RECV_BUFFER_REAL, SCARC_POINT_TO_BUFFER_REAL
 INTEGER, INTENT(IN) :: NM, NOM
 INTEGER :: IOR0, ICG, ICE, LL
 
@@ -2148,8 +2123,7 @@ END SUBROUTINE SCARC_UNPACK_MATRIX_DIAGS
 !> \brief Pack zones numbers along interfaces
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PACK_CELL_NEIGHBORS(NL)
-USE SCARC_POINTERS, ONLY: L, G, OS, OL, OG, A, F
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: L, G, OS, OL, OG, A, F, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER :: IOR0, ICG, ICW, ICWG, LL, IWG, IXW, IYW, IZW
 
@@ -2188,8 +2162,7 @@ END SUBROUTINE SCARC_PACK_CELL_NEIGHBORS
 !> \brief Unpack zones numbers along interfaces
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_CELL_NEIGHBORS(NM, NOM, NL)
-USE SCARC_POINTERS, ONLY: G, OL, OG, RECV_BUFFER_INT
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_INT
+USE SCARC_POINTERS, ONLY: G, OL, OG, RECV_BUFFER_INT, SCARC_POINT_TO_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM, NL
 INTEGER :: ICG, IOR0, LL, IOFF
 
@@ -2226,8 +2199,7 @@ END SUBROUTINE SCARC_UNPACK_CELL_NEIGHBORS
 !> \brief Pack zones numbers along interfaces
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PACK_ZONE_NEIGHBORS(NL)
-USE SCARC_POINTERS, ONLY: L, G, OS, OL, OG, A, F
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: L, G, OS, OL, OG, A, F, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER :: IOR0, ICG, ICW, LL, IWG, IXW, IYW, IZW, IZWG
 
@@ -2273,8 +2245,7 @@ END SUBROUTINE SCARC_PACK_ZONE_NEIGHBORS
 !> \brief Unpack zones numbers along interfaces
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_ZONE_NEIGHBORS(NM, NOM, NL)
-USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_INT
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_INT
+USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_INT, SCARC_POINT_TO_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM, NL
 INTEGER :: ICG, IOR0, LL, KK
 
@@ -2346,8 +2317,7 @@ END SUBROUTINE SCARC_PACK_LAYER2_NUMS
 !> \brief Unpack zones numbers along interfaces
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_LAYER2_NUMS(NM, NOM)
-USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_INT
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_INT
+USE SCARC_POINTERS, ONLY: OL, OG, RECV_BUFFER_INT, SCARC_POINT_TO_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM
 INTEGER :: ICG, IOR0
 
@@ -2394,8 +2364,7 @@ END SUBROUTINE SCARC_PACK_LAYER2_VALS
 !> \brief Unpack zones numbers along interfaces
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_LAYER2_VALS(NM, NOM)
-USE SCARC_POINTERS, ONLY: L, OL, G, OG, RECV_BUFFER_REAL
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_REAL
+USE SCARC_POINTERS, ONLY: L, OL, G, OG, RECV_BUFFER_REAL, SCARC_POINT_TO_BUFFER_REAL
 INTEGER, INTENT(IN) :: NM, NOM
 INTEGER :: ICG, IOR0
 
@@ -2457,8 +2426,7 @@ END SUBROUTINE SCARC_PACK_ZONE_TYPES
 !> \brief Unpack zones information into send vector
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UNPACK_ZONE_TYPES(NM, NOM)
-USE SCARC_POINTERS, ONLY: G, OL, OG, RECV_BUFFER_INT
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_BUFFER_INT
+USE SCARC_POINTERS, ONLY: G, OL, OG, RECV_BUFFER_INT, SCARC_POINT_TO_BUFFER_INT
 INTEGER, INTENT(IN) :: NM, NOM
 INTEGER :: IOR0, LL, ICG, ICW, ICE
 

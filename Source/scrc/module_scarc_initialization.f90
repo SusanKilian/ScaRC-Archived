@@ -497,8 +497,7 @@ END SUBROUTINE SCARC_PARSE_INPUT
 !> \brief Allocate basic ScaRC-structures for all needed levels
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_TYPES
-USE SCARC_POINTERS, ONLY: S
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_MESH
+USE SCARC_POINTERS, ONLY: S, SCARC_POINT_TO_MESH
 INTEGER :: NM
 
 ! Basic information for all requested grid levels

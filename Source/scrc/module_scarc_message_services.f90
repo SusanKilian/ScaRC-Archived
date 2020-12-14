@@ -82,8 +82,8 @@ END SUBROUTINE SCARC_SETUP_MESSAGE_SERVICES
 !> \brief Debugging version only: Print out matrix information on specified level for BLENDER
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_VERBOSE_BLENDER_ZONES(NM, NL)
-USE SCARC_POINTERS, ONLY: M, L, OL, G, OG, F, XCOR, YCOR, ZCOR
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID
+USE SCARC_POINTERS, ONLY: M, L, OL, G, OG, F, XCOR, YCOR, ZCOR, &
+                          SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID
 INTEGER, INTENT(IN) :: NM, NL
 REAL(EB) :: INCX, INCY, INCZ, XCOR0, YCOR0, ZCOR0
 INTEGER :: IC, IZL, IZG, ICPT, MAGG, II, JJ, KK, IFACE, IOR0, NOM, ICG, INBR, ICW, ICE, ITYPE = 0
@@ -366,8 +366,7 @@ END SUBROUTINE SCARC_VERBOSE_CMATRIX
 !> \brief Debugging version only: Dump out information for specified quantity
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_VERBOSE_VECTOR1 (VC, NM, NL, NG, CNAME)
-USE SCARC_POINTERS, ONLY: L
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: L, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NM, NL, NG
 REAL(EB), DIMENSION(:), INTENT(IN) :: VC
 REAL(EB), DIMENSION(0:100) :: VALUES
@@ -442,8 +441,7 @@ END SUBROUTINE SCARC_VERBOSE_VECTOR3
 !> \brief Debugging version only: Debug different vectors within a single method
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_METHOD(CTEXT, NTYPE)
-USE SCARC_POINTERS, ONLY: M, L, MGM, A, G
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: M, L, MGM, A, G, SCARC_POINT_TO_CMATRIX
 CHARACTER(*), INTENT(IN) :: CTEXT
 INTEGER, INTENT(IN) :: NTYPE
 INTEGER :: I, K, NM
@@ -563,8 +561,7 @@ END SUBROUTINE SCARC_DEBUG_METHOD
 !> \brief Debugging version only: Dump out information for specified quantity
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_VECTOR3 (VC, NM, NL, CNAME)
-USE SCARC_POINTERS, ONLY: L
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: L, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NM, NL
 REAL(EB), DIMENSION(:,:,:), INTENT(IN) :: VC
 CHARACTER(*), INTENT(IN) :: CNAME
@@ -794,8 +791,7 @@ END SUBROUTINE SCARC_DEBUG_RELAX
 !> \brief Debugging version only: Print out debug information for specified vector
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_LEVEL (NV, CVEC, NL)
-USE SCARC_POINTERS, ONLY: L, G, VC
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: L, G, VC, SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NV, NL
 REAL (EB) :: VALUES(0:100)
 INTEGER :: NM, II, JJ, KK, IC, NNX, NNY, NNZ
@@ -857,7 +853,7 @@ END SUBROUTINE SCARC_DEBUG_LEVEL
 !> \brief Debugging version only: Print out debug information for specified combination of vector and mesh
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_LEVEL_MESH (X, CVEC, NTYPE, NM, NL)
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: SCARC_POINT_TO_GRID
 TYPE (SCARC_LEVEL_TYPE), POINTER :: LL=>NULL()
 TYPE (SCARC_GRID_TYPE), POINTER :: GG=>NULL()
 INTEGER, INTENT(IN) :: NM, NL, NTYPE
@@ -907,8 +903,7 @@ END SUBROUTINE SCARC_DEBUG_LEVEL_MESH
 !> \brief Debugging version only: Print out debug information for specified quantity
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DEBUG_QUANTITY(NTYPE, NL, CQUANTITY)
-USE SCARC_POINTERS, ONLY: M, L, OL, G, OG, SV
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: M, L, OL, G, OG, SV, SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NTYPE, NL
 INTEGER :: NM, NOM, IW, I, IOR0, INBR, III, JJJ, KKK, IWG, NNX, NNY, NNZ
 CHARACTER (*), INTENT(IN) :: CQUANTITY
@@ -1278,8 +1273,7 @@ END SUBROUTINE SCARC_DEBUG_QUANTITY
 !> \brief Debugging version only: Print out vector information on specified level for MATLAB
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_MATLAB_VECTOR (NV, CVEC, NL)
-USE SCARC_POINTERS, ONLY: G, VC
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: G, VC, SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NV, NL
 INTEGER :: NM 
 CHARACTER (*), INTENT(IN) :: CVEC
@@ -1346,8 +1340,7 @@ END SUBROUTINE SCARC_MATLAB_MATRIX
 !> \brief Debugging version only: Print out matrix information on specified level for PYTHON
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PYTHON_MATRIX(NL, CNAME)
-USE SCARC_POINTERS, ONLY : G, A
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: G, A, SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NL
 CHARACTER(*), INTENT(IN) :: CNAME
 INTEGER :: NM, IC, JC, ICOL, MVAL, MCOL, MROW, I, J, NLEN
@@ -1438,8 +1431,7 @@ END SUBROUTINE SCARC_PYTHON_MATRIX
 !> \brief Debugging version only: Print out aggregation zones information on specified level for PYTHON
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PYTHON_ZONES(NM, NL, CNAME)
-USE SCARC_POINTERS, ONLY: G
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: G, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NM, NL
 CHARACTER(*), INTENT(IN) :: CNAME
 INTEGER :: IC, MAGG

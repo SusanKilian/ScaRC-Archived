@@ -307,10 +307,10 @@ END SUBROUTINE SCARC_SETUP_SYSTEMS
 !> \brief Define sizes for system matrix A (including extended regions related to overlaps)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_POISSON_SIZES(NL)
-USE SCARC_POINTERS, ONLY: S, L, G, OG, A, OA, AB, OAB
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, &
-                                  SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX, &
-                                  SCARC_POINT_TO_BMATRIX, SCARC_POINT_TO_OTHER_BMATRIX
+USE SCARC_POINTERS, ONLY: S, L, G, OG, A, OA, AB, OAB, &
+                          SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, &
+                          SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX, &
+                          SCARC_POINT_TO_BMATRIX, SCARC_POINT_TO_OTHER_BMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, NOM, INBR
 
@@ -459,8 +459,7 @@ END SUBROUTINE SCARC_SETUP_POISSON_SIZES
 !> \brief Define sizes for local unstructured Laplace matrices
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_LOCAL_LAPLACE_SIZES(NL)
-USE SCARC_POINTERS, ONLY: G, A
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: G, A, SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM
 
@@ -488,8 +487,7 @@ END SUBROUTINE SCARC_SETUP_LOCAL_LAPLACE_SIZES
 !> \brief Get global numberings for compact column vector of Poisson matrix 
 ! -------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_GLOBAL_POISSON_COLUMNS(NL)
-USE SCARC_POINTERS, ONLY : G, A
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: G, A, SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, IC, ICOL, JC
 
@@ -526,9 +524,8 @@ END SUBROUTINE SCARC_SETUP_GLOBAL_POISSON_COLUMNS
 !> \brief Make Poisson matrix global by exchanging adjacent overlaps
 ! -------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_GLOBAL_POISSON_OVERLAPS(NL)
-USE SCARC_POINTERS, ONLY: S, G, OG, A, OA
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, &
-                                  SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX
+USE SCARC_POINTERS, ONLY: S, G, OG, A, OA, SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, &
+                          SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, INBR, NOM
 
@@ -604,10 +601,10 @@ END FUNCTION SCARC_CELL_WITHIN_MESH
 !    explanation to come ...
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_POISSON (NM, NL)
-USE SCARC_POINTERS, ONLY: S, L, G, OG, A, AB, OA, OAB
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID,    SCARC_POINT_TO_OTHER_GRID, &
-                                  SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX, &
-                                  SCARC_POINT_TO_BMATRIX, SCARC_POINT_TO_OTHER_BMATRIX
+USE SCARC_POINTERS, ONLY: S, L, G, OG, A, AB, OA, OAB, &
+                          SCARC_POINT_TO_GRID,    SCARC_POINT_TO_OTHER_GRID, &
+                          SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX, &
+                          SCARC_POINT_TO_BMATRIX, SCARC_POINT_TO_OTHER_BMATRIX
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: IX, IY, IZ, IC, IP, INBR, NOM
 
@@ -738,8 +735,7 @@ END SUBROUTINE SCARC_SETUP_POISSON
 !> \brief Setup local Laplace matrices 
 ! ---------------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_LAPLACE (NM, NL)
-USE SCARC_POINTERS, ONLY: L, G, A
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: L, G, A, SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: IX, IY, IZ, IC, IP
 
@@ -806,8 +802,7 @@ END SUBROUTINE SCARC_SETUP_LAPLACE
 ! forward substitution process Ly=b only has the start from the nonzero entries on
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_PERMUTED_LAPLACE (NM, NL)
-USE SCARC_POINTERS, ONLY: G, A
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: G, A, SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: IX, IY, IZ, IC, IP, KKC(-3:3), JJC(-3:3)
 INTEGER :: TYPE_SCOPE_SAVE
@@ -1064,8 +1059,7 @@ END SUBROUTINE SCARC_SETUP_PERMUTED_SUBDIAG
 !> \brief Set boundary conditions including the interfaces between the meshes
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_BOUNDARY_WITH_INTERFACES (NM, NL)
-USE SCARC_POINTERS, ONLY: L, G, F, GWC, A
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: L, G, F, GWC, A, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: I, J, K, IOR0, IW, IC, NOM, IP
 INTEGER :: ICXM, ICXP, ICYM, ICYP, ICZM, ICZP
@@ -1341,8 +1335,7 @@ END SUBROUTINE SCARC_GET_MATRIX_STENCIL_MAX
 !> \brief Setup symmetric version of Poisson matrix for MKL solver in double precision
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_POISSON_MKL (NM, NL)
-USE SCARC_POINTERS, ONLY: G, A, AS
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: G, A, AS, SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: IC, JC, JC0, ICS, JCS, JCG
 INTEGER :: ICOL, JCOL, IAS
@@ -1558,8 +1551,7 @@ END SUBROUTINE SCARC_SETUP_POISSON_MKL
 ! matrix entries in last column and row by the stored ones (zeros and one at diaonal position)
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_BOUNDARY (NM, NL)
-USE SCARC_POINTERS, ONLY: L, G, F, GWC, A, AB, ACO, ABCO
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: L, G, F, GWC, A, AB, ACO, ABCO, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: I, J, K, IOR0, IW, IC, NOM, IP, ICO, ICOL
 
@@ -1967,8 +1959,8 @@ END SUBROUTINE SCARC_SETUP_BMATRIX_CONDENSED
 !> \brief Setup condensed system in case of periodic or pure Neumann boundary conditions
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_SYSTEM_CONDENSED (NV, NL, ITYPE)
-USE SCARC_POINTERS, ONLY: L, G, OG, F, OL, VC, A, ACO, AB, ABCO
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: L, G, OG, F, OL, VC, A, ACO, AB, ABCO, &
+                          SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NV, NL, ITYPE
 INTEGER :: NM, NOM, IFACE, ICN, ICE, ICW, JC, NC, ICO, IOR0, IP, ICG, INBR
 
@@ -2081,9 +2073,9 @@ END SUBROUTINE SCARC_SETUP_SYSTEM_CONDENSED
 !> \brief Extract overlapping matrix parts after data exchange with neighbors and add them to main matrix
 ! --------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_EXTRACT_MATRIX_OVERLAPS (NMATRIX, NTYPE, NL)
-USE SCARC_POINTERS, ONLY : G, F, OL, OG, A, OA
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, &
-                                  SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX
+USE SCARC_POINTERS, ONLY: G, F, OL, OG, A, OA, &
+                          SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, &
+                          SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX
 INTEGER, INTENT(IN) :: NL, NMATRIX, NTYPE
 INTEGER :: NM, IFACE, NOM, IOR0, ICG, ICE, IP, ICOL, INBR, ICN, ICE1, ICE2
 
@@ -2170,8 +2162,7 @@ END SUBROUTINE SCARC_EXTRACT_MATRIX_OVERLAPS
 !> \brief Extract diagonal of Poisson matrix and store it in a separate vector for further use
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_EXTRACT_MATRIX_DIAGONAL(NL)
-USE SCARC_POINTERS, ONLY: G, A
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: G, A, SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, IC, JC, ICOL
 

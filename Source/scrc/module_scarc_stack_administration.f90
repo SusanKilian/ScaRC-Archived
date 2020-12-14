@@ -90,8 +90,7 @@ END SUBROUTINE SCARC_RESTORE_STACK
 !> \brief Allocate and initialize vectors for Krylov method
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_VECTORS()
-USE SCARC_POINTERS, ONLY: G, SV, ST
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: G, SV, ST, SCARC_POINT_TO_GRID
 INTEGER :: NM, NSTACK, NL
 
 CROUTINE = 'SCARC_SETUP_VECTORS'

@@ -136,8 +136,7 @@ END SUBROUTINE SCARC_SETUP_AGGREGATION_ORDER
 ! Scale each matrix element with inverse of diagonal and approximate spectral radius (currently disabled) 
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_INVERT_MATRIX_DIAGONAL(NL)
-USE SCARC_POINTERS, ONLY: G
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: G, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, IC
 
@@ -161,9 +160,9 @@ END SUBROUTINE SCARC_INVERT_MATRIX_DIAGONAL
 ! based on a strength of connection tolerance theta
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_CONNECTION(NL)
-USE SCARC_POINTERS, ONLY: G, A, S, C, OG, OA, OC
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, &
-                                  SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX
+USE SCARC_POINTERS, ONLY: G, A, S, C, OG, OA, OC, &
+                          SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, &
+                          SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX
 INTEGER, INTENT(IN) :: NL
 REAL(EB):: VAL, EPS, SCAL, CVAL_MAX, THETA
 INTEGER :: NM, NOM, IC, JC, ICOL, IZONE, INBR
@@ -279,9 +278,8 @@ END SUBROUTINE SCARC_SETUP_CONNECTION
 !> \brief Setup aggregation zones for Smoothed Aggregation Algebraic Multigrid Method
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_AGGREGATION_ZONES(NL)
-USE SCARC_POINTERS, ONLY: SUB, C, CF, G, LF, LC, GF, GC
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX, &
-                                  SCARC_POINT_TO_MULTIGRID
+USE SCARC_POINTERS, ONLY: SUB, C, CF, G, LF, LC, GF, GC, &
+                          SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_MULTIGRID
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, NM2, ICYCLE, IC, IZL
 
@@ -502,8 +500,8 @@ END SUBROUTINE SCARC_SETUP_AGGREGATION_ZONES
 !> \brief Extract overlapping zone information (including second layers)
 ! -------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_EXTRACT_ZONE_OVERLAPS(NL)
-USE SCARC_POINTERS, ONLY : GC, GF, OLF, OGF, F
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_MULTIGRID, SCARC_POINT_TO_OTHER_MULTIGRID
+USE SCARC_POINTERS, ONLY: GC, GF, OLF, OGF, F, &
+                          SCARC_POINT_TO_MULTIGRID, SCARC_POINT_TO_OTHER_MULTIGRID
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, INBR, IOR0, NOM, IZ, ICG, ICE, ICE2, IFOUND, IZL_CURRENT
 INTEGER :: IZL1, IZL2, IZG1, IZG2, IFACE
@@ -598,8 +596,8 @@ END SUBROUTINE SCARC_EXTRACT_ZONE_OVERLAPS
 !> \brief Setup pointers for overlapping zones for a pair of grid levels
 ! -------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_EXTRACT_ZONE_POINTERS(NL)
-USE SCARC_POINTERS, ONLY : F, GF, GC, OLF, OLC, OGF, OGC
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_MULTIGRID, SCARC_POINT_TO_OTHER_MULTIGRID
+USE SCARC_POINTERS, ONLY : F, GF, GC, OLF, OLC, OGF, OGC, &
+                           SCARC_POINT_TO_MULTIGRID, SCARC_POINT_TO_OTHER_MULTIGRID
 INTEGER, INTENT(IN) :: NL
 INTEGER :: INBR, IOR0, IZ, ICW1, ICW2, ICE1, ICE2, IZL1, IZL2, ICG, IZW, IZE, IFACE
 INTEGER :: NM, NOM, NCGE_TOTAL = 0
@@ -786,8 +784,8 @@ END SUBROUTINE SCARC_EXTRACT_ZONE_POINTERS
 !> \brief Identify cells on second layer
 ! -------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_IDENTIFY_LAYER2(NL)
-USE SCARC_POINTERS, ONLY : S, A, G, OL, OG
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY : S, A, G, OL, OG, &
+                           SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, NOM, ICW, ICOL, JC, JCG, INBR, IOR0, ICG, IS
 
@@ -1331,7 +1329,7 @@ END SUBROUTINE SCARC_SETUP_COARSENING_GMG
 !> \brief Remove workspace on specified grid level which will no longer be needed after matrix setup
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_CLEAN_WORKSPACE_SYSTEM(NL)
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NL
 INTEGER:: NM
 
@@ -1347,8 +1345,7 @@ END SUBROUTINE SCARC_CLEAN_WORKSPACE_SYSTEM
 !> \brief Remove workspace on specified grid level which will no longer be needed in SAMG method
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_CLEAN_WORKSPACE_AMG(NL)
-USE SCARC_POINTERS, ONLY: G
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: G, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NL
 INTEGER:: NM
 
@@ -1373,8 +1370,7 @@ END SUBROUTINE SCARC_CLEAN_WORKSPACE_AMG
 ! vector b is zero
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_RELAX_NULLSPACE(NL)
-USE SCARC_POINTERS, ONLY: L, G, A, MG
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: L, G, A, MG, SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER :: IC, ICOL, NM, JC, JCG
 
@@ -1538,8 +1534,7 @@ END SUBROUTINE SCARC_RELAX_NULLSPACE
 ! The values are still missing and are set in a later step
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_ZONE_OPERATOR(NL)
-USE SCARC_POINTERS, ONLY: GF, GC, AF, ZF
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_MULTIGRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: GF, GC, AF, ZF, SCARC_POINT_TO_MULTIGRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, ICC, ICCL, ICCG, IC, IP, N_ROW, N_VAL
 LOGICAL :: IS_INCLUDED 
@@ -1637,9 +1632,9 @@ END SUBROUTINE SCARC_SETUP_ZONE_OPERATOR
 ! matrix from the coarse-grid to the fine-grid.  T exactly interpolates  B_fine = T B_coarse.
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_PROLONGATION_AMG(NL)
-USE SCARC_POINTERS, ONLY:  S, L, G, OG, A, OA, P, OP, GF, OGF, GC, PF, OPF, Z, MG
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, SCARC_POINT_TO_MULTIGRID, &
-                                  SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX
+USE SCARC_POINTERS, ONLY: S, L, G, OG, A, OA, P, OP, GF, OGF, GC, PF, OPF, Z, MG, &
+                          SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, SCARC_POINT_TO_MULTIGRID, &
+                          SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX
 INTEGER, INTENT(IN) :: NL
 REAL(EB):: DSUM, SCAL !, TOL = 1.0E-12_EB
 INTEGER :: NM, NOM, IC, JC, ICC, ICC0, ICOL, ICCOL, JCCOL, IP0, IP, JCC, IQ, INBR, NLEN
@@ -1931,9 +1926,9 @@ END SUBROUTINE SCARC_SETUP_PROLONGATION_AMG
 !> \brief Setup restriction and prolongation matrices in case of GMG-like coarsening
 ! -------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_TRANSFER_GMG(NL)
-USE SCARC_POINTERS, ONLY:  S, LC, LF, GF, GC, AF, RF, ZF, PF, OPF, OGF
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_OTHER_GRID, SCARC_POINT_TO_MULTIGRID, &
-                                  SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX
+USE SCARC_POINTERS, ONLY: S, LC, LF, GF, GC, AF, RF, ZF, PF, OPF, OGF, &
+                          SCARC_POINT_TO_OTHER_GRID, SCARC_POINT_TO_MULTIGRID, &
+                          SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, IC, JC, ICC, ICF, ICCOL, IRCOL, IP, JCC, JCCOL, NOM, INBR, NLEN
 INTEGER :: IS, IXC, IZC, IXF, IZF, IOFFX, IOFFZ, ICC0(4)
@@ -2312,8 +2307,7 @@ END SUBROUTINE SCARC_GET_CELL_DEPENDENCIES_GALERKIN
 !> \brief Define nullspace for next coarser level, if coarsest level isn't reached yet
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_NULLSPACE_COARSE(NL)
-USE SCARC_POINTERS, ONLY:  GC, GF, ZF
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_MULTIGRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: GC, GF, ZF, SCARC_POINT_TO_MULTIGRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM
 
@@ -2374,8 +2368,7 @@ END FUNCTION SCARC_MATCH_MATRIX_COLUMN
 ! Compute the Restriction matrix, R, which interpolates from the fine-grid to the coarse-grid.
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_RESTRICTION(NL)
-USE SCARC_POINTERS, ONLY: GC, GF, RF, PF
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_MULTIGRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: GC, GF, RF, PF, SCARC_POINT_TO_MULTIGRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, IC, IRROW, IRCOL, IPCOL, IPC, ICCL, ICCG, IFOUND 
 LOGICAL :: IS_INCLUDED
@@ -2508,9 +2501,9 @@ END SUBROUTINE SCARC_MULTIPLY_POISSON_PROL
 !> \brief Perform matrix multiplication between fine Poisson matrix and Prolongation matrix 
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_POISSON_PROL(NL)
-USE SCARC_POINTERS, ONLY: GC, GF, AF, PF, PPF, OA, OPP, OGF
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_OTHER_GRID, SCARC_POINT_TO_MULTIGRID, &
-                                  SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX
+USE SCARC_POINTERS, ONLY: GC, GF, AF, PF, PPF, OA, OPP, OGF, &
+                          SCARC_POINT_TO_OTHER_GRID, SCARC_POINT_TO_MULTIGRID, &
+                          SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER  :: NM, NOM, IC, IP, IP0, INBR, ICC, ICC0 = -1
 REAL(EB) :: TNOW, TSUM = 0.0_EB
@@ -2664,9 +2657,9 @@ END SUBROUTINE SCARC_MULTIPLY_GALERKIN
 ! Note: Matrix POISPROL corresponds to POISSON x PROLONGATION  ~ AP
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_GALERKIN(NL)
-USE SCARC_POINTERS, ONLY: GF, GC, PPF, RF, AC, OAC, OGC
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_MULTIGRID, SCARC_POINT_TO_OTHER_MULTIGRID, &
-                                  SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX
+USE SCARC_POINTERS, ONLY: GF, GC, PPF, RF, AC, OAC, OGC, &
+                          SCARC_POINT_TO_MULTIGRID, SCARC_POINT_TO_OTHER_MULTIGRID, &
+                          SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_OTHER_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER  :: NM, IP, IP0, INBR, NOM, NLEN, ICCL, ICCG, JCC, JCCL, JCCG, JCCG0 = -1
 REAL(EB) :: TNOW, TSUM = 0.0_EB
@@ -2845,8 +2838,7 @@ END FUNCTION SCARC_VALUE_RAP
 !> \brief Resort matrix entries such that diagonal entry comes first (compact storage technique only)
 ! ------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_RESORT_MATRIX_ROWS(NL)
-USE SCARC_POINTERS, ONLY: G, A
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: G, A, SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NL
 INTEGER, ALLOCATABLE, DIMENSION(:) :: COL_AUX, COLG_AUX
 REAL(EB), ALLOCATABLE, DIMENSION(:) :: VAL_AUX

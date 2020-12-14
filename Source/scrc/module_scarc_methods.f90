@@ -814,8 +814,7 @@ END SUBROUTINE SCARC_SETUP_MULTIGRID_ENVIRONMENT
 !           M_MJAC = D 
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_MJAC(NLMIN, NLMAX)
-USE SCARC_POINTERS, ONLY: G, A, AB
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: G, A, AB, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL, IC
 
@@ -857,8 +856,7 @@ END SUBROUTINE SCARC_SETUP_MJAC
 !           M_MGS = (D - E) = (I - E D^{-1}) D
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_MGS(NLMIN, NLMAX)
-USE SCARC_POINTERS, ONLY: G, A, AB
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: G, A, AB, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL, IC, JC, IPTR
 
@@ -913,8 +911,7 @@ END SUBROUTINE SCARC_SETUP_MGS
 !           M_MSGS = (D - E) D^{-1} (D - F)  =  (I - E D^{-1}) (D - F)
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_MSGS(NLMIN, NLMAX)
-USE SCARC_POINTERS, ONLY: G, A, AB
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: G, A, AB, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL, IC, JC, IPTR, I, IS, IL, IOR0
 
@@ -976,8 +973,7 @@ END SUBROUTINE SCARC_SETUP_MSGS
 !           M_MSOR = (D−ωE) = (I−ωE D^{-1}) D
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_MSOR(NLMIN, NLMAX, NSTACK)
-USE SCARC_POINTERS, ONLY: G, A, AB
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: G, A, AB, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NLMIN, NLMAX, NSTACK
 REAL (EB) :: OMEGA
 INTEGER :: NM, NL, IC, JC, IPTR
@@ -1054,8 +1050,7 @@ END SUBROUTINE SCARC_SETUP_MSOR
 ! Note that the diagonal elements of L are 1 (and are omitted, only the diagonal of U is stored there)
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_MSSOR(NLMIN, NLMAX, NSTACK)
-USE SCARC_POINTERS, ONLY: G, A, AB
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: G, A, AB, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NLMIN, NLMAX, NSTACK
 INTEGER :: NM, NL, IC, JC, IPTR, INCR, IS, IL, IOR0, I
 REAL(EB) :: OMEGA, SCAL1, SCAL2
@@ -1153,8 +1148,7 @@ END SUBROUTINE SCARC_SETUP_MSSOR
 !   enddo
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_LU(NLMIN, NLMAX)
-USE SCARC_POINTERS, ONLY: G, A
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: G, A, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL, IC, JC, KC, IPTR, JPTR, KPTR, KPTR0
 
@@ -1231,8 +1225,7 @@ END SUBROUTINE SCARC_SETUP_LU
 !   enddo
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_ILU(NLMIN, NLMAX)
-USE SCARC_POINTERS, ONLY: G, A, AB
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: G, A, AB, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL, IC, JC, KC, IPTR, JPTR, KPTR, KPTR0, IOR0, JOR0, KOR0
 LOGICAL :: BFOUND
@@ -1404,8 +1397,7 @@ END SUBROUTINE SCARC_SETUP_COARSE_SOLVER
 ! (corresponding to Schwarz domain decomposition method)
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_INTERPOLATION(NSTAGE, NLMIN, NLMAX)
-USE SCARC_POINTERS, ONLY: G, ST
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: G, ST, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NSTAGE, NLMIN, NLMAX
 INTEGER :: NM, NL
 
@@ -1732,9 +1724,9 @@ END SUBROUTINE SCARC_METHOD_FFT
 !> \brief Perform global Pardiso-method based on MKL
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_METHOD_CLUSTER(NSTACK, NPARENT, NLEVEL)
-USE SCARC_POINTERS, ONLY: L, G, MKL, V1, V2, AS, V1_FB, V2_FB
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR, SCARC_POINT_TO_VECTOR_FB, &
-                                  SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: L, G, MKL, V1, V2, AS, V1_FB, V2_FB, &
+                          SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR, SCARC_POINT_TO_VECTOR_FB, &
+                          SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NSTACK, NPARENT, NLEVEL
 INTEGER ::  NM, NS, NP, NL
 REAL (EB) :: TNOW
@@ -1815,9 +1807,9 @@ END SUBROUTINE SCARC_METHOD_CLUSTER
 !> \brief Perform global Pardiso-method based on MKL
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_METHOD_PARDISO(NSTACK, NPARENT, NLEVEL)
-USE SCARC_POINTERS, ONLY: L, G, MKL, AS, V1, V2, V1_FB, V2_FB
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR, SCARC_POINT_TO_VECTOR_FB, &
-                                  SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: L, G, MKL, AS, V1, V2, V1_FB, V2_FB, &
+                          SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR, SCARC_POINT_TO_VECTOR_FB, &
+                          SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NSTACK, NPARENT, NLEVEL
 INTEGER ::  NM, NS, NP, NL
 REAL (EB) :: TNOW
@@ -1906,8 +1898,7 @@ END SUBROUTINE SCARC_METHOD_PARDISO
 !> \brief Set initial solution corresponding to boundary data in BXS, BXF, ...
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_WORKSPACE(NS, NL, NRHS)
-USE SCARC_POINTERS, ONLY: M, L, F, G, SV, ST, STP, GWC, PRHS, HP
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: M, L, F, G, SV, ST, STP, GWC, PRHS, HP, SCARC_POINT_TO_GRID
 #ifdef WITH_SCARC_POSTPROCESSING
 USE SCARC_POINTERS, ONLY: PR
 #endif
@@ -2197,8 +2188,7 @@ END SUBROUTINE SCARC_UPDATE_PRECONDITIONER
 !> \brief Finalize data for pressure vector (predictor/corrector) when local ScaRC solver has finished
 ! --------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UPDATE_MAINCELLS(NL)
-USE SCARC_POINTERS, ONLY: M, G, L, ST, HP
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: M, G, L, ST, HP, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, IC 
 #ifdef WITH_SCARC_DEBUG
@@ -2252,8 +2242,7 @@ END SUBROUTINE SCARC_UPDATE_MAINCELLS
 !> \brief Set correct boundary values at external and internal boundaries
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_UPDATE_GHOSTCELLS(NL)
-USE SCARC_POINTERS, ONLY: M, L, G, GWC, HP
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: M, L, G, GWC, HP, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, IW, IOR0, IXG, IYG, IZG, IXW, IYW, IZW 
 #ifdef WITH_SCARC_DEBUG
@@ -2578,12 +2567,12 @@ END SUBROUTINE SCARC_SMOOTHER
 !> \brief Perform preconditioning based on requested local solvers
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_RELAXATION (NV1, NV2, NS, NP, NL)
-USE SCARC_POINTERS, ONLY: L, G, A, AB, FFT, V1, V2
+USE SCARC_POINTERS, ONLY: L, G, A, AB, FFT, V1, V2, &
+                          SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR, SCARC_POINT_TO_VECTOR_FB, &
+                          SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_BMATRIX
 #ifdef WITH_MKL
 USE SCARC_POINTERS, ONLY: AS, MKL, V1_FB, V2_FB
 #endif
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR, SCARC_POINT_TO_VECTOR_FB, &
-                                  SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_BMATRIX
 USE POIS, ONLY: H2CZSS, H3CZSS
 REAL(EB) :: AUX, OMEGA_SSOR = 1.5_EB 
 REAL (EB) :: TNOW

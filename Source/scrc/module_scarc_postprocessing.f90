@@ -36,8 +36,7 @@ END TYPE SCARC_PRESSURE_TYPE
 !> \brief POSTPROCESSING version only: Dump matrix and vectors belonging to pressure system 
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_DUMP_SYSTEM (NSTACK, ITYPE)
-USE SCARC_POINTERS, ONLY: SV, ST, G
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: SV, ST, G, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NSTACK, ITYPE
 INTEGER  :: NM, IC, JC, JCG, IP, IW, IOR0, N
 INTEGER  :: COLUMNSL(7), COLUMNSG(7)
@@ -765,8 +764,7 @@ END SUBROUTINE SCARC_RESTORE_ENVIRONMENT
 !> \brief POSTPROCESSING version only: Allocate and initialize vectors pressure diagnostics (only for developping purposes)
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_PRESSURE()
-USE SCARC_POINTERS, ONLY: L, G, PR
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: L, G, PR,SCARC_POINT_TO_GRID
 INTEGER :: NM
 
 CROUTINE = 'SCARC_SETUP_PRESSURE'
@@ -796,8 +794,7 @@ END SUBROUTINE SCARC_SETUP_PRESSURE
 !> \brief POSTPROCESSING version only: Compute Differences between old and new pressure solutions - only for developping purposes
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PRESSURE_DIFFERENCE(NL)
-USE SCARC_POINTERS, ONLY: L, PR
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: L, PR, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NL
 INTEGER :: NM, IX, IY, IZ
 

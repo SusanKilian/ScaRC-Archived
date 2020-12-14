@@ -122,8 +122,7 @@ END SUBROUTINE SCARC_SCALING_VARIABLE
 !> \brief Compute global scalar-product including global data exchange
 ! ------------------------------------------------------------------------------------------------
 REAL(EB) FUNCTION SCARC_SCALAR_PRODUCT(NV1, NV2, NL)
-USE SCARC_POINTERS, ONLY: G, V1, V2
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: G, V1, V2, SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NV1, NV2, NL
 REAL(EB) :: TNOW, RANK_REAL
 INTEGER :: NM
@@ -193,8 +192,7 @@ END FUNCTION SCARC_L2NORM
 !> \brief Compute linear combination of two vectors for bandwise storage technique
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_VECTOR_SUM(NV1, NV2, SCAL1, SCAL2, NL)
-USE SCARC_POINTERS, ONLY: G, V1, V2
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: G, V1, V2, SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NV1, NV2, NL
 REAL(EB), INTENT(IN) :: SCAL1, SCAL2
 INTEGER :: NM
@@ -224,8 +222,7 @@ END SUBROUTINE SCARC_VECTOR_SUM
 !> \brief Define vector2 to be a scaled copy of vector 1
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_VECTOR_COPY(NV1, NV2, SCAL1, NL)
-USE SCARC_POINTERS, ONLY: G, V1, V2
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: G, V1, V2, SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NV1, NV2, NL
 REAL(EB), INTENT(IN) :: SCAL1
 INTEGER :: NM
@@ -256,8 +253,7 @@ END SUBROUTINE SCARC_VECTOR_COPY
 !> \brief Clear vector
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_VECTOR_CLEAR(NV, NL)
-USE SCARC_POINTERS, ONLY: VC
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: VC, SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NV, NL
 INTEGER :: NM
 
@@ -274,8 +270,7 @@ END SUBROUTINE SCARC_VECTOR_CLEAR
 !> \brief Preset vector with specified value
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_VECTOR_RANDOM_INIT (NV, NL)
-USE SCARC_POINTERS, ONLY: L, G, VC
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: L, G, VC, SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NV, NL
 INTEGER :: IC, NM, I, J, K
 REAL (EB) :: VAL
@@ -308,8 +303,7 @@ END SUBROUTINE SCARC_VECTOR_RANDOM_INIT
 !> \brief Preset vector with specified value
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_VECTOR_INIT (NV, VAL, NL)
-USE SCARC_POINTERS, ONLY: L, G, VC
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: L, G, VC, SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NV, NL
 REAL (EB), INTENT(IN) :: VAL
 INTEGER :: IC, NM, I, J, K
@@ -367,8 +361,7 @@ END FUNCTION RHS
 !> \brief Preset right hand side in such a way that exact solution is known
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PRESET_EXACT (NE, NL)
-USE SCARC_POINTERS, ONLY: M, L, G, VC, XMID, ZMID
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: M, L, G, VC, XMID, ZMID, SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
 USE SCARC_ITERATION_MANAGER, ONLY: ITE_TOTAL
 INTEGER, INTENT(IN) :: NE, NL
 INTEGER :: IC, NM, I, K
@@ -404,8 +397,7 @@ END SUBROUTINE SCARC_PRESET_EXACT
 !> \brief Preset vector with specific values
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PRESET_VECTOR (NV, NL)
-USE SCARC_POINTERS, ONLY: M, L, G, VC, XMID, ZMID
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: M, L, G, VC, XMID, ZMID, SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NV, NL
 INTEGER :: IC, NM, I, K
 
@@ -443,8 +435,7 @@ END SUBROUTINE SCARC_PRESET_VECTOR
 !> \brief Preset right hand side in such a way that exact solution is known
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_PRESET_RHS (NV, NL)
-USE SCARC_POINTERS, ONLY: M, L, G, VC
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
+USE SCARC_POINTERS, ONLY: M, L, G, VC, SCARC_POINT_TO_GRID, SCARC_POINT_TO_VECTOR
 INTEGER, INTENT(IN) :: NV, NL
 INTEGER :: IC, NM, I, K
 REAL (EB) :: X, Z
@@ -482,9 +473,8 @@ END SUBROUTINE SCARC_PRESET_RHS
 ! including data exchange along internal boundaries
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_MATVEC_PRODUCT(NV1, NV2, NL)
-USE SCARC_POINTERS, ONLY: L, OL, G, F, OG, GWC, A, AB, V1, V2
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, SCARC_POINT_TO_VECTOR, &
-                                  SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_BMATRIX
+USE SCARC_POINTERS, ONLY: L, OL, G, F, OG, GWC, A, AB, V1, V2, SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, &
+                          SCARC_POINT_TO_VECTOR, SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_BMATRIX
 INTEGER, INTENT(IN) :: NV1, NV2, NL           
 REAL(EB) :: TNOW
 INTEGER :: NM, NOM, IC, JC, IOR0, ICOL, INBR, ICE, ICW, ICG

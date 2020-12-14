@@ -25,8 +25,7 @@ CONTAINS
 !> \brief Allocate velocity vectors for the setting of internal boundary conditions in McKeeney-Greengard-Mayo method
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_MGM(NLMIN, NLMAX)
-USE SCARC_POINTERS, ONLY: L, G, MGM, GWC, LM, UM
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: L, G, MGM, GWC, LM, UM, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NLMIN, NLMAX
 INTEGER :: NM, NL, IC, IW, IOR0, I, J, K, TYPE_SCOPE_SAVE
 INTEGER, ALLOCATABLE, DIMENSION(:,:) :: CNT
@@ -234,8 +233,7 @@ END SUBROUTINE SCARC_SETUP_MGM
 !> \brief Setup LU-decomposition for McKeeney-Greengard-Mayo method
 ! ---------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_MGM_LU(NM, NL)
-USE SCARC_POINTERS, ONLY: L, G, MGM, A, LM, UM
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: L, G, MGM, A, LM, UM, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: I, J, IC0, IC, JC, KC, ICOL, IP, NMAX_U, NMAX_L
 REAL (EB) :: SCAL, SCAL2, VL = 0.0_EB, VU = 0.0_EB, VAL
@@ -549,8 +547,7 @@ END FUNCTION SCARC_MGM_CONVERGENCE_STATE
 !> \brief Set correct boundary values at external and internal boundaries
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_MGM_UPDATE_GHOSTCELLS(NTYPE)
-USE SCARC_POINTERS, ONLY: M, L, G, GWC, HP, MGM
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID
+USE SCARC_POINTERS, ONLY: M, L, G, GWC, HP, MGM, SCARC_POINT_TO_GRID
 INTEGER, INTENT(IN) :: NTYPE
 INTEGER :: NM, IW, IOR0, IXG, IYG, IZG, IXW, IYW, IZW 
 #ifdef WITH_SCARC_DEBUG
@@ -1177,8 +1174,7 @@ END SUBROUTINE SCARC_SETUP_MGM_WORKSPACE
 !> \brief Set interface boundary conditions for unstructured, homogeneous part of McKeeney-Greengard-Mayo method
 ! ---------------------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_MGM_INTERFACES(NM, NL)
-USE SCARC_POINTERS, ONLY: L, G, F, MGM, GWC, OL, OG, OH1, OH2, H2, ST
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_OTHER_GRID
+USE SCARC_POINTERS, ONLY: L, G, F, MGM, GWC, OL, OG, OH1, OH2, H2, ST, SCARC_POINT_TO_OTHER_GRID
 INTEGER, INTENT(IN) :: NM, NL
 INTEGER :: IW, I, J, K, IOR0, IFACE, INBR, NOM, ICG, IC, IWG, ICW, ITYPE
 REAL(EB) :: VAL, HB(-3:3) = 0.0_EB
@@ -2177,8 +2173,7 @@ END SUBROUTINE SCARC_MGM_COMPUTE_VELOCITY_ERROR
 !> \brief Perform LU-decompositions for local Laplace matrices 
 ! ---------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_METHOD_MGM_LU(NS, NL)
-USE SCARC_POINTERS, ONLY: L, G, MGM, A, LM, UM, ST
-USE SCARC_POINTER_ROUTINES, ONLY: SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
+USE SCARC_POINTERS, ONLY: L, G, MGM, A, LM, UM, ST, SCARC_POINT_TO_GRID, SCARC_POINT_TO_CMATRIX
 INTEGER, INTENT(IN) :: NS, NL
 INTEGER :: J, K, N, NM
 REAL(EB) :: VAL
