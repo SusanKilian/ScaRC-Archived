@@ -17,6 +17,8 @@ USE SCARC_LINEAR_ALGEBRA
 USE SCARC_MATRIX_SYSTEMS
 USE SCARC_ITERATION_MANAGER
 
+IMPLICIT NONE
+
 CONTAINS
 
 ! ----------------------------------------------------------------------------------------------------

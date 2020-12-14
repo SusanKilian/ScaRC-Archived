@@ -13,6 +13,8 @@ USE SCARC_MESSAGE_SERVICES
 USE SCARC_TIMINGS
 USE SCARC_MPI
 
+IMPLICIT NONE
+
 CONTAINS
 
 ! ------------------------------------------------------------------------------------------------

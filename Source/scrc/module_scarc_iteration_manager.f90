@@ -7,6 +7,8 @@ USE PRECISION_PARAMETERS, ONLY: EB
 USE SCARC_CONSTANTS
 USE SCARC_VARIABLES
 USE SCARC_MESSAGE_SERVICES
+
+IMPLICIT NONE
   
 REAL(EB) :: DT                                  !< TS width 
 REAL(EB) :: DTI                                 !< Inverse of TS width 

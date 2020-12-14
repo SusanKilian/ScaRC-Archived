@@ -10,6 +10,8 @@ USE SCARC_MESSAGE_SERVICES
 USE SCARC_ERROR_HANDLING
 USE SCARC_UTILITIES
 
+IMPLICIT NONE
+
 CONTAINS
 
 ! ------------------------------------------------------------------------------------------------

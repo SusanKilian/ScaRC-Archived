@@ -9,6 +9,8 @@ USE SCARC_CONSTANTS
 USE SCARC_TYPES
 USE SCARC_VARIABLES
 
+IMPLICIT NONE
+
 CONTAINS
 
 ! ------------------------------------------------------------------------------------------------
@@ -803,9 +805,7 @@ CHARACTER (*), INTENT(IN) :: CVEC
 DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
 
    CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-WRITE(*,*) 'NM, NL, NV:', NM, NL, NV
    VC => SCARC_POINT_TO_VECTOR (NM, NL, NV)
-WRITE(*,*) 'VC:', VC
 
    NNX=MIN(10,L%NX)
    NNY=MIN(10,L%NY)

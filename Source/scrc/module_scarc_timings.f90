@@ -9,6 +9,8 @@ USE SCARC_TYPES
 USE SCARC_VARIABLES
 USE SCARC_MESSAGE_SERVICES
 
+IMPLICIT NONE
+
 CONTAINS
 
 ! ------------------------------------------------------------------------------------------------

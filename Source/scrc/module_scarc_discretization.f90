@@ -15,6 +15,8 @@ USE SCARC_ERROR_HANDLING
 USE SCARC_MKL_ENVIRONMENT
 USE SCARC_MPI
 
+IMPLICIT NONE
+
 CONTAINS
 
 ! ------------------------------------------------------------------------------------------------

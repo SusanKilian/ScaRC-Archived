@@ -10,6 +10,8 @@ USE SCARC_VARIABLES
 USE SCARC_MESSAGE_SERVICES
 USE SCARC_ITERATION_MANAGER
 
+IMPLICIT NONE
+
 CONTAINS
 
 !> \brief Pressure information (only available if POSTPROCESSING directive is set)

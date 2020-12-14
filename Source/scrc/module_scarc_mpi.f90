@@ -13,6 +13,8 @@ USE SCARC_ERROR_HANDLING
 USE SCARC_MEMORY_MANAGER
 USE SCARC_MESSAGE_SERVICES
 
+IMPLICIT NONE
+
 CONTAINS
 
 ! -------------------------------------------------------------------------------------------------

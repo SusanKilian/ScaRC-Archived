@@ -13,6 +13,8 @@ USE SCARC_MESSAGE_SERVICES
 USE SCARC_TIMINGS, ONLY: CPU
 USE SCARC_STACK_ADMINISTRATION
 
+IMPLICIT NONE
+
 CONTAINS
 
 ! ----------------------------------------------------------------------------------------------------

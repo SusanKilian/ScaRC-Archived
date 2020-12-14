@@ -7,6 +7,8 @@ USE SCARC_CONSTANTS
 USE SCARC_TYPES
 USE SCARC_VARIABLES
 
+IMPLICIT NONE
+
 CONTAINS
 
 ! -----------------------------------------------------------------------------
