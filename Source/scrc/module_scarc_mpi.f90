@@ -4,14 +4,15 @@ USE GLOBAL_CONSTANTS
 USE PRECISION_PARAMETERS, ONLY: EB, FB
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 USE COMP_FUNCTIONS, ONLY: CURRENT_TIME
+USE MESH_VARIABLES, ONLY: MESHES
 USE MPI
 USE SCARC_CONSTANTS
-USE SCARC_TYPES
+USE SCARC_TYPES, ONLY: SCARC_GRID_TYPE
 USE SCARC_VARIABLES
-USE SCARC_UTILITIES
-USE SCARC_ERROR_HANDLING
-USE SCARC_MEMORY_MANAGER
-USE SCARC_MESSAGE_SERVICES
+USE SCARC_UTILITIES, ONLY: ARE_NEIGHBORS, SCARC_GET_MATRIX_TYPE, SCARC_SET_GRID_TYPE
+USE SCARC_ERROR_HANDLING, ONLY: SCARC_SHUTDOWN
+USE SCARC_MEMORY_MANAGER, ONLY: SCARC_ALLOCATE_INT1, SCARC_ALLOCATE_REAL1
+USE SCARC_MESSAGE_SERVICES, ONLY: MSG
 
 IMPLICIT NONE
 
@@ -66,56 +67,6 @@ N_EXCHANGES = N_EXCHANGES+1
 
 END SUBROUTINE SCARC_SETUP_EXCHANGE_DIMENSIONS
 
-! ----------------------------------------------------------------------------------------------------------
-!> \brief Get information about global numbers of unknowns for unstructured discretization
-! ----------------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_DIMENSIONS(NL)
-USE SCARC_POINTERS, ONLY: G, SCARC_POINT_TO_GRID
-INTEGER, INTENT(IN) :: NL
-INTEGER :: NM, NM2
-
-! Preset communication array MESH_INT with local numbers of cells for all meshes depending on type of discretization
-MESHES_LOOP1: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-   MESH_INT(NM) = G%NC_LOCAL(NM)
-
-!   DO NM2 = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-!      MESH_INT(NM2) = G%NC_LOCAL(NM2)
-!   ENDDO
-
-ENDDO MESHES_LOOP1
-
-
-! Broadcast number of local mesh cells on level NL to all and build global sum
-IF (N_MPI_PROCESSES > 1) &
-   CALL MPI_ALLGATHERV(MPI_IN_PLACE,1,MPI_INTEGER,MESH_INT,COUNTS,DISPLS, MPI_INTEGER,MPI_COMM_WORLD,IERROR)
-NC_GLOBAL(NL) = SUM(MESH_INT(1:NMESHES))
-
-! Store information on local and global cells numbers on data structure of corresponding discretization type
-MESHES_LOOP2: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-   CALL SCARC_POINT_TO_GRID (NM, NL)                                   ! Sets grid pointer G
-
-   G%NC_LOCAL(1:NMESHES) = MESH_INT(1:NMESHES)
-   G%NC_GLOBAL = SUM(MESH_INT(1:NMESHES))
-
-   ! compute offset between local grid numberings
-   IF (NMESHES > 1) THEN
-      DO NM2=2,NMESHES
-         G%NC_OFFSET(NM2) = G%NC_OFFSET(NM2-1) + G%NC_LOCAL(NM2-1)
-      ENDDO
-   ENDIF
-
-ENDDO MESHES_LOOP2
-
-IF (NL == NLEVEL_MIN) THEN
-   DO NM = 1, NMESHES
-      SCARC(NM)%NC = MESH_INT(NM)
-   ENDDO
-ENDIF
-
-END SUBROUTINE SCARC_SETUP_DIMENSIONS
 
 ! ----------------------------------------------------------------------------------------------------
 !> \brief Allocate several global structures for data exchange
@@ -148,80 +99,8 @@ ENDIF
 CALL SCARC_ALLOCATE_INT1 (MESH_INT , 1, NMESHES, NSCARC_INIT_ZERO, 'MESH_INT', CROUTINE)
 CALL SCARC_ALLOCATE_REAL1(MESH_REAL, 1, NMESHES, NSCARC_INIT_ZERO, 'MESH_REAL', CROUTINE)
 
-CALL SCARC_SETUP_DIMENSIONS(NLEVEL_MIN)
-
 END SUBROUTINE SCARC_SETUP_GLOBALS
 
-
-! ------------------------------------------------------------------------------------------------
-!> \brief Setup neighborship structure for data exchanges along mesh interfaces
-! ------------------------------------------------------------------------------------------------
-SUBROUTINE SCARC_SETUP_NEIGHBORS
-USE SCARC_POINTERS, ONLY: OS, OLF, OLC
-INTEGER :: NM, NOM, NL
-
-! Initialize communication counter for ScaRC, use same TAG for all communications
-TAG   = 99
-N_REQ =  0
-N_EXCHANGES = 0
-
-! Initialize level structures on neighboring meshes
- 
-LEVEL_MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
-
-   LEVEL_NEIGHBOR_LOOP: DO NOM = 1, NMESHES
-
- 
-      ! On finest level point to exchange structures from surrounding FDS 
- 
-      IF (.NOT. ARE_NEIGHBORS(NM, NOM)) CYCLE LEVEL_NEIGHBOR_LOOP
-
-      N_EXCHANGES = N_EXCHANGES+1                                         ! count number of exchanges
-
-      OS => SCARC(NM)%OSCARC(NOM)
-      ALLOCATE (OS%LEVEL(NLEVEL_MIN:NLEVEL_MAX), STAT=IERROR)             ! allocate neighboring structures
-      CALL CHKMEMERR ('SCARC_SETUP_NEIGHBORS', 'OS%LEVEL', IERROR)
-
-      OLF => SCARC(NM)%OSCARC(NOM)%LEVEL(NLEVEL_MIN)                      ! point to neighbor on finest grid level
-
-      OLF%NX = MESHES(NOM)%IBAR                                           ! number of cells in x-direction on neighbor
-      OLF%NY = MESHES(NOM)%JBAR                                           ! number of cells in y-direction on neighbor
-      OLF%NZ = MESHES(NOM)%KBAR                                           ! number of cells in z-direction on neighbor
-
-      OLF%N_WALL_CELLS_EXT = MESHES(NOM)%N_EXTERNAL_WALL_CELLS            ! number of external wall cells on neighbor
-      OLF%N_WALL_CELLS_INT = MESHES(NOM)%N_INTERNAL_WALL_CELLS            ! number of external wall cells on neighbor
-      OLF%N_WALL_CELLS     = OLF%N_WALL_CELLS_EXT + OLF%N_WALL_CELLS_INT  ! number of walls cell on neighbor
-
-      OLF%N_CELLS = OLF%NX*OLF%NY*OLF%NZ                                  ! number of cells on neighbor (structured)
-
- 
-      ! In case of GMG with a predefined grid hierarchy define corresponding level-structures
- 
-      IF (NLEVEL_MAX > NLEVEL_MIN) THEN                                   
-
-         DO NL=NLEVEL_MIN+1,NLEVEL_MAX
-
-            OLC => SCARC(NM)%OSCARC(NOM)%LEVEL(NL)                        ! OLF points to finer, OLC to coarser level
-
-            OLC%NX = OLF%NX/2                                             ! use double grid width
-            IF (TWO_D) THEN
-               OLC%NY = 1
-            ELSE
-               OLC%NY = OLF%NY/2
-            ENDIF
-            OLC%NZ = OLF%NZ/2
-
-            OLC%N_CELLS          = OLC%NX * OLC%NY * OLC%NZ               ! set new number of cells
-            OLC%N_WALL_CELLS     = OLC%N_WALL_CELLS_EXT                   ! set new number of wall cells
-            OLC%N_WALL_CELLS_EXT = 2 * (OLC%NX*OLC%NZ + OLC%NX*OLC%NY + OLC%NY*OLC%NZ)    ! TODO: CHECK!
-
-         ENDDO
-      ENDIF
-
-   ENDDO LEVEL_NEIGHBOR_LOOP
-ENDDO LEVEL_MESHES_LOOP
-
-END SUBROUTINE SCARC_SETUP_NEIGHBORS
 
 ! ------------------------------------------------------------------------------------------------
 !> \brief Allocate workspace for data exchanges of different data types and sizes and perform basic exchanges
