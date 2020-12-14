@@ -6,6 +6,7 @@ USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 USE COMP_FUNCTIONS, ONLY: CURRENT_TIME
 USE MPI
 USE SCARC_CONSTANTS
+USE SCARC_TYPES
 USE SCARC_VARIABLES
 USE SCARC_MESSAGE_SERVICES
 USE SCARC_TIMINGS, ONLY: CPU
@@ -13,49 +14,6 @@ USE SCARC_ERROR_HANDLING
 USE SCARC_LINEAR_ALGEBRA
 USE SCARC_MATRIX_SYSTEMS
 USE SCARC_ITERATION_MANAGER
-
-
-!> \brief Information for ScaRC-internal instances of Crayfishpak-based FFT methods, used as preconditioners and smoothers
-
-TYPE SCARC_FFT_TYPE
-
-   REAL(EB), ALLOCATABLE, DIMENSION (:)       :: SAVE1     !< Saving area 
-   REAL(EB), ALLOCATABLE, DIMENSION (:)       :: WORK      !< Workspace 
-   REAL(EB), ALLOCATABLE, DIMENSION (:)       :: HX        !< Grid stretching vector 
-   REAL(EB), ALLOCATABLE, DIMENSION (:, :)    :: BXS       !< Boundary conditions along XS 
-   REAL(EB), ALLOCATABLE, DIMENSION (:, :)    :: BXF       !< Boundary conditions along XF 
-   REAL(EB), ALLOCATABLE, DIMENSION (:, :)    :: BYS       !< Boundary conditions along YS 
-   REAL(EB), ALLOCATABLE, DIMENSION (:, :)    :: BYF       !< Boundary conditions along YF 
-   REAL(EB), ALLOCATABLE, DIMENSION (:, :)    :: BZS       !< Boundary conditions along ZS 
-   REAL(EB), ALLOCATABLE, DIMENSION (:, :)    :: BZF       !< Boundary conditions along ZF 
-   REAL(EB), ALLOCATABLE, DIMENSION (:, :, :) :: PRHS      !< Current right hand side
-
-   REAL(EB) :: XS                                          !< Minimum x-coordinate of mesh (may include overlap)
-   REAL(EB) :: XF                                          !< Maximum x-coordinate of mesh (may include overlap)
-   REAL(EB) :: YS                                          !< Minimum y-coordinate of mesh (may include overlap)
-   REAL(EB) :: YF                                          !< Maximum y-coordinate of mesh (may include overlap)
-   REAL(EB) :: ZS                                          !< Minimum z-coordinate of mesh (may include overlap)
-   REAL(EB) :: ZF                                          !< Maximum z-coordinate of mesh (may include overlap)
-
-   REAL(EB) :: POIS_PTB = 0.0_EB                           !< Perturbation parameter
-   REAL(EB) :: XLM = 0.0_EB                                !< No Helmholtz equation used
-
-   INTEGER :: LSAVE                                        !< Length of saving area 
-   INTEGER :: LWORK                                        !< Length of workspace areas
-
-   INTEGER :: LBC                                          !< Boundary type in x-direction
-   INTEGER :: MBC                                          !< Boundary type in y-direction
-   INTEGER :: NBC                                          !< Boundary type in z-direction
-
-   INTEGER :: ITRN                                         !< Number of nodes in x-direction
-   INTEGER :: JTRN                                         !< Number of nodes in y-direction
-   INTEGER :: KTRN                                         !< Number of nodes in z-direction
-
-   INTEGER :: IBAR                                         !< Number of cells in x-direction
-   INTEGER :: JBAR                                         !< Number of cells in y-direction
-   INTEGER :: KBAR                                         !< Number of cells in z-direction
-
-END TYPE SCARC_FFT_TYPE
 
 CONTAINS
 

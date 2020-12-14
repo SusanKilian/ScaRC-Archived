@@ -5,30 +5,9 @@ USE PRECISION_PARAMETERS, ONLY: EB, FB
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 USE MPI
 USE SCARC_CONSTANTS
+USE SCARC_TYPES
 USE SCARC_VARIABLES
 USE SCARC_MESSAGE_SERVICES
-
-!> \brief Measurement of CPU times
-
-TYPE SCARC_CPU_TYPE
-   REAL(EB) :: BUFFER_PACKING   = 0.0_EB                           !< Time for data exchange
-   REAL(EB) :: BUFFER_UNPACKING = 0.0_EB                           !< Time for data exchange
-   REAL(EB) :: AMG              = 0.0_EB                           !< Time for algebraic multigrid solver
-   REAL(EB) :: COARSE           = 0.0_EB                           !< Time for coarse grid solver
-   REAL(EB) :: EXCHANGE         = 0.0_EB                           !< Time for data exchange
-   REAL(EB) :: ITERATION        = 0.0_EB                           !< Time for Krylov solver
-   REAL(EB) :: L2NORM           = 0.0_EB                           !< Time for l2-norm
-   REAL(EB) :: MATVEC_PRODUCT   = 0.0_EB                           !< Time for matrix vector multiplication
-   REAL(EB) :: OVERALL          = 0.0_EB                           !< Complete time for ScaRC
-   REAL(EB) :: RELAXATION       = 0.0_EB                           !< Time for relaxation
-   REAL(EB) :: SCALAR_PRODUCT   = 0.0_EB                           !< Time for scalar product
-   REAL(EB) :: SETUP            = 0.0_EB                           !< Time for setup of requested ScaRC solver
-   REAL(EB) :: SMOOTHER         = 0.0_EB                           !< Time for smoothing
-   REAL(EB) :: SOLVER           = 0.0_EB                           !< Time for solver 
-   INTEGER  :: N_TIMER          = 13                               !< Total number of timers
-END TYPE SCARC_CPU_TYPE
-
-PUBLIC :: DUMP_TIMERS
 
 CONTAINS
 

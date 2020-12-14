@@ -5,42 +5,10 @@ USE PRECISION_PARAMETERS, ONLY: EB, FB
 USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 USE MPI
 USE SCARC_CONSTANTS
+USE SCARC_TYPES
 USE SCARC_VARIABLES
 USE SCARC_MESSAGE_SERVICES
 USE SCARC_MEMORY_MANAGER
-
-INTEGER :: N_STACK_TOTAL = 0                                !< Maximum number of used solvers in stack
-
-!> \brief Stack type
-
-TYPE SCARC_STACK_TYPE
-   TYPE (SCARC_SOLVER_TYPE), POINTER :: SOLVER                     !< Type of current solver
-   INTEGER :: NSTAGE                                               !< Stage of current solver
-END TYPE SCARC_STACK_TYPE
-
-
-!> \brief Different scopes for solution, rhs and auxiliary vectors of different solvers
-
-TYPE SCARC_STAGE_TYPE
-
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: X               !< Solution vector in double precision
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: B               !< Right hand side vector in double precision
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: R               !< Residual vector in double precision
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: D               !< Auxiliary vector in double precision
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: V               !< Auxiliary vector in double precision
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: Y               !< Auxiliary vector in double precision
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: Z               !< Auxiliary vector in double precision
-
-   REAL (FB), ALLOCATABLE, DIMENSION (:) :: X_FB            !< Solution vector vector in single precision
-   REAL (FB), ALLOCATABLE, DIMENSION (:) :: B_FB            !< Right hand side vector in single precision
-   REAL (FB), ALLOCATABLE, DIMENSION (:) :: R_FB            !< Residual vector in single precision
-   REAL (FB), ALLOCATABLE, DIMENSION (:) :: V_FB            !< Auxiliary vector in single precision
-
-#ifdef WITH_SCARC_DEBUG
-   REAL (EB), ALLOCATABLE, DIMENSION (:) :: E               !< Error vector double precision
-#endif
-
-END TYPE SCARC_STAGE_TYPE
 
 CONTAINS
 

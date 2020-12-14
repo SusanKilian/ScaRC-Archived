@@ -14,7 +14,10 @@
 #undef WITH_SCARC_POSTPROCESSING
 
 #include "scrc/module_scarc_constants.f90"
+#include "scrc/module_scarc_types.f90"
 #include "scrc/module_scarc_variables.f90"
+#include "scrc/module_scarc_pointers.f90"
+#include "scrc/module_scarc_pointer_routines.f90"
 #include "scrc/module_scarc_message_services.f90"
 #include "scrc/module_scarc_error_handling.f90"
 #include "scrc/module_scarc_utilities.f90"
@@ -29,8 +32,6 @@
 #endif
 #include "scrc/module_scarc_linear_algebra.f90"
 #include "scrc/module_scarc_discretization.f90"
-#include "scrc/module_scarc_pointers.f90"
-#include "scrc/module_scarc_pointer_routines.f90"
 #include "scrc/module_scarc_matrix_systems.f90"
 #include "scrc/module_scarc_fft_environment.f90"
 #include "scrc/module_scarc_gmg_environment.f90"
@@ -60,57 +61,6 @@ USE SCARC_DISCRETIZATION
 USE SCARC_METHODS
 
 IMPLICIT NONE
-
-! 
-! ---------- Type declarations
-! 
-TYPE (SCARC_TYPE)       , SAVE, DIMENSION(:), ALLOCATABLE, TARGET :: SCARC       !< Main ScaRC data structure
-TYPE (SCARC_STACK_TYPE) , SAVE, DIMENSION(:), ALLOCATABLE, TARGET :: STACK       !< Stack of consecutive solvers
-
-TYPE (SCARC_MEMORY_TYPE), SAVE, TARGET :: MEMORY                   !< Memory administration for ScaRC arrays
-
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: MAIN_CG                  !< Solver structure for Krylov main solver 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: MAIN_CG_STRUCTURED       !< Solver structure for structured Krylov main solver 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: MAIN_CG_UNSTRUCTURED     !< Solver structure for unstructured Krylov main solver 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: MAIN_GMG                 !< Solver structure for Multigrid main solver 
-
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: COARSE_KRYLOV            !< Solver structure for Krylov coarse grid solver 
-
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_JAC          !< Solver structure for Jacobi preconditioner 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_SSOR         !< Solver structure for SSOR preconditioner 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_LU           !< Solver structure for ILU preconditioner 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_ILU          !< Solver structure for ILU preconditioner 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_FFT          !< Solver structure for FFT preconditioner 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_FFTO         !< Solver structure for FFTO preconditioner (including overlap)
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MG           !< Solver structure for Multigrid preconditioner 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MJAC         !< Solver structure for Jacobi preconditioner (matrix version)
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MGS          !< Solver structure for Gauss-Seidel preconditioner (matrix version)
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MSGS         !< Solver structure for Sym. Gauss-Seidel preconditioner (matrix vs.)
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MSOR         !< Solver structure for SOR preconditioner (matrix version)
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MSSOR        !< Solver structure for SSOR preconditioner (matrix version)
-
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_JAC          !< Solver structure for Jacobi smoother 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_SSOR         !< Solver structure for SSOR smoother 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_ILU          !< Solver structure for ILU smoother 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_FFT          !< Solver structure for FFT smoother 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_FFTO         !< Solver structure for FFTO smoother (including overlap)
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_MJAC         !< Solver structure for Jacobi smoother (matrix version)
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_MGS          !< Solver structure for Gauss-Seidel smoother (matrix version)
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_MSGS         !< Solver structure for Sym. Gauss-Seidel smoother (matrix vs.)
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_MSOR         !< Solver structure for SOR smoother (matrix version)
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_MSSOR        !< Solver structure for SSOR smoother (matrix version)
-TYPE (SCARC_MESSAGE_TYPE), SAVE, TARGET :: MSG
-TYPE (SCARC_CPU_TYPE), SAVE, DIMENSION(:), ALLOCATABLE, TARGET :: CPU
-
-#ifdef WITH_MKL
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: MAIN_LU             !< Solver structure for LU-decomposition main solver 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: COARSE_CLUSTER      !< Solver structure for CLUSTER_SPARSE_SOLVER coarse grid solver 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: COARSE_PARDISO      !< Solver structure for PARDISO coarse grid solver
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: PRECON_MKL          !< Solver structure for MKL preconditioner 
-TYPE (SCARC_SOLVER_TYPE), SAVE, TARGET :: SMOOTH_MKL          !< Solver structure for MKL smoother 
-#endif
-
-TYPE (SCARC_SUBDIVISION_TYPE), SAVE, TARGET :: SUBDIVISION    !< Structure to keep information about subdivision
 
 PUBLIC :: SCARC_SETUP, SCARC_SOLVER
 
@@ -221,7 +171,7 @@ SELECT_METHOD: SELECT CASE (TYPE_METHOD)
       CALL SCARC_METHOD_MULTIGRID(NSCARC_STACK_ROOT, NSCARC_STACK_ZERO, NSCARC_RHS_INHOMOGENEOUS, NLEVEL_MIN)
    
    CASE (NSCARC_METHOD_MGM)
-      CALL SCARC_METHOD_MGM()
+      CALL SCARC_METHOD_MGM(NSCARC_STACK_ROOT)
 
 #ifdef WITH_MKL
    CASE (NSCARC_METHOD_LU)

@@ -6,6 +6,7 @@ USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 USE COMP_FUNCTIONS, ONLY: CURRENT_TIME
 USE MPI
 USE SCARC_CONSTANTS
+USE SCARC_TYPES
 USE SCARC_VARIABLES
 USE SCARC_UTILITIES
 USE SCARC_MESSAGE_SERVICES
@@ -15,105 +16,6 @@ USE SCARC_ERROR_HANDLING
 USE SCARC_MEMORY_MANAGER
 USE SCARC_DISCRETIZATION
 USE SCARC_LINEAR_ALGEBRA
-
-!> \brief Compact matrix entries which will be exchanged during generation of condensed system
-
-TYPE SCARC_MATRIX_COMPACT_CONDENSED_TYPE
-
-   REAL(EB) :: VAL1(NSCARC_MAX_STENCIL) = 0.0_EB         !< Original values (double precision)
-   REAL(EB) :: VAL2(NSCARC_MAX_STENCIL) = 0.0_EB         !< Condensed values (double precision)
-
-   INTEGER :: COL(NSCARC_MAX_STENCIL) = 0                !< Column pointers
-   INTEGER :: PTR(NSCARC_MAX_STENCIL) = 0                !< Storage pointer
-   INTEGER :: N_COL
-
-END TYPE SCARC_MATRIX_COMPACT_CONDENSED_TYPE
-
-
-!> \brief Bandwise matrix entries which will exchanged during generation of condensed system
-
-TYPE SCARC_MATRIX_BANDWISE_CONDENSED_TYPE
-
-   REAL(EB) :: VAL1(NSCARC_MAX_STENCIL) = 0.0_EB         !< Original values (double precision)
-   REAL(EB) :: VAL2(NSCARC_MAX_STENCIL) = 0.0_EB         !< Condensed values (double precision)
-   INTEGER  :: IOR0 = 0                                  !< Position pointer
-   INTEGER  :: ICO = 0                                   !< Cell pointer
-
-END TYPE SCARC_MATRIX_BANDWISE_CONDENSED_TYPE
-
-!> \brief Compact sparse row (COMPACT) storage technique for matrices
-! Is based on three arrays:
-!    - non-zero matrix values
-!    - corresponding columns pointers
-!    - row pointers
-
-TYPE SCARC_CMATRIX_TYPE
-
-   REAL(EB), ALLOCATABLE, DIMENSION (:) :: VAL                !< Values of matrix (real precision)
-   REAL(EB), ALLOCATABLE, DIMENSION (:) :: ILU                !< ILU-decomposition
-   REAL(EB), ALLOCATABLE, DIMENSION (:) :: RELAX              !< Workspace for relaxation
-   REAL(EB), DIMENSION (-3:3)           :: STENCIL            !< Store basic stencil information in single precision
-
-   REAL(FB), ALLOCATABLE, DIMENSION (:) :: VAL_FB             !< Values of matrix (single precision)
-   REAL(FB), ALLOCATABLE, DIMENSION (:) :: RELAX_FB           !< Workspace for relaxation
-   REAL(FB), DIMENSION (-3:3)           :: STENCIL_FB         !< Store basic stencil information in single precision
-
-   TYPE (SCARC_MATRIX_COMPACT_CONDENSED_TYPE) :: CONDENSED(NSCARC_MAX_STENCIL)
-
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: ROW                !< Row index vector
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: COL                !< Local column index vectors
-   INTEGER,  ALLOCATABLE, DIMENSION (:) :: COLG               !< Global column index vectors
-
-   INTEGER :: POS(-3:3) = 0                                   !< Position of IOR's in STENCIL
-   INTEGER :: N_CONDENSED = 0                                 !< Number of condensed entries in matrix
-   INTEGER :: N_VAL = 0                                       !< Number of matrix values
-   INTEGER :: N_ROW = 0                                       !< Number of matrix rows
-   INTEGER :: N_STENCIL = 0                                   !< Number of points in matrix stencil
-   INTEGER :: N_STENCIL_MAX = 0                               !< Max stencil size (AMG only)
-   INTEGER :: NTYPE = 0                                       !< Matrix type
-   INTEGER :: NPREC = 0                                       !< Precision type
-
-   CHARACTER(40) :: CNAME                                     !< Name of matrix
-
-END TYPE SCARC_CMATRIX_TYPE
-
-
-
-!> \brief Bandwise storage technique for matrices
-! The entries are stored one diagonal after the other
-! Missing entries of subdiagonals are filled with zero
-! Is based on two arrays: non-zero matrix entries diagonal-wise and  the offsets from the main diagonal
-
-TYPE SCARC_BMATRIX_TYPE
-
-   REAL(EB), ALLOCATABLE, DIMENSION (:)   :: AUX           !< Auxiliary vector (double precision)
-   REAL(EB), ALLOCATABLE, DIMENSION (:,:) :: VAL           !< Values of matrix (double precision)
-   REAL(EB), ALLOCATABLE, DIMENSION (:,:) :: RELAX         !< Workspace for relaxation
-   REAL(EB), ALLOCATABLE, DIMENSION (:)   :: RELAXD        !< Workspace for relaxation - only for diagonal scaling
-   REAL(EB), DIMENSION (-3:3)             :: STENCIL       !< Store basic stencil information (double precision)
-
-   REAL(FB), ALLOCATABLE, DIMENSION (:)   :: AUX_FB        !< Auxiliary vector (single precision)
-   REAL(FB), ALLOCATABLE, DIMENSION (:,:) :: VAL_FB        !< Values of matrix (single precision)
-   REAL(FB), ALLOCATABLE, DIMENSION (:,:) :: RELAX_FB      !< Workspace for relaxation
-   REAL(FB), DIMENSION (-3:3)             :: STENCIL_FB    !< Store basic stencil information (single precision)
-
-   TYPE (SCARC_MATRIX_BANDWISE_CONDENSED_TYPE) :: CONDENSED(NSCARC_MAX_STENCIL)
-
-   CHARACTER(40) :: CNAME                                  !< Name of matrix
-
-   INTEGER,  DIMENSION (-3:3) :: OFFSET                    !< Offset pointers
-   INTEGER,  DIMENSION (-3:3) :: LENGTH                    !< Relevant diagonal length 
-   INTEGER,  DIMENSION (-3:3) :: SOURCE                    !< Source address in corresponding diagonal
-   INTEGER,  DIMENSION (-3:3) :: TARGET                    !< Target address in corresponding diagonal
-
-   INTEGER :: POS(-3:3) = 0                                !< position of IOR's in STENCIL and in matrix storage array
-   INTEGER :: N_STENCIL = 0                                !< Number of points in matrix stencil
-   INTEGER :: N_CONDENSED = 0                              !< Number of condensed entries in matrix
-   INTEGER :: N_VAL = 0                                    !< Number of matrix values in general and symmetric cass
-   INTEGER :: N_DIAG = 0                                   !< Length of main diagonal
-
-END TYPE SCARC_BMATRIX_TYPE
-
 
 CONTAINS
 

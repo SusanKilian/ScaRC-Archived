@@ -175,8 +175,6 @@ INTEGER, PARAMETER :: NSCARC_MKL_COARSE              =  3         !< Type of MKL
 
 INTEGER, PARAMETER :: NSCARC_MGM_POISSON             =  1         !< Type of MGM pass: First (inhomogeneous Poisson)
 INTEGER, PARAMETER :: NSCARC_MGM_LAPLACE             =  2         !< Type of MGM pass: Second (homogeneous Laplace)
-INTEGER, PARAMETER :: NSCARC_MGM_STACK_POISSON       =  1         !< Krylov stack type for ScaRC solution of Poisson problem
-INTEGER, PARAMETER :: NSCARC_MGM_STACK_LAPLACE       =  3         !< Krylov stack type for UScaRC solution of Laplace problems
 INTEGER, PARAMETER :: NSCARC_MGM_BC_EXPOL            = 11         !< Type of internal MGM boundary: linear extrapolatioln
 INTEGER, PARAMETER :: NSCARC_MGM_BC_MEAN             = 12         !< Type of internal MGM boundary: simple mean value 
 INTEGER, PARAMETER :: NSCARC_MGM_BC_TAYLOR           = 13         !< Type of internal MGM boundary: Taylor expansion

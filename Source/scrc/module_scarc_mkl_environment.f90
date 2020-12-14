@@ -6,6 +6,7 @@ USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 USE COMP_FUNCTIONS, ONLY: CURRENT_TIME
 USE MPI
 USE SCARC_CONSTANTS
+USE SCARC_TYPES
 USE SCARC_VARIABLES
 USE SCARC_MESSAGE_SERVICES
 USE SCARC_ERROR_HANDLING
@@ -13,21 +14,6 @@ USE SCARC_STACK_ADMINISTRATION
 USE SCARC_MEMORY_MANAGER
 USE MKL_PARDISO
 USE MKL_CLUSTER_SPARSE_SOLVER
-
-!> \brief MKL information needed for Intel-MKL PARDISO and CLUSTER_SPARSE_SOLVER solvers
-
-TYPE SCARC_MKL_TYPE
-
-   CHARACTER(40) :: CNAME                                                     !< Name of matrix
-
-   INTEGER, ALLOCATABLE :: IPARM(:)                                           !< Parameter vector
-   INTEGER :: MAXFCT, MNUM, MTYPE, PHASE, NRHS, ERROR, MSGLVL                 !< Various MKL specific settings 
-   INTEGER :: PERM(1)                                                         !< Permutation parameter 
-
-   TYPE (MKL_PARDISO_HANDLE),               ALLOCATABLE :: PT_H(:), PT(:)     !< Handles for PARDISO 
-   TYPE (MKL_CLUSTER_SPARSE_SOLVER_HANDLE), ALLOCATABLE :: CT_H(:), CT(:)     !< Handles for CLUSTER_SPARSE_SOLVER 
-
-END TYPE SCARC_MKL_TYPE
 
 CONTAINS
 

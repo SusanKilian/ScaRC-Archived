@@ -437,6 +437,11 @@ TYPE SCARC_GRID_TYPE
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICG_TO_ELAYER2     !< Mapping from ICG to external second layer (AMG only)
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICG_TO_ILAYER2     !< Mapping from ICG to internal second layer (AMG only)
 
+   ! Forward and backward permutation vectors for grid renumbering strategies (MGM only)
+   INTEGER, ALLOCATABLE, DIMENSION (:)   :: PERM_FW            !< Permutation vector for LU - forward direction
+   INTEGER, ALLOCATABLE, DIMENSION (:)   :: PERM_BW            !< Permutation vector for LU - backward direction
+   INTEGER :: NONZERO = 1                                      !< Index of first nonzero entry in RHS vector for permuted LU
+
    ! Assignment of cell coordinates
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICX                !< I-coordinate of cell IC
    INTEGER, ALLOCATABLE, DIMENSION (:)   :: ICY                !< J-coordinate of cell IC
@@ -513,12 +518,9 @@ TYPE SCARC_MGM_TYPE
    REAL(EB)::  VELOCITY_TOLERANCE = 1.E-4_EB                       !< Requested velocity tolerance for MGM Laplace problems
 
    INTEGER, ALLOCATABLE, DIMENSION (:,:) :: BTYPE                  !< Boundary type of an interface cell
-   INTEGER, ALLOCATABLE, DIMENSION (:)   :: PERM_FW         !< Permutation vector for LU - forward direction
-   INTEGER, ALLOCATABLE, DIMENSION (:)   :: PERM_BW         !< Permutation vector for LU - backward direction
 
    INTEGER :: NCS, NCU                                             !< Number of cells for structured/unstructured grid
    INTEGER :: NW1, NW2, NWI, NWE                                   !< Range of IW's with non-zero B-values
-   INTEGER :: NONZERO                                            
 
    INTEGER :: ITE = 0                            
    INTEGER :: ITE_POISSON = 0

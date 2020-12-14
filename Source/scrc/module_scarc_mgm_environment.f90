@@ -7,6 +7,7 @@ USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 USE COMP_FUNCTIONS, ONLY: CURRENT_TIME, GET_FILE_NUMBER, SHUTDOWN
 USE MPI
 USE SCARC_CONSTANTS
+USE SCARC_TYPES
 USE SCARC_VARIABLES
 USE SCARC_UTILITIES, ONLY: IS_VALID_DIRECTION, GET_PERM
 USE SCARC_MPI
@@ -14,44 +15,6 @@ USE SCARC_MEMORY_MANAGER
 USE SCARC_ITERATION_MANAGER
 USE SCARC_LINEAR_ALGEBRA
 USE SCARC_MATRIX_SYSTEMS
-
-!> \brief McKenney-Greengard-Mayo method - still experimental
-
-TYPE SCARC_MGM_TYPE
-
-   REAL(EB), ALLOCATABLE, DIMENSION (:,:,:) :: H1, H2, H3, H4, H5, H6, H7    !< Pressure vectors of different parts
-   REAL(EB), ALLOCATABLE, DIMENSION (:,:,:) :: HS, HU, HD          !< Structured and unstructured solution and their difference
-   REAL(EB), ALLOCATABLE, DIMENSION (:)     :: OU3, OV3, OW3       !< Velocity components along external boundaries
-   REAL(EB), ALLOCATABLE, DIMENSION (:)     :: OH1, OH2, OH3       !< Other mesh H3 vector
-   REAL(EB), ALLOCATABLE, DIMENSION (:)     :: BC                  !< Boundary conditions along internal mesh interfaces
-   REAL(EB), ALLOCATABLE, DIMENSION (:)     :: X, Y, B             !< RHS and solution vectors of LU (experimental)
-   REAL(EB), ALLOCATABLE, DIMENSION (:,:)   :: ASQ                 !< Matrix for LU-decomposition (experimental)
-   REAL(EB), ALLOCATABLE, DIMENSION (:,:)   :: LSQ                 !< Lower part of LU-decomposition (experimental)
-   REAL(EB), ALLOCATABLE, DIMENSION (:,:)   :: USQ                 !< Upper part of LU-decomposition (experimental)
-   REAL(EB), ALLOCATABLE, DIMENSION (:)     :: WEIGHT              !< Scaling weights for true boundary setting
-
-   REAL(EB), ALLOCATABLE, DIMENSION (:,:,:) :: UU, VV, WW          !< Velocity vectors predictor
-   REAL(EB), ALLOCATABLE, DIMENSION (:,:,:) :: U1, V1, W1          !< Velocity vectors predictor
-   REAL(EB), ALLOCATABLE, DIMENSION (:,:,:) :: U2, V2, W2          !< Velocity vectors predictor
-   REAL(EB), ALLOCATABLE, DIMENSION (:,:,:) :: U3, V3, W3          !< Velocity vectors predictor
-
-   REAL(EB)::  CAPPA_POISSON = 0.0_EB                              !< Convergence rate of Poisson solution
-   REAL(EB)::  CAPPA_LAPLACE = 0.0_EB                              !< Max convergence rate of Laplace solutions
-
-   REAL(EB)::  VELOCITY_ERROR = 0.0_EB                             !< Velocity error in single Laplace iteration
-   REAL(EB)::  VELOCITY_ERROR_MAX = 0.0_EB                         !< Maximum achieved velocity error over all Laplace iterations
-   REAL(EB)::  VELOCITY_TOLERANCE = 1.E-4_EB                       !< Requested velocity tolerance for MGM Laplace problems
-
-   INTEGER, ALLOCATABLE, DIMENSION (:,:) :: BTYPE                  !< Boundary type of an interface cell
-
-   INTEGER :: NCS, NCU                                             !< Number of cells for structured/unstructured grid
-   INTEGER :: NW1, NW2, NWI, NWE                                   !< Range of IW's with non-zero B-values
-
-   INTEGER :: ITE = 0
-   INTEGER :: ITE_POISSON = 0
-   INTEGER :: ITE_LAPLACE = 0
-
-END TYPE SCARC_MGM_TYPE
 
 CONTAINS
 

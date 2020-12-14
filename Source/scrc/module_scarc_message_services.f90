@@ -6,40 +6,8 @@ USE MEMORY_FUNCTIONS, ONLY: CHKMEMERR
 USE COMP_FUNCTIONS, ONLY: GET_FILE_NUMBER
 USE MESH_VARIABLES, ONLY: MESHES
 USE SCARC_CONSTANTS
-
-!> \brief Messaging and debugging mechanisms
-
-TYPE SCARC_MESSAGE_TYPE
-
-   CHARACTER(60) :: FILE_CPU                               !< Output file name for CPU measurements
-   CHARACTER(60) :: FILE_MEM                               !< Output file name for memory management information
-   CHARACTER(60) :: FILE_STAT                              !< Output file name for convergence statistcis
-   INTEGER :: LU_CPU                                       !< Logical unit for CPU measurements
-   INTEGER :: LU_MEM                                       !< Logical unit for memory management information
-   INTEGER :: LU_STAT                                      !< Logical unit for convergence statistics
-
-#ifdef WITH_SCARC_DEBUG
-   CHARACTER(60) :: FILE_DEBUG                             !< Output file name for debugging information
-   CHARACTER(60) :: FILE_DUMP                              !< Output file name for dumping information
-   INTEGER :: LU_DEBUG                                     !< Logical unit for debugging information
-   INTEGER :: LU_DUMP                                      !< Logical unit for dumping information
-   CHARACTER(20) :: CFORM1, CFORM2, CFORM3, CFORM4
-#endif
-
-#ifdef WITH_SCARC_VERBOSE
-   CHARACTER(60)  :: FILE_VERBOSE                          !< Output file name for verbose messages
-   INTEGER :: LU_VERBOSE                                   !< Logical unit for verbose messages
-#endif
-
-#ifdef WITH_SCARC_POSTPROCESSING
-   INTEGER :: LU_SCARC                                                !< Logical unit for dump of complete ScaRC environment
-   INTEGER :: LU_POST, LU_POST1, LU_POST2, LU_POST3                   !< Logical unit for dump of selected data
-   CHARACTER(120) :: FILE_SCARC                                       !< Output file name for dumpcomplete ScaRC environment
-   CHARACTER(60)  :: FILE_POST, FILE_POST1, FILE_POST2, FILE_POST3    !< Output file names for dumpof selected data
-#endif
-
-END TYPE SCARC_MESSAGE_TYPE
-
+USE SCARC_TYPES
+USE SCARC_VARIABLES
 
 CONTAINS
 
