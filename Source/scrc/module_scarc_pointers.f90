@@ -157,6 +157,9 @@ REAL(FB), DIMENSION(:), POINTER :: V2_FB=>NULL()       !< Pointer to second sing
 TYPE (SCARC_PRESSURE_TYPE), POINTER :: PR=>NULL()                       !< Pointer to pressure type
 #endif
 
+CONTAINS
+
+
 END MODULE SCARC_POINTERS
 
 
