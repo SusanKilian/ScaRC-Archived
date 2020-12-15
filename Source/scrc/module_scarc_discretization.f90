@@ -3,10 +3,10 @@
 ! MODULE SCARC_DISCRETIZATION
 !
 !> \brief Setup all structures related to the different grid types (structured/unstructured) and
-! the different grid resolution levels
+!   the different grid resolution levels
 !
-! This includes information w.r.t the mesh faces and the wall cells along external, interface and
-! internal boundaries
+!   This includes information w.r.t the mesh faces and the wall cells along external, interface and
+!   internal boundaries
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_DISCRETIZATION

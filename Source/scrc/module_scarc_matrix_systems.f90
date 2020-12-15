@@ -4,8 +4,8 @@
 !
 !> \brief Setup and organize the matrix types needed for the different ScaRC/UscaRC solvers
 !
-! This inlcudes local/global Poisson and Laplace matrices, their boundary conditions and 
-! a corresponding condensing in the purely Neumann case
+!   This inlcudes local/global Poisson and Laplace matrices, their boundary conditions and 
+!   a corresponding condensing in the purely Neumann case
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_MATRIX_SYSTEMS
