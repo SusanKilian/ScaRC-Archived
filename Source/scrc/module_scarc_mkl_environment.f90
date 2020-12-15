@@ -2,7 +2,7 @@
 !
 ! Module SCARC_MKL_ENVIRONMENT:
 !
-! \brief Setup environment necessary for the call of the IntelMKL local and global LU-solvers
+!> \brief Setup environment necessary for the call of the IntelMKL local and global LU-solvers
 ! PARDISO and CLUSTER_SPARSE_SOLVER
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////

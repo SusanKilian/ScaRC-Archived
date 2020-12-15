@@ -2,7 +2,7 @@
 !
 ! MODULE SCARC_LINEAR_ALGEBRA
 !
-! \brief Define a set of Linear Algebra operations based on vectors and matrices
+!> \brief Define a set of Linear Algebra operations based on vectors and matrices
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_LINEAR_ALGEBRA

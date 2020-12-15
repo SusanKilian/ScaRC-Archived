@@ -2,7 +2,7 @@
 !
 ! MODULE SCARC_TIMINGS
 !
-! \brief Measure and dump CPU timings for different parts of the ScaRC/UScaRC solvers
+!> \brief Measure and dump CPU timings for different parts of the ScaRC/UScaRC solvers
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_TIMINGS

@@ -2,7 +2,7 @@
 !
 ! MODULE SCARC_METHODS
 !
-! \brief Collection of available ScaRC/UScaRC solvers:
+!> \brief Collection of available ScaRC/UScaRC solvers:
 !  - Krylov method (without and with coarse grid correction)
 !  - Geometric Multigrid method
 !  - Algebraic Multigrid method

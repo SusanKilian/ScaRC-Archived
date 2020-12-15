@@ -2,7 +2,7 @@
 !
 ! MODULE SCARC_POINTERS
 !
-! \brief Define and organize a series of pointers to specify the different meshes, grid levels, 
+!> \brief Define and organize a series of pointers to specify the different meshes, grid levels, 
 ! discretizations and matrices, etc. in combination with corresponding methods to set them
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////

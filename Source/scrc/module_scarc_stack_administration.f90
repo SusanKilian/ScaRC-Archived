@@ -2,7 +2,7 @@
 !
 ! MODULE SCARC_STACK_ADMINISTRAION
 !
-! \brief Introduce stack hierarchy for the different consecutive solution methods and
+!> \brief Introduce stack hierarchy for the different consecutive solution methods and
 ! organize their alternate calls
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////

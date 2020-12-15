@@ -39,7 +39,7 @@ IMPLICIT NONE
 CONTAINS
 
 ! ----------------------------------------------------------------------------------------------------
-! \brief Setup structures needed for the use of the algebraic multigrid method
+!> \brief Setup structures needed for the use of the algebraic multigrid method
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_ALGEBRAIC_MULTIGRID
 INTEGER :: NL

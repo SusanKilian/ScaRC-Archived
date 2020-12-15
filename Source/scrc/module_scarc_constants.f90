@@ -2,7 +2,7 @@
 !
 ! MODULE SCARC_CONSTANTS
 !
-! \brief Define all constants needed in for the different solution strategies in ScaRC/UScaRC
+!> \brief Define all constants needed in for the different solution strategies in ScaRC/UScaRC
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_CONSTANTS

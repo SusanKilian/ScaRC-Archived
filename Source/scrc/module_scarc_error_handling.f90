@@ -2,7 +2,7 @@
 !
 ! MODULE SCARC_ERROR_HANDLING
 !
-! \brief Organize program shutdown in case of an error based on corresponding error messages
+!> \brief Organize program shutdown in case of an error based on corresponding error messages
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_ERROR_HANDLING

@@ -2,7 +2,7 @@
 !
 ! MODULE SCARC_FFT_ENVIRONMENT
 !
-! \brief Define environment needed for the use of the FFT preconditioner based on Crayfishpak
+!> \brief Define environment needed for the use of the FFT preconditioner based on Crayfishpak
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_FFT_ENVIRONMENT

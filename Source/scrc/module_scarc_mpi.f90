@@ -2,7 +2,7 @@
 !
 ! MODULE SCARC_MPI
 !
-! \brief Organize MPI communication structures needed for the different data exchanges in ScaRC/UScaRC
+!> \brief Organize MPI communication structures needed for the different data exchanges in ScaRC/UScaRC
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_MPI

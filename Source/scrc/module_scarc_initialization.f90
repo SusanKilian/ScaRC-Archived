@@ -2,7 +2,7 @@
 ! 
 ! MODULE SCARC_INITIALIZATION
 ! 
-! \brief Parse ScaRC related input parameters and initialize basic ScaRC structures
+!> \brief Parse ScaRC related input parameters and initialize basic ScaRC structures
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_INITIALIZATION

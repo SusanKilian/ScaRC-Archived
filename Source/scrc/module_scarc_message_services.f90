@@ -2,7 +2,7 @@
 !
 ! MODULE SCARC_MESSAGE_SERVICES
 !
-! \brief Organize directive-based messages services available in ScaRC/UScaRC 
+!> \brief Organize directive-based messages services available in ScaRC/UScaRC 
 ! This includes verbosing, debugging and dumping of different data in the course of the used methods
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////

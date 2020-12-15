@@ -2,7 +2,7 @@
 !
 ! MODULE SCARC_MGM
 !
-! \brief Setup and organize McKeeney-Greengar-Mayo method
+!> \brief Setup and organize McKeeney-Greengar-Mayo method
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_MGM

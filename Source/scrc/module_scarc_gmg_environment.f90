@@ -2,7 +2,7 @@
 !
 ! MODULE SCARC_GMG_ENVIRONMENT
 !
-! \brief Define environment needed for the use of the Geometric Multigrid Method
+!> \brief Define environment needed for the use of the Geometric Multigrid Method
 !
 !//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_GMG_ENVIRONMENT
