@@ -1,7 +1,11 @@
-! ================================================================================================================
-!  MODULE 'SCARC_POINTERS'  
-!> \brief Collection of different pointers to specify the different meshes, grid levels, discretizations and matrices
-! ================================================================================================================
+!//////////////////////////////////////////////////////////////////////////////////////////////////////
+!
+! MODULE SCARC_POINTERS
+!
+! \brief Define and organize a series of pointers to specify the different meshes, grid levels, 
+! discretizations and matrices, etc. in combination with corresponding methods to set them
+!
+!//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_POINTERS
 
 USE PRECISION_PARAMETERS, ONLY: EB, FB

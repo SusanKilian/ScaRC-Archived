@@ -1,3 +1,12 @@
+!//////////////////////////////////////////////////////////////////////////////////////////////////////
+!
+! MODULE SCARC_MEMORY_MANAGER
+!
+! \brief Organize the allocation, deallocation and resizing of different data structures
+! This includes 1-, 2- or 3-dimensional vectors of different types 
+! and compactly or bandwise stored matrices
+!
+!//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_MEMORY_MANAGER
 
 USE GLOBAL_CONSTANTS

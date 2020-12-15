@@ -1,3 +1,20 @@
+!//////////////////////////////////////////////////////////////////////////////////////////////////////
+!
+! MODULE SCARC_AMG_ENVIRONMENT
+!
+!> \brief Setup algebraic multigrid structures
+!   Allocate needed workspace for hierarchy of system matrices, prolongation, restriction, etc.
+!   Note: all used pointers end with either 'F' or 'C' where:
+!       'F' corresponds to fine   level NL
+!       'C' corresponds to coarse level NL+1
+!   Determine mesh hierarchy based on smoothed aggregation
+!   Compute QR-decomposition of nullspace vector in order to determine tentative prolongator 
+!   Set nullspace for next level and perform Jacobi relaxation to get the final prolongator
+!   If the maximum allowed level is not yet reached, set dimensions for next coarser level, 
+!   define its nullspace and perform relaxation to define the respective Prolongation matrix
+!   Define Poisson matrix on coarser level by Galerkin approach: A_coarse = R * A_fine * P
+!
+!//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_AMG_ENVIRONMENT
   
 USE GLOBAL_CONSTANTS
@@ -22,17 +39,7 @@ IMPLICIT NONE
 CONTAINS
 
 ! ----------------------------------------------------------------------------------------------------
-!> \brief Setup algebraic multigrid structures
-! Allocate needed workspace for hierarchy of system matrices, prolongation, restriction, etc.
-! Note: all used pointers end with either 'F' or 'C' where:
-!     'F' corresponds to fine   level NL
-!     'C' corresponds to coarse level NL+1
-! Determine mesh hierarchy based on smoothed aggregation
-! Compute QR-decomposition of nullspace vector in order to determine tentative prolongator 
-! Set nullspace for next level and perform Jacobi relaxation to get the final prolongator
-! If the maximum allowed level is not yet reached, set dimensions for next coarser level, 
-! define its nullspace and perform relaxation to define the respective Prolongation matrix
-! Define Poisson matrix on coarser level by Galerkin approach: A_coarse = R * A_fine * P
+! \brief Setup structures needed for the use of the algebraic multigrid method
 ! ----------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_SETUP_ALGEBRAIC_MULTIGRID
 INTEGER :: NL

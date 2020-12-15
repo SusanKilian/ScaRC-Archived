@@ -1,3 +1,16 @@
+!//////////////////////////////////////////////////////////////////////////////////////////////////////
+!
+! MODULE SCARC_METHODS
+!
+! \brief Collection of available ScaRC/UScaRC solvers:
+!  - Krylov method (without and with coarse grid correction)
+!  - Geometric Multigrid method
+!  - Algebraic Multigrid method
+!  - IntelMKL methods (Pardiso/Cluster_Sparse_Solver)
+!  - FFT method (Crayfish Pak)
+!  - McKeeney-Greengard-Mayo method
+!
+!//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_METHODS
   
 USE GLOBAL_CONSTANTS
@@ -1673,7 +1686,9 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    IF (WITH_BDRY) THEN
       DO K=1,KBAR
          DO J=1,JBAR
-            IF (LBC==3 .OR. LBC==4)             HP(0,J,K)    = HP(1,J,K)    - DXI*BXS(J,K)
+            IF (LBC==3 .OR. LBC==4)             HP(0,J,K)    = HP(1,J,K)    - DXI*BXS(J,K)IntelMKL methods
+            (Pardiso/Cluster_Sparse_Solver)
+            !  - McKeenney-Greengard-Mayo method
             IF (LBC==3 .OR. LBC==2 .OR. LBC==6) HP(IBP1,J,K) = HP(IBAR,J,K) + DXI*BXF(J,K)
             IF (LBC==1 .OR. LBC==2)             HP(0,J,K)    =-HP(1,J,K)    + 2._EB*BXS(J,K)
             IF (LBC==1 .OR. LBC==4 .OR. LBC==5) HP(IBP1,J,K) =-HP(IBAR,J,K) + 2._EB*BXF(J,K)

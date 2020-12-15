@@ -1,6 +1,10 @@
-! ================================================================================================================
-!> \brief Iteration parameters and handles for single variants of ScaRC
-! ================================================================================================================
+!//////////////////////////////////////////////////////////////////////////////////////////////////////
+!
+! MODULE SCARC_ITERATION_MANAGER
+!
+! \brief Manage iteration parameters of the currently used ScaRC/UscaRC solver
+!
+!//////////////////////////////////////////////////////////////////////////////////////////////////////
 MODULE SCARC_ITERATION_MANAGER
 
 USE PRECISION_PARAMETERS, ONLY: EB
