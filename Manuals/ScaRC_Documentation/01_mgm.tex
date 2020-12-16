@@ -31,8 +31,7 @@ and use linear extrapolation of these two values in time
 \HL{I}{1}{n} = \HL{I}{2}{n} =  2 \,\HLO{I}{n-1} - \, \HLO{I}{n-2}
 \end{equation}
   
-What do you think about that? Of course it is the question of initial values for this extrapolation. I started with it only after the 2nd time-step and took (SM) before. 
-
+Of course it is the question of initial values for this extrapolation. I started with it only after the 2nd time-step and took (SM) before. 
 But also for (SM) there is the question of the proper initial values from my point of view. Currently, I simply use zero as initial values $\HS$ values for $t_0$. However, I could also imagine to take a little more effort here (but more about this later).
 
 \subsection{Taylor Series (TS)}
@@ -56,14 +55,13 @@ or shorter
 
 
 
-Please have a look at the '8' in the denominator where you had a '4'. But we still have to divide the $(\DX / 2)^2$ term by '$2!$'. Isn't that correct? 
+%Please have a look at the '8' in the denominator where you had a '4'. But we still have to divide the $(\DX / 2)^2$ term by '$2!$'. Isn't that correct? 
 For the ghost cell values $\HL{IBAR+1}{1}{n}$ and $\HL{0}{2}{n}$ we consider linear extrapolation
 \begin{align}
 \label{Extrapolation}
-\HL{IBAR+1}{1}{n} & = 2\, \HL{I}{1}{n} -  \HL{IBAR}{1}{n} \\[1ex]
-\HL{0}{2}{n} & = 2 \,\HL{I}{2}{n} -  \HL{1}{2}{n}   \nonumber     
+\HL{{\color{red}{IBAR+1}}}{1}{n} & = 2\, \HL{{\color{green}{I}}}{1}{n} -  \HL{{\color{red}{IBAR}}}{1}{n} \\[1ex]
+\HL{{\color{blue}{0}}}{2}{n} & = 2 \,\HL{{\color{green}{I}}}{2}{n} -  \HL{{\color{blue}{1}}}{2}{n}   \nonumber     
 \end{align}
-Please have a look at your definition (17), where you use the opposite direction. Isn't the above mentioned direction correct (using the nearest value multiplied by 2)?
 
 \begin{figure}[H]
 \begin{center}
@@ -103,6 +101,7 @@ which finally leads to
                                                 - \frac{\DXT}{4}\frac{\HPNT{2}} {\DXPT} \bigg|_{I}^n     \nonumber                                           
 \end{align}
 
+\newpage
 \subsubsection{The second derivative}
 As you wrote, the second derivative in x must be the negative of the second derivative in y, because we solve the Laplace problem.
 %\[ \frac{\HPNT{1}}{\DXPT} \bigg|_{I}^n  = -  \frac{\HPNT{1}}{\DYPT}\bigg|_{I}^n   \]
@@ -119,7 +118,7 @@ But concerning your second step in the derivation under '(6.3) Second derivative
 What do you think about this? This term adds matrix entries in y-direction.
 
 \subsubsection{The first derivative}
-For the sake of completeness I also list your steps to define the first derivation. Based on the solution
+For the sake of completeness I also list your steps to define the first derivation. Based on the previous solutions
 $\HL{\,}{1}{n-1}$ and $\HL{\,}{2}{n-1}$, we approximate the derivative on the mesh interface by
 
 \[ \frac {\HPNT{1}}{\DXP}\bigg|_{I}^n  = \frac {\HPNT{2}}{\DXP}\bigg|_{I}^n \approx \frac{\HL{1}{2}{n-1} - \HL{IBAR}{1}{n-1}} {\DX}\]
@@ -144,11 +143,12 @@ And if I didn't make a mistake somewhere (which is not unlikely in this mess), t
 \HL{0,j}{2}{n} & \approx  \HL{1,j}{2}{n}  - \left( \HL{1,j}{2}{n-1} - \HL{IBAR,j}{1}{n-1}\right)
                                                 + \frac{\DXT}{4\DYT}   \left(\HL{1,j-1}{2}{n} - 2 \HL{1,j}{2}{n} + \HL{1,j+1}{2}{n}\right)      \nonumber                                           
 \end{align}
-When using these terms in the matrix stencil for cells adjacent to the mesh interface, the $t_{n-1}$ terms add up to the right hand side and the $t_n$ terms to the matrix itself.
+When using these terms in the matrix stencil for cells adjacent to the mesh interface, the previous '${n-1}$' terms add up to the right hand side and the current '$n$' terms to the matrix itself.
 
-\subsubsection{Substituting the ghost values in the matrix stencil}
+\subsubsection{Substituting the ghost values in the matrix stencil in 2D}
 %
-\paragraph{Mesh 1:} For a cell in mesh 1 adjacent to the mesh interface with mesh 2 the usual Laplace matrix stencil is
+\paragraph{Mesh 1:} 
+For a cell in mesh 1 adjacent to the mesh interface the usual Laplace matrix stencil is
 \[   \frac{ \HL{IBAR-1,j}{1}{n} -2 \HL{IBAR,j}{1}{n} + \HL{IBAR+1,j}{1}{n} }{\DXT} +  
     \frac{ \HL{IBAR,j-1}{1}{n} -2 \HL{IBAR,j}{1}{n} + \HL{IBAR,j+1}{1}{n} }{\DYT} = 0 \]
 Now, substituting the '$IBAR+1$' component based on the derivation in (\ref{BC-TSF}), we get 
@@ -156,7 +156,7 @@ Now, substituting the '$IBAR+1$' component based on the derivation in (\ref{BC-T
 + \left[ \HL{IBAR,j}{1}{n}  + \left(\HL{1,j}{2}{n-1} - \HL{IBAR,j}{1}{n-1}\right) + \frac{\DXT}{4\DYT}   \left(\HL{IBAR,j-1}{1}{n} - 2 \HL{IBAR,j}{1}{n} + \HL{IBAR,j+1}{1}{n} \right) \right]}{\DXT}
 +      \frac{ \HL{IBAR,j-1}{1}{n} -2 \HL{IBAR,j}{1}{n} + \HL{IBAR,j+1}{1}{n} }{\DYT} = 0}
 \]
-Let's first move the $t_{n-1}$ terms on the right hand side and sum up the obvious
+Let's first move the previous '${n-1}$' terms on the right hand side and sum up the obvious
 \[ {\scriptstyle  \frac{ \HL{IBAR-1,j}{1}{n} - \HL{IBAR,j}{1}{n}   
 + \frac{\DXT}{4\DYT}   \left(\HL{IBAR,j-1}{1}{n} - 2 \HL{IBAR,j}{1}{n} + \HL{IBAR,j+1}{1}{n} \right) }{\DXT}
 +      \frac{ \HL{IBAR,j-1}{1}{n} -2 \HL{IBAR,j}{1}{n} + \HL{IBAR,j+1}{1}{n} }{\DYT} = -\frac{\HL{1,j}{2}{n-1} - \HL{IBAR,j}{1}{n-1}}{\DXT} }
@@ -172,7 +172,10 @@ and then resort the whole stuff
 which finally gives the new matrix entries for the corresponding matrix line for cell $(IBAR,j)$ in mesh 1. 
 
 %\HL{2,j}{2}{n}
-\paragraph{Mesh 2:} For a cell in mesh 2 adjacent to the mesh interface with mesh 1 the usual Laplace matrix stencil is
+\paragraph{Mesh 2:} 
+
+\vspace{0.5cm}
+For a cell in mesh 2 adjacent to the mesh interface the usual Laplace matrix stencil is
 \[   
    \frac{ \HL{0,j}{2}{n} -2 \HL{1,j}{2}{n} + \HL{2,j}{2}{n} }{\DXT} +  
    \frac{ \HL{1,j-1}{2}{n} -2 \HL{1,j}{2}{n} + \HL{1,j+1}{2}{n} }{\DYT} = 0 
@@ -189,7 +192,7 @@ Now, substituting the '$0$' component based on the derivation in (\ref{BC-TSF}),
    \frac{ \HL{1,j-1}{2}{n} -2 \HL{1,j}{2}{n} + \HL{1,j+1}{2}{n} }{\DYT} = 0 
    }
 \]
-Let's first move the $t_{n-1}$ terms on the right hand side and sum up the obvious
+Let's first move the previous '${n-1}$' terms on the right hand side and sum up the obvious
 \[ 
   {\scriptstyle  
    \frac{ 
@@ -207,9 +210,42 @@ and then resort the whole stuff
  +   \HL{2,j}{2}{n} \left( \frac {1}{\DXT} \right)
  +   \HL{1,j}{2}{n} \left( -\frac {1}{\DXT} - \frac {1}{2\DYT} - \frac {2}{\DYT}    \right)
  +    \HL{1,j+1}{2}{n} \left( \frac {1}{4\DYT}   + \frac {1}{\DYT}    \right)
-    = -\frac{\HL{1,j}{2}{n-1} - \HL{1,j}{1}{n-1}}{\DXT} }
+    = \frac{\HL{1,j}{2}{n-1} - \HL{1,j}{1}{n-1}}{\DXT} }
 \]
 which finally gives the new matrix entries for the corresponding matrix line for cell $(1,j)$ in mesh 2.
+
+\newpage
+
+\subsubsection{Substituting the ghost values in the matrix stencil in 3D}
+%
+\paragraph{Mesh 1:} 
+For a cell in mesh 1 adjacent to the mesh interface the usual Laplace matrix stencil is
+\begin{align}   
+    & \frac{ \HL{IBAR-1,j,k}{1}{n} -2 \HL{IBAR,j,k}{1}{n} + \HL{IBAR+1,j,k}{1}{n} }{\DXT} \\
++  & \frac{ \HL{IBAR,j-1,k}{1}{n} -2 \HL{IBAR,j,k}{1}{n} + \HL{IBAR,j+1,k}{1}{n} }{\DYT} \\
++  & \frac{ \HL{IBAR,j-1,k}{1}{n} -2 \HL{IBAR,j,k}{1}{n} + \HL{IBAR,j+1,k}{1}{n} }{\DYT} \\
+& \hspace{5cm}= 0 
+ \end{align}
+Now, substituting the '$IBAR+1$' component based on the derivation in (\ref{BC-TSF}), we get 
+\[ {\scriptstyle  \frac{ \HL{IBAR-1,j}{1}{n} -2 \HL{IBAR,j}{1}{n} 
++ \left[ \HL{IBAR,j}{1}{n}  + \left(\HL{1,j}{2}{n-1} - \HL{IBAR,j}{1}{n-1}\right) + \frac{\DXT}{4\DYT}   \left(\HL{IBAR,j-1}{1}{n} - 2 \HL{IBAR,j}{1}{n} + \HL{IBAR,j+1}{1}{n} \right) \right]}{\DXT}
++      \frac{ \HL{IBAR,j-1}{1}{n} -2 \HL{IBAR,j}{1}{n} + \HL{IBAR,j+1}{1}{n} }{\DYT} = 0}
+\]
+Let's first move the previous '${n-1}$' terms on the right hand side and sum up the obvious
+\[ {\scriptstyle  \frac{ \HL{IBAR-1,j}{1}{n} - \HL{IBAR,j}{1}{n}   
++ \frac{\DXT}{4\DYT}   \left(\HL{IBAR,j-1}{1}{n} - 2 \HL{IBAR,j}{1}{n} + \HL{IBAR,j+1}{1}{n} \right) }{\DXT}
++      \frac{ \HL{IBAR,j-1}{1}{n} -2 \HL{IBAR,j}{1}{n} + \HL{IBAR,j+1}{1}{n} }{\DYT} = -\frac{\HL{1,j}{2}{n-1} - \HL{IBAR,j}{1}{n-1}}{\DXT} }
+\]
+and then resort the whole stuff
+\[ {\scriptstyle 
+      \HL{IBAR,j-1}{1}{n} \left( \frac {1}{4\DYT} + \frac {1}{\DYT}    \right)
+ +   \HL{IBAR-1,j}{1}{n} \left( \frac {1}{\DXT} \right)
+ +   \HL{IBAR,j}{1}{n} \left( -\frac {1}{\DXT} - \frac {1}{2\DYT} - \frac {2}{\DYT}    \right)
+ +   \HL{IBAR,j+1}{1}{n} \left( \frac {1}{4\DYT}   + \frac {1}{\DYT}    \right)
+    = -\frac{\HL{1,j}{2}{n-1} - \HL{IBAR,j}{1}{n-1}}{\DXT} }
+\]
+which finally gives the new matrix entries for the corresponding matrix line for cell $(IBAR,j)$ in mesh 1. 
+
 
 This is all done in extreme detail now, but I found it more secure than on paper, thanks to Copy\&Paste. I really hope that not one million sign and component errors have crept in here. I'll focus on the code again now.
 
