@@ -480,7 +480,8 @@ END SUBROUTINE SCARC_PRESET_RHS
 ! including data exchange along internal boundaries
 ! ------------------------------------------------------------------------------------------------
 SUBROUTINE SCARC_MATVEC_PRODUCT(NV1, NV2, NL)
-USE SCARC_POINTERS, ONLY: L, OL, G, F, OG, GWC, A, AB, V1, V2, SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, &
+USE SCARC_POINTERS, ONLY: L, OL, G, F, OG, GWC, A, AB, V1, V2, &
+                          SCARC_POINT_TO_GRID, SCARC_POINT_TO_OTHER_GRID, &
                           SCARC_POINT_TO_VECTOR, SCARC_POINT_TO_CMATRIX, SCARC_POINT_TO_BMATRIX
 INTEGER, INTENT(IN) :: NV1, NV2, NL           
 REAL(EB) :: TNOW

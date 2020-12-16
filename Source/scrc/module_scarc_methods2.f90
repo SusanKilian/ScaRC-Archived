@@ -1,5 +1,5 @@
 !//////////////////////////////////////////////////////////////////////////////////////////////////////
-! 
+!
 ! MODULE SCARC_METHODS
 !
 !> \brief Collection of available ScaRC/UScaRC solvers:
@@ -557,10 +557,8 @@ CALL SCARC_MGM_COPY (NSCARC_MGM_COPY_H1_TO_H3)             ! first use MGM%H1 as
 CALL SCARC_MGM_UPDATE_VELOCITY (NSCARC_MGM_POISSON)
 CALL SCARC_MGM_COMPUTE_VELOCITY_ERROR (NSCARC_MGM_POISSON)
 
-#ifdef WITH_SCARC_DEBUG
 CALL SCARC_MGM_DUMP('H1',0)
 CALL SCARC_MGM_DUMP('H3',0)
-#endif
 
 STATE_MGM = SCARC_MGM_CONVERGENCE_STATE(0)
    
@@ -598,11 +596,9 @@ ELSE
 
       CALL SCARC_MGM_STORE_SOLUTION (NSCARC_MGM_DIFFERENCE)  ! build difference HD = HU - HS
    
-#ifdef WITH_SCARC_DEBUG
       CALL SCARC_MGM_DUMP('HS',0)
       CALL SCARC_MGM_DUMP('HU',0)
       CALL SCARC_MGM_DUMP('HD',0)
-#endif
 
 #ifdef WITH_SCARC_DEBUG
       WRITE(MSG%LU_DEBUG,*) 'MGM-METHOD: AFTER COMPARISON, TPI=', TOTAL_PRESSURE_ITERATIONS
@@ -613,7 +609,7 @@ ELSE
 
    ! If very first pressure solution ever, then use UScaRC solution as final solution and
    ! store difference of ScaRC and UScaRC for the definition of the interface BC's in next pressure solution
-   IF (NMESHES > 1 .AND. ( (TOTAL_PRESSURE_ITERATIONS <= 1) .OR. &
+   IF (NMESHES > 1000 .AND. ( (TOTAL_PRESSURE_ITERATIONS <= 1) .OR. &
                            (TOTAL_PRESSURE_ITERATIONS <= 2  .AND.TYPE_MGM_BC == NSCARC_MGM_BC_EXPOL) ) ) THEN
 
 #ifdef WITH_SCARC_DEBUG
@@ -636,10 +632,8 @@ ELSE
           CALL SCARC_MGM_COPY (NSCARC_MGM_COPY_OH1_TO_OH2)
        ENDIF
 
-#ifdef WITH_SCARC_DEBUG
       CALL SCARC_MGM_DUMP('H2',0)
       CALL SCARC_MGM_DUMP('H3',0)
-#endif
 
     ! Otherwise define BC's along obstructions based on MGM-logic and compute correction by Laplace solution
     ! Define BC's along mesh interfaces by 'simple mean' or 'true approximate' based on previous Laplace solutions
@@ -673,10 +667,8 @@ ELSE
 
          CALL SCARC_MGM_STORE_SOLUTION (NSCARC_MGM_MERGE)
    
-#ifdef WITH_SCARC_DEBUG
          CALL SCARC_MGM_DUMP('H2',ITE_MGM)
          CALL SCARC_MGM_DUMP('H3',ITE_MGM)
-#endif
 
 #ifdef WITH_SCARC_DEBUG
          WRITE(MSG%LU_DEBUG,*) 'MGM-METHOD AFTER LAPLACE, TPI=', TOTAL_PRESSURE_ITERATIONS
@@ -1695,7 +1687,9 @@ MESHES_LOOP: DO NM = LOWER_MESH_INDEX, UPPER_MESH_INDEX
    IF (WITH_BDRY) THEN
       DO K=1,KBAR
          DO J=1,JBAR
-            IF (LBC==3 .OR. LBC==4)             HP(0,J,K)    = HP(1,J,K)    - DXI*BXS(J,K)
+            IF (LBC==3 .OR. LBC==4)             HP(0,J,K)    = HP(1,J,K)    - DXI*BXS(J,K)IntelMKL methods
+            (Pardiso/Cluster_Sparse_Solver)
+            !  - McKeenney-Greengard-Mayo method
             IF (LBC==3 .OR. LBC==2 .OR. LBC==6) HP(IBP1,J,K) = HP(IBAR,J,K) + DXI*BXF(J,K)
             IF (LBC==1 .OR. LBC==2)             HP(0,J,K)    =-HP(1,J,K)    + 2._EB*BXS(J,K)
             IF (LBC==1 .OR. LBC==4 .OR. LBC==5) HP(IBP1,J,K) =-HP(IBAR,J,K) + 2._EB*BXF(J,K)
@@ -2599,7 +2593,7 @@ USE POIS, ONLY: H2CZSS, H3CZSS
 REAL(EB) :: AUX, OMEGA_SSOR = 1.5_EB 
 REAL (EB) :: TNOW
 INTEGER, INTENT(IN) :: NV1, NV2, NS, NP, NL
-INTEGER :: NM, NP0, IC, JC, ICOL, ITYPE, IDIAG, IPTR, INCR, IOR0, IC0, IY, IZ
+INTEGER :: NM, IC, JC, ICOL, ITYPE, IDIAG, IPTR, INCR, IOR0, IC0, IY, IZ
 
 TNOW = CURRENT_TIME()
 ITYPE = STACK(NS-1)%SOLVER%TYPE_RELAX
@@ -2944,7 +2938,6 @@ WRITE(MSG%LU_DEBUG,*) ' ===================== RELAX: OTHER'
  
    !CASE (NSCARC_RELAX_MULTIGRID)
 
-       NP0 = NP               ! Only dummy command until multigrid is used again
    !   CALL SCARC_METHOD_MULTIGRID (NS, NP, NSCARC_RHS_DEFECT, NLEVEL_MIN)
 
  

@@ -909,10 +909,15 @@ INTEGER, INTENT(INOUT) :: NP
 CHARACTER(*), INTENT(IN) :: CNAME
 REAL(EB), INTENT(IN) :: VAL
 INTEGER :: IP
+#ifndef WITH_SCARC_DEBUG
+CHARACTER(1) :: CSAVE
+#endif
 REAL(EB) :: TOL = 1.0E-14_EB
 
 #ifdef WITH_SCARC_DEBUG
 WRITE(MSG%LU_DEBUG,1000) CNAME, IC, JC, VAL, NC, NP
+#else
+CSAVE = CNAME(1:1)    ! dummy command to justify the argument CNAME in the non-debug case
 #endif
 
 IF (NP == A%N_VAL) WRITE(*,*) MYID+1,': SCARC_INSERT_TO_CMATRIX: Error, maximum length already reached'
