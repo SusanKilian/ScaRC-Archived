@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Serial" type="CMakeRunConfiguration" factoryName="Application" singleton="false" PROGRAM_PARAMS="pressure_iteration2d_scarc.fds" REDIRECT_INPUT="false" ELEVATE="false" WORKING_DIR="file://$PROJECT_DIR$/Verification/Pressure_Solver" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Titled" TARGET_NAME="fds_db" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="Titled" RUN_TARGET_NAME="fds_db">
+    <method v="2">
+      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+    </method>
+  </configuration>
+</component>

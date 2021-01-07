@@ -1,0 +1,4 @@
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+time make 
+#time make VERBOSE=1
+
