@@ -63,7 +63,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
    if (CMAKE_BUILD_TYPE MATCHES "Release") 
       set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_BASIC} -O2 -ipo")
       set (FDS "fds_intel")
-      message ("Compiling Intel release version ${FDS} with options: ${CMAKE_Fortran_FLAGS_RELEASE}")
+      message ("Compiling Intel release version ${FDS} with options : ${CMAKE_Fortran_FLAGS_RELEASE}")
    endif ()
 endif()
 
