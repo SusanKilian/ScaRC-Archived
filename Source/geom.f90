@@ -1,7 +1,7 @@
 
 !  +++++++++++++++++++++++ COMPLEX_GEOMETRY ++++++++++++++++++++++++++
 
-
+!#define WITH_MKL
 ! Routines related to unstructured geometry and immersed boundary methods
 !
 ! Definitions for preprocessor:
